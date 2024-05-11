@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "lightgallery": "^2.7.2",
+    "react-bootstrap": "^2.10.2"
+  }
+}

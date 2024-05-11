@@ -1,0 +1,53 @@
+@import url("https://cdn.jsdelivr.net/npm/lightgallery@2.4.0/css/lightgallery.css");
+@import url("https://cdn.jsdelivr.net/npm/lightgallery@2.4.0/css/lg-zoom.css");
+@import url("https://cdn.jsdelivr.net/npm/lightgallery@2.4.0/css/lg-video.css");
+
+h1,
+p {
+  font-family: Lato;
+}
+
+body {
+  margin: 0;
+}
+
+.gallery-item {
+  margin: 5px;
+}
+
+.light-gallery {
+  max-width: 90%;
+  margin: 0 auto; /* Center-align the gallery */
+  padding: 0 5%; /* Add 5% padding on both sides for whitespace */
+}
+
+.gallery-item {
+  display: inline-block; /* Display items in a row */
+  margin: 5px; /* Add some spacing between items */
+}
+
+.gallery-image {
+  width: 100%; /* Ensure images take up full width of their container */
+  height: auto; /* Maintain aspect ratio */
+  max-width: 300px; /* Limit maximum width of images */
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(200px, 1fr)
+  ); /* Create a grid with flexible columns */
+  grid-gap: 10px; /* Add some spacing between grid items */
+}
+
+.gallery-item {
+  width: 100%;
+  height: 100%;
+}
+
+.gallery-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ensure images cover their entire container */
+}

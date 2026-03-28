@@ -21,7 +21,7 @@ export default function FilterTabs({ active, onSelect, searchActive, counts }: F
             onClick={() => onSelect(cat)}
           >
             {cat}
-            {count > 0 && <span className="filter-count">{count}</span>}
+            {count > 0 && <span className="filter-count">({count})</span>}
           </button>
         );
       })}

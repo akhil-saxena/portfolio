@@ -29,7 +29,7 @@ export default function Timeline({ entries }: TimelineProps) {
             </div>
             <ul className="timeline-bullets">
               {entry.bullets.map((bullet, j) => (
-                <li key={j}>{bullet}</li>
+                <li key={j} dangerouslySetInnerHTML={{ __html: bullet }} />
               ))}
             </ul>
           </div>

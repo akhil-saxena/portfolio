@@ -2,19 +2,19 @@ import type { Metadata } from "next";
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Akhil Saxena — Engineer · Photographer",
-  description: "Personal portfolio of Akhil Saxena — Senior Software Engineer at Brevo, photographer capturing the world.",
+  title: "Akhil Saxena — Interfaces & Imagery",
+  description: "Building for the web. Photographing everything else. Portfolio of Akhil Saxena.",
   metadataBase: new URL("https://akhil-portfolio.pages.dev"),
   openGraph: {
-    title: "Akhil Saxena — Engineer · Photographer",
-    description: "Personal portfolio — Photography, Development, Resume.",
+    title: "Akhil Saxena — Interfaces & Imagery",
+    description: "Building for the web. Photographing everything else. Portfolio of Akhil Saxena.",
     type: "website",
     locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Akhil Saxena — Engineer · Photographer",
-    description: "Personal portfolio — Photography, Development, Resume.",
+    title: "Akhil Saxena — Interfaces & Imagery",
+    description: "Building for the web. Photographing everything else. Portfolio of Akhil Saxena.",
   },
 };
 

@@ -154,6 +154,12 @@
   font-family: var(--font-mono);
 }
 
+.skill-tag:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+  background: var(--bg);
+}
+
 .education-section {
   margin-bottom: 3rem;
 }
@@ -254,6 +260,13 @@
   overflow: hidden;
   flex-shrink: 0;
   background: var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pc-logo-fallback {
+  color: var(--ink-muted);
 }
 
 .pc-logo img {
@@ -298,6 +311,7 @@
   padding: 0.2rem 0.5rem;
   border: 1px solid var(--border);
   color: var(--ink-muted);
+  border-radius: 4px;
 }
 
 .pc-stores {

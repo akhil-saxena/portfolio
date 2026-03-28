@@ -9,18 +9,20 @@ import "@/styles/dev.css";
 
 const experience = [
   {
-    company: "Brevo",
+    company: "Brevo (Formerly Sendinblue)",
     role: "Senior Software Engineer",
     period: "Jul 2023 – Present",
     location: "Noida",
     bullets: [
-      "Unified settings nav package across 18+ micro-frontend apps (+20% dev velocity)",
-      "Migrated login to Next.js, revamped UIs with NAOS design system, 2FA PHP→React (90%+ tests)",
-      "RBAC: 40+ permissions, 6 verticals, 1K+ enterprise users",
-      "Checkout redesign for 2.5M+ users → 15% conversion uplift",
-      "Reduced support tickets 12% via automated domain auth",
-      "i18n pipeline: react-intl + Smartling, 6 languages",
-      "Led A/B testing + onboarding revamp with Omni dashboards",
+      "Engineered a unified, responsive settings navigation package adopted across 18+ micro-frontend and non-micro-frontend apps, accelerating development cycles by 20%",
+      "Migrated login to Next.js, revamped user-management, senders & domains management UIs using the NAOS design system; migrated 2FA modules from PHP Twig to React with 90%+ unit test coverage",
+      "Introduced RBAC with 40+ permissions spanning 6 business verticals, scaling access control for 1K+ enterprise users",
+      "Redesigned a one-page checkout for 2.5M+ self-service users to a 3-step flow, leading to 15% conversion uplift",
+      "Reduced support tickets by 12% in the high-traffic senders module (10K+ weekly users) via automated domain authentication with Domain Connect & Entri",
+      "Implemented i18n pipeline with react-intl and Smartling to localize apps in 6 languages",
+      "Integrated Sniper Links into signup emails, boosting engagement across platforms for 5M+ annual signups",
+      "Led A/B testing and end-to-end revamp of onboarding with address autosuggest, building FE/BE systems with logging and Omni dashboards",
+      "Recognized 6 times for driving critical initiatives, mentoring teammates, and delivering high-impact features under tight deadlines",
     ],
   },
   {
@@ -29,10 +31,11 @@ const experience = [
     period: "Nov 2022 – Jun 2023",
     location: "Bengaluru",
     bullets: [
-      "Modernized orders page for 4K+ franchises across 4 countries",
-      "30% support ticket reduction via receipt generation UIs (React + Redux)",
-      "Overhauled 10+ ThyroCare pages",
-      "CleverTap integration + client-side recommendation engine",
+      "Modernized the orders page for the B2B portal, enhancing productivity for 4K+ franchises across 4 countries",
+      "Achieved a 30% decrease in support ticket volume by developing UIs for receipt generation and edit feature using React and Redux",
+      "Overhauled 10+ pages on the ThyroCare consumer site to improve UI/UX and user engagement",
+      "Integrated CleverTap into ThyroNext platform to enable real-time analytics, driving retention and engagement",
+      "Delivered a client-side recommendation system leveraging a proprietary rule engine to enable product upsell and cross-sell",
     ],
   },
   {
@@ -41,10 +44,21 @@ const experience = [
     period: "Dec 2021 – Nov 2022",
     location: "Mumbai",
     bullets: [
-      "PepsiCo analytics solution (4-person team, <3 months)",
-      "Real-time write-back sync for 16K+ stores",
-      "Power BI dashboard for 100+ employees across 8+ teams",
-      "Pipeline execution time reduced 6x (Power Automate → Azure Data Factory)",
+      "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in under 3 months",
+      "Built a real-time write-back sync system for a live app deployed to 16K+ stores across North America",
+      "Automated tracking and reporting across 8+ teams (60+ members) in 4 offices by developing a real-time Power BI dashboard used by 100+ employees",
+      "Reduced pipeline execution time by 6× by replacing Power Automate workflows with Azure Data Factory",
+    ],
+  },
+  {
+    company: "AMTDC, IIT Madras",
+    role: "Full Stack Developer",
+    period: "Jul 2020 – Sep 2020",
+    location: "Chennai",
+    bullets: [
+      "Designed UI for the platform in collaboration with industry and academia from TCS and IIT Madras",
+      "Developed 'Kite' website in 2 months using Django framework, hosted on IIT Madras server",
+      "Facilitated communication between industry and academia to understand market requirements",
     ],
   },
 ];

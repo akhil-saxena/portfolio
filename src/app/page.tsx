@@ -1,28 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import PathwayCard from "@/components/PathwayCard";
+import Link from "next/link";
 import ThemeToggle from "@/components/ThemeToggle";
 import portfolioData from "../../data/portfolio_images.json";
 import "@/styles/home.css";
 
+const heroPhoto = portfolioData.find((p) => p.id === "nature-shipsunset") || portfolioData[0];
+
 export default function HomePage() {
-  const cardsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!cardsRef.current) return;
-      if (window.innerWidth < 480) return;
-
-      const x = (e.clientX / window.innerWidth - 0.5) * 10;
-      const y = (e.clientY / window.innerHeight - 0.5) * 10;
-      cardsRef.current.style.transform = `translate(${x}px, ${y}px)`;
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
-
   return (
     <main className="home" id="main">
       <ThemeToggle />
@@ -32,52 +17,27 @@ export default function HomePage() {
         <p className="home-tagline">Interfaces & Imagery</p>
       </header>
 
-      <div className="home-cards" ref={cardsRef}>
-        <PathwayCard
-          href="/photography"
-          title="Photography"
-          subtitle="Capturing moments across the world"
-          cta="View gallery →"
-          className="card-photo"
-        >
-          <img
-            src={portfolioData[0]?.urls?.medium || ""}
-            alt="Photography portfolio"
-            className="photo-card-bg"
-          />
-          <div className="photo-card-overlay" />
-        </PathwayCard>
+      <div className="home-hero-image">
+        <img
+          src={heroPhoto?.urls?.original || ""}
+          alt="Ship at sunset"
+          className="hero-img"
+          style={{ backgroundImage: `url(${heroPhoto?.urls?.thumb || ""})` }}
+        />
+      </div>
 
-        <PathwayCard
-          href="/dev"
-          title="Development"
-          subtitle="Building products at scale"
-          cta="View resume →"
-          className="card-dev"
-        >
-          <div className="terminal">
-            <div className="terminal-bar">
-              <span className="terminal-dot" />
-              <span className="terminal-dot" />
-              <span className="terminal-dot" />
-            </div>
-            <div className="terminal-line">
-              <span className="terminal-prompt">$ </span>
-              <span className="terminal-value">whoami</span>
-            </div>
-            <div className="terminal-line">Akhil Saxena</div>
-            <div className="terminal-line">
-              <span className="terminal-prompt">$ </span>
-              <span className="terminal-value">cat stack.txt</span>
-            </div>
-            <div className="terminal-line">React · Next.js · TypeScript</div>
-            <div className="terminal-line">
-              <span className="terminal-prompt">$ </span>
-              <span className="terminal-value">cat companies.txt</span>
-            </div>
-            <div className="terminal-line">Brevo · PharmEasy · MAQ Software</div>
-          </div>
-        </PathwayCard>
+      <p className="home-intro">
+        Senior Software Engineer at <strong>Brevo</strong>, building products used by millions.
+        Photographer in the quieter hours — finding frames in architecture, nature, and street life.
+      </p>
+
+      <div className="home-ctas">
+        <Link href="/photography" className="home-cta cta-primary">
+          View Photography
+        </Link>
+        <Link href="/dev" className="home-cta cta-secondary">
+          View Resume
+        </Link>
       </div>
 
       <div className="home-social">

@@ -27,8 +27,7 @@ export default function HomePage() {
       </div>
 
       <p className="home-intro">
-        Senior Software Engineer at <strong>Brevo</strong>, building products used by millions.
-        Photographer in the quieter hours — finding frames in architecture, nature, and street life.
+        I build products people use every day — from mobile apps and browser extensions to platforms serving millions. When I step away from the screen, I pick up a camera.
       </p>
 
       <div className="home-ctas">

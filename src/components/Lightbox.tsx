@@ -40,6 +40,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
   // Reset loaded state on navigation
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoaded(false);
   }, [currentIndex]);
 

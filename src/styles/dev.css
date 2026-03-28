@@ -51,8 +51,8 @@
 
 .timeline-dot {
   position: absolute;
-  left: -2.55rem;
-  top: 0.4rem;
+  left: calc(-2rem - 6px);
+  top: 0.35rem;
   width: 14px;
   height: 14px;
   border-radius: 50%;

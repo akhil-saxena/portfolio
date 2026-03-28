@@ -36,6 +36,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# wrangler
+.wrangler/
+
+# local env files
+*.local
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

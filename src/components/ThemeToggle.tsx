@@ -1,0 +1,29 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+export default function ThemeToggle() {
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    const current = document.documentElement.getAttribute("data-theme") as "light" | "dark";
+    setTheme(current || "light");
+  }, []);
+
+  const toggle = () => {
+    const next = theme === "light" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+    setTheme(next);
+  };
+
+  return (
+    <button
+      onClick={toggle}
+      aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
+      className="theme-toggle"
+    >
+      {theme === "light" ? "☽" : "☀"}
+    </button>
+  );
+}

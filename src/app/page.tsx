@@ -29,7 +29,7 @@ export default function HomePage() {
 
       <header className="home-hero">
         <h1 className="home-name">Akhil Saxena</h1>
-        <p className="home-tagline">Engineer · Photographer</p>
+        <p className="home-tagline">Interfaces & Imagery</p>
       </header>
 
       <div className="home-cards" ref={cardsRef}>

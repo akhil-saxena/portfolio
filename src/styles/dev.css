@@ -40,7 +40,7 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 2px;
+  width: 2.5px;
   background: var(--border);
 }
 
@@ -51,13 +51,14 @@
 
 .timeline-dot {
   position: absolute;
-  left: -2.35rem;
-  top: 0.5rem;
-  width: 10px;
-  height: 10px;
+  left: -2.55rem;
+  top: 0.4rem;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--ink-muted);
-  border: 2px solid var(--bg);
+  background: var(--ink);
+  border: 3px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
 }
 
 .timeline-content {
@@ -136,9 +137,21 @@
   margin-bottom: 0.25rem;
 }
 
-.skills-list {
-  font-size: 0.875rem;
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.skill-tag {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
   color: var(--ink-body);
+  background: var(--surface);
+  font-family: var(--font-mono);
 }
 
 .education-section {
@@ -159,10 +172,35 @@
   color: var(--ink-body);
 }
 
-.education-extra {
+.education-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+  gap: 1rem;
+}
+
+.education-period {
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--ink-muted);
-  margin-top: 0.25rem;
+  white-space: nowrap;
+}
+
+.education-leadership {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.education-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  color: var(--ink-muted);
+  background: var(--surface);
 }
 
 .projects-grid {
@@ -223,6 +261,46 @@
 .project-badge:hover {
   border-color: var(--ink);
   color: var(--ink);
+}
+
+.timeline-bullets li strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.project-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.75rem;
+}
+
+.dev-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.resume-btn:hover {
+  border-color: var(--ink-muted);
+  box-shadow: 0 2px 8px var(--shadow);
 }
 
 @media (max-width: 768px) {

@@ -2,12 +2,14 @@ interface ProjectCardProps {
   title: string;
   description: string;
   tech: string;
+  icon?: string;
   badges: { label: string; href: string }[];
 }
 
-export default function ProjectCard({ title, description, tech, badges }: ProjectCardProps) {
+export default function ProjectCard({ title, description, tech, icon, badges }: ProjectCardProps) {
   return (
     <div className="project-card reveal">
+      {icon && <span className="project-icon">{icon}</span>}
       <h3 className="project-title">{title}</h3>
       <p className="project-desc">{description}</p>
       <p className="project-tech">{tech}</p>

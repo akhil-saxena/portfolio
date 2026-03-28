@@ -14,15 +14,11 @@ const experience = [
     period: "Jul 2023 – Present",
     location: "Noida",
     bullets: [
-      "Engineered a unified, responsive settings navigation package adopted across 18+ micro-frontend and non-micro-frontend apps, accelerating development cycles by 20%",
-      "Migrated login to Next.js, revamped user-management, senders & domains management UIs using the NAOS design system; migrated 2FA modules from PHP Twig to React with 90%+ unit test coverage",
-      "Introduced RBAC with 40+ permissions spanning 6 business verticals, scaling access control for 1K+ enterprise users",
-      "Redesigned a one-page checkout for 2.5M+ self-service users to a 3-step flow, leading to 15% conversion uplift",
-      "Reduced support tickets by 12% in the high-traffic senders module (10K+ weekly users) via automated domain authentication with Domain Connect & Entri",
-      "Implemented i18n pipeline with react-intl and Smartling to localize apps in 6 languages",
-      "Integrated Sniper Links into signup emails, boosting engagement across platforms for 5M+ annual signups",
-      "Led A/B testing and end-to-end revamp of onboarding with address autosuggest, building FE/BE systems with logging and Omni dashboards",
-      "Recognized 6 times for driving critical initiatives, mentoring teammates, and delivering high-impact features under tight deadlines",
+      "Engineered a unified settings navigation package adopted across <strong>18+ micro-frontend apps</strong>, accelerating development cycles by <strong>20%</strong>",
+      "Migrated login to Next.js, revamped UIs with NAOS design system; migrated 2FA from PHP Twig to React with <strong>90%+ test coverage</strong>",
+      "Redesigned checkout for <strong>2.5M+ users</strong> to a 3-step flow, leading to <strong>15% conversion uplift</strong>",
+      "Reduced support tickets by <strong>12%</strong> in the senders module (<strong>10K+ weekly users</strong>) via automated domain authentication",
+      "Led A/B testing and onboarding revamp with address autosuggest, building FE/BE systems with Omni dashboards",
     ],
   },
   {
@@ -31,11 +27,10 @@ const experience = [
     period: "Nov 2022 – Jun 2023",
     location: "Bengaluru",
     bullets: [
-      "Modernized the orders page for the B2B portal, enhancing productivity for 4K+ franchises across 4 countries",
-      "Achieved a 30% decrease in support ticket volume by developing UIs for receipt generation and edit feature using React and Redux",
-      "Overhauled 10+ pages on the ThyroCare consumer site to improve UI/UX and user engagement",
-      "Integrated CleverTap into ThyroNext platform to enable real-time analytics, driving retention and engagement",
-      "Delivered a client-side recommendation system leveraging a proprietary rule engine to enable product upsell and cross-sell",
+      "Modernized orders page for the B2B portal, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
+      "Achieved <strong>30% decrease</strong> in support ticket volume by developing receipt generation UIs with React and Redux",
+      "Delivered a client-side recommendation system leveraging a proprietary rule engine for product upsell and cross-sell",
+      "Integrated CleverTap into ThyroNext for real-time analytics, driving retention and engagement",
     ],
   },
   {
@@ -44,10 +39,10 @@ const experience = [
     period: "Dec 2021 – Nov 2022",
     location: "Mumbai",
     bullets: [
-      "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in under 3 months",
-      "Built a real-time write-back sync system for a live app deployed to 16K+ stores across North America",
-      "Automated tracking and reporting across 8+ teams (60+ members) in 4 offices by developing a real-time Power BI dashboard used by 100+ employees",
-      "Reduced pipeline execution time by 6× by replacing Power Automate workflows with Azure Data Factory",
+      "Led data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
+      "Built a real-time write-back sync system for a live app deployed to <strong>16K+ stores</strong>",
+      "Automated reporting across <strong>8+ teams</strong> by developing a real-time Power BI dashboard used by <strong>100+ employees</strong>",
+      "Reduced pipeline execution time by <strong>6×</strong> by replacing Power Automate with Azure Data Factory",
     ],
   },
   {
@@ -56,9 +51,8 @@ const experience = [
     period: "Jul 2020 – Sep 2020",
     location: "Chennai",
     bullets: [
-      "Designed UI for the platform in collaboration with industry and academia from TCS and IIT Madras",
-      "Developed 'Kite' website in 2 months using Django framework, hosted on IIT Madras server",
-      "Facilitated communication between industry and academia to understand market requirements",
+      "Developed 'Kite' website in <strong>2 months</strong> using Django, hosted on IIT Madras server",
+      "Designed UI in collaboration with TCS and IIT Madras for an industry-academia platform",
     ],
   },
 ];
@@ -68,6 +62,7 @@ const projects = [
     title: "Momentum",
     description: "Goal tracker with adaptive targets, streaks, badges, widgets, and cloud sync.",
     tech: "Kotlin · Jetpack Compose · Room · Hilt · Material 3",
+    icon: "🎯",
     badges: [
       { label: "Play Store", href: "#" },
       { label: "GitHub", href: "https://github.com/akhil-saxena/momentum" },
@@ -77,6 +72,7 @@ const projects = [
     title: "TimeShift",
     description: "Right-click timezone converter with NLP parsing, DST-aware.",
     tech: "JavaScript · Chrome APIs",
+    icon: "🕐",
     badges: [
       { label: "Chrome Web Store", href: "#" },
       { label: "GitHub", href: "https://github.com/akhil-saxena/convert-timezone" },
@@ -86,6 +82,7 @@ const projects = [
     title: "Steganography",
     description: "Hide images inside images via LSB encoding, multithreaded.",
     tech: "C++",
+    icon: "🔐",
     badges: [
       { label: "GitHub", href: "https://github.com/akhil-saxena/Steganography" },
     ],
@@ -101,7 +98,13 @@ export default function DevPage() {
       <main className="dev-page" id="main" ref={ref}>
         <header className="dev-header reveal">
           <p className="dev-label">Resume & Portfolio</p>
-          <h1 className="dev-title">Development</h1>
+          <div className="dev-header-row">
+            <h1 className="dev-title">Development</h1>
+            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Resume
+            </a>
+          </div>
         </header>
 
         <section>
@@ -113,20 +116,34 @@ export default function DevPage() {
           <h2 className="section-title reveal">Skills</h2>
           <div className="skills-group reveal">
             <p className="skills-label">Frontend</p>
-            <p className="skills-list">React, Next.js, TypeScript, JavaScript (ES6+), Redux, HTML5, CSS3</p>
+            <div className="skills-tags">
+              {["React", "Next.js", "TypeScript", "JavaScript", "Redux", "HTML5", "CSS3"].map((s) => (
+                <span key={s} className="skill-tag">{s}</span>
+              ))}
+            </div>
           </div>
           <div className="skills-group reveal">
             <p className="skills-label">Platform & Experience</p>
-            <p className="skills-list">Responsive UI, a11y, i18n, CI/CD, Monitoring, Metabase, Omni</p>
+            <div className="skills-tags">
+              {["Responsive UI", "a11y", "i18n", "CI/CD", "Monitoring", "Metabase", "Omni"].map((s) => (
+                <span key={s} className="skill-tag">{s}</span>
+              ))}
+            </div>
           </div>
         </section>
 
         <section className="education-section">
           <h2 className="section-title reveal">Education</h2>
           <div className="education-entry reveal">
-            <p className="education-school">B.Tech CSE, VIT Vellore</p>
-            <p className="education-detail">8.62 CGPA · Jul 2018 – Jun 2022</p>
-            <p className="education-extra">Director of Events at SEDS-VIT · Lead at NASA-sponsored CAMS-SETI</p>
+            <div className="education-header">
+              <p className="education-school">Vellore Institute of Technology (VIT), Vellore</p>
+              <span className="education-period">Jul 2018 – Jun 2022</span>
+            </div>
+            <p className="education-detail">B.Tech, Computer Science & Engineering · 8.62 CGPA</p>
+            <div className="education-leadership">
+              <span className="education-badge">Director of Events, SEDS-VIT</span>
+              <span className="education-badge">Lead, NASA-sponsored CAMS-SETI</span>
+            </div>
           </div>
         </section>
 

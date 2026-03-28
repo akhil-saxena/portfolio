@@ -1,0 +1,197 @@
+.home {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.home-hero {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.home-name {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.home-tagline {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  color: var(--ink-muted);
+  letter-spacing: 0.05em;
+}
+
+.home-cards {
+  display: flex;
+  gap: 2rem;
+  position: relative;
+  align-items: stretch;
+}
+
+.home-cards::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: calc(50% - 1rem);
+  width: 2rem;
+  border-top: 2px dashed var(--border);
+}
+
+.pathway-card {
+  display: flex;
+  flex-direction: column;
+  width: 320px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  text-decoration: none;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  cursor: pointer;
+}
+
+.pathway-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px var(--shadow);
+  border-color: var(--ink-muted);
+}
+
+.pathway-card-visual {
+  height: 200px;
+  overflow: hidden;
+  position: relative;
+  background: var(--border);
+}
+
+.pathway-card-info {
+  padding: 1.5rem;
+}
+
+.pathway-card-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.pathway-card-subtitle {
+  font-size: 0.875rem;
+  color: var(--ink-muted);
+  margin-bottom: 1rem;
+}
+
+.pathway-card-cta {
+  font-size: 0.875rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.photo-card-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-card-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 2rem;
+}
+
+.terminal {
+  background: #1a1613;
+  color: #b8aa98;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 1rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.terminal-bar {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.terminal-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.terminal-dot:nth-child(1) { background: #e74c3c; }
+.terminal-dot:nth-child(2) { background: #f39c12; }
+.terminal-dot:nth-child(3) { background: #2ecc71; }
+
+.terminal-line {
+  line-height: 1.5;
+}
+
+.terminal-prompt {
+  color: #7a6e60;
+}
+
+.terminal-value {
+  color: #e8ddd0;
+}
+
+.home-social {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.home-social a {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  transition: color 0.2s;
+}
+
+.home-social a:hover {
+  color: var(--ink);
+}
+
+.home-footer {
+  position: absolute;
+  bottom: 1.5rem;
+  color: var(--ink-faint);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .home-cards {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .home-cards::before {
+    display: none;
+  }
+
+  .pathway-card {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .home-name {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-name {
+    font-size: 1.75rem;
+  }
+}

@@ -7,6 +7,7 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const current = document.documentElement.getAttribute("data-theme") as "light" | "dark";
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTheme(current || "light");
   }, []);
 

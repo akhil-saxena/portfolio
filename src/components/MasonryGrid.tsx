@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, useCallback } from "react";
+
 interface Photo {
   id: string;
   title: string;
@@ -15,6 +19,12 @@ interface MasonryGridProps {
 }
 
 export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) {
+  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+
+  const handleLoad = useCallback((id: string) => {
+    setLoadedIds((prev) => new Set(prev).add(id));
+  }, []);
+
   if (photos.length === 0) {
     return <p className="masonry-empty">No photos found.</p>;
   }
@@ -24,7 +34,7 @@ export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) 
       {photos.map((photo, index) => (
         <button
           key={photo.id}
-          className="masonry-item"
+          className={`masonry-item ${loadedIds.has(photo.id) ? "loaded" : ""}`}
           onClick={() => onPhotoClick(index)}
           aria-label={`View ${photo.title}`}
         >
@@ -34,6 +44,7 @@ export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) 
             loading="lazy"
             className="masonry-img"
             style={{ backgroundImage: `url(${photo.urls.thumb})` }}
+            onLoad={() => handleLoad(photo.id)}
           />
           <div className="masonry-overlay">
             <span className="masonry-title">{photo.title}</span>

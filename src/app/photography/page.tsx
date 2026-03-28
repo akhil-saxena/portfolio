@@ -51,30 +51,44 @@ export default function PhotographyPage() {
     return result;
   }, [photos, category, search]);
 
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { All: photos.length };
+    photos.forEach((p) => {
+      const cat = p.category.charAt(0).toUpperCase() + p.category.slice(1);
+      c[cat] = (c[cat] || 0) + 1;
+    });
+    return c;
+  }, [photos]);
+
   return (
     <>
       <Nav title="Photography" />
       <main className="photo-page" id="main">
         <header className="photo-header">
           <p className="photo-label">Portfolio</p>
-          <h1 className="photo-title">Photography</h1>
+          <div className="photo-header-row">
+            <h1 className="photo-title">Photography</h1>
+            <span className="photo-count">{filtered.length} photos</span>
+          </div>
         </header>
 
-        <SearchBar
-          value={search}
-          onChange={(val) => {
-            setSearch(val);
-          }}
-        />
-
-        <FilterTabs
-          active={category}
-          onSelect={(cat) => {
-            setCategory(cat);
-            setSearch("");
-          }}
-          searchActive={search.trim().length > 0}
-        />
+        <div className="photo-toolbar">
+          <FilterTabs
+            active={category}
+            onSelect={(cat) => {
+              setCategory(cat);
+              setSearch("");
+            }}
+            searchActive={search.trim().length > 0}
+            counts={counts}
+          />
+          <SearchBar
+            value={search}
+            onChange={(val) => {
+              setSearch(val);
+            }}
+          />
+        </div>
 
         <MasonryGrid photos={filtered} onPhotoClick={setLightboxIndex} />
 

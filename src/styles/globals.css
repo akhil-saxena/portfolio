@@ -184,8 +184,9 @@ a {
 
 .footer-social a {
   color: var(--ink-muted);
-  font-size: 0.875rem;
   transition: color 0.2s;
+  display: flex;
+  align-items: center;
 }
 
 .footer-social a:hover {

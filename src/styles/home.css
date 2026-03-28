@@ -35,14 +35,6 @@
   align-items: stretch;
 }
 
-.home-cards::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: calc(50% - 1rem);
-  width: 2rem;
-  border-top: 2px dashed var(--border);
-}
 
 .pathway-card {
   display: flex;
@@ -155,8 +147,9 @@
 
 .home-social a {
   color: var(--ink-muted);
-  font-size: 0.875rem;
   transition: color 0.2s;
+  display: flex;
+  align-items: center;
 }
 
 .home-social a:hover {
@@ -164,8 +157,7 @@
 }
 
 .home-footer {
-  position: absolute;
-  bottom: 1.5rem;
+  margin-top: 3rem;
   color: var(--ink-faint);
   font-size: 0.75rem;
 }
@@ -174,10 +166,6 @@
   .home-cards {
     flex-direction: column;
     align-items: center;
-  }
-
-  .home-cards::before {
-    display: none;
   }
 
   .pathway-card {

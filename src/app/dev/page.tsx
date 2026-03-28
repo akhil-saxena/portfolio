@@ -45,16 +45,6 @@ const experience = [
       "Reduced pipeline execution time by <strong>6×</strong> by replacing Power Automate with Azure Data Factory",
     ],
   },
-  {
-    company: "AMTDC, IIT Madras",
-    role: "Full Stack Developer",
-    period: "Jul 2020 – Sep 2020",
-    location: "Chennai",
-    bullets: [
-      "Developed 'Kite' website in <strong>2 months</strong> using Django, hosted on IIT Madras server",
-      "Designed UI in collaboration with TCS and IIT Madras for an industry-academia platform",
-    ],
-  },
 ];
 
 const projects = [

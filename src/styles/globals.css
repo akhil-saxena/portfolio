@@ -27,14 +27,14 @@
 
 /* ===== Dark theme ===== */
 [data-theme="dark"] {
-  --bg: #1a1613;
-  --surface: #242019;
-  --border: #3a3328;
-  --ink: #e8ddd0;
-  --ink-body: #b8aa98;
-  --ink-muted: #7a6e60;
-  --ink-faint: #4a4238;
-  --shadow: rgba(0, 0, 0, 0.3);
+  --bg: #141414;
+  --surface: #1e1e1e;
+  --border: #2e2e2e;
+  --ink: #eeeeee;
+  --ink-body: #b0b0b0;
+  --ink-muted: #737373;
+  --ink-faint: #404040;
+  --shadow: rgba(0, 0, 0, 0.4);
 }
 
 /* ===== Base styles ===== */

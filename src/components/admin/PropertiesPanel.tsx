@@ -905,10 +905,25 @@ export default function PropertiesPanel({
             <h4 className="admin-props-section-title">Upload New Resume</h4>
             <label className="admin-btn admin-btn-secondary" style={{ cursor: "pointer", textAlign: "center", display: "flex", justifyContent: "center" }}>
               <IconPlus size={14} /> Choose PDF
-              <input type="file" accept=".pdf" hidden onChange={(e) => {
+              <input type="file" accept=".pdf" hidden onChange={async (e) => {
                 const file = e.target.files?.[0];
-                if (file) {
-                  alert(`Selected: ${file.name}\n\nTo update the resume, replace public/resume.pdf in the repo and deploy. Automatic upload coming in a future update.`);
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append("file", file);
+                try {
+                  const res = await fetch("/api/upload-resume", {
+                    method: "POST",
+                    body: formData,
+                  });
+                  if (res.ok) {
+                    alert("Resume updated! Site will rebuild in ~1-2 minutes.");
+                  } else {
+                    const err = await res.json() as { error?: string };
+                    alert("Failed: " + (err.error || "Unknown error"));
+                  }
+                } catch {
+                  alert("Failed to upload resume");
                 }
               }} />
             </label>

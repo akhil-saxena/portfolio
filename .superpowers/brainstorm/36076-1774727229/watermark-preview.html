@@ -1,0 +1,83 @@
+<h2>Watermark Preview</h2>
+<p class="subtitle">25% opacity white text, bottom-right corner. Two sample photos at medium (800px) size.</p>
+
+<div style="display:flex;flex-direction:column;gap:32px;max-width:800px;margin:0 auto;">
+
+  <!-- Photo 1: Into The Mist (landscape, dark/moody) -->
+  <div>
+    <div class="label">Landscape — Dark/Moody Background</div>
+    <div style="position:relative;border-radius:8px;overflow:hidden;line-height:0;">
+      <img
+        src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp"
+        alt="Into The Mist"
+        style="width:100%;display:block;"
+      />
+      <span style="
+        position:absolute;
+        bottom:10px;
+        right:12px;
+        color:rgba(255,255,255,0.25);
+        font-family:'DM Sans',system-ui,sans-serif;
+        font-size:14px;
+        font-weight:500;
+        letter-spacing:0.02em;
+        pointer-events:none;
+        text-shadow:0 1px 3px rgba(0,0,0,0.3);
+      ">Akhil Saxena</span>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:8px;">CSS overlay simulation — actual watermark will be baked into the image by sharp</p>
+  </div>
+
+  <!-- Photo 2: Singapore (landscape, bright) -->
+  <div>
+    <div class="label">Landscape — Bright Background</div>
+    <div style="position:relative;border-radius:8px;overflow:hidden;line-height:0;">
+      <img
+        src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp"
+        alt="Singapore"
+        style="width:100%;display:block;"
+      />
+      <span style="
+        position:absolute;
+        bottom:10px;
+        right:12px;
+        color:rgba(255,255,255,0.25);
+        font-family:'DM Sans',system-ui,sans-serif;
+        font-size:14px;
+        font-weight:500;
+        letter-spacing:0.02em;
+        pointer-events:none;
+        text-shadow:0 1px 3px rgba(0,0,0,0.3);
+      ">Akhil Saxena</span>
+    </div>
+    <p style="font-size:12px;color:#888;margin-top:8px;">On bright images the watermark is subtler — the text-shadow ensures minimum visibility</p>
+  </div>
+
+</div>
+
+<div style="margin-top:32px;">
+  <h3>Adjustments?</h3>
+  <div class="options">
+    <div class="option" data-choice="good" onclick="toggleSelect(this)">
+      <div class="letter">A</div>
+      <div class="content">
+        <h3>Looks good as-is</h3>
+        <p>25% opacity, current size and position</p>
+      </div>
+    </div>
+    <div class="option" data-choice="bolder" onclick="toggleSelect(this)">
+      <div class="letter">B</div>
+      <div class="content">
+        <h3>Make it bolder</h3>
+        <p>Increase to 35% opacity or larger text</p>
+      </div>
+    </div>
+    <div class="option" data-choice="subtler" onclick="toggleSelect(this)">
+      <div class="letter">C</div>
+      <div class="content">
+        <h3>Make it subtler</h3>
+        <p>Decrease to 15-20% opacity or smaller text</p>
+      </div>
+    </div>
+  </div>
+</div>

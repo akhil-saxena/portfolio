@@ -532,10 +532,15 @@ export default function AdminPage() {
                 <p className="dev-label">Resume & Projects</p>
                 <div className="dev-header-row">
                   <h1 className="dev-title">Development</h1>
-                  <span className="resume-btn">
+                  <div
+                    className={`resume-btn admin-editable ${selection.type === "resume" ? "selected" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); setSelection({ type: "resume" } as Selection); }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="admin-edit-badge">✎</span>
                     <IconDownload size={16} />
                     Resume
-                  </span>
+                  </div>
                 </div>
               </header>
 

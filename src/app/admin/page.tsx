@@ -114,7 +114,10 @@ export default function AdminPage() {
         </nav>
 
         <div className="admin-sidebar-actions">
-          <button className="admin-action-btn admin-action-secondary" onClick={() => setShowPreview(true)}>
+          <button
+            className={`admin-action-btn admin-action-secondary ${showPreview ? "active" : ""}`}
+            onClick={() => setShowPreview(!showPreview)}
+          >
             <IconEye size={16} />
             <span className="admin-action-label">Preview</span>
           </button>
@@ -130,6 +133,13 @@ export default function AdminPage() {
 
       <main className="admin-content">
         <div className="admin-content-body">
+          {showPreview ? (
+            <PreviewPanel
+              photos={photos as unknown as Photo[]}
+              resume={{ experience, projects, skills, education }}
+              onClose={() => setShowPreview(false)}
+            />
+          ) : (<>
           {activeSection === "photos" && (
             <>
               <div className="admin-content-header">
@@ -277,20 +287,9 @@ export default function AdminPage() {
           {activeSection === "education" && (
             <EducationEditor entries={education} onChange={(e) => { setEducation(e); setHasUnsaved(true); }} />
           )}
+          </>)}
         </div>
       </main>
-
-      {showPreview && (
-        <PreviewPanel
-          photos={photos as unknown as Photo[]}
-          resume={{ experience, projects, skills, education }}
-          onClose={() => setShowPreview(false)}
-          onPhotoReorder={(reordered) => {
-            setPhotos(reordered as unknown as PortfolioPhoto[]);
-            setHasUnsaved(true);
-          }}
-        />
-      )}
     </div>
   );
 }

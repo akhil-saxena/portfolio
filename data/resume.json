@@ -64,7 +64,7 @@
         "Material 3"
       ],
       "icon": "/assets/momentum-icon.png",
-      "href": "https://github.com/akhil-saxena/momentum-android",
+      "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
       "badges": [
         {
           "label": "Play Store",
@@ -92,7 +92,7 @@
         "NLP"
       ],
       "icon": "/assets/timeshift-icon.png",
-      "href": "https://github.com/akhil-saxena/convert-timezone",
+      "href": "https://chromewebstore.google.com/detail/timeshift-global-timezone/bnghkolhekleahihlmpjniedgedjphel",
       "badges": [
         {
           "label": "Chrome Store",

@@ -375,6 +375,7 @@
   border: 2px solid #fff;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
   animation: pulse-dot 2s ease-in-out infinite;
+  z-index: 100;
 }
 
 [data-theme="dark"] .admin-action-primary.has-changes::after {

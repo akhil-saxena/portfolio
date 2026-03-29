@@ -126,6 +126,7 @@ export default function AdminPage() {
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
   const [categoryColumns, setCategoryColumns] = useState<Record<string, number>>({});
+  const [categoryOrders, setCategoryOrders] = useState<Record<string, string[]>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
 
@@ -172,8 +173,23 @@ export default function AdminPage() {
         (p) => p.category.toLowerCase() === photoCategory.toLowerCase()
       );
     }
+
+    // Apply per-category ordering if available
+    const catOrder = categoryOrders[photoCategory];
+    if (catOrder && catOrder.length > 0) {
+      const orderMap = new Map(catOrder.map((id, i) => [id, i]));
+      result = [...result].sort((a, b) => {
+        const aIdx = orderMap.get(a.id);
+        const bIdx = orderMap.get(b.id);
+        if (aIdx !== undefined && bIdx !== undefined) return aIdx - bIdx;
+        if (aIdx !== undefined) return -1;
+        if (bIdx !== undefined) return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
+      });
+    }
+
     return result;
-  }, [sortedPhotos, photoCategory, photoSearch]);
+  }, [sortedPhotos, photoCategory, photoSearch, categoryOrders]);
 
   const photoCounts = useMemo(() => {
     const c: Record<string, number> = { All: sortedPhotos.length };
@@ -496,14 +512,17 @@ export default function AdminPage() {
                   if (photo) setSelection({ type: "photo", photo });
                 }}
                 onReorder={(reordered) => {
-                  // Merge reordered subset back into full array
-                  const reorderedIds = new Set(reordered.map((p) => p.id));
-                  const untouched = photos.filter((p) => !reorderedIds.has(p.id));
-                  const merged = [
-                    ...reordered.map((p, i) => ({ ...p, order: i + 1 })),
-                    ...untouched.map((p, i) => ({ ...p, order: reordered.length + i + 1 })),
-                  ];
-                  setPhotos(merged as unknown as PortfolioPhoto[]);
+                  // Save per-category order
+                  setCategoryOrders(prev => ({
+                    ...prev,
+                    [photoCategory]: reordered.map((p) => p.id),
+                  }));
+
+                  // If "All" tab, also update the global order
+                  if (photoCategory === "All") {
+                    setPhotos(reordered.map((p, i) => ({ ...p, order: i + 1 })) as unknown as PortfolioPhoto[]);
+                  }
+
                   setHasUnsaved(true);
                 }}
               />

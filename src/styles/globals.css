@@ -1,3 +1,60 @@
+/* ===== Self-hosted fonts ===== */
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DM Mono';
+  src: url('/fonts/dm-mono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Libre Baskerville';
+  src: url('/fonts/libre-baskerville-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Libre Baskerville';
+  src: url('/fonts/libre-baskerville-400i.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Libre Baskerville';
+  src: url('/fonts/libre-baskerville-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ===== Reset ===== */
 *,
 *::before,
@@ -16,6 +73,7 @@
   --ink-body: #5c4f48;
   --ink-muted: #9a8d82;
   --ink-faint: #c4b9ac;
+  --ink-secondary: #6b5f55;
   --shadow: rgba(58, 46, 42, 0.08);
 
   --font-serif: 'Libre Baskerville', Georgia, serif;
@@ -34,6 +92,7 @@
   --ink-body: #b0b0b0;
   --ink-muted: #737373;
   --ink-faint: #404040;
+  --ink-secondary: #9a9a9a;
   --shadow: rgba(0, 0, 0, 0.4);
 }
 

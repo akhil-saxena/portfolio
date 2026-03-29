@@ -19,6 +19,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useInView } from "@/hooks/useInView";
 import ProjectCard from "@/components/ProjectCard";
 import DraggableMasonryGrid from "@/components/admin/DraggableMasonryGrid";
+import MasonryGrid from "@/components/MasonryGrid";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
@@ -122,6 +123,7 @@ export default function AdminPage() {
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [photoViewMode, setPhotoViewMode] = useState<"edit" | "preview">("edit");
 
   const devRef = useInView();
 
@@ -449,6 +451,20 @@ export default function AdminPage() {
                 <div className="photo-header-row">
                   <h1 className="photo-title">Photography</h1>
                   <span className="photo-count">{filteredPhotos.length} photos</span>
+                  <div className="admin-view-toggle">
+                    <button
+                      className={`admin-view-toggle-btn ${photoViewMode === "edit" ? "active" : ""}`}
+                      onClick={() => setPhotoViewMode("edit")}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className={`admin-view-toggle-btn ${photoViewMode === "preview" ? "active" : ""}`}
+                      onClick={() => setPhotoViewMode("preview")}
+                    >
+                      Preview
+                    </button>
+                  </div>
                 </div>
               </header>
 
@@ -465,18 +481,28 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
-              <DraggableMasonryGrid
-                photos={fullPhotos}
-                selectedId={selection.type === "photo" ? selection.photo.id : undefined}
-                onPhotoClick={(index) => {
-                  const photo = filteredPhotos[index];
-                  if (photo) setSelection({ type: "photo", photo });
-                }}
-                onReorder={(reordered) => {
-                  setPhotos(reordered as unknown as PortfolioPhoto[]);
-                  setHasUnsaved(true);
-                }}
-              />
+              {photoViewMode === "edit" ? (
+                <DraggableMasonryGrid
+                  photos={fullPhotos}
+                  selectedId={selection.type === "photo" ? selection.photo.id : undefined}
+                  onPhotoClick={(index) => {
+                    const photo = filteredPhotos[index];
+                    if (photo) setSelection({ type: "photo", photo });
+                  }}
+                  onReorder={(reordered) => {
+                    setPhotos(reordered as unknown as PortfolioPhoto[]);
+                    setHasUnsaved(true);
+                  }}
+                />
+              ) : (
+                <MasonryGrid
+                  photos={fullPhotos}
+                  onPhotoClick={(index) => {
+                    const photo = filteredPhotos[index];
+                    if (photo) setSelection({ type: "photo", photo });
+                  }}
+                />
+              )}
 
               {lightboxIndex !== null && (
                 <Lightbox
@@ -695,7 +721,7 @@ export default function AdminPage() {
                       <span key={i} aria-label={link.label}>{getIcon(link.icon, { size: 18 })}</span>
                     ))}
                   </div>
-                  <p className="hd-footer">&copy; {new Date().getFullYear()} Akhil Saxena</p>
+                  <p className="hd-footer">&copy; 2026 Akhil Saxena</p>
                 </footer>
               </div>
             </div>

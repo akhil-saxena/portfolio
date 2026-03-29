@@ -1504,3 +1504,34 @@
 .admin-props .admin-link-select {
   width: 100%;
 }
+
+/* ===== Photography view toggle ===== */
+.admin-view-toggle {
+  display: flex;
+  gap: 0;
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.admin-view-toggle-btn {
+  padding: 6px 14px;
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-view-toggle-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.admin-view-toggle-btn:not(.active):hover {
+  background: var(--bg);
+  color: var(--ink-body);
+}

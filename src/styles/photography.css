@@ -336,3 +336,9 @@
     columns: 2;
   }
 }
+
+@media (max-width: 320px) {
+  .masonry-grid {
+    columns: 1;
+  }
+}

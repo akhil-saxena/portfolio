@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
 import { IconImage, IconBriefcase, IconBook, IconCode, IconGraduationCap, IconEye, IconPlus } from "@/components/icons";
+import type { Photo } from "@/types";
 import "@/styles/admin.css";
 import PhotoGrid from "@/components/admin/PhotoGrid";
 import PhotoUploadZone from "@/components/admin/PhotoUploadZone";
@@ -281,9 +282,13 @@ export default function AdminPage() {
 
       {showPreview && (
         <PreviewPanel
-          photos={photos}
+          photos={photos as unknown as Photo[]}
           resume={{ experience, projects, skills, education }}
           onClose={() => setShowPreview(false)}
+          onPhotoReorder={(reordered) => {
+            setPhotos(reordered as unknown as PortfolioPhoto[]);
+            setHasUnsaved(true);
+          }}
         />
       )}
     </div>

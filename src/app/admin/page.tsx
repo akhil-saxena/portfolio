@@ -7,9 +7,36 @@ import "@/styles/admin.css";
 import PhotoGrid from "@/components/admin/PhotoGrid";
 import PhotoUploadZone from "@/components/admin/PhotoUploadZone";
 import PhotoEditModal from "@/components/admin/PhotoEditModal";
+import ExperienceEditor from "@/components/admin/ExperienceEditor";
+import ProjectEditor from "@/components/admin/ProjectEditor";
+import SkillsEditor from "@/components/admin/SkillsEditor";
+import EducationEditor from "@/components/admin/EducationEditor";
 import portfolioData from "../../../data/portfolio_images.json";
+import resumeData from "../../../data/resume.json";
 
 type Section = "photos" | "experience" | "projects" | "skills" | "education";
+
+interface ExperienceEntry {
+  id: string;
+  company: string;
+  role: string;
+  period: string;
+  location: string;
+  logo: string | null;
+  url: string | null;
+  bullets: string[];
+}
+
+interface EducationEntry {
+  id: string;
+  school: string;
+  logo: string | null;
+  degree: string;
+  cgpa: string;
+  period: string;
+  url: string | null;
+  leadership: string[];
+}
 
 interface PortfolioPhoto {
   id: string;
@@ -38,6 +65,10 @@ export default function AdminPage() {
   const [hasUnsaved, setHasUnsaved] = useState(false);
 
   const [photos, setPhotos] = useState<PortfolioPhoto[]>(initialPhotos);
+  const [experience, setExperience] = useState<ExperienceEntry[]>(resumeData.experience as ExperienceEntry[]);
+  const [projects, setProjects] = useState(resumeData.projects);
+  const [skills, setSkills] = useState(resumeData.skills);
+  const [education, setEducation] = useState<EducationEntry[]>(resumeData.education as EducationEntry[]);
   const [photoFilter, setPhotoFilter] = useState("All");
   const [showUpload, setShowUpload] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<PortfolioPhoto | null>(null);
@@ -151,21 +182,18 @@ export default function AdminPage() {
             </>
           )}
 
-          {activeSection !== "photos" && (
-            <div className="admin-content-header">
-              <div>
-                <p className="admin-content-label">Manage</p>
-                <h2 className="admin-content-title">
-                  {NAV_ITEMS.find((n) => n.id === activeSection)?.label}
-                </h2>
-              </div>
-            </div>
+          {activeSection === "experience" && (
+            <ExperienceEditor entries={experience} onChange={(e) => { setExperience(e); setHasUnsaved(true); }} />
           )}
-
-          {activeSection === "experience" && <p className="admin-placeholder">Experience editor coming soon...</p>}
-          {activeSection === "projects" && <p className="admin-placeholder">Project editor coming soon...</p>}
-          {activeSection === "skills" && <p className="admin-placeholder">Skills editor coming soon...</p>}
-          {activeSection === "education" && <p className="admin-placeholder">Education editor coming soon...</p>}
+          {activeSection === "projects" && (
+            <ProjectEditor projects={projects} onChange={(p) => { setProjects(p); setHasUnsaved(true); }} />
+          )}
+          {activeSection === "skills" && (
+            <SkillsEditor skills={skills} onChange={(s) => { setSkills(s); setHasUnsaved(true); }} />
+          )}
+          {activeSection === "education" && (
+            <EducationEditor entries={education} onChange={(e) => { setEducation(e); setHasUnsaved(true); }} />
+          )}
         </div>
       </main>
     </div>

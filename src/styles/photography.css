@@ -40,6 +40,14 @@
   gap: 1rem;
   margin-bottom: 2rem;
   flex-wrap: wrap;
+  position: sticky;
+  top: 70px; /* below the nav bar */
+  z-index: 40;
+  background: var(--bg);
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  transition: var(--transition-theme);
 }
 
 .search-bar {

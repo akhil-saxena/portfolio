@@ -2,7 +2,9 @@
 
 ## Overview
 
-Redesign the admin panel from a form-based editor to a WYSIWYG editor where the content area renders the actual website pages with inline editing. A right-side properties panel shows context-sensitive controls for the selected element. The admin IS the website, with edit affordances overlaid.
+Redesign the admin panel to a WYSIWYG layout where the content area renders the actual website pages and a right-side properties panel shows context-sensitive editing controls for the selected element.
+
+**Key principle:** The content area shows the real site layout (masonry grid, timeline, project cards). The editing controls — draggable bullets, date pickers, chip inputs, tag pills, expandable role cards — remain exactly as currently built, but are relocated into the right properties panel instead of being the main content area. Click an element on the "page" → the properties panel shows the same rich editor for it.
 
 ---
 
@@ -81,29 +83,16 @@ Shows different content based on what's selected:
 - Delete button
 
 **Experience role selected → Role properties:**
-- Company (input)
-- Role (input)
-- Period (month/year pickers + Present checkbox)
-- Location (input)
-- Company logo URL (input + preview)
-- Company URL (input)
-- Bullets list (editable, draggable, add/remove)
-- Delete role button
+Renders the same expanded RoleCard from the current ExperienceEditor — company, role, period (month/year pickers + Present checkbox), location, logo URL, company URL, draggable bullet list with inline editing, add bullet, delete role. Same component, just rendered in the properties panel instead of the main area.
 
 **Project selected → Project properties:**
-- Title, label, description, tech chips, icon URL, href
-- Store links (add/remove with icon picker)
-- Delete project button
+Renders the same expanded project form from the current ProjectEditor — title, label (text + icon), description textarea, tech chips (Enter to add, × to remove), icon URL, href, store links with icon picker. Same component.
 
 **Skill group selected → Skill properties:**
-- Category name (input)
-- Icon (picker)
-- Skill tags (add/remove)
-- Delete group button
+Renders the same SkillsEditor group — category name input, icon picker, tag pills with add/remove. Same component.
 
 **Education selected → Education properties:**
-- School, degree, CGPA, period, logo, URL
-- Leadership badges (add/remove)
+Renders the same EducationEditor form — school, degree, CGPA, period, logo URL, leadership badge pills. Same component.
 
 ---
 
@@ -279,16 +268,18 @@ Each panel variant uses the same form components (inputs, selects, chip inputs, 
 - `DraggableMasonry` — MasonryGrid with drag-and-drop photo reordering
 - `DraggableTimeline` — Timeline with drag-and-drop role reordering
 
-### Removed Components (replaced by WYSIWYG)
+### Removed Components
 - `AdminSidebar` (replaced by top bar)
 - `PreviewPanel` (no longer needed — the editor IS the preview)
-- `PhotoGrid` (replaced by DraggableMasonry)
+- `PhotoGrid` (replaced by DraggableMasonry using real MasonryGrid)
 - `PhotoEditModal` (replaced by properties panel)
-- `ExperienceEditor` (replaced by inline editing + properties panel)
-- `ProjectEditor` (replaced by properties panel)
-- `SkillsEditor` (replaced by properties panel)
-- `EducationEditor` (replaced by properties panel)
-- `PhotoUploadZone` (moved into properties panel as a section)
+
+### Relocated Components (same code, rendered in properties panel)
+- `ExperienceEditor` → role card body renders in properties panel when a role is selected
+- `ProjectEditor` → project form renders in properties panel when a project is selected
+- `SkillsEditor` → skill group form renders in properties panel when a group is selected
+- `EducationEditor` → education form renders in properties panel when education is selected
+- `PhotoUploadZone` → renders in properties panel when "Upload" is triggered
 
 ---
 

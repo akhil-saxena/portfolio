@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import Nav from "@/components/Nav";
+import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import SearchBar from "@/components/SearchBar";
 import FilterTabs from "@/components/FilterTabs";
@@ -49,6 +50,7 @@ export default function PhotographyPage() {
   return (
     <>
       <Nav title="" backHref="/" />
+      <ThemeToggle />
       <main className="photo-page" id="main">
         <header className="photo-header">
           <p className="photo-label">Portfolio</p>

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import ThemeToggle from "./ThemeToggle";
 
 interface NavProps {
   title: string;
@@ -13,9 +12,8 @@ export default function Nav({ title, backHref = "/" }: NavProps) {
         <Link href={backHref} className="nav-back" aria-label="Go back">
           ←
         </Link>
-        <span className="nav-title">{title}</span>
+        {title && <span className="nav-title">{title}</span>}
       </div>
-      <ThemeToggle />
     </nav>
   );
 }

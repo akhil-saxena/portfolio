@@ -6,8 +6,11 @@ const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const VARIANTS = [
   { suffix: "", maxWidth: 2000, quality: 85 },
+  { suffix: "-lg", maxWidth: 1200, quality: 85 },
   { suffix: "-md", maxWidth: 800, quality: 85 },
+  { suffix: "-sm", maxWidth: 400, quality: 80 },
 ];
+const URL_KEY_MAP = { "": "original", "-lg": "large", "-md": "medium", "-sm": "small" };
 const THUMB_WIDTH = 40;
 const THUMB_QUALITY = 60;
 
@@ -91,7 +94,7 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
   const metadata = await sharp(imageBuffer).metadata();
   const sourceWidth = metadata.width || 2000;
 
-  const urls = { original: "", medium: "", thumb: "" };
+  const urls = { original: "", large: "", medium: "", small: "", thumb: "" };
 
   // Process and upload variants with watermark
   for (const variant of VARIANTS) {
@@ -115,7 +118,7 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
       })
     );
 
-    const urlKey = variant.suffix === "" ? "original" : "medium";
+    const urlKey = URL_KEY_MAP[variant.suffix];
     urls[urlKey] = `${publicUrl}/${r2Key}`;
   }
 
@@ -156,6 +159,10 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
       focalLength: null,
     },
     urls,
+    dimensions: {
+      width: metadata.width || 2000,
+      height: metadata.height || 1333,
+    },
   };
 }
 

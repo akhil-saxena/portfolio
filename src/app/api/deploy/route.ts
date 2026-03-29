@@ -107,8 +107,8 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: githubHeaders,
             body: JSON.stringify({
-              content: btoa(unescape(encodeURIComponent(content))),
-              encoding: "base64",
+              content,
+              encoding: "utf-8",
             }),
           }
         );
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: githubHeaders,
         body: JSON.stringify({
-          base_tree: baseSha,
+          base_tree: currentSha,
           tree: blobEntries,
         }),
       }
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           message,
           tree: tree.sha,
-          parents: [baseSha],
+          parents: [currentSha],
         }),
       }
     );

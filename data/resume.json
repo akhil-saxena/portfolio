@@ -68,7 +68,7 @@
       "badges": [
         {
           "label": "Play Store",
-          "href": "#",
+          "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
           "icon": "play-store"
         },
         {
@@ -96,7 +96,7 @@
       "badges": [
         {
           "label": "Chrome Store",
-          "href": "#",
+          "href": "https://chromewebstore.google.com/detail/timeshift-global-timezone/bnghkolhekleahihlmpjniedgedjphel",
           "icon": "chrome-store"
         },
         {

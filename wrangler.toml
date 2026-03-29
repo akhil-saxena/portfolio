@@ -6,3 +6,7 @@ pages_build_output_dir = ".vercel/output/static"
 [[analytics_engine_datasets]]
 binding = "PHOTO_ANALYTICS"
 dataset = "photo_views"
+
+[[r2_buckets]]
+binding = "PORTFOLIO_BUCKET"
+bucket_name = "portfolio-photos"

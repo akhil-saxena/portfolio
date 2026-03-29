@@ -31,12 +31,13 @@ export default function MasonryGrid({ photos, columns, onPhotoClick }: MasonryGr
           aria-label={`View ${photo.title}`}
         >
           <Image
-            src={photo.urls.medium}
+            src={index < 8 ? photo.urls.medium : (photo.urls.small || photo.urls.medium)}
             width={800}
             height={600}
-            sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 480px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
             alt={photo.title}
-            loading="lazy"
+            loading={index < 4 ? "eager" : "lazy"}
+            priority={index < 4}
             className="masonry-img"
             style={{ width: "100%", height: "auto", backgroundImage: `url(${photo.urls.thumb})` }}
             onLoad={() => handleLoad(photo.id)}

@@ -329,6 +329,6 @@
 
 @media (max-width: 480px) {
   .masonry-grid {
-    columns: 1;
+    columns: 2;
   }
 }

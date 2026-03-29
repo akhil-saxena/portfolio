@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import ThemeToggle from "@/components/ThemeToggle";
-import { IconImage, IconBriefcase, IconBook, IconCode, IconGraduationCap, IconEye, IconUpload, IconPlus } from "@/components/icons";
+import { IconImage, IconBriefcase, IconBook, IconCode, IconGraduationCap, IconEye, IconPlus } from "@/components/icons";
 import "@/styles/admin.css";
 import PhotoGrid from "@/components/admin/PhotoGrid";
 import PhotoUploadZone from "@/components/admin/PhotoUploadZone";
@@ -11,6 +11,8 @@ import ExperienceEditor from "@/components/admin/ExperienceEditor";
 import ProjectEditor from "@/components/admin/ProjectEditor";
 import SkillsEditor from "@/components/admin/SkillsEditor";
 import EducationEditor from "@/components/admin/EducationEditor";
+import PreviewPanel from "@/components/admin/PreviewPanel";
+import DeployButton from "@/components/admin/DeployButton";
 import portfolioData from "../../../data/portfolio_images.json";
 import resumeData from "../../../data/resume.json";
 
@@ -73,6 +75,8 @@ export default function AdminPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<PortfolioPhoto | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [isDispatching, setIsDispatching] = useState(false);
 
   const categories = ["All", ...new Set(photos.map((p) => p.category.charAt(0).toUpperCase() + p.category.slice(1)))];
   const photoCounts: Record<string, number> = { All: photos.length };
@@ -104,14 +108,17 @@ export default function AdminPage() {
         </nav>
 
         <div className="admin-sidebar-actions">
-          <button className="admin-action-btn admin-action-secondary">
+          <button className="admin-action-btn admin-action-secondary" onClick={() => setShowPreview(true)}>
             <IconEye size={16} />
             Preview
           </button>
-          <button className={`admin-action-btn admin-action-primary ${hasUnsaved ? "has-changes" : ""}`}>
-            <IconUpload size={14} />
-            Save & Deploy
-          </button>
+          <DeployButton
+            hasUnsaved={hasUnsaved}
+            photos={photos}
+            resume={{ experience, projects, skills, education }}
+            onDeploySuccess={() => setHasUnsaved(false)}
+            disabled={isDispatching}
+          />
         </div>
       </aside>
 
@@ -134,10 +141,50 @@ export default function AdminPage() {
                 <PhotoUploadZone
                   onUpload={async (file, metadata) => {
                     setIsUploading(true);
-                    // TODO: Call /api/upload then /api/dispatch
-                    console.log("Upload:", file.name, metadata);
-                    setIsUploading(false);
-                    setShowUpload(false);
+                    try {
+                      // Step 1: Upload to R2 temp
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
+                      if (!uploadRes.ok) throw new Error("Upload failed");
+                      const { tempKey } = await uploadRes.json() as { tempKey: string };
+
+                      // Step 2: Dispatch GitHub Action
+                      setIsDispatching(true);
+                      const dispatchRes = await fetch("/api/dispatch", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          tempKey,
+                          title: metadata.title,
+                          category: metadata.category,
+                          tags: metadata.tags,
+                        }),
+                      });
+                      if (!dispatchRes.ok) throw new Error("Dispatch failed");
+                      const { runId } = await dispatchRes.json() as { runId?: string };
+
+                      // Step 3: Poll for completion
+                      if (runId) {
+                        let attempts = 0;
+                        while (attempts < 60) {
+                          await new Promise((r) => setTimeout(r, 5000));
+                          attempts++;
+                          // Note: polling GitHub API directly from browser needs CORS proxy
+                          // For now, just wait and refresh data
+                        }
+                      }
+
+                      // Refresh data after processing
+                      // TODO: fetch from /api/data when deployed
+                      alert("Photo uploaded! It will appear after the GitHub Action completes and the site rebuilds.");
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : "Upload failed");
+                    } finally {
+                      setIsUploading(false);
+                      setIsDispatching(false);
+                      setShowUpload(false);
+                    }
                   }}
                   isUploading={isUploading}
                 />
@@ -196,6 +243,14 @@ export default function AdminPage() {
           )}
         </div>
       </main>
+
+      {showPreview && (
+        <PreviewPanel
+          photos={photos}
+          resume={{ experience, projects, skills, education }}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
     </div>
   );
 }

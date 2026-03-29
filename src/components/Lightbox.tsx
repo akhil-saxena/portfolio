@@ -17,6 +17,11 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
   const [loaded, setLoaded] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
+  // Merge swipeable ref with our dialog ref
+  const mergeRefs = useCallback((node: HTMLDivElement | null) => {
+    (dialogRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+  }, []);
+
   const goNext = useCallback(() => {
     onNavigate((currentIndex + 1) % photos.length);
   }, [currentIndex, photos.length, onNavigate]);
@@ -103,11 +108,15 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
   return (
     <div
       {...swipeHandlers}
+      ref={(node: HTMLDivElement | null) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (swipeHandlers.ref as any)(node);
+        mergeRefs(node);
+      }}
       className="lightbox"
       role="dialog"
       aria-modal="true"
       aria-label={`Photo: ${photo.title}`}
-      ref={dialogRef}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}

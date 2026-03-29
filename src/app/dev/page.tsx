@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
+import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
 import ProjectCard from "@/components/ProjectCard";
-import ThemeToggle from "@/components/ThemeToggle";
 import { useInView } from "@/hooks/useInView";
 import { IconDownload, getIcon } from "@/components/icons";
 import resumeData from "../../../data/resume.json";
@@ -16,30 +15,19 @@ export default function DevPage() {
 
   return (
     <>
-      <div className="page-sticky-bar">
-        <div className="page-sticky-row-1">
-          <div className="page-sticky-left">
-            <Link href="/" className="page-back" aria-label="Go back">←</Link>
-            <h1 className="page-sticky-title">Development</h1>
-            <span className="page-sticky-subtitle">Resume & Projects</span>
-          </div>
-          <div className="page-sticky-right">
-            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="page-sticky-btn">
-              <IconDownload size={14} />
+      <Nav title="" backHref="/" />
+      <main className="dev-page" id="main" ref={ref}>
+        <header className="dev-header reveal">
+          <p className="dev-label">Resume & Projects</p>
+          <div className="dev-header-row">
+            <h1 className="dev-title">Development</h1>
+            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-btn">
+              <IconDownload size={16} />
               Resume
             </a>
-            <ThemeToggle />
           </div>
-        </div>
-        <div className="page-sticky-row-2">
-          <a href="#experience" className="page-anchor active">Experience</a>
-          <a href="#skills" className="page-anchor">Skills</a>
-          <a href="#education" className="page-anchor">Education</a>
-          <a href="#projects" className="page-anchor">Projects</a>
-        </div>
-      </div>
+        </header>
 
-      <main className="dev-page" id="main" ref={ref}>
         <section id="experience">
           <h2 className="section-title reveal">Experience</h2>
           <Timeline entries={resumeData.experience} />

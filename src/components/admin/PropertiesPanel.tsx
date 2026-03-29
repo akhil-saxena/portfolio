@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { IconPlus } from "../icons";
 import PhotoUploadZone from "./PhotoUploadZone";
 
@@ -10,6 +11,14 @@ interface PortfolioPhoto {
   tags: string[];
   order: number;
   urls: { original?: string; medium: string; thumb: string };
+  exif?: {
+    camera: string | null;
+    lens: string | null;
+    aperture: string | null;
+    shutter: string | null;
+    iso: number | null;
+    focalLength: string | null;
+  };
   [key: string]: unknown;
 }
 
@@ -59,13 +68,24 @@ interface EducationEntry {
   leadership: string[];
 }
 
+interface SocialLink {
+  icon: string;
+  url: string;
+  label: string;
+}
+
 export type Selection =
   | { type: "none"; tab: "home" | "photography" | "dev" }
   | { type: "photo"; photo: PortfolioPhoto }
   | { type: "role"; entry: ExperienceEntry; entryIndex: number }
   | { type: "project"; project: ProjectEntry; projectIndex: number }
   | { type: "skillGroup"; group: SkillGroup; groupIndex: number }
-  | { type: "education"; entry: EducationEntry; entryIndex: number };
+  | { type: "education"; entry: EducationEntry; entryIndex: number }
+  | { type: "homeTitle" }
+  | { type: "homeSubtitle" }
+  | { type: "homeIntro" }
+  | { type: "homeGallery"; photoIndex: number }
+  | { type: "homeSocial" };
 
 interface PropertiesPanelProps {
   selection: Selection;
@@ -84,6 +104,13 @@ interface PropertiesPanelProps {
   onAddProject: () => void;
   onAddSkillGroup: () => void;
   onDeselect: () => void;
+  onMovePhotoUp?: (id: string) => void;
+  onMovePhotoDown?: (id: string) => void;
+  homeData?: { title: string; subtitle: string; intro: string; peekIds: string[]; socialLinks: SocialLink[] };
+  onUpdateHome?: (field: string, value: string) => void;
+  onUpdateHomePeekId?: (index: number, newId: string) => void;
+  onUpdateSocialLinks?: (links: SocialLink[]) => void;
+  availablePhotos?: { id: string; title: string }[];
 }
 
 const CATEGORIES = ["abstract", "architecture", "nature", "portraits", "street", "wildlife", "product"];
@@ -94,6 +121,17 @@ const STORE_ICONS = [
   { id: "chrome-store", label: "Chrome Store" },
   { id: "apple", label: "App Store" },
   { id: "windows", label: "Windows Store" },
+];
+
+const SOCIAL_ICONS = [
+  { id: "github", label: "GitHub" },
+  { id: "linkedin", label: "LinkedIn" },
+  { id: "mail", label: "Email" },
+  { id: "twitter", label: "Twitter/X" },
+  { id: "instagram", label: "Instagram" },
+  { id: "youtube", label: "YouTube" },
+  { id: "dribbble", label: "Dribbble" },
+  { id: "behance", label: "Behance" },
 ];
 
 export default function PropertiesPanel({
@@ -113,7 +151,15 @@ export default function PropertiesPanel({
   onAddProject,
   onAddSkillGroup,
   onDeselect,
+  onMovePhotoUp,
+  onMovePhotoDown,
+  homeData,
+  onUpdateHome,
+  onUpdateHomePeekId,
+  onUpdateSocialLinks,
+  availablePhotos,
 }: PropertiesPanelProps) {
+  const [showExif, setShowExif] = useState(false);
 
   // Nothing selected — show page actions
   if (selection.type === "none") {
@@ -149,7 +195,7 @@ export default function PropertiesPanel({
             </>
           )}
           {selection.tab === "home" && (
-            <p className="admin-props-hint">Homepage content is derived from your photos and site settings.</p>
+            <p className="admin-props-hint">Click any element on the homepage to edit it.</p>
           )}
         </div>
       </div>
@@ -191,6 +237,49 @@ export default function PropertiesPanel({
               placeholder="comma-separated"
             />
           </label>
+
+          <div className="admin-props-section">
+            <h4 className="admin-props-section-title">Order</h4>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="admin-btn admin-btn-secondary" onClick={() => onMovePhotoUp?.(photo.id)} style={{ flex: 1 }}>&#8593; Move Up</button>
+              <button className="admin-btn admin-btn-secondary" onClick={() => onMovePhotoDown?.(photo.id)} style={{ flex: 1 }}>&#8595; Move Down</button>
+            </div>
+          </div>
+
+          <div className="admin-props-section">
+            <button className="admin-add-pill" onClick={() => setShowExif(!showExif)} style={{ marginBottom: "8px" }}>
+              {showExif ? "Hide" : "Edit"} EXIF Data
+            </button>
+            {showExif && (
+              <div className="admin-exif-grid">
+                <label className="admin-field">
+                  <span className="admin-field-label">Camera</span>
+                  <input type="text" value={photo.exif?.camera || ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, camera: e.target.value || null } })} className="admin-input" />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field-label">Lens</span>
+                  <input type="text" value={photo.exif?.lens || ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, lens: e.target.value || null } })} className="admin-input" />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field-label">Aperture</span>
+                  <input type="text" value={photo.exif?.aperture || ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, aperture: e.target.value || null } })} className="admin-input" />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field-label">Shutter</span>
+                  <input type="text" value={photo.exif?.shutter || ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, shutter: e.target.value || null } })} className="admin-input" />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field-label">ISO</span>
+                  <input type="text" value={photo.exif?.iso ?? ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, iso: e.target.value ? Number(e.target.value) : null } })} className="admin-input" />
+                </label>
+                <label className="admin-field">
+                  <span className="admin-field-label">Focal Length</span>
+                  <input type="text" value={photo.exif?.focalLength || ""} onChange={(e) => onUpdatePhoto(photo.id, { exif: { ...{ camera: null, lens: null, aperture: null, shutter: null, iso: null, focalLength: null }, ...photo.exif, focalLength: e.target.value || null } })} className="admin-input" />
+                </label>
+              </div>
+            )}
+          </div>
+
           <button className="admin-delete-link" onClick={() => { if (confirm("Delete this photo?")) onDeletePhoto(photo.id); }}>
             Delete photo
           </button>
@@ -430,6 +519,136 @@ export default function PropertiesPanel({
               }} />
             </div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Home Title
+  if (selection.type === "homeTitle" && homeData && onUpdateHome) {
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Site Title</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Name</span>
+            <input type="text" value={homeData.title} onChange={(e) => onUpdateHome("title", e.target.value)} className="admin-input" />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Home Subtitle
+  if (selection.type === "homeSubtitle" && homeData && onUpdateHome) {
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Tagline</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Subtitle</span>
+            <input type="text" value={homeData.subtitle} onChange={(e) => onUpdateHome("subtitle", e.target.value)} className="admin-input" />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Home Intro
+  if (selection.type === "homeIntro" && homeData && onUpdateHome) {
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Intro Text</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Introduction</span>
+            <textarea value={homeData.intro} onChange={(e) => onUpdateHome("intro", e.target.value)} className="admin-input admin-textarea" rows={3} />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Home Gallery photo picker
+  if (selection.type === "homeGallery" && homeData && onUpdateHomePeekId && availablePhotos) {
+    const idx = selection.photoIndex;
+    const currentId = homeData.peekIds[idx] || "";
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Gallery Photo {idx + 1}</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Photo</span>
+            <select value={currentId} onChange={(e) => onUpdateHomePeekId(idx, e.target.value)} className="admin-input">
+              {availablePhotos.map((p) => (
+                <option key={p.id} value={p.id}>{p.title} ({p.id})</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Home Social Links
+  if (selection.type === "homeSocial" && homeData && onUpdateSocialLinks) {
+    const links = homeData.socialLinks;
+    const updateLink = (index: number, updates: Partial<SocialLink>) => {
+      const updated = links.map((l, i) => i === index ? { ...l, ...updates } : l);
+      onUpdateSocialLinks(updated);
+    };
+    const removeLink = (index: number) => {
+      onUpdateSocialLinks(links.filter((_, i) => i !== index));
+    };
+    const addLink = () => {
+      onUpdateSocialLinks([...links, { icon: "github", url: "", label: "GitHub" }]);
+    };
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Social Links</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body admin-props-scroll">
+          {links.map((link, i) => (
+            <div key={i} style={{ padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
+              <label className="admin-field" style={{ marginBottom: "6px" }}>
+                <span className="admin-field-label">Icon</span>
+                <select value={link.icon} onChange={(e) => {
+                  const chosen = SOCIAL_ICONS.find(s => s.id === e.target.value);
+                  updateLink(i, { icon: e.target.value, label: chosen?.label || link.label });
+                }} className="admin-input">
+                  {SOCIAL_ICONS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+              </label>
+              <label className="admin-field" style={{ marginBottom: "6px" }}>
+                <span className="admin-field-label">URL</span>
+                <input type="text" value={link.url} onChange={(e) => updateLink(i, { url: e.target.value })} className="admin-input" placeholder="https://..." />
+              </label>
+              <label className="admin-field">
+                <span className="admin-field-label">Label</span>
+                <input type="text" value={link.label} onChange={(e) => updateLink(i, { label: e.target.value })} className="admin-input" />
+              </label>
+              <button className="admin-delete-link" onClick={() => removeLink(i)} style={{ marginTop: "4px" }}>
+                Remove
+              </button>
+            </div>
+          ))}
+          <button className="admin-add-pill" onClick={addLink}>
+            + Add Link
+          </button>
         </div>
       </div>
     );

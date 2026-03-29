@@ -117,6 +117,10 @@ export default function AdminPage() {
     { icon: "linkedin", url: "https://www.linkedin.com/in/akhil-saxena", label: "LinkedIn" },
     { icon: "mail", url: "mailto:saxena.akhil42@gmail.com", label: "Email" },
   ]);
+  const [homeCtas, setHomeCtas] = useState([
+    { text: "View Photography →", link: "/photography", style: "primary" as const },
+    { text: "View Resume", link: "/dev", style: "secondary" as const },
+  ]);
 
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
@@ -681,8 +685,16 @@ export default function AdminPage() {
               </DndContext>
 
               <div className="hd-ctas">
-                <span className="hd-cta hd-cta-primary" style={{ cursor: "default" }}>View Photography &#8594;</span>
-                <span className="hd-cta hd-cta-secondary" style={{ cursor: "default" }}>View Resume</span>
+                {homeCtas.map((cta, i) => (
+                  <div
+                    key={i}
+                    className={`admin-editable ${selection.type === "homeCta" && (selection as { type: "homeCta"; ctaIndex: number }).ctaIndex === i ? "selected" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeCta", ctaIndex: i } as Selection); }}
+                  >
+                    <span className="admin-edit-badge">✎</span>
+                    <span className={`hd-cta hd-cta-${cta.style}`} style={{ cursor: "pointer" }}>{cta.text}</span>
+                  </div>
+                ))}
               </div>
 
               <div
@@ -727,6 +739,11 @@ export default function AdminPage() {
           onUpdateHome={handleUpdateHome}
           onUpdateHomePeekId={handleUpdateHomePeekId}
           onUpdateSocialLinks={handleUpdateSocialLinks}
+          homeCtas={homeCtas}
+          onUpdateHomeCta={(index, updates) => {
+            setHomeCtas(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
+            setHasUnsaved(true);
+          }}
           availablePhotos={availablePhotos}
         />
       </div>

@@ -101,6 +101,7 @@ export type Selection =
   | { type: "homeIntro" }
   | { type: "homeGallery"; photoIndex: number }
   | { type: "homeSocial" }
+  | { type: "homeCta"; ctaIndex: number }
   | { type: "resume" };
 
 interface PropertiesPanelProps {
@@ -126,6 +127,8 @@ interface PropertiesPanelProps {
   onUpdateHome?: (field: string, value: string) => void;
   onUpdateHomePeekId?: (index: number, newId: string) => void;
   onUpdateSocialLinks?: (links: SocialLink[]) => void;
+  homeCtas?: { text: string; link: string; style: "primary" | "secondary" }[];
+  onUpdateHomeCta?: (index: number, updates: { text?: string; link?: string; style?: "primary" | "secondary" }) => void;
   availablePhotos?: { id: string; title: string }[];
 }
 
@@ -197,6 +200,8 @@ export default function PropertiesPanel({
   onUpdateHome,
   onUpdateHomePeekId,
   onUpdateSocialLinks,
+  homeCtas,
+  onUpdateHomeCta,
   availablePhotos,
 }: PropertiesPanelProps) {
   const [showExif, setShowExif] = useState(false);
@@ -723,6 +728,37 @@ export default function PropertiesPanel({
           <button className="admin-add-pill" onClick={addLink}>
             + Add Link
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Home CTA button
+  if (selection.type === "homeCta" && homeCtas && onUpdateHomeCta) {
+    const cta = homeCtas[selection.ctaIndex];
+    if (!cta) return null;
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Button</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Text</span>
+            <input type="text" value={cta.text} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { text: e.target.value })} className="admin-input" />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Link</span>
+            <input type="text" value={cta.link} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { link: e.target.value })} className="admin-input" placeholder="/photography" />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Style</span>
+            <select value={cta.style} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { style: e.target.value as "primary" | "secondary" })} className="admin-input">
+              <option value="primary">Primary (filled)</option>
+              <option value="secondary">Secondary (outlined)</option>
+            </select>
+          </label>
         </div>
       </div>
     );

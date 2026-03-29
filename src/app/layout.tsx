@@ -50,6 +50,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="preload" as="font" href="/fonts/dm-sans-400.woff2" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev" />
         <meta name="theme-color" content="#f5f0e8" media="(prefers-color-scheme: light)" />

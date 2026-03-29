@@ -50,7 +50,7 @@ export default function PhotographyPage() {
       <PageNav backHref="/" />
       <main className="photo-page" id="main">
         <div ref={spacerRef} />
-        <h1 ref={titleRef} className="page-scroll-title">Photography</h1>
+        <h1 ref={titleRef} className="page-scroll-title">Portfolio</h1>
 
         <div className="photo-toolbar">
           <FilterTabs

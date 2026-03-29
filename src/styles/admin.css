@@ -256,6 +256,7 @@
   cursor: pointer;
   transition: outline 0.15s;
   border-radius: 4px;
+  overflow: visible;
 }
 
 .admin-editable:hover {
@@ -270,21 +271,22 @@
 
 .admin-editable .admin-edit-badge {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 28px;
-  height: 28px;
+  top: -10px;
+  right: -10px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--ink);
   color: var(--bg);
-  border: none;
+  border: 2px solid var(--bg);
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   cursor: pointer;
-  z-index: 5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
 }
 
 .admin-editable:hover .admin-edit-badge {

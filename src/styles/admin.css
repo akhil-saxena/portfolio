@@ -1444,23 +1444,36 @@
 }
 
 .admin-photo-dragging {
-  opacity: 0.3 !important;
-}
-
-.admin-photo-placeholder {
-  break-inside: avoid;
-  margin-bottom: 1rem;
+  opacity: 0.25 !important;
+  filter: grayscale(1);
 }
 
 .admin-photo-drop-target {
   outline: 3px solid var(--ink) !important;
-  outline-offset: 0px;
+  outline-offset: -3px;
   border-radius: 8px;
-  box-shadow: 0 0 0 6px rgba(58, 46, 42, 0.15);
+  position: relative;
 }
 
-[data-theme="dark"] .admin-photo-drop-target {
-  box-shadow: 0 0 0 6px rgba(238, 238, 238, 0.1);
+.admin-photo-drop-target::after {
+  content: "Drop here";
+  position: absolute;
+  inset: 0;
+  background: rgba(58, 46, 42, 0.7);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  border-radius: 8px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .admin-photo-drop-target::after {
+  background: rgba(238, 238, 238, 0.3);
 }
 
 /* Layout column selector */

@@ -13,6 +13,7 @@ interface DeployButtonProps {
     education: unknown[];
   };
   siteConfig?: Record<string, unknown>;
+  homeConfig?: Record<string, unknown>;
   onDeploySuccess: () => void;
   disabled?: boolean;
 }
@@ -29,7 +30,7 @@ function timestamp() {
   return new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, onDeploySuccess, disabled }: DeployButtonProps) {
+export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, homeConfig, onDeploySuccess, disabled }: DeployButtonProps) {
   const [status, setStatus] = useState<DeployStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -55,6 +56,7 @@ export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, o
             "data/portfolio_images.json": JSON.stringify(photos, null, 2),
             "data/resume.json": JSON.stringify(resume, null, 2),
             ...(siteConfig ? { "data/site_config.json": JSON.stringify(siteConfig, null, 2) } : {}),
+            ...(homeConfig ? { "data/home_config.json": JSON.stringify(homeConfig, null, 2) } : {}),
           },
           baseSha: "latest",
           message: "chore: update portfolio data via admin",

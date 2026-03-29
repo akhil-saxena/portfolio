@@ -78,7 +78,7 @@ const initialPhotos: PortfolioPhoto[] = [...(portfolioData as PortfolioPhoto[])]
   (a, b) => (a.order ?? 0) - (b.order ?? 0)
 );
 
-function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
+function SortableGalleryItem({ id, photo, isSelected, objectPosition, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; objectPosition?: string; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -90,7 +90,7 @@ function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; p
       className={`hd-gallery-item admin-editable ${isSelected ? "selected" : ""}`}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
-      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
+      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover", objectPosition: objectPosition || "center" }} />
     </div>
   );
 }
@@ -113,6 +113,7 @@ export default function AdminPage() {
   const [homeSubtitle, setHomeSubtitle] = useState("Interfaces & Imagery");
   const [homeIntro, setHomeIntro] = useState("Building for the web. Photographing everything else.");
   const [homePeekIds, setHomePeekIds] = useState(["abstract-intothemist", "architecture-singapore", "nature-sunrisepoint", "street-tunnelvision", "wildlife-kingfisher", "architecture-eiffeljpg"]);
+  const [homePeekPositions, setHomePeekPositions] = useState<Record<string, string>>({});
   const [socialLinks, setSocialLinks] = useState([
     { icon: "github", url: "https://github.com/akhil-saxena", label: "GitHub" },
     { icon: "linkedin", url: "https://www.linkedin.com/in/akhil-saxena", label: "LinkedIn" },
@@ -732,6 +733,7 @@ export default function AdminPage() {
                           key={id}
                           id={id}
                           photo={photo}
+                          objectPosition={homePeekPositions[id] || "center"}
                           isSelected={selection.type === "homeGallery" && (selection as { type: "homeGallery"; photoIndex: number }).photoIndex === i}
                           onClick={() => setSelection({ type: "homeGallery", photoIndex: i })}
                         />
@@ -804,6 +806,11 @@ export default function AdminPage() {
           availablePhotos={availablePhotos}
           onRemoveHomePeekId={handleRemoveHomePeekId}
           onAddHomePeekId={handleAddHomePeekId}
+          homePeekPositions={homePeekPositions}
+          onUpdateHomePeekPosition={(id, position) => {
+            setHomePeekPositions(prev => ({ ...prev, [id]: position }));
+            setHasUnsaved(true);
+          }}
         />
       </div>
     </div>

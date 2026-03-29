@@ -135,6 +135,9 @@
   font-size: 0.875rem;
   color: var(--ink);
   margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .skills-tags {
@@ -282,6 +285,9 @@
   text-transform: uppercase;
   color: var(--ink-muted);
   margin-bottom: 0.125rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
 }
 
 .pc-name {
@@ -371,6 +377,54 @@
 .resume-btn:hover {
   border-color: var(--ink-muted);
   box-shadow: 0 2px 8px var(--shadow);
+}
+
+.timeline-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.timeline-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.timeline-company a {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.timeline-company a:hover {
+  opacity: 0.7;
+}
+
+.education-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.education-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.education-school a {
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.education-school a:hover {
+  opacity: 0.7;
 }
 
 @media (max-width: 768px) {

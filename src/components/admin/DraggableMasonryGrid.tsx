@@ -39,10 +39,14 @@ function SortableMasonryItem({
     id: photo.id,
   });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.4 : 1,
+    height: isDragging ? 0 : undefined,
+    overflow: isDragging ? "hidden" as const : undefined,
+    margin: isDragging ? 0 : undefined,
+    padding: isDragging ? 0 : undefined,
   };
 
   return (

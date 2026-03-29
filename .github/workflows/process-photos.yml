@@ -5,6 +5,21 @@ on:
     branches: [main]
     paths:
       - 'new-photos/**'
+  workflow_dispatch:
+    inputs:
+      temp_key:
+        description: 'R2 temp path of uploaded image'
+        required: true
+      title:
+        description: 'Photo title'
+        required: true
+      category:
+        description: 'Photo category'
+        required: true
+      tags:
+        description: 'Comma-separated tags'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -22,7 +37,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check for new images
+      - name: Check for new images (push trigger)
+        if: github.event_name == 'push'
         id: check
         run: |
           IMAGES=$(find new-photos -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.tiff" \) | head -1)
@@ -32,8 +48,8 @@ jobs:
             echo "found=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Process images
-        if: steps.check.outputs.found == 'true'
+      - name: Process images (push trigger)
+        if: github.event_name == 'push' && steps.check.outputs.found == 'true'
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
@@ -42,8 +58,21 @@ jobs:
           R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
         run: node scripts/action-process.js
 
+      - name: Process from admin upload (dispatch trigger)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_PUBLIC_URL: ${{ secrets.R2_PUBLIC_URL }}
+          INPUT_TEMP_KEY: ${{ inputs.temp_key }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_CATEGORY: ${{ inputs.category }}
+          INPUT_TAGS: ${{ inputs.tags }}
+        run: node scripts/action-process-dispatch.js
+
       - name: Commit and push
-        if: steps.check.outputs.found == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

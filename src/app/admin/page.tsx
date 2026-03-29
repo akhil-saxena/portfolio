@@ -1,9 +1,23 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useInView } from "@/hooks/useInView";
 import ProjectCard from "@/components/ProjectCard";
-import MasonryGrid from "@/components/MasonryGrid";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
@@ -62,6 +76,45 @@ const initialPhotos: PortfolioPhoto[] = [...(portfolioData as PortfolioPhoto[])]
   (a, b) => (a.order ?? 0) - (b.order ?? 0)
 );
 
+function SortablePhoto({ photo, isSelected, onClick }: { photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+      className={`masonry-item admin-editable ${isSelected ? "selected" : ""}`}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+    >
+      <span className="admin-edit-badge">&#9998;</span>
+      <img src={photo.urls.medium} alt={photo.title} className="masonry-img" loading="lazy"
+        style={{ backgroundImage: `url(${photo.urls.thumb})`, width: "100%", height: "auto" }} />
+      <div className="masonry-overlay">
+        <span className="masonry-title">{photo.title}</span>
+      </div>
+    </div>
+  );
+}
+
+function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
+      className={`hd-gallery-item admin-editable ${isSelected ? "selected" : ""}`}
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+    >
+      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("photography");
   const [hasUnsaved, setHasUnsaved] = useState(false);
@@ -96,6 +149,35 @@ export default function AdminPage() {
   const handleTabChange = useCallback((tab: Tab) => {
     setActiveTab(tab);
     setSelection({ type: "none", tab });
+  }, []);
+
+  // dnd-kit sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handlePhotoDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setPhotos(prev => {
+      const sorted = [...prev].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const oldIndex = sorted.findIndex(p => p.id === active.id);
+      const newIndex = sorted.findIndex(p => p.id === over.id);
+      const reordered = arrayMove(sorted, oldIndex, newIndex).map((p, i) => ({ ...p, order: i + 1 }));
+      return reordered;
+    });
+    setHasUnsaved(true);
+  }, []);
+
+  const handleGalleryDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setHomePeekIds(prev => {
+      const oldIndex = prev.indexOf(String(active.id));
+      const newIndex = prev.indexOf(String(over.id));
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+    setHasUnsaved(true);
   }, []);
 
   // Photo filtering (same as PreviewPanel / real photography page)
@@ -157,14 +239,6 @@ export default function AdminPage() {
     sortedPhotos.map((p) => ({ id: p.id, title: p.title })),
     [sortedPhotos]
   );
-
-  // Click handler for photos in masonry
-  const handlePhotoClick = useCallback((index: number) => {
-    const photo = filteredPhotos[index];
-    if (photo) {
-      setSelection({ type: "photo", photo });
-    }
-  }, [filteredPhotos]);
 
   // Deselect when clicking empty areas
   const handleContentClick = useCallback((e: React.MouseEvent) => {
@@ -425,12 +499,20 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
-              <div className="admin-watermarked-grid">
-                <MasonryGrid
-                  photos={fullPhotos}
-                  onPhotoClick={handlePhotoClick}
-                />
-              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhotoDragEnd}>
+                <SortableContext items={filteredPhotos.map(p => p.id)} strategy={rectSortingStrategy}>
+                  <div className="masonry-grid">
+                    {filteredPhotos.map((photo) => (
+                      <SortablePhoto
+                        key={photo.id}
+                        photo={photo}
+                        isSelected={selection.type === "photo" && selection.photo.id === photo.id}
+                        onClick={() => setSelection({ type: "photo", photo })}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
 
               {lightboxIndex !== null && (
                 <Lightbox
@@ -447,7 +529,7 @@ export default function AdminPage() {
           {activeTab === "dev" && (
             <div className="dev-page" style={{ padding: "0 2rem 2rem" }} ref={devRef}>
               <header className="dev-header reveal">
-                <p className="dev-label">Resume & Portfolio</p>
+                <p className="dev-label">Resume & Projects</p>
                 <div className="dev-header-row">
                   <h1 className="dev-title">Development</h1>
                   <span className="resume-btn">
@@ -608,22 +690,25 @@ export default function AdminPage() {
                 </div>
               </header>
 
-              <div className="hd-gallery">
-                {homePeekIds.map((id, i) => {
-                  const photo = sortedPhotos.find((p) => p.id === id);
-                  if (!photo) return null;
-                  return (
-                    <div
-                      key={id}
-                      className={`hd-gallery-item admin-editable ${selection.type === "homeGallery" && selection.photoIndex === i ? "selected" : ""}`}
-                      onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeGallery", photoIndex: i }); }}
-                    >
-                      <span className="admin-edit-badge">&#9998;</span>
-                      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
-                    </div>
-                  );
-                })}
-              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleGalleryDragEnd}>
+                <SortableContext items={homePeekIds} strategy={rectSortingStrategy}>
+                  <div className="hd-gallery">
+                    {homePeekIds.map((id, i) => {
+                      const photo = sortedPhotos.find((p) => p.id === id);
+                      if (!photo) return null;
+                      return (
+                        <SortableGalleryItem
+                          key={id}
+                          id={id}
+                          photo={photo}
+                          isSelected={selection.type === "homeGallery" && (selection as { type: "homeGallery"; photoIndex: number }).photoIndex === i}
+                          onClick={() => setSelection({ type: "homeGallery", photoIndex: i })}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
 
               <div className="hd-ctas">
                 <span className="hd-cta hd-cta-primary" style={{ cursor: "default" }}>View Photography &#8594;</span>

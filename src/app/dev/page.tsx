@@ -18,7 +18,7 @@ export default function DevPage() {
       <Nav title="Development" />
       <main className="dev-page" id="main" ref={ref}>
         <header className="dev-header reveal">
-          <p className="dev-label">Resume & Portfolio</p>
+          <p className="dev-label">Resume & Projects</p>
           <div className="dev-header-row">
             <h1 className="dev-title">Development</h1>
             <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-btn">

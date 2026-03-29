@@ -1389,12 +1389,94 @@
   }
 }
 
-/* Keep real masonry layout in admin — matches the live site */
-/* Drag-and-drop uses Move Up/Down in properties panel instead */
-
 /* Disable shimmer in admin */
 .admin-wysiwyg-content .masonry-item::before {
   display: none;
+}
+
+/* ===== Admin sortable photo grid ===== */
+.admin-photo-sortable-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.admin-draggable-photo {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: grab;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.admin-draggable-photo:hover {
+  border-color: var(--ink-muted);
+}
+
+.admin-draggable-photo:active {
+  cursor: grabbing;
+}
+
+.admin-draggable-photo img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  background-size: cover;
+  background-position: center;
+}
+
+.admin-draggable-photo-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+  padding: 24px 10px 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.admin-draggable-photo:hover .admin-draggable-photo-overlay {
+  opacity: 1;
+}
+
+.admin-draggable-photo-title {
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: block;
+}
+
+.admin-draggable-photo-cat {
+  color: rgba(255, 255, 255, 0.6);
+  font-family: var(--font-mono);
+  font-size: 0.5625rem;
+  text-transform: lowercase;
+}
+
+.admin-drag-overlay-item {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--ink);
+  cursor: grabbing;
+}
+
+.admin-drag-overlay-item .admin-draggable-photo-overlay {
+  opacity: 1;
+}
+
+@media (max-width: 1024px) {
+  .admin-photo-sortable-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-photo-sortable-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ===== Upload zone in properties panel ===== */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
@@ -14,6 +14,7 @@ import {
 import {
   arrayMove,
   SortableContext,
+  rectSortingStrategy,
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -43,17 +44,13 @@ function SortableMasonryItem({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.4 : 1,
-    height: isDragging ? 0 : undefined,
-    overflow: isDragging ? "hidden" as const : undefined,
-    margin: isDragging ? 0 : undefined,
-    padding: isDragging ? 0 : undefined,
   };
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`masonry-item loaded admin-editable ${isSelected ? "selected" : ""}`}
+      className={`admin-draggable-photo admin-editable ${isSelected ? "selected" : ""}`}
       {...attributes}
       {...listeners}
       onClick={(e) => {
@@ -65,37 +62,27 @@ function SortableMasonryItem({
       <img
         src={photo.urls.medium}
         alt={photo.title}
-        className="masonry-img"
         loading="lazy"
-        style={{ backgroundImage: `url(${photo.urls.thumb})`, width: "100%", height: "auto" }}
+        style={{ backgroundImage: `url(${photo.urls.thumb})` }}
       />
-      <div className="masonry-overlay">
-        <span className="masonry-title">{photo.title}</span>
+      <div className="admin-draggable-photo-overlay">
+        <span className="admin-draggable-photo-title">{photo.title}</span>
+        <span className="admin-draggable-photo-cat">{photo.category}</span>
       </div>
     </div>
   );
 }
 
-function DragOverlayItem({ photo, width }: { photo: Photo; width: number }) {
+function DragOverlayItem({ photo }: { photo: Photo }) {
   return (
-    <div
-      className="masonry-item loaded"
-      style={{
-        width,
-        borderRadius: "8px",
-        overflow: "hidden",
-        boxShadow: "0 12px 32px rgba(0,0,0,0.2)",
-        cursor: "grabbing",
-      }}
-    >
+    <div className="admin-draggable-photo admin-drag-overlay-item">
       <img
         src={photo.urls.medium}
         alt={photo.title}
-        className="masonry-img"
-        style={{ width: "100%", height: "auto" }}
+        style={{ backgroundImage: `url(${photo.urls.thumb})` }}
       />
-      <div className="masonry-overlay" style={{ opacity: 1 }}>
-        <span className="masonry-title">{photo.title}</span>
+      <div className="admin-draggable-photo-overlay" style={{ opacity: 1 }}>
+        <span className="admin-draggable-photo-title">{photo.title}</span>
       </div>
     </div>
   );
@@ -108,23 +95,13 @@ export default function DraggableMasonryGrid({
   onReorder,
 }: DraggableMasonryGridProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [activeWidth, setActiveWidth] = useState(200);
-  const gridRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    const id = String(event.active.id);
-    setActiveId(id);
-    // Measure the actual width of the dragged element
-    if (gridRef.current) {
-      const el = gridRef.current.querySelector(`[data-photo-id="${id}"]`) as HTMLElement;
-      if (el) {
-        setActiveWidth(el.getBoundingClientRect().width);
-      }
-    }
+    setActiveId(String(event.active.id));
   }, []);
 
   const handleDragEnd = useCallback(
@@ -157,21 +134,20 @@ export default function DraggableMasonryGrid({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={photos.map((p) => p.id)}>
-        <div className="masonry-grid" ref={gridRef}>
+      <SortableContext items={photos.map((p) => p.id)} strategy={rectSortingStrategy}>
+        <div className="admin-photo-sortable-grid">
           {photos.map((photo, index) => (
-            <div key={photo.id} data-photo-id={photo.id}>
-              <SortableMasonryItem
-                photo={photo}
-                isSelected={selectedId === photo.id}
-                onClick={() => onPhotoClick(index)}
-              />
-            </div>
+            <SortableMasonryItem
+              key={photo.id}
+              photo={photo}
+              isSelected={selectedId === photo.id}
+              onClick={() => onPhotoClick(index)}
+            />
           ))}
         </div>
       </SortableContext>
       <DragOverlay dropAnimation={null}>
-        {activePhoto ? <DragOverlayItem photo={activePhoto} width={activeWidth} /> : null}
+        {activePhoto ? <DragOverlayItem photo={activePhoto} /> : null}
       </DragOverlay>
     </DndContext>
   );

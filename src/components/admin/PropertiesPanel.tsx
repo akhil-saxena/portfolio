@@ -3,6 +3,21 @@
 import { useState } from "react";
 import { IconPlus } from "../icons";
 import PhotoUploadZone from "./PhotoUploadZone";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface PortfolioPhoto {
   id: string;
@@ -134,6 +149,30 @@ const SOCIAL_ICONS = [
   { id: "behance", label: "Behance" },
 ];
 
+function SortableBullet({ id, bullet, onEdit, onDelete }: {
+  id: string;
+  bullet: string;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} className="admin-bullet" {...attributes}>
+      <span className="admin-bullet-handle" {...listeners}>⠿</span>
+      <span className="admin-bullet-text" dangerouslySetInnerHTML={{ __html: bullet }} />
+      <div className="admin-bullet-actions">
+        <button className="admin-bullet-btn" onClick={onEdit}>✎</button>
+        <button className="admin-bullet-btn admin-bullet-delete" onClick={onDelete}>×</button>
+      </div>
+    </div>
+  );
+}
+
 export default function PropertiesPanel({
   selection,
   onUpdatePhoto,
@@ -160,6 +199,7 @@ export default function PropertiesPanel({
   availablePhotos,
 }: PropertiesPanelProps) {
   const [showExif, setShowExif] = useState(false);
+  const bulletSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Nothing selected — show page actions
   if (selection.type === "none") {
@@ -181,16 +221,37 @@ export default function PropertiesPanel({
           {selection.tab === "dev" && (
             <>
               <p className="admin-props-hint">Click any section on the page to edit it.</p>
-              <div className="admin-props-actions">
-                <button className="admin-btn admin-btn-primary" onClick={onAddRole}>
-                  <IconPlus size={14} /> Add Role
-                </button>
-                <button className="admin-btn admin-btn-primary" onClick={onAddProject}>
-                  <IconPlus size={14} /> Add Project
-                </button>
-                <button className="admin-btn admin-btn-primary" onClick={onAddSkillGroup}>
-                  <IconPlus size={14} /> Add Skill Group
-                </button>
+
+              <div className="admin-props-section">
+                <h4 className="admin-props-section-title">Resume PDF</h4>
+                <p className="admin-props-hint" style={{ marginBottom: "8px" }}>
+                  Current: <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)" }}>resume.pdf</a>
+                </p>
+                <label className="admin-btn admin-btn-secondary" style={{ cursor: "pointer", textAlign: "center" }}>
+                  Upload New Resume
+                  <input type="file" accept=".pdf" hidden onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // For now, just show a message — actual upload would need an API endpoint
+                      alert("Resume upload: In a full implementation, this would upload to /public/resume.pdf via the deploy API. For now, replace the file manually in the repo.");
+                    }
+                  }} />
+                </label>
+              </div>
+
+              <div className="admin-props-section" style={{ marginTop: "16px" }}>
+                <h4 className="admin-props-section-title">Add Content</h4>
+                <div className="admin-props-actions">
+                  <button className="admin-btn admin-btn-primary" onClick={onAddRole}>
+                    <IconPlus size={14} /> Add Role
+                  </button>
+                  <button className="admin-btn admin-btn-primary" onClick={onAddProject}>
+                    <IconPlus size={14} /> Add Project
+                  </button>
+                  <button className="admin-btn admin-btn-primary" onClick={onAddSkillGroup}>
+                    <IconPlus size={14} /> Add Skill Group
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -323,24 +384,36 @@ export default function PropertiesPanel({
 
           <div className="admin-props-section">
             <h4 className="admin-props-section-title">Bullets</h4>
-            {entry.bullets.map((bullet: string, i: number) => (
-              <div key={i} className="admin-bullet">
-                <span className="admin-bullet-text" dangerouslySetInnerHTML={{ __html: bullet }} />
-                <div className="admin-bullet-actions">
-                  <button className="admin-bullet-btn" onClick={() => {
-                    const newText = prompt("Edit bullet:", bullet);
-                    if (newText !== null) {
-                      const bullets = [...entry.bullets];
-                      bullets[i] = newText;
-                      update({ bullets });
-                    }
-                  }}>&#9998;</button>
-                  <button className="admin-bullet-btn admin-bullet-delete" onClick={() => {
-                    update({ bullets: entry.bullets.filter((_: string, j: number) => j !== i) });
-                  }}>×</button>
-                </div>
-              </div>
-            ))}
+            <DndContext
+              sensors={bulletSensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event: DragEndEvent) => {
+                const { active, over } = event;
+                if (!over || active.id === over.id) return;
+                const oldIndex = parseInt(String(active.id).split("-")[1]);
+                const newIndex = parseInt(String(over.id).split("-")[1]);
+                update({ bullets: arrayMove([...entry.bullets], oldIndex, newIndex) });
+              }}
+            >
+              <SortableContext items={entry.bullets.map((_: string, i: number) => `bullet-${i}`)} strategy={verticalListSortingStrategy}>
+                {entry.bullets.map((bullet: string, i: number) => (
+                  <SortableBullet
+                    key={`bullet-${i}`}
+                    id={`bullet-${i}`}
+                    bullet={bullet}
+                    onEdit={() => {
+                      const newText = prompt("Edit bullet:", bullet);
+                      if (newText !== null) {
+                        const bullets = [...entry.bullets];
+                        bullets[i] = newText;
+                        update({ bullets });
+                      }
+                    }}
+                    onDelete={() => update({ bullets: entry.bullets.filter((_: string, j: number) => j !== i) })}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
             <button className="admin-add-pill" onClick={() => update({ bullets: [...entry.bullets, "New achievement..."] })}>
               + Add bullet
             </button>

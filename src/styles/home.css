@@ -119,6 +119,7 @@
 .hd-social {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .hd-social a {

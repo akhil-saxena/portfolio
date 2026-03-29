@@ -70,6 +70,10 @@
   position: static;
   width: 2rem;
   height: 2rem;
+  font-size: 1rem;
+  border-radius: 50%;
+  min-width: 2rem;
+  min-height: 2rem;
 }
 
 /* ===== Body (content + properties) ===== */
@@ -1380,6 +1384,31 @@
 @media (max-width: 768px) {
   .admin-wysiwyg-content .photo-page .masonry-grid {
     columns: 2;
+  }
+}
+
+/* Override masonry to grid in admin for drag-and-drop */
+.admin-wysiwyg-content .masonry-grid {
+  columns: unset;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.admin-wysiwyg-content .masonry-item {
+  break-inside: unset;
+  margin-bottom: 0;
+}
+
+@media (max-width: 1024px) {
+  .admin-wysiwyg-content .masonry-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-wysiwyg-content .masonry-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

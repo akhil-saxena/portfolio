@@ -907,6 +907,41 @@
   max-width: 700px;
 }
 
+/* ===== Preview watermark simulation ===== */
+.admin-preview-watermark-note {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--ink-faint);
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.admin-watermarked-grid .masonry-item::after {
+  content: "akhil saxena";
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.20);
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Make the preview photography grid use proper masonry */
+.admin-preview-content .photo-page .masonry-grid {
+  columns: 3;
+}
+
+.admin-preview-content .dev-page {
+  max-width: 700px;
+}
+
 /* ===== Deploy States ===== */
 .admin-deploy-confirm {
   display: flex;
@@ -968,6 +1003,156 @@
   .admin-preview-panel {
     width: 100%;
   }
+}
+
+/* ===== Date pickers ===== */
+.admin-date-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.admin-date-select {
+  width: 80px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
+.admin-year-input {
+  width: 70px;
+  padding: 6px 8px;
+  font-size: 0.75rem;
+}
+
+.admin-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-checkbox-label input[type="checkbox"] {
+  accent-color: var(--ink);
+}
+
+/* ===== Logo field ===== */
+.admin-logo-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-logo-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+}
+
+.admin-logo-preview img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.admin-logo-remove {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.admin-logo-remove:hover {
+  color: #e74c3c;
+}
+
+/* ===== Chip field ===== */
+.admin-chip-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  align-items: center;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  color: var(--ink-body);
+  font-family: var(--font-mono);
+  background: var(--surface);
+}
+
+.admin-chip-remove {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.admin-chip-remove:hover {
+  color: #e74c3c;
+}
+
+.admin-chip-input {
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 0.75rem;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  min-width: 80px;
+  flex: 1;
+}
+
+/* ===== Links list ===== */
+.admin-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-link-select {
+  width: 130px;
+  font-size: 0.75rem;
+}
+
+/* ===== Bullet drag handle ===== */
+.admin-bullet-handle {
+  color: var(--ink-faint);
+  cursor: grab;
+  user-select: none;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.admin-bullet-handle:active {
+  cursor: grabbing;
 }
 
 /* ===== EXIF Grid ===== */

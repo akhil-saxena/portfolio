@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from "react";
+import { useSwipeable } from "react-swipeable";
 import { Photo } from "@/types";
 
 interface LightboxProps {
@@ -22,6 +23,18 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
   const goPrev = useCallback(() => {
     onNavigate((currentIndex - 1 + photos.length) % photos.length);
   }, [currentIndex, photos.length, onNavigate]);
+
+  const [swipeOffset, setSwipeOffset] = useState(0);
+
+  const swipeHandlers = useSwipeable({
+    onSwiping: (e) => setSwipeOffset(e.deltaX * 0.3),
+    onSwipedLeft: () => { setSwipeOffset(0); goNext(); },
+    onSwipedRight: () => { setSwipeOffset(0); goPrev(); },
+    onTouchEndOrOnMouseUp: () => setSwipeOffset(0),
+    delta: 50,
+    trackMouse: false,
+    preventScrollOnSwipe: true,
+  });
 
   // Reset loaded state on navigation
   useEffect(() => {
@@ -86,6 +99,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
   return (
     <div
+      {...swipeHandlers}
       className="lightbox"
       role="dialog"
       aria-modal="true"
@@ -103,7 +117,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         ‹
       </button>
 
-      <div className="lightbox-content">
+      <div className="lightbox-content" style={{ transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined, transition: swipeOffset ? 'none' : 'transform 0.2s ease' }}>
         {!loaded && (
           <img
             src={photo.urls.thumb}

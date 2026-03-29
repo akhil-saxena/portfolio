@@ -1686,13 +1686,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  max-height: calc(100vh - 250px);
-  min-height: 400px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
   padding: 6px;
-  background: var(--bg);
 }
 
 .admin-photo-picker-item {

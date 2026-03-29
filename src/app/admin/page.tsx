@@ -225,7 +225,7 @@ export default function AdminPage() {
 
   // Available photos for home gallery picker
   const availablePhotos = useMemo(() =>
-    sortedPhotos.map((p) => ({ id: p.id, title: p.title })),
+    sortedPhotos.map((p) => ({ id: p.id, title: p.title, url: p.urls.medium })),
     [sortedPhotos]
   );
 
@@ -327,6 +327,17 @@ export default function AdminPage() {
 
   const handleUpdateHomePeekId = useCallback((index: number, newId: string) => {
     setHomePeekIds(prev => prev.map((id, i) => i === index ? newId : id));
+    setHasUnsaved(true);
+  }, []);
+
+  const handleRemoveHomePeekId = useCallback((index: number) => {
+    setHomePeekIds(prev => prev.filter((_, i) => i !== index));
+    setHasUnsaved(true);
+    setSelection({ type: "none", tab: "home" });
+  }, []);
+
+  const handleAddHomePeekId = useCallback((id: string) => {
+    setHomePeekIds(prev => [...prev, id]);
     setHasUnsaved(true);
   }, []);
 
@@ -791,6 +802,8 @@ export default function AdminPage() {
             setHasUnsaved(true);
           }}
           availablePhotos={availablePhotos}
+          onRemoveHomePeekId={handleRemoveHomePeekId}
+          onAddHomePeekId={handleAddHomePeekId}
         />
       </div>
     </div>

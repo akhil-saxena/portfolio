@@ -1444,9 +1444,18 @@
 }
 
 .admin-photo-dragging {
-  opacity: 0.25 !important;
-  outline: 2px dashed var(--ink-muted) !important;
-  outline-offset: 2px;
+  opacity: 0.3 !important;
+}
+
+.admin-photo-drop-target {
+  outline: 3px solid var(--ink) !important;
+  outline-offset: 0px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 6px rgba(58, 46, 42, 0.15);
+}
+
+[data-theme="dark"] .admin-photo-drop-target {
+  box-shadow: 0 0 0 6px rgba(238, 238, 238, 0.1);
 }
 
 .admin-wysiwyg-content .masonry-item {

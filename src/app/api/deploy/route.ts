@@ -86,7 +86,8 @@ export async function POST(request: NextRequest) {
     const headData = (await headRes.json()) as GitRefResponse;
     const currentSha = headData.object.sha;
 
-    if (currentSha !== baseSha) {
+    // Skip conflict check if baseSha is "latest" — just use current HEAD
+    if (baseSha !== "latest" && currentSha !== baseSha) {
       return NextResponse.json(
         {
           error: "conflict",

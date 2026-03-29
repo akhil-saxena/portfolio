@@ -35,12 +35,7 @@ export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) 
             alt={photo.title}
             loading="lazy"
             className="masonry-img"
-            width={photo.dimensions?.width}
-            height={photo.dimensions?.height}
-            style={{
-              backgroundImage: `url(${photo.urls.thumb})`,
-              aspectRatio: photo.dimensions ? `${photo.dimensions.width} / ${photo.dimensions.height}` : undefined,
-            }}
+            style={{ backgroundImage: `url(${photo.urls.thumb})` }}
             onLoad={() => handleLoad(photo.id)}
           />
           <div className="masonry-overlay">

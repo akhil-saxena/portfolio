@@ -1447,6 +1447,11 @@
   opacity: 0.3 !important;
 }
 
+.admin-photo-placeholder {
+  break-inside: avoid;
+  margin-bottom: 1rem;
+}
+
 .admin-photo-drop-target {
   outline: 3px solid var(--ink) !important;
   outline-offset: 0px;

@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useInView } from "@/hooks/useInView";
 import ProjectCard from "@/components/ProjectCard";
-import MasonryGrid from "@/components/MasonryGrid";
+import DraggableMasonryGrid from "@/components/admin/DraggableMasonryGrid";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
@@ -465,11 +465,16 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
-              <MasonryGrid
+              <DraggableMasonryGrid
                 photos={fullPhotos}
+                selectedId={selection.type === "photo" ? selection.photo.id : undefined}
                 onPhotoClick={(index) => {
                   const photo = filteredPhotos[index];
                   if (photo) setSelection({ type: "photo", photo });
+                }}
+                onReorder={(reordered) => {
+                  setPhotos(reordered as unknown as PortfolioPhoto[]);
+                  setHasUnsaved(true);
                 }}
               />
 

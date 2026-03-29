@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Photo } from "@/types";
+import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
+import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 
 interface DraggableMasonryProps {
   photos: Photo[];
@@ -11,119 +13,119 @@ interface DraggableMasonryProps {
   onReorder: (photos: Photo[]) => void;
 }
 
+type DragState = "idle" | "dragging" | "over";
+
+function DraggablePhoto({
+  photo,
+  index,
+  isSelected,
+  onClick,
+  onDrop,
+}: {
+  photo: Photo;
+  index: number;
+  isSelected: boolean;
+  onClick: () => void;
+  onDrop: (sourceId: string, targetId: string) => void;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [state, setState] = useState<DragState>("idle");
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    return combine(
+      draggable({
+        element: el,
+        getInitialData: () => ({ id: photo.id, index }),
+        onDragStart: () => setState("dragging"),
+        onDrop: () => setState("idle"),
+      }),
+      dropTargetForElements({
+        element: el,
+        getData: () => ({ id: photo.id, index }),
+        canDrop: ({ source }) => source.data.id !== photo.id,
+        onDragEnter: () => setState("over"),
+        onDragLeave: () => setState("idle"),
+        onDrop: ({ source }) => {
+          setState("idle");
+          onDrop(source.data.id as string, photo.id);
+        },
+      })
+    );
+  }, [photo.id, index, onDrop]);
+
+  return (
+    <button
+      ref={ref}
+      className={[
+        "masonry-item",
+        loaded ? "loaded" : "",
+        isSelected ? "admin-photo-selected" : "",
+        state === "dragging" ? "admin-photo-dragging" : "",
+        state === "over" ? "admin-photo-drop-target" : "",
+      ].filter(Boolean).join(" ")}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      aria-label={`${photo.title} — drag to reorder`}
+    >
+      <Image
+        src={photo.urls.medium}
+        width={800}
+        height={600}
+        alt={photo.title}
+        loading="lazy"
+        className="masonry-img"
+        draggable={false}
+        style={{ width: "100%", height: "auto", backgroundImage: `url(${photo.urls.thumb})` }}
+        onLoad={() => setLoaded(true)}
+      />
+      <div className="masonry-overlay">
+        <span className="masonry-title">{photo.title}</span>
+      </div>
+    </button>
+  );
+}
+
 export default function DraggableMasonry({
   photos,
   selectedId,
   onPhotoClick,
   onReorder,
 }: DraggableMasonryProps) {
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
-  const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
+  const handleDrop = useCallback(
+    (sourceId: string, targetId: string) => {
+      const fromIndex = photos.findIndex((p) => p.id === sourceId);
+      const toIndex = photos.findIndex((p) => p.id === targetId);
+      if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
 
-  const handleLoad = useCallback((id: string) => {
-    setLoadedIds((prev) => new Set(prev).add(id));
-  }, []);
-
-  const handleDragStart = useCallback((e: React.DragEvent, photoId: string) => {
-    setDragId(photoId);
-    e.dataTransfer.effectAllowed = "move";
-
-    // Use the dragged element as the drag image
-    const el = e.currentTarget as HTMLElement;
-    const rect = el.getBoundingClientRect();
-    e.dataTransfer.setDragImage(el, rect.width / 2, rect.height / 2);
-  }, []);
-
-  const handleDragEnter = useCallback((e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    if (dragId && targetId !== dragId) {
-      setDropTargetId(targetId);
-    }
-  }, [dragId]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent, targetId: string) => {
-    // Only clear if leaving the actual target (not a child)
-    const relatedTarget = e.relatedTarget as HTMLElement;
-    if (!e.currentTarget.contains(relatedTarget)) {
-      if (dropTargetId === targetId) {
-        setDropTargetId(null);
-      }
-    }
-  }, [dropTargetId]);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-
-    if (dragId && dropTargetId && dragId !== dropTargetId) {
-      const fromIndex = photos.findIndex((p) => p.id === dragId);
-      const toIndex = photos.findIndex((p) => p.id === dropTargetId);
-
-      if (fromIndex !== -1 && toIndex !== -1) {
-        const reordered = [...photos];
-        const [moved] = reordered.splice(fromIndex, 1);
-        reordered.splice(toIndex, 0, moved);
-        onReorder(reordered.map((p, i) => ({ ...p, order: i + 1 })));
-      }
-    }
-
-    setDragId(null);
-    setDropTargetId(null);
-  }, [dragId, dropTargetId, photos, onReorder]);
-
-  const handleDragEnd = useCallback(() => {
-    setDragId(null);
-    setDropTargetId(null);
-  }, []);
+      const reordered = [...photos];
+      const [moved] = reordered.splice(fromIndex, 1);
+      reordered.splice(toIndex, 0, moved);
+      onReorder(reordered.map((p, i) => ({ ...p, order: i + 1 })));
+    },
+    [photos, onReorder]
+  );
 
   if (photos.length === 0) {
     return <p className="masonry-empty">No photos found.</p>;
   }
 
   return (
-    <div className="masonry-grid" onDragOver={handleDragOver}>
+    <div className="masonry-grid">
       {photos.map((photo, index) => (
-        <button
+        <DraggablePhoto
           key={photo.id}
-          className={[
-            "masonry-item",
-            loadedIds.has(photo.id) ? "loaded" : "",
-            selectedId === photo.id ? "admin-photo-selected" : "",
-            dragId === photo.id ? "admin-photo-dragging" : "",
-            dropTargetId === photo.id ? "admin-photo-drop-target" : "",
-          ].filter(Boolean).join(" ")}
-          draggable
-          onDragStart={(e) => handleDragStart(e, photo.id)}
-          onDragEnter={(e) => handleDragEnter(e, photo.id)}
-          onDragLeave={(e) => handleDragLeave(e, photo.id)}
+          photo={photo}
+          index={index}
+          isSelected={selectedId === photo.id}
+          onClick={() => onPhotoClick(index)}
           onDrop={handleDrop}
-          onDragEnd={handleDragEnd}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!dragId) onPhotoClick(index);
-          }}
-          aria-label={`${photo.title} — drag to reorder`}
-        >
-          <Image
-            src={photo.urls.medium}
-            width={800}
-            height={600}
-            alt={photo.title}
-            loading="lazy"
-            className="masonry-img"
-            draggable={false}
-            style={{ width: "100%", height: "auto", backgroundImage: `url(${photo.urls.thumb})` }}
-            onLoad={() => handleLoad(photo.id)}
-          />
-          <div className="masonry-overlay">
-            <span className="masonry-title">{photo.title}</span>
-          </div>
-        </button>
+        />
       ))}
     </div>
   );

@@ -229,20 +229,21 @@
 
 .admin-editable .admin-edit-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
-  width: 24px;
-  height: 24px;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--ink);
   color: var(--bg);
-  border: 2px solid var(--bg);
+  border: none;
   display: none;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   cursor: pointer;
   z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .admin-editable:hover .admin-edit-badge {
@@ -1328,6 +1329,7 @@
   user-select: none;
   font-size: 0.75rem;
   flex-shrink: 0;
+  padding: 2px;
 }
 
 .admin-bullet-handle:active {

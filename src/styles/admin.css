@@ -1673,13 +1673,15 @@
 /* ===== Photo Picker Grid ===== */
 .admin-photo-picker-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  max-height: 300px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  max-height: calc(100vh - 350px);
+  min-height: 200px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 4px;
+  padding: 6px;
+  background: var(--bg);
 }
 
 .admin-photo-picker-item {
@@ -1687,15 +1689,16 @@
   padding: 0;
   background: none;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   aspect-ratio: 1;
-  transition: outline 0.15s;
+  transition: outline 0.15s, transform 0.15s;
 }
 
 .admin-photo-picker-item:hover {
   outline: 2px solid var(--ink);
   outline-offset: -2px;
+  transform: scale(1.03);
 }
 
 .admin-photo-picker-item img {

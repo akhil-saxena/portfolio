@@ -12,13 +12,14 @@ interface DeployButtonProps {
     skills: unknown[];
     education: unknown[];
   };
+  siteConfig?: Record<string, unknown>;
   onDeploySuccess: () => void;
   disabled?: boolean;
 }
 
 type DeployStatus = "idle" | "confirming" | "deploying" | "success" | "error";
 
-export default function DeployButton({ hasUnsaved, photos, resume, onDeploySuccess, disabled }: DeployButtonProps) {
+export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, onDeploySuccess, disabled }: DeployButtonProps) {
   const [status, setStatus] = useState<DeployStatus>("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +35,7 @@ export default function DeployButton({ hasUnsaved, photos, resume, onDeploySucce
           files: {
             "data/portfolio_images.json": JSON.stringify(photos, null, 2),
             "data/resume.json": JSON.stringify(resume, null, 2),
+            ...(siteConfig ? { "data/site_config.json": JSON.stringify(siteConfig, null, 2) } : {}),
           },
           baseSha: "latest", // TODO: track actual baseSha from /api/data
           message: "chore: update portfolio data via admin",

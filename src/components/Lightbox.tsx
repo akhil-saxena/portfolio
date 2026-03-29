@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from "react";
+import Image from "next/image";
 import { useSwipeable } from "react-swipeable";
 import { Photo } from "@/types";
 
@@ -119,19 +120,23 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
 
       <div className="lightbox-content" style={{ transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined, transition: swipeOffset ? 'none' : 'transform 0.2s ease' }}>
         {!loaded && (
-          <img
+          <Image
             src={photo.urls.thumb}
             alt=""
+            width={2000}
+            height={1333}
             className="lightbox-placeholder"
             aria-hidden="true"
           />
         )}
-        <img
+        <Image
           src={photo.urls.original}
-          srcSet={`${photo.urls.large} 1200w, ${photo.urls.original} 2000w`}
           sizes="90vw"
           alt={photo.title}
+          width={2000}
+          height={1333}
           className={`lightbox-img ${loaded ? "loaded" : ""}`}
+          style={{ maxWidth: "90vw", maxHeight: "75vh", width: "auto", height: "auto" }}
           onLoad={() => setLoaded(true)}
         />
 

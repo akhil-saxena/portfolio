@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Nav from "@/components/Nav";
+import ThemeToggle from "@/components/ThemeToggle";
 import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
 import ProjectCard from "@/components/ProjectCard";
@@ -16,6 +17,7 @@ export default function DevPage() {
   return (
     <>
       <Nav title="" backHref="/" />
+      <ThemeToggle />
       <main className="dev-page" id="main" ref={ref}>
         <header className="dev-header reveal">
           <p className="dev-label">Resume & Projects</p>

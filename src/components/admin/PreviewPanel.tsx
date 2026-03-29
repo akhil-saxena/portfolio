@@ -91,7 +91,7 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
               Photography
             </button>
           </div>
-          <button className="admin-preview-close" onClick={onClose}>×</button>
+          <button className="admin-preview-close" onClick={onClose}>← Back to editor</button>
         </div>
 
         <div className="admin-preview-content">

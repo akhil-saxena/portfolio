@@ -126,16 +126,11 @@
 
 .masonry-img {
   width: 100%;
+  height: auto;
   display: block;
-  background: var(--border);
   background-size: cover;
   background-position: center;
   transition: transform 0.3s ease;
-  min-height: 150px;
-}
-
-.masonry-img[src] {
-  min-height: auto;
 }
 
 @keyframes shimmer {

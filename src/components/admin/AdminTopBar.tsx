@@ -18,6 +18,7 @@ interface AdminTopBarProps {
       education: unknown[];
     };
     siteConfig?: Record<string, unknown>;
+    homeConfig?: Record<string, unknown>;
     onDeploySuccess: () => void;
     disabled?: boolean;
   };

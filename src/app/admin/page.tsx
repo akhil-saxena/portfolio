@@ -34,6 +34,7 @@ import "@/styles/home.css";
 import portfolioData from "../../../data/portfolio_images.json";
 import resumeData from "../../../data/resume.json";
 import siteConfig from "../../../data/site_config.json";
+import homeConfig from "../../../data/home_config.json";
 
 type Tab = "home" | "photography" | "dev";
 
@@ -109,20 +110,13 @@ export default function AdminPage() {
   const [isDispatching, setIsDispatching] = useState(false);
 
   // Home tab state
-  const [homeTitle, setHomeTitle] = useState("Akhil Saxena");
-  const [homeSubtitle, setHomeSubtitle] = useState("Interfaces & Imagery");
-  const [homeIntro, setHomeIntro] = useState("Building for the web. Photographing everything else.");
-  const [homePeekIds, setHomePeekIds] = useState(["abstract-intothemist", "architecture-singapore", "nature-sunrisepoint", "street-tunnelvision", "wildlife-kingfisher", "architecture-eiffeljpg"]);
-  const [homePeekPositions, setHomePeekPositions] = useState<Record<string, string>>({});
-  const [socialLinks, setSocialLinks] = useState([
-    { icon: "github", url: "https://github.com/akhil-saxena", label: "GitHub" },
-    { icon: "linkedin", url: "https://www.linkedin.com/in/akhil-saxena", label: "LinkedIn" },
-    { icon: "mail", url: "mailto:saxena.akhil42@gmail.com", label: "Email" },
-  ]);
-  const [homeCtas, setHomeCtas] = useState([
-    { text: "View Photography →", link: "/photography", style: "primary" as const },
-    { text: "View Resume", link: "/dev", style: "secondary" as const },
-  ]);
+  const [homeTitle, setHomeTitle] = useState(homeConfig.title);
+  const [homeSubtitle, setHomeSubtitle] = useState(homeConfig.subtitle);
+  const [homeIntro, setHomeIntro] = useState(homeConfig.intro);
+  const [homePeekIds, setHomePeekIds] = useState(homeConfig.peekIds);
+  const [homePeekPositions, setHomePeekPositions] = useState<Record<string, string>>(homeConfig.peekPositions || {});
+  const [socialLinks, setSocialLinks] = useState(homeConfig.socialLinks);
+  const [homeCtas, setHomeCtas] = useState(homeConfig.ctas as { text: string; link: string; style: "primary" | "secondary" }[]);
 
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
@@ -457,6 +451,7 @@ export default function AdminPage() {
           photos,
           resume: { experience, projects, skills, education },
           siteConfig: { categoryColumns },
+          homeConfig: { title: homeTitle, subtitle: homeSubtitle, intro: homeIntro, peekIds: homePeekIds, peekPositions: homePeekPositions, socialLinks, ctas: homeCtas },
           onDeploySuccess: () => setHasUnsaved(false),
           disabled: isDispatching,
         }}

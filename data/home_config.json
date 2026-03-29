@@ -1,0 +1,16 @@
+{
+  "title": "Akhil Saxena",
+  "subtitle": "Interfaces & Imagery",
+  "intro": "Building for the web. Photographing everything else.",
+  "peekIds": ["abstract-intothemist", "architecture-singapore", "nature-sunrisepoint", "street-tunnelvision", "wildlife-kingfisher", "architecture-eiffeljpg"],
+  "peekPositions": {},
+  "socialLinks": [
+    { "icon": "github", "url": "https://github.com/akhil-saxena", "label": "GitHub" },
+    { "icon": "linkedin", "url": "https://www.linkedin.com/in/akhil-saxena", "label": "LinkedIn" },
+    { "icon": "mail", "url": "mailto:saxena.akhil42@gmail.com", "label": "Email" }
+  ],
+  "ctas": [
+    { "text": "View Photography →", "link": "/photography", "style": "primary" },
+    { "text": "View Resume", "link": "/dev", "style": "secondary" }
+  ]
+}

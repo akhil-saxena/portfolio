@@ -1394,6 +1394,22 @@
   display: none;
 }
 
+/* Native drag and drop for masonry photos */
+.admin-wysiwyg-content .masonry-item {
+  cursor: grab;
+  transition: opacity 0.15s, outline 0.15s;
+}
+
+.admin-wysiwyg-content .masonry-item:active {
+  cursor: grabbing;
+}
+
+.admin-dragging {
+  opacity: 0.3 !important;
+  outline: 2px dashed var(--ink-muted) !important;
+  outline-offset: 2px;
+}
+
 /* ===== Admin sortable photo grid ===== */
 .admin-photo-sortable-grid {
   display: grid;

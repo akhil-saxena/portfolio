@@ -34,14 +34,15 @@ export default function HomePage() {
       </header>
 
       <div className="hd-gallery">
-        {peekPhotos.map((photo) => (
+        {peekPhotos.map((photo, index) => (
           <div key={photo!.id} className="hd-gallery-item">
             <Image
               src={photo!.urls.small || photo!.urls.medium}
               width={400}
               height={267}
               alt={photo!.title}
-              loading="lazy"
+              loading={index === 0 ? "eager" : "lazy"}
+              priority={index === 0}
               style={{ width: "100%", height: "160px", objectFit: "cover", backgroundImage: `url(${photo!.urls.thumb})` }}
             />
           </div>

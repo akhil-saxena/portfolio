@@ -192,14 +192,44 @@ export default function AdminPage() {
 
               <div className="admin-filter-pills">
                 {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    className={`admin-pill ${photoFilter === cat ? "active" : ""}`}
-                    onClick={() => setPhotoFilter(cat)}
-                  >
-                    {cat} {photoCounts[cat] ? `(${photoCounts[cat]})` : ""}
-                  </button>
+                  <div key={cat} className="admin-pill-wrapper">
+                    <button
+                      className={`admin-pill ${photoFilter === cat ? "active" : ""}`}
+                      onClick={() => setPhotoFilter(cat)}
+                    >
+                      {cat} {photoCounts[cat] ? `(${photoCounts[cat]})` : ""}
+                    </button>
+                    {cat !== "All" && (
+                      <button
+                        className="admin-pill-delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (confirm(`Delete category "${cat}"? Photos will become uncategorized and only show in "All".`)) {
+                            setPhotos(photos.map((p) =>
+                              p.category.toLowerCase() === cat.toLowerCase() ? { ...p, category: "" } : p
+                            ));
+                            setPhotoFilter("All");
+                            setHasUnsaved(true);
+                          }
+                        }}
+                        title={`Delete ${cat} category`}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 ))}
+                <button
+                  className="admin-pill"
+                  onClick={() => {
+                    const name = prompt("New category name:");
+                    if (name && !categories.includes(name)) {
+                      alert(`Category "${name}" will appear when you assign a photo to it.`);
+                    }
+                  }}
+                >
+                  +
+                </button>
               </div>
 
               <PhotoGrid

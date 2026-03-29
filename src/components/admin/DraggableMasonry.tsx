@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Photo } from "@/types";
 import { draggable, dropTargetForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
+import { setCustomNativeDragPreview } from "@atlaskit/pragmatic-drag-and-drop/element/set-custom-native-drag-preview";
 
 interface DraggableMasonryProps {
   photos: Photo[];
@@ -46,6 +47,21 @@ function DraggablePhoto({
       draggable({
         element: el,
         getInitialData: () => ({ id: photo.id }),
+        onGenerateDragPreview: ({ nativeSetDragImage }) => {
+          setCustomNativeDragPreview({
+            nativeSetDragImage,
+            render: ({ container }) => {
+              const preview = el.cloneNode(true) as HTMLElement;
+              const rect = el.getBoundingClientRect();
+              preview.style.width = `${rect.width}px`;
+              preview.style.opacity = "0.7";
+              preview.style.borderRadius = "8px";
+              preview.style.overflow = "hidden";
+              preview.style.boxShadow = "0 8px 24px rgba(0,0,0,0.2)";
+              container.appendChild(preview);
+            },
+          });
+        },
         onDragStart: () => onDragStart(photo.id),
         onDrop: () => onDragEnd(),
       }),

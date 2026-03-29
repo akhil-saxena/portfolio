@@ -91,36 +91,96 @@
   overflow: visible;
 }
 
-.admin-topbar-right .admin-deploy-confirm {
+/* ===== Deploy Modal ===== */
+.admin-deploy-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  z-index: 500;
 }
 
-.admin-topbar-right .admin-deploy-confirm-text {
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-
-.admin-topbar-right .admin-deploy-confirm-actions {
+.admin-deploy-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
 }
 
-.admin-topbar-right .admin-deploy-confirm-actions .admin-btn {
-  padding: 6px 12px;
-  font-size: 0.75rem;
+.admin-deploy-modal-title {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  color: var(--ink);
+  font-weight: 700;
 }
 
-.admin-topbar-right .admin-deploy-error {
+.admin-deploy-modal-text {
+  font-size: 0.8125rem;
+  color: var(--ink-body);
+  line-height: 1.6;
+}
+
+.admin-deploy-modal-actions {
   display: flex;
-  align-items: center;
   gap: 8px;
+  justify-content: flex-end;
 }
 
-.admin-topbar-right .admin-deploy-error-text {
+/* ===== Deploy Log ===== */
+.admin-deploy-log {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-mono);
   font-size: 0.6875rem;
-  max-width: 200px;
+}
+
+.admin-deploy-log-entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  line-height: 1.4;
+}
+
+.admin-deploy-log-time {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+}
+
+.admin-deploy-log-msg {
+  color: var(--ink-body);
+}
+
+.admin-deploy-log-success .admin-deploy-log-msg {
+  color: #2ecc71;
+}
+
+.admin-deploy-log-error .admin-deploy-log-msg {
+  color: #e74c3c;
+}
+
+.admin-spinner-small {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: var(--ink-muted);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
 /* ===== Body (content + properties) ===== */

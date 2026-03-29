@@ -76,6 +76,47 @@
   min-height: 2rem;
 }
 
+/* Deploy button in top bar — compact inline style */
+.admin-topbar-right .admin-action-btn {
+  width: auto;
+  padding: 8px 16px;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.admin-topbar-right .admin-deploy-confirm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-topbar-right .admin-deploy-confirm-text {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.admin-topbar-right .admin-deploy-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-topbar-right .admin-deploy-confirm-actions .admin-btn {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+}
+
+.admin-topbar-right .admin-deploy-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-topbar-right .admin-deploy-error-text {
+  font-size: 0.6875rem;
+  max-width: 200px;
+}
+
 /* ===== Body (content + properties) ===== */
 .admin-wysiwyg-body {
   display: flex;

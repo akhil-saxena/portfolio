@@ -129,7 +129,7 @@ interface PropertiesPanelProps {
   onUpdateSocialLinks?: (links: SocialLink[]) => void;
   homeCtas?: { text: string; link: string; style: "primary" | "secondary" }[];
   onUpdateHomeCta?: (index: number, updates: { text?: string; link?: string; style?: "primary" | "secondary" }) => void;
-  availablePhotos?: { id: string; title: string; url: string }[];
+  availablePhotos?: { id: string; title: string; url: string; category?: string }[];
   onRemoveHomePeekId?: (index: number) => void;
   onAddHomePeekId?: (id: string) => void;
   homePeekPositions?: Record<string, string>;
@@ -177,6 +177,48 @@ function SortableBullet({ id, bullet, onEdit, onDelete }: {
         <button className="admin-bullet-btn" onClick={onEdit}>✎</button>
         <button className="admin-bullet-btn admin-bullet-delete" onClick={onDelete}>×</button>
       </div>
+    </div>
+  );
+}
+
+function CategorizedPhotoPicker({ photos, excludeIds, onSelect, galleryIds }: {
+  photos: { id: string; title: string; url: string; category?: string }[];
+  excludeIds: string[];
+  onSelect: (id: string) => void;
+  galleryIds?: string[];
+}) {
+  const filtered = photos.filter(p => !excludeIds.includes(p.id));
+  const grouped: Record<string, typeof filtered> = {};
+  filtered.forEach(p => {
+    const cat = (p.category || "other").charAt(0).toUpperCase() + (p.category || "other").slice(1);
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
+  });
+
+  return (
+    <div className="admin-categorized-picker">
+      {Object.entries(grouped).map(([category, items]) => (
+        <details key={category} open>
+          <summary className="admin-picker-category">{category} ({items.length})</summary>
+          <div className="admin-photo-picker-grid">
+            {items.map((p) => {
+              const isInGallery = galleryIds?.includes(p.id) ?? false;
+              return (
+                <button
+                  key={p.id}
+                  className={`admin-photo-picker-item ${isInGallery ? "in-gallery" : ""}`}
+                  onClick={() => onSelect(p.id)}
+                  title={p.title}
+                  disabled={isInGallery}
+                >
+                  <img src={p.url} alt={p.title} />
+                  {isInGallery && <span className="admin-picker-check">{"\u2713"}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      ))}
     </div>
   );
 }
@@ -275,18 +317,11 @@ export default function PropertiesPanel({
               {homeData && homeData.peekIds.length < 8 && availablePhotos && onAddHomePeekId && (
                 <div className="admin-props-section">
                   <h4 className="admin-props-section-title">Add Photo to Gallery</h4>
-                  <div className="admin-photo-picker-grid">
-                    {availablePhotos.filter(p => !homeData.peekIds.includes(p.id)).slice(0, 20).map((p) => (
-                      <button
-                        key={p.id}
-                        className="admin-photo-picker-item"
-                        onClick={() => onAddHomePeekId(p.id)}
-                        title={p.title}
-                      >
-                        <img src={p.url} alt={p.title} />
-                      </button>
-                    ))}
-                  </div>
+                  <CategorizedPhotoPicker
+                    photos={availablePhotos}
+                    excludeIds={homeData.peekIds}
+                    onSelect={(id) => onAddHomePeekId(id)}
+                  />
                 </div>
               )}
             </>
@@ -689,15 +724,7 @@ export default function PropertiesPanel({
     const idx = selection.photoIndex;
     const currentId = homeData.peekIds[idx] || "";
     const currentPhoto = availablePhotos.find(p => p.id === currentId);
-    const currentPosition = homePeekPositions?.[currentId] || "center";
-
-    const POSITIONS = [
-      { value: "top", label: "Top" },
-      { value: "center", label: "Center" },
-      { value: "bottom", label: "Bottom" },
-      { value: "left", label: "Left" },
-      { value: "right", label: "Right" },
-    ];
+    const currentPosition = homePeekPositions?.[currentId] || "50% 50%";
 
     return (
       <div className="admin-props">
@@ -707,25 +734,57 @@ export default function PropertiesPanel({
         </div>
         <div className="admin-props-body">
           {currentPhoto && (
-            <div className="admin-props-thumb">
-              <img src={currentPhoto.url} alt={currentPhoto.title} style={{ objectPosition: currentPosition }} />
+            <div className="admin-field">
+              <span className="admin-field-label">Position (drag to adjust)</span>
+              <div
+                className="admin-pan-frame"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const frame = e.currentTarget;
+                  const img = frame.querySelector("img") as HTMLImageElement;
+                  if (!img) return;
+
+                  const startX = e.clientX;
+                  const startY = e.clientY;
+                  const pos = (currentPosition || "50% 50%").split(" ");
+                  const startPosX = parseFloat(pos[0]) || 50;
+                  const startPosY = parseFloat(pos[1]) || 50;
+
+                  const handleMove = (ev: MouseEvent) => {
+                    const dx = ev.clientX - startX;
+                    const dy = ev.clientY - startY;
+                    const newX = Math.max(0, Math.min(100, startPosX - (dx / 2)));
+                    const newY = Math.max(0, Math.min(100, startPosY - (dy / 2)));
+                    const newPos = `${Math.round(newX)}% ${Math.round(newY)}%`;
+                    img.style.objectPosition = newPos;
+                    frame.dataset.currentPos = newPos;
+                  };
+
+                  const handleUp = () => {
+                    document.removeEventListener("mousemove", handleMove);
+                    document.removeEventListener("mouseup", handleUp);
+                    const finalPos = frame.dataset.currentPos;
+                    if (finalPos) {
+                      onUpdateHomePeekPosition?.(currentId, finalPos);
+                    }
+                  };
+
+                  document.addEventListener("mousemove", handleMove);
+                  document.addEventListener("mouseup", handleUp);
+                }}
+              >
+                <img
+                  src={currentPhoto.url}
+                  alt="Position preview"
+                  className="admin-pan-img"
+                  style={{ objectPosition: currentPosition || "50% 50%" }}
+                  draggable={false}
+                />
+                <div className="admin-pan-crosshair" />
+              </div>
+              <p className="admin-props-hint" style={{ marginTop: "4px" }}>Drag the image to adjust which part shows in the card</p>
             </div>
           )}
-
-          <div className="admin-field">
-            <span className="admin-field-label">Focal Point</span>
-            <div className="admin-focal-buttons">
-              {POSITIONS.map((pos) => (
-                <button
-                  key={pos.value}
-                  className={`admin-focal-btn ${currentPosition === pos.value ? "active" : ""}`}
-                  onClick={() => onUpdateHomePeekPosition?.(currentId, pos.value)}
-                >
-                  {pos.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {onRemoveHomePeekId && (
             <button className="admin-btn admin-btn-secondary" style={{ width: "100%", justifyContent: "center", color: "#e74c3c", borderColor: "#e74c3c" }} onClick={() => onRemoveHomePeekId(idx)}>
@@ -735,18 +794,12 @@ export default function PropertiesPanel({
 
           <div className="admin-props-section" style={{ marginTop: "12px" }}>
             <h4 className="admin-props-section-title">Replace with</h4>
-            <div className="admin-photo-picker-grid">
-              {availablePhotos.filter(p => !homeData.peekIds.includes(p.id)).map((p) => (
-                <button
-                  key={p.id}
-                  className="admin-photo-picker-item"
-                  onClick={() => onUpdateHomePeekId(idx, p.id)}
-                  title={p.title}
-                >
-                  <img src={p.url} alt={p.title} />
-                </button>
-              ))}
-            </div>
+            <CategorizedPhotoPicker
+              photos={availablePhotos}
+              excludeIds={[]}
+              onSelect={(id) => onUpdateHomePeekId(idx, id)}
+              galleryIds={homeData.peekIds}
+            />
           </div>
         </div>
       </div>

@@ -1708,32 +1708,87 @@
   display: block;
 }
 
-/* ===== Focal Point Selector ===== */
-.admin-focal-buttons {
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-}
-
-.admin-focal-btn {
-  padding: 5px 12px;
+/* ===== Image Pan Positioner ===== */
+.admin-pan-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.admin-pan-frame:active {
+  cursor: grabbing;
+}
+
+.admin-pan-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.admin-pan-crosshair {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent calc(50% - 0.5px), rgba(255,255,255,0.3) calc(50% - 0.5px), rgba(255,255,255,0.3) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255,255,255,0.3) calc(50% - 0.5px), rgba(255,255,255,0.3) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+/* ===== Categorized Photo Picker ===== */
+.admin-categorized-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+}
+
+.admin-picker-category {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ink-muted);
-  font-family: var(--font-sans);
-  font-size: 0.6875rem;
   cursor: pointer;
-  transition: all 0.15s;
+  padding: 6px 0;
+  user-select: none;
+  list-style: none;
 }
 
-.admin-focal-btn:hover {
-  border-color: var(--ink-muted);
-  color: var(--ink-body);
+.admin-picker-category::marker {
+  display: none;
 }
 
-.admin-focal-btn.active {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
+.admin-picker-category::before {
+  content: "▸ ";
+  transition: transform 0.15s;
+}
+
+details[open] > .admin-picker-category::before {
+  content: "▾ ";
+}
+
+/* ===== Gallery Indicator ===== */
+.admin-photo-picker-item.in-gallery {
+  opacity: 0.4;
+  cursor: default;
+  position: relative;
+}
+
+.admin-picker-check {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: bold;
+  border-radius: 6px;
 }

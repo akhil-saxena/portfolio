@@ -113,7 +113,9 @@
 .hd-bottom {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1.5rem;
+  width: 100%;
 }
 
 .hd-social {
@@ -125,8 +127,9 @@
 .hd-social a {
   color: var(--ink-muted);
   transition: color 0.2s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
 }
 
 .hd-social a:hover {

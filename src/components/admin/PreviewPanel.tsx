@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Timeline from "../Timeline";
 import ProjectCard from "../ProjectCard";
 import MasonryGrid from "../MasonryGrid";
-import { getIcon } from "../icons";
+import FilterTabs from "../FilterTabs";
+import SearchBar from "../SearchBar";
+import Lightbox from "../Lightbox";
+import { getIcon, IconDownload } from "../icons";
+import { Photo } from "@/types";
 import "@/styles/dev.css";
 import "@/styles/photography.css";
 
@@ -47,19 +51,8 @@ interface ExperienceEntry {
   bullets: string[];
 }
 
-interface PhotoEntry {
-  id: string;
-  title: string;
-  category: string;
-  urls: {
-    original?: string;
-    medium: string;
-    thumb: string;
-  };
-}
-
 interface PreviewPanelProps {
-  photos: PhotoEntry[];
+  photos: Photo[];
   resume: {
     experience: ExperienceEntry[];
     projects: ProjectEntry[];
@@ -67,10 +60,59 @@ interface PreviewPanelProps {
     education: EducationEntry[];
   };
   onClose: () => void;
+  onPhotoReorder?: (photos: Photo[]) => void;
 }
 
 export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelProps) {
   const [tab, setTab] = useState<"dev" | "photography">("dev");
+  const [photoCategory, setPhotoCategory] = useState("All");
+  const [photoSearch, setPhotoSearch] = useState("");
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const sortedPhotos = useMemo(
+    () => [...photos].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
+    [photos]
+  );
+
+  const filteredPhotos = useMemo(() => {
+    let result = sortedPhotos;
+    if (photoSearch.trim()) {
+      const q = photoSearch.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          (p.tags || []).some((t: string) => t.toLowerCase().includes(q))
+      );
+    } else if (photoCategory !== "All") {
+      result = result.filter(
+        (p) => p.category.toLowerCase() === photoCategory.toLowerCase()
+      );
+    }
+    return result;
+  }, [sortedPhotos, photoCategory, photoSearch]);
+
+  const photoCounts = useMemo(() => {
+    const c: Record<string, number> = { All: sortedPhotos.length };
+    sortedPhotos.forEach((p) => {
+      const cat = p.category.charAt(0).toUpperCase() + p.category.slice(1);
+      c[cat] = (c[cat] || 0) + 1;
+    });
+    return c;
+  }, [sortedPhotos]);
+
+  const fullPhotos: Photo[] = filteredPhotos.map((p) => ({
+    ...p,
+    tags: p.tags || [],
+    order: p.order || 0,
+    urls: {
+      original: p.urls.original ?? p.urls.medium,
+      large: p.urls.large ?? p.urls.medium,
+      medium: p.urls.medium,
+      small: p.urls.small ?? p.urls.medium,
+      thumb: p.urls.thumb,
+    },
+    dimensions: p.dimensions,
+  }));
 
   return (
     <div className="admin-preview-overlay" onClick={onClose}>
@@ -96,7 +138,18 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
 
         <div className="admin-preview-content">
           {tab === "dev" && (
-            <div className="dev-page" style={{ padding: "0" }}>
+            <div className="dev-page" style={{ padding: "0 2rem 2rem" }}>
+              <header className="dev-header">
+                <p className="dev-label">Resume & Portfolio</p>
+                <div className="dev-header-row">
+                  <h1 className="dev-title">Development</h1>
+                  <span className="resume-btn">
+                    <IconDownload size={16} />
+                    Resume
+                  </span>
+                </div>
+              </header>
+
               <section>
                 <h2 className="section-title">Experience</h2>
                 <Timeline entries={resume.experience} />
@@ -121,10 +174,27 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
 
               <section className="education-section">
                 <h2 className="section-title">Education</h2>
-                {resume.education.map((edu: EducationEntry) => (
+                {resume.education.map((edu) => (
                   <div key={edu.id} className="education-entry">
                     <div className="education-header">
-                      <p className="education-school">{edu.school}</p>
+                      <div className="education-header-left">
+                        {edu.logo && (
+                          <img
+                            src={edu.logo}
+                            alt={`${edu.school} logo`}
+                            className="education-logo"
+                            width={32}
+                            height={32}
+                          />
+                        )}
+                        <p className="education-school">
+                          {edu.url ? (
+                            <a href={edu.url} target="_blank" rel="noopener noreferrer">{edu.school}</a>
+                          ) : (
+                            edu.school
+                          )}
+                        </p>
+                      </div>
                       <span className="education-period">{edu.period}</span>
                     </div>
                     <p className="education-detail">{edu.degree} · {edu.cgpa} CGPA</p>
@@ -149,27 +219,43 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
           )}
 
           {tab === "photography" && (
-            <div className="photo-page" style={{ padding: "0", maxWidth: "100%" }}>
-              <div className="admin-preview-watermark-note">
-                Photos shown with CSS watermark overlay (actual watermark is baked into images by the processing pipeline)
+            <div className="photo-page" style={{ maxWidth: "100%", padding: "0" }}>
+              <header className="photo-header">
+                <p className="photo-label">Portfolio</p>
+                <div className="photo-header-row">
+                  <h1 className="photo-title">Photography</h1>
+                  <span className="photo-count">{filteredPhotos.length} photos</span>
+                </div>
+              </header>
+
+              <div className="photo-toolbar">
+                <FilterTabs
+                  active={photoCategory}
+                  onSelect={(cat) => {
+                    setPhotoCategory(cat);
+                    setPhotoSearch("");
+                  }}
+                  searchActive={photoSearch.trim().length > 0}
+                  counts={photoCounts}
+                />
+                <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
+
               <div className="admin-watermarked-grid">
                 <MasonryGrid
-                  photos={photos.map((p) => ({
-                    ...p,
-                    tags: [],
-                    order: 0,
-                    urls: {
-                      original: p.urls.original ?? p.urls.medium,
-                      large: p.urls.original ?? p.urls.medium,
-                      medium: p.urls.medium,
-                      small: p.urls.medium,
-                      thumb: p.urls.thumb,
-                    },
-                  }))}
-                  onPhotoClick={() => {}}
+                  photos={fullPhotos}
+                  onPhotoClick={setLightboxIndex}
                 />
               </div>
+
+              {lightboxIndex !== null && (
+                <Lightbox
+                  photos={fullPhotos}
+                  currentIndex={lightboxIndex}
+                  onClose={() => setLightboxIndex(null)}
+                  onNavigate={setLightboxIndex}
+                />
+              )}
             </div>
           )}
         </div>

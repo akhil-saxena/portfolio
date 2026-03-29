@@ -14,9 +14,9 @@ const peekPhotos = homeConfig.peekIds
 
 export default function HomePage() {
   return (
+    <>
+    <ThemeToggle />
     <main className="home-d" id="main">
-      <ThemeToggle />
-
       <header className="hd-hero">
         <h1 className="hd-name">{homeConfig.title}</h1>
         <p className="hd-tagline">{homeConfig.subtitle}</p>
@@ -63,5 +63,6 @@ export default function HomePage() {
         <p className="hd-footer">© {new Date().getFullYear()} Akhil Saxena</p>
       </footer>
     </main>
+    </>
   );
 }

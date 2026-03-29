@@ -1,34 +1,31 @@
 "use client";
 
 import Image from "next/image";
-import Nav from "@/components/Nav";
-import ThemeToggle from "@/components/ThemeToggle";
+import PageNav from "@/components/PageNav";
 import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
 import ProjectCard from "@/components/ProjectCard";
 import { useInView } from "@/hooks/useInView";
+import { useScrollTitle } from "@/hooks/useScrollTitle";
 import { IconDownload, getIcon } from "@/components/icons";
 import resumeData from "../../../data/resume.json";
 import "@/styles/dev.css";
 
 export default function DevPage() {
   const ref = useInView();
+  const { titleRef, spacerRef } = useScrollTitle();
 
   return (
     <>
-      <Nav title="" backHref="/" />
-      <ThemeToggle />
+      <PageNav backHref="/">
+        <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-nav-btn">
+          <IconDownload size={14} />
+          Resume
+        </a>
+      </PageNav>
       <main className="dev-page" id="main" ref={ref}>
-        <header className="dev-header reveal">
-          <p className="dev-label">Resume & Projects</p>
-          <div className="dev-header-row">
-            <h1 className="dev-title">Development</h1>
-            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-btn">
-              <IconDownload size={16} />
-              Resume
-            </a>
-          </div>
-        </header>
+        <div ref={spacerRef} />
+        <h1 ref={titleRef} className="page-scroll-title">Resume</h1>
 
         <section id="experience">
           <h2 className="section-title reveal">Experience</h2>

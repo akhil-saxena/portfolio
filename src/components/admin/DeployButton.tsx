@@ -76,26 +76,7 @@ export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, o
       const result = await res.json() as { sha?: string };
       addLog(`Committed: ${result.sha?.slice(0, 7) || "ok"}`, "success");
 
-      setStatus("building");
-      addLog("Triggered Cloudflare Pages rebuild...");
-      addLog("Waiting for build to complete...");
-
-      // Poll for a bit to simulate build progress
-      // CF Pages doesn't have a public API we can poll from the browser,
-      // so we show estimated progress
-      const steps = [
-        { delay: 3000, msg: "Installing dependencies..." },
-        { delay: 5000, msg: "Building Next.js..." },
-        { delay: 8000, msg: "Generating static pages..." },
-        { delay: 3000, msg: "Deploying to edge..." },
-      ];
-
-      for (const step of steps) {
-        await new Promise(r => setTimeout(r, step.delay));
-        addLog(step.msg);
-      }
-
-      addLog("Deploy complete — site is live!", "success");
+      addLog("Cloudflare Pages rebuild triggered — site will update in ~1-2 minutes.", "success");
       setStatus("success");
       onDeploySuccess();
 

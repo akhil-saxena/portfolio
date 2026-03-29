@@ -22,7 +22,7 @@ export default function MasonryGrid({ photos, columns, onPhotoClick }: MasonryGr
   }
 
   return (
-    <div className="masonry-grid" style={columns ? { columns } : undefined}>
+    <div className="masonry-grid" data-columns={columns || 4}>
       {photos.map((photo, index) => {
         const w = photo.dimensions?.width || 800;
         const h = photo.dimensions?.height || 600;

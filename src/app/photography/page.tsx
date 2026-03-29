@@ -8,6 +8,7 @@ import FilterTabs from "@/components/FilterTabs";
 import MasonryGrid from "@/components/MasonryGrid";
 import Lightbox from "@/components/Lightbox";
 import portfolioData from "../../../data/portfolio_images.json";
+import siteConfig from "../../../data/site_config.json";
 import "@/styles/photography.css";
 import { Photo } from "@/types";
 
@@ -74,7 +75,7 @@ export default function PhotographyPage() {
           />
         </div>
 
-        <MasonryGrid photos={filtered} onPhotoClick={setLightboxIndex} />
+        <MasonryGrid photos={filtered} columns={(siteConfig.categoryColumns as Record<string, number>)?.[category] || 4} onPhotoClick={setLightboxIndex} />
 
         {lightboxIndex !== null && (
           <Lightbox

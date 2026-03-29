@@ -6,10 +6,11 @@ import { Photo } from "@/types";
 
 interface MasonryGridProps {
   photos: Photo[];
+  columns?: number;
   onPhotoClick: (index: number) => void;
 }
 
-export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) {
+export default function MasonryGrid({ photos, columns, onPhotoClick }: MasonryGridProps) {
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
 
   const handleLoad = useCallback((id: string) => {
@@ -21,7 +22,7 @@ export default function MasonryGrid({ photos, onPhotoClick }: MasonryGridProps) 
   }
 
   return (
-    <div className="masonry-grid">
+    <div className="masonry-grid" style={columns ? { columns } : undefined}>
       {photos.map((photo, index) => (
         <button
           key={photo.id}

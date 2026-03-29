@@ -15,6 +15,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   };
 
   try {
+    // Auth check — require CF Access session
+    const cookie = context.request.headers.get("cookie") || "";
+    if (!cookie.includes("CF_Authorization=")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const [photosRes, resumeRes, branchRes] = await Promise.all([
       fetch(
         `https://api.github.com/repos/${GITHUB_REPO}/contents/data/portfolio_images.json`,

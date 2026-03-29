@@ -932,6 +932,11 @@
   padding: 0;
 }
 
+.admin-preview-content .reveal {
+  opacity: 1;
+  transform: none;
+}
+
 .admin-preview-dev {
   max-width: 800px;
 }

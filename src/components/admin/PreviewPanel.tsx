@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useInView } from "@/hooks/useInView";
 import Timeline from "../Timeline";
 import ProjectCard from "../ProjectCard";
 import MasonryGrid from "../MasonryGrid";
@@ -65,6 +66,7 @@ interface PreviewPanelProps {
 
 export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelProps) {
   const [tab, setTab] = useState<"home" | "photography" | "dev">("home");
+  const devRef = useInView();
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -159,7 +161,7 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
         )}
 
         {tab === "dev" && (
-          <div className="dev-page" style={{ padding: "0 2rem 2rem" }}>
+          <div className="dev-page" style={{ padding: "0 2rem 2rem" }} ref={devRef}>
             <header className="dev-header">
               <p className="dev-label">Resume & Portfolio</p>
               <div className="dev-header-row">

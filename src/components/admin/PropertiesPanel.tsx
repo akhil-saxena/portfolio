@@ -129,7 +129,9 @@ interface PropertiesPanelProps {
   onUpdateSocialLinks?: (links: SocialLink[]) => void;
   homeCtas?: { text: string; link: string; style: "primary" | "secondary" }[];
   onUpdateHomeCta?: (index: number, updates: { text?: string; link?: string; style?: "primary" | "secondary" }) => void;
-  availablePhotos?: { id: string; title: string }[];
+  availablePhotos?: { id: string; title: string; url: string }[];
+  onRemoveHomePeekId?: (index: number) => void;
+  onAddHomePeekId?: (id: string) => void;
 }
 
 const CATEGORIES = ["abstract", "architecture", "nature", "portraits", "street", "wildlife", "product"];
@@ -203,6 +205,8 @@ export default function PropertiesPanel({
   homeCtas,
   onUpdateHomeCta,
   availablePhotos,
+  onRemoveHomePeekId,
+  onAddHomePeekId,
 }: PropertiesPanelProps) {
   const [showExif, setShowExif] = useState(false);
   const bulletSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -262,7 +266,26 @@ export default function PropertiesPanel({
             </>
           )}
           {selection.tab === "home" && (
-            <p className="admin-props-hint">Click any element on the homepage to edit it.</p>
+            <>
+              <p className="admin-props-hint">Click elements to edit. Drag gallery photos to reorder.</p>
+              {homeData && homeData.peekIds.length < 8 && availablePhotos && onAddHomePeekId && (
+                <div className="admin-props-section">
+                  <h4 className="admin-props-section-title">Add Photo to Gallery</h4>
+                  <div className="admin-photo-picker-grid">
+                    {availablePhotos.filter(p => !homeData.peekIds.includes(p.id)).slice(0, 20).map((p) => (
+                      <button
+                        key={p.id}
+                        className="admin-photo-picker-item"
+                        onClick={() => onAddHomePeekId(p.id)}
+                        title={p.title}
+                      >
+                        <img src={p.url} alt={p.title} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -661,6 +684,7 @@ export default function PropertiesPanel({
   if (selection.type === "homeGallery" && homeData && onUpdateHomePeekId && availablePhotos) {
     const idx = selection.photoIndex;
     const currentId = homeData.peekIds[idx] || "";
+    const currentPhoto = availablePhotos.find(p => p.id === currentId);
     return (
       <div className="admin-props">
         <div className="admin-props-header">
@@ -668,14 +692,31 @@ export default function PropertiesPanel({
           <button className="admin-props-close" onClick={onDeselect}>×</button>
         </div>
         <div className="admin-props-body">
-          <label className="admin-field">
-            <span className="admin-field-label">Photo</span>
-            <select value={currentId} onChange={(e) => onUpdateHomePeekId(idx, e.target.value)} className="admin-input">
-              {availablePhotos.map((p) => (
-                <option key={p.id} value={p.id}>{p.title} ({p.id})</option>
+          {currentPhoto && (
+            <div className="admin-props-thumb">
+              <img src={currentPhoto.url} alt={currentPhoto.title} />
+            </div>
+          )}
+          <div className="admin-props-section">
+            <h4 className="admin-props-section-title">Replace with</h4>
+            <div className="admin-photo-picker-grid">
+              {availablePhotos.filter(p => !homeData.peekIds.includes(p.id)).map((p) => (
+                <button
+                  key={p.id}
+                  className="admin-photo-picker-item"
+                  onClick={() => onUpdateHomePeekId(idx, p.id)}
+                  title={p.title}
+                >
+                  <img src={p.url} alt={p.title} />
+                </button>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
+          {onRemoveHomePeekId && (
+            <button className="admin-delete-link" onClick={() => onRemoveHomePeekId(idx)}>
+              Remove from gallery
+            </button>
+          )}
         </div>
       </div>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { Photo } from "@/types";
 
@@ -18,8 +18,8 @@ export default function DraggableMasonry({
   onReorder,
 }: DraggableMasonryProps) {
   const [dragId, setDragId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [loadedIds, setLoadedIds] = useState<Set<string>>(new Set());
-  const lastSwapTarget = useRef<string | null>(null);
 
   const handleLoad = useCallback((id: string) => {
     setLoadedIds((prev) => new Set(prev).add(id));
@@ -27,40 +27,58 @@ export default function DraggableMasonry({
 
   const handleDragStart = useCallback((e: React.DragEvent, photoId: string) => {
     setDragId(photoId);
-    lastSwapTarget.current = null;
     e.dataTransfer.effectAllowed = "move";
-    // Set transparent drag image — the reflow IS the visual feedback
-    const img = document.createElement("img");
-    img.src = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
-    e.dataTransfer.setDragImage(img, 0, 0);
+
+    // Use the dragged element as the drag image
+    const el = e.currentTarget as HTMLElement;
+    const rect = el.getBoundingClientRect();
+    e.dataTransfer.setDragImage(el, rect.width / 2, rect.height / 2);
   }, []);
 
   const handleDragEnter = useCallback((e: React.DragEvent, targetId: string) => {
     e.preventDefault();
-
-    // Only swap once per target — ignore repeated events for the same target
-    if (!dragId || targetId === dragId || targetId === lastSwapTarget.current) return;
-
-    lastSwapTarget.current = targetId;
-
-    const fromIndex = photos.findIndex((p) => p.id === dragId);
-    const toIndex = photos.findIndex((p) => p.id === targetId);
-    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
-
-    const reordered = [...photos];
-    const [moved] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, moved);
-    onReorder(reordered.map((p, i) => ({ ...p, order: i + 1 })));
-  }, [dragId, photos, onReorder]);
+    if (dragId && targetId !== dragId) {
+      setDropTargetId(targetId);
+    }
+  }, [dragId]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
   }, []);
 
+  const handleDragLeave = useCallback((e: React.DragEvent, targetId: string) => {
+    // Only clear if leaving the actual target (not a child)
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (!e.currentTarget.contains(relatedTarget)) {
+      if (dropTargetId === targetId) {
+        setDropTargetId(null);
+      }
+    }
+  }, [dropTargetId]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+
+    if (dragId && dropTargetId && dragId !== dropTargetId) {
+      const fromIndex = photos.findIndex((p) => p.id === dragId);
+      const toIndex = photos.findIndex((p) => p.id === dropTargetId);
+
+      if (fromIndex !== -1 && toIndex !== -1) {
+        const reordered = [...photos];
+        const [moved] = reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex, 0, moved);
+        onReorder(reordered.map((p, i) => ({ ...p, order: i + 1 })));
+      }
+    }
+
+    setDragId(null);
+    setDropTargetId(null);
+  }, [dragId, dropTargetId, photos, onReorder]);
+
   const handleDragEnd = useCallback(() => {
     setDragId(null);
-    lastSwapTarget.current = null;
+    setDropTargetId(null);
   }, []);
 
   if (photos.length === 0) {
@@ -68,20 +86,26 @@ export default function DraggableMasonry({
   }
 
   return (
-    <div className="masonry-grid">
+    <div className="masonry-grid" onDragOver={handleDragOver}>
       {photos.map((photo, index) => (
         <button
           key={photo.id}
-          className={`masonry-item ${loadedIds.has(photo.id) ? "loaded" : ""} ${selectedId === photo.id ? "admin-photo-selected" : ""} ${dragId === photo.id ? "admin-photo-dragging" : ""}`}
+          className={[
+            "masonry-item",
+            loadedIds.has(photo.id) ? "loaded" : "",
+            selectedId === photo.id ? "admin-photo-selected" : "",
+            dragId === photo.id ? "admin-photo-dragging" : "",
+            dropTargetId === photo.id ? "admin-photo-drop-target" : "",
+          ].filter(Boolean).join(" ")}
           draggable
           onDragStart={(e) => handleDragStart(e, photo.id)}
           onDragEnter={(e) => handleDragEnter(e, photo.id)}
-          onDragOver={handleDragOver}
+          onDragLeave={(e) => handleDragLeave(e, photo.id)}
+          onDrop={handleDrop}
           onDragEnd={handleDragEnd}
-          onDrop={(e) => { e.preventDefault(); handleDragEnd(); }}
           onClick={(e) => {
             e.stopPropagation();
-            onPhotoClick(index);
+            if (!dragId) onPhotoClick(index);
           }}
           aria-label={`${photo.title} — drag to reorder`}
         >

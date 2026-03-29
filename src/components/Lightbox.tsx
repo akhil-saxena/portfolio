@@ -33,9 +33,15 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
   const [swipeOffset, setSwipeOffset] = useState(0);
 
   const swipeHandlers = useSwipeable({
-    onSwiping: (e) => setSwipeOffset(e.deltaX * 0.3),
-    onSwipedLeft: () => { setSwipeOffset(0); goNext(); },
-    onSwipedRight: () => { setSwipeOffset(0); goPrev(); },
+    onSwiping: (e) => setSwipeOffset(e.deltaX),
+    onSwipedLeft: () => {
+      setSwipeOffset(0);
+      goNext();
+    },
+    onSwipedRight: () => {
+      setSwipeOffset(0);
+      goPrev();
+    },
     onTouchEndOrOnMouseUp: () => setSwipeOffset(0),
     delta: 30,
     trackMouse: false,
@@ -129,7 +135,10 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         ‹
       </button>
 
-      <div className="lightbox-content" style={{ transform: swipeOffset ? `translateX(${swipeOffset}px)` : undefined, transition: swipeOffset ? 'none' : 'transform 0.2s ease' }}>
+      <div className="lightbox-content" style={{
+        transform: `translateX(${swipeOffset}px)`,
+        transition: swipeOffset ? 'none' : 'transform 0.3s ease-out',
+      }}>
         {!loaded && (
           <Image
             src={photo.urls.thumb}

@@ -131,6 +131,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 18px;
+  height: 18px;
+}
+
+.hd-social a svg {
+  width: 18px;
+  height: 18px;
 }
 
 .hd-social a:hover {

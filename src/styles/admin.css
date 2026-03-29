@@ -1402,6 +1402,11 @@
   margin-bottom: 0;
 }
 
+/* Disable shimmer in admin — images don't use the loaded class here */
+.admin-wysiwyg-content .masonry-item::before {
+  display: none;
+}
+
 @media (max-width: 1024px) {
   .admin-wysiwyg-content .masonry-grid {
     grid-template-columns: repeat(3, 1fr);

@@ -1,22 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState, useRef } from "react";
-
-interface ExifData {
-  camera: string | null;
-  lens: string | null;
-  aperture: string | null;
-  shutter: string | null;
-  iso: number | null;
-  focalLength: string | null;
-}
-
-interface Photo {
-  id: string;
-  title: string;
-  urls: { original: string; medium: string; thumb: string };
-  exif?: ExifData;
-}
+import { Photo } from "@/types";
 
 interface LightboxProps {
   photos: Photo[];
@@ -103,6 +88,7 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
     <div
       className="lightbox"
       role="dialog"
+      aria-modal="true"
       aria-label={`Photo: ${photo.title}`}
       ref={dialogRef}
       onClick={(e) => {
@@ -128,6 +114,8 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
         )}
         <img
           src={photo.urls.original}
+          srcSet={`${photo.urls.large} 1200w, ${photo.urls.original} 2000w`}
+          sizes="90vw"
           alt={photo.title}
           className={`lightbox-img ${loaded ? "loaded" : ""}`}
           onLoad={() => setLoaded(true)}

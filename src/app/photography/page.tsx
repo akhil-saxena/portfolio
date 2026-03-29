@@ -9,23 +9,7 @@ import MasonryGrid from "@/components/MasonryGrid";
 import Lightbox from "@/components/Lightbox";
 import portfolioData from "../../../data/portfolio_images.json";
 import "@/styles/photography.css";
-
-interface Photo {
-  id: string;
-  title: string;
-  category: string;
-  tags: string[];
-  urls: { original: string; medium: string; thumb: string };
-  exif?: {
-    camera: string | null;
-    lens: string | null;
-    aperture: string | null;
-    shutter: string | null;
-    iso: number | null;
-    focalLength: string | null;
-  };
-  order: number;
-}
+import { Photo } from "@/types";
 
 export default function PhotographyPage() {
   const photos = (portfolioData as Photo[]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));

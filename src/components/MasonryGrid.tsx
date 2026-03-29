@@ -23,30 +23,35 @@ export default function MasonryGrid({ photos, columns, onPhotoClick }: MasonryGr
 
   return (
     <div className="masonry-grid" style={columns ? { columns } : undefined}>
-      {photos.map((photo, index) => (
-        <button
-          key={photo.id}
-          className={`masonry-item ${loadedIds.has(photo.id) ? "loaded" : ""}`}
-          onClick={() => onPhotoClick(index)}
-          aria-label={`View ${photo.title}`}
-        >
-          <Image
-            src={index < 8 ? photo.urls.medium : (photo.urls.small || photo.urls.medium)}
-            width={800}
-            height={600}
-            sizes="(max-width: 480px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            alt={photo.title}
-            loading={index < 4 ? "eager" : "lazy"}
-            priority={index < 4}
-            className="masonry-img"
-            style={{ width: "100%", height: "auto", backgroundImage: `url(${photo.urls.thumb})` }}
-            onLoad={() => handleLoad(photo.id)}
-          />
-          <div className="masonry-overlay">
-            <span className="masonry-title">{photo.title}</span>
-          </div>
-        </button>
-      ))}
+      {photos.map((photo, index) => {
+        const w = photo.dimensions?.width || 800;
+        const h = photo.dimensions?.height || 600;
+        return (
+          <button
+            key={photo.id}
+            className={`masonry-item ${loadedIds.has(photo.id) ? "loaded" : ""}`}
+            onClick={() => onPhotoClick(index)}
+            aria-label={`View ${photo.title}`}
+            style={{ aspectRatio: `${w} / ${h}` }}
+          >
+            <Image
+              src={index < 8 ? photo.urls.medium : (photo.urls.small || photo.urls.medium)}
+              width={w}
+              height={h}
+              sizes="(max-width: 480px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              alt={photo.title}
+              loading={index < 4 ? "eager" : "lazy"}
+              priority={index < 4}
+              className="masonry-img"
+              style={{ width: "100%", height: "100%", objectFit: "cover", backgroundImage: `url(${photo.urls.thumb})`, backgroundSize: "cover" }}
+              onLoad={() => handleLoad(photo.id)}
+            />
+            <div className="masonry-overlay">
+              <span className="masonry-title">{photo.title}</span>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

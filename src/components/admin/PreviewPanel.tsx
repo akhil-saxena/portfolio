@@ -4,10 +4,25 @@ import { useState } from "react";
 import Timeline from "../Timeline";
 import ProjectCard from "../ProjectCard";
 import MasonryGrid from "../MasonryGrid";
+import { getIcon } from "../icons";
+import "@/styles/dev.css";
+import "@/styles/photography.css";
 
 interface SkillGroup {
   category: string;
+  icon?: string;
   items: string[];
+}
+
+interface EducationEntry {
+  id: string;
+  school: string;
+  logo?: string | null;
+  degree: string;
+  cgpa: string;
+  period: string;
+  url?: string | null;
+  leadership: string[];
 }
 
 interface ProjectEntry {
@@ -49,7 +64,7 @@ interface PreviewPanelProps {
     experience: ExperienceEntry[];
     projects: ProjectEntry[];
     skills: SkillGroup[];
-    education: unknown[];
+    education: EducationEntry[];
   };
   onClose: () => void;
 }
@@ -81,29 +96,50 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
 
         <div className="admin-preview-content">
           {tab === "dev" && (
-            <div className="admin-preview-dev">
+            <div className="dev-page" style={{ padding: "0" }}>
               <section>
-                <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", color: "var(--ink)", marginBottom: "1.5rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--border)" }}>Experience</h2>
+                <h2 className="section-title">Experience</h2>
                 <Timeline entries={resume.experience} />
               </section>
 
-              <section style={{ marginTop: "2rem" }}>
-                <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", color: "var(--ink)", marginBottom: "1.5rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--border)" }}>Skills</h2>
+              <section className="skills-section">
+                <h2 className="section-title">Skills</h2>
                 {resume.skills.map((group) => (
-                  <div key={group.category} style={{ marginBottom: "1rem" }}>
-                    <p style={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--ink)", marginBottom: "0.5rem" }}>{group.category}</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <div key={group.category} className="skills-group">
+                    <p className="skills-label">
+                      {group.icon && getIcon(group.icon, { size: 14 })}
+                      {group.category}
+                    </p>
+                    <div className="skills-tags">
                       {group.items.map((s) => (
-                        <span key={s} style={{ fontSize: "0.8rem", padding: "0.25rem 0.75rem", border: "1px solid var(--border)", borderRadius: "20px", color: "var(--ink-body)", fontFamily: "var(--font-mono)" }}>{s}</span>
+                        <span key={s} className="skill-tag">{s}</span>
                       ))}
                     </div>
                   </div>
                 ))}
               </section>
 
-              <section style={{ marginTop: "2rem" }}>
-                <h2 style={{ fontFamily: "var(--font-serif)", fontSize: "1.5rem", color: "var(--ink)", marginBottom: "1.5rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--border)" }}>Projects</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.5rem" }}>
+              <section className="education-section">
+                <h2 className="section-title">Education</h2>
+                {resume.education.map((edu: EducationEntry) => (
+                  <div key={edu.id} className="education-entry">
+                    <div className="education-header">
+                      <p className="education-school">{edu.school}</p>
+                      <span className="education-period">{edu.period}</span>
+                    </div>
+                    <p className="education-detail">{edu.degree} · {edu.cgpa} CGPA</p>
+                    <div className="education-leadership">
+                      {edu.leadership.map((l) => (
+                        <span key={l} className="education-badge">{l}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </section>
+
+              <section>
+                <h2 className="section-title">Projects</h2>
+                <div className="projects-grid">
                   {resume.projects.map((p) => (
                     <ProjectCard key={p.id} {...p} />
                   ))}
@@ -113,11 +149,16 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
           )}
 
           {tab === "photography" && (
-            <div className="admin-preview-photography">
-              <MasonryGrid
-                photos={photos.map((p) => ({ ...p, urls: { original: p.urls.original ?? p.urls.medium, medium: p.urls.medium, thumb: p.urls.thumb } }))}
-                onPhotoClick={() => {}}
-              />
+            <div className="photo-page" style={{ padding: "0", maxWidth: "100%" }}>
+              <div className="admin-preview-watermark-note">
+                Photos shown with CSS watermark overlay (actual watermark is baked into images by the processing pipeline)
+              </div>
+              <div className="admin-watermarked-grid">
+                <MasonryGrid
+                  photos={photos.map((p) => ({ ...p, urls: { original: p.urls.original ?? p.urls.medium, medium: p.urls.medium, thumb: p.urls.thumb } }))}
+                  onPhotoClick={() => {}}
+                />
+              </div>
             </div>
           )}
         </div>

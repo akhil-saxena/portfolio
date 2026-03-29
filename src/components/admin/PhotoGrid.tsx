@@ -17,7 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { IconEdit, IconDots } from "../icons";
+import { IconEdit, IconTrash } from "../icons";
 
 interface Photo {
   id: string;
@@ -41,10 +41,12 @@ function SortablePhotoCard({
   photo,
   onEdit,
   onDelete,
+  isOrphan,
 }: {
   photo: Photo;
   onEdit: () => void;
   onDelete: () => void;
+  isOrphan?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: photo.id,
@@ -70,13 +72,18 @@ function SortablePhotoCard({
             <IconEdit size={12} />
           </button>
           <button className="admin-photo-action" onClick={(e) => { e.stopPropagation(); onDelete(); }} aria-label="Delete">
-            <IconDots size={12} />
+            <IconTrash size={12} />
           </button>
         </div>
       </div>
       <div className="admin-photo-info">
         <p className="admin-photo-title">{photo.title}</p>
-        <p className="admin-photo-category">{photo.category}</p>
+        <div className="admin-photo-category-row">
+          <p className="admin-photo-category">{photo.category || "uncategorized"}</p>
+          {isOrphan && (
+            <span className="admin-orphan-dot" title="This photo has no category and only appears in 'All'">●</span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -119,6 +126,7 @@ export default function PhotoGrid({ photos, onReorder, onEdit, onDelete, categor
               photo={photo}
               onEdit={() => onEdit(photo)}
               onDelete={() => onDelete(photo.id)}
+              isOrphan={!photo.category}
             />
           ))}
         </div>

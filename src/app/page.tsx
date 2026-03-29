@@ -36,7 +36,9 @@ export default function HomePage() {
         {peekPhotos.map((photo) => (
           <div key={photo!.id} className="hd-gallery-item">
             <img
-              src={photo!.urls.medium}
+              src={photo!.urls.small}
+              srcSet={`${photo!.urls.small} 400w, ${photo!.urls.medium} 800w`}
+              sizes="(max-width: 600px) 33vw, 270px"
               alt={photo!.title}
               loading="lazy"
               style={{ backgroundImage: `url(${photo!.urls.thumb})` }}

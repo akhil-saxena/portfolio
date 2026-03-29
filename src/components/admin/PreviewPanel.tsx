@@ -155,7 +155,18 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
               </div>
               <div className="admin-watermarked-grid">
                 <MasonryGrid
-                  photos={photos.map((p) => ({ ...p, urls: { original: p.urls.original ?? p.urls.medium, medium: p.urls.medium, thumb: p.urls.thumb } }))}
+                  photos={photos.map((p) => ({
+                    ...p,
+                    tags: [],
+                    order: 0,
+                    urls: {
+                      original: p.urls.original ?? p.urls.medium,
+                      large: p.urls.original ?? p.urls.medium,
+                      medium: p.urls.medium,
+                      small: p.urls.medium,
+                      thumb: p.urls.thumb,
+                    },
+                  }))}
                   onPhotoClick={() => {}}
                 />
               </div>

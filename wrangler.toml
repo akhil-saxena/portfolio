@@ -10,3 +10,7 @@ dataset = "photo_views"
 [[r2_buckets]]
 binding = "PORTFOLIO_BUCKET"
 bucket_name = "portfolio-photos"
+
+[vars]
+GITHUB_REPO = "akhil-saxena/portfolio"
+R2_PUBLIC_URL = "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev"

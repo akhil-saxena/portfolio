@@ -107,7 +107,7 @@ export default function AdminPage() {
               onClick={() => setActiveSection(item.id)}
             >
               {item.icon}
-              {item.label}
+              <span className="admin-nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
@@ -115,7 +115,7 @@ export default function AdminPage() {
         <div className="admin-sidebar-actions">
           <button className="admin-action-btn admin-action-secondary" onClick={() => setShowPreview(true)}>
             <IconEye size={16} />
-            Preview
+            <span className="admin-action-label">Preview</span>
           </button>
           <DeployButton
             hasUnsaved={hasUnsaved}

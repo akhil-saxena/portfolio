@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useInView } from "@/hooks/useInView";
 import ProjectCard from "@/components/ProjectCard";
+import MasonryGrid from "@/components/MasonryGrid";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
@@ -76,28 +77,6 @@ const initialPhotos: PortfolioPhoto[] = [...(portfolioData as PortfolioPhoto[])]
   (a, b) => (a.order ?? 0) - (b.order ?? 0)
 );
 
-function SortablePhoto({ photo, isSelected, onClick }: { photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className={`masonry-item admin-editable ${isSelected ? "selected" : ""}`}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-    >
-      <span className="admin-edit-badge">&#9998;</span>
-      <img src={photo.urls.medium} alt={photo.title} className="masonry-img" loading="lazy"
-        style={{ backgroundImage: `url(${photo.urls.thumb})`, width: "100%", height: "auto" }} />
-      <div className="masonry-overlay">
-        <span className="masonry-title">{photo.title}</span>
-      </div>
-    </div>
-  );
-}
-
 function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
@@ -155,19 +134,6 @@ export default function AdminPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
-
-  const handlePhotoDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setPhotos(prev => {
-      const sorted = [...prev].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      const oldIndex = sorted.findIndex(p => p.id === active.id);
-      const newIndex = sorted.findIndex(p => p.id === over.id);
-      const reordered = arrayMove(sorted, oldIndex, newIndex).map((p, i) => ({ ...p, order: i + 1 }));
-      return reordered;
-    });
-    setHasUnsaved(true);
-  }, []);
 
   const handleGalleryDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -499,20 +465,13 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhotoDragEnd}>
-                <SortableContext items={filteredPhotos.map(p => p.id)} strategy={rectSortingStrategy}>
-                  <div className="masonry-grid">
-                    {filteredPhotos.map((photo) => (
-                      <SortablePhoto
-                        key={photo.id}
-                        photo={photo}
-                        isSelected={selection.type === "photo" && selection.photo.id === photo.id}
-                        onClick={() => setSelection({ type: "photo", photo })}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <MasonryGrid
+                photos={fullPhotos}
+                onPhotoClick={(index) => {
+                  const photo = filteredPhotos[index];
+                  if (photo) setSelection({ type: "photo", photo });
+                }}
+              />
 
               {lightboxIndex !== null && (
                 <Lightbox

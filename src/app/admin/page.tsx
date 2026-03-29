@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { useInView } from "@/hooks/useInView";
 import ProjectCard from "@/components/ProjectCard";
+import DraggableMasonry from "@/components/admin/DraggableMasonry";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
@@ -32,6 +33,7 @@ import "@/styles/photography.css";
 import "@/styles/home.css";
 import portfolioData from "../../../data/portfolio_images.json";
 import resumeData from "../../../data/resume.json";
+import siteConfig from "../../../data/site_config.json";
 
 type Tab = "home" | "photography" | "dev";
 
@@ -76,29 +78,7 @@ const initialPhotos: PortfolioPhoto[] = [...(portfolioData as PortfolioPhoto[])]
   (a, b) => (a.order ?? 0) - (b.order ?? 0)
 );
 
-function SortablePhoto({ photo, isSelected, onClick }: { photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: photo.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}
-      className={`masonry-item admin-editable ${isSelected ? "selected" : ""}`}
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-    >
-      <span className="admin-edit-badge">&#9998;</span>
-      <img src={photo.urls.medium} alt={photo.title} className="masonry-img" loading="lazy"
-        style={{ backgroundImage: `url(${photo.urls.thumb})`, width: "100%", height: "auto" }} />
-      <div className="masonry-overlay">
-        <span className="masonry-title">{photo.title}</span>
-      </div>
-    </div>
-  );
-}
-
-function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; onClick: () => void }) {
+function SortableGalleryItem({ id, photo, isSelected, objectPosition, onClick }: { id: string; photo: PortfolioPhoto; isSelected: boolean; objectPosition?: string; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -110,7 +90,7 @@ function SortableGalleryItem({ id, photo, isSelected, onClick }: { id: string; p
       className={`hd-gallery-item admin-editable ${isSelected ? "selected" : ""}`}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
     >
-      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
+      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover", objectPosition: objectPosition || "center" }} />
     </div>
   );
 }
@@ -133,16 +113,24 @@ export default function AdminPage() {
   const [homeSubtitle, setHomeSubtitle] = useState("Interfaces & Imagery");
   const [homeIntro, setHomeIntro] = useState("Building for the web. Photographing everything else.");
   const [homePeekIds, setHomePeekIds] = useState(["abstract-intothemist", "architecture-singapore", "nature-sunrisepoint", "street-tunnelvision", "wildlife-kingfisher", "architecture-eiffeljpg"]);
+  const [homePeekPositions, setHomePeekPositions] = useState<Record<string, string>>({});
   const [socialLinks, setSocialLinks] = useState([
     { icon: "github", url: "https://github.com/akhil-saxena", label: "GitHub" },
     { icon: "linkedin", url: "https://www.linkedin.com/in/akhil-saxena", label: "LinkedIn" },
     { icon: "mail", url: "mailto:saxena.akhil42@gmail.com", label: "Email" },
   ]);
+  const [homeCtas, setHomeCtas] = useState([
+    { text: "View Photography →", link: "/photography", style: "primary" as const },
+    { text: "View Resume", link: "/dev", style: "secondary" as const },
+  ]);
 
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
+  const [categoryColumns, setCategoryColumns] = useState<Record<string, number>>(siteConfig.categoryColumns || {});
+  const [categoryOrders, setCategoryOrders] = useState<Record<string, string[]>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
 
   const devRef = useInView();
 
@@ -155,19 +143,6 @@ export default function AdminPage() {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
-
-  const handlePhotoDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setPhotos(prev => {
-      const sorted = [...prev].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-      const oldIndex = sorted.findIndex(p => p.id === active.id);
-      const newIndex = sorted.findIndex(p => p.id === over.id);
-      const reordered = arrayMove(sorted, oldIndex, newIndex).map((p, i) => ({ ...p, order: i + 1 }));
-      return reordered;
-    });
-    setHasUnsaved(true);
-  }, []);
 
   const handleGalleryDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event;
@@ -200,8 +175,23 @@ export default function AdminPage() {
         (p) => p.category.toLowerCase() === photoCategory.toLowerCase()
       );
     }
+
+    // Apply per-category ordering if available
+    const catOrder = categoryOrders[photoCategory];
+    if (catOrder && catOrder.length > 0) {
+      const orderMap = new Map(catOrder.map((id, i) => [id, i]));
+      result = [...result].sort((a, b) => {
+        const aIdx = orderMap.get(a.id);
+        const bIdx = orderMap.get(b.id);
+        if (aIdx !== undefined && bIdx !== undefined) return aIdx - bIdx;
+        if (aIdx !== undefined) return -1;
+        if (bIdx !== undefined) return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
+      });
+    }
+
     return result;
-  }, [sortedPhotos, photoCategory, photoSearch]);
+  }, [sortedPhotos, photoCategory, photoSearch, categoryOrders]);
 
   const photoCounts = useMemo(() => {
     const c: Record<string, number> = { All: sortedPhotos.length };
@@ -236,7 +226,7 @@ export default function AdminPage() {
 
   // Available photos for home gallery picker
   const availablePhotos = useMemo(() =>
-    sortedPhotos.map((p) => ({ id: p.id, title: p.title })),
+    sortedPhotos.map((p) => ({ id: p.id, title: p.title, url: p.urls.medium, category: p.category })),
     [sortedPhotos]
   );
 
@@ -338,6 +328,17 @@ export default function AdminPage() {
 
   const handleUpdateHomePeekId = useCallback((index: number, newId: string) => {
     setHomePeekIds(prev => prev.map((id, i) => i === index ? newId : id));
+    setHasUnsaved(true);
+  }, []);
+
+  const handleRemoveHomePeekId = useCallback((index: number) => {
+    setHomePeekIds(prev => prev.filter((_, i) => i !== index));
+    setHasUnsaved(true);
+    setSelection({ type: "none", tab: "home" });
+  }, []);
+
+  const handleAddHomePeekId = useCallback((id: string) => {
+    setHomePeekIds(prev => [...prev, id]);
     setHasUnsaved(true);
   }, []);
 
@@ -467,6 +468,7 @@ export default function AdminPage() {
           hasUnsaved,
           photos,
           resume: { experience, projects, skills, education },
+          siteConfig: { categoryColumns },
           onDeploySuccess: () => setHasUnsaved(false),
           disabled: isDispatching,
         }}
@@ -499,20 +501,45 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePhotoDragEnd}>
-                <SortableContext items={filteredPhotos.map(p => p.id)} strategy={rectSortingStrategy}>
-                  <div className="masonry-grid">
-                    {filteredPhotos.map((photo) => (
-                      <SortablePhoto
-                        key={photo.id}
-                        photo={photo}
-                        isSelected={selection.type === "photo" && selection.photo.id === photo.id}
-                        onClick={() => setSelection({ type: "photo", photo })}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+              <div className="admin-layout-selector">
+                <span className="admin-layout-label">Columns:</span>
+                {[2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    className={`admin-layout-btn ${(categoryColumns[photoCategory] || 4) === n ? "active" : ""}`}
+                    onClick={() => {
+                      setCategoryColumns(prev => ({ ...prev, [photoCategory]: n }));
+                      setHasUnsaved(true);
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+
+              <DraggableMasonry
+                photos={fullPhotos}
+                columns={categoryColumns[photoCategory] || 4}
+                selectedId={selection.type === "photo" ? selection.photo.id : undefined}
+                onPhotoClick={(index) => {
+                  const photo = filteredPhotos[index];
+                  if (photo) setSelection({ type: "photo", photo });
+                }}
+                onReorder={(reordered) => {
+                  // Save per-category order
+                  setCategoryOrders(prev => ({
+                    ...prev,
+                    [photoCategory]: reordered.map((p) => p.id),
+                  }));
+
+                  // If "All" tab, also update the global order
+                  if (photoCategory === "All") {
+                    setPhotos(reordered.map((p, i) => ({ ...p, order: i + 1 })) as unknown as PortfolioPhoto[]);
+                  }
+
+                  setHasUnsaved(true);
+                }}
+              />
 
               {lightboxIndex !== null && (
                 <Lightbox
@@ -532,10 +559,15 @@ export default function AdminPage() {
                 <p className="dev-label">Resume & Projects</p>
                 <div className="dev-header-row">
                   <h1 className="dev-title">Development</h1>
-                  <span className="resume-btn">
+                  <div
+                    className={`resume-btn admin-editable ${selection.type === "resume" ? "selected" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); setSelection({ type: "resume" } as Selection); }}
+                    style={{ cursor: "pointer" }}
+                  >
+                    <span className="admin-edit-badge">✎</span>
                     <IconDownload size={16} />
                     Resume
-                  </span>
+                  </div>
                 </div>
               </header>
 
@@ -701,6 +733,7 @@ export default function AdminPage() {
                           key={id}
                           id={id}
                           photo={photo}
+                          objectPosition={homePeekPositions[id] || "center"}
                           isSelected={selection.type === "homeGallery" && (selection as { type: "homeGallery"; photoIndex: number }).photoIndex === i}
                           onClick={() => setSelection({ type: "homeGallery", photoIndex: i })}
                         />
@@ -711,8 +744,16 @@ export default function AdminPage() {
               </DndContext>
 
               <div className="hd-ctas">
-                <span className="hd-cta hd-cta-primary" style={{ cursor: "default" }}>View Photography &#8594;</span>
-                <span className="hd-cta hd-cta-secondary" style={{ cursor: "default" }}>View Resume</span>
+                {homeCtas.map((cta, i) => (
+                  <div
+                    key={i}
+                    className={`admin-editable ${selection.type === "homeCta" && (selection as { type: "homeCta"; ctaIndex: number }).ctaIndex === i ? "selected" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeCta", ctaIndex: i } as Selection); }}
+                  >
+                    <span className="admin-edit-badge">✎</span>
+                    <span className={`hd-cta hd-cta-${cta.style}`} style={{ cursor: "pointer" }}>{cta.text}</span>
+                  </div>
+                ))}
               </div>
 
               <div
@@ -726,7 +767,7 @@ export default function AdminPage() {
                       <span key={i} aria-label={link.label}>{getIcon(link.icon, { size: 18 })}</span>
                     ))}
                   </div>
-                  <p className="hd-footer">&copy; {new Date().getFullYear()} Akhil Saxena</p>
+                  <p className="hd-footer">&copy; 2026 Akhil Saxena</p>
                 </footer>
               </div>
             </div>
@@ -757,7 +798,19 @@ export default function AdminPage() {
           onUpdateHome={handleUpdateHome}
           onUpdateHomePeekId={handleUpdateHomePeekId}
           onUpdateSocialLinks={handleUpdateSocialLinks}
+          homeCtas={homeCtas}
+          onUpdateHomeCta={(index, updates) => {
+            setHomeCtas(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
+            setHasUnsaved(true);
+          }}
           availablePhotos={availablePhotos}
+          onRemoveHomePeekId={handleRemoveHomePeekId}
+          onAddHomePeekId={handleAddHomePeekId}
+          homePeekPositions={homePeekPositions}
+          onUpdateHomePeekPosition={(id, position) => {
+            setHomePeekPositions(prev => ({ ...prev, [id]: position }));
+            setHasUnsaved(true);
+          }}
         />
       </div>
     </div>

@@ -100,7 +100,9 @@ export type Selection =
   | { type: "homeSubtitle" }
   | { type: "homeIntro" }
   | { type: "homeGallery"; photoIndex: number }
-  | { type: "homeSocial" };
+  | { type: "homeSocial" }
+  | { type: "homeCta"; ctaIndex: number }
+  | { type: "resume" };
 
 interface PropertiesPanelProps {
   selection: Selection;
@@ -125,7 +127,13 @@ interface PropertiesPanelProps {
   onUpdateHome?: (field: string, value: string) => void;
   onUpdateHomePeekId?: (index: number, newId: string) => void;
   onUpdateSocialLinks?: (links: SocialLink[]) => void;
-  availablePhotos?: { id: string; title: string }[];
+  homeCtas?: { text: string; link: string; style: "primary" | "secondary" }[];
+  onUpdateHomeCta?: (index: number, updates: { text?: string; link?: string; style?: "primary" | "secondary" }) => void;
+  availablePhotos?: { id: string; title: string; url: string; category?: string }[];
+  onRemoveHomePeekId?: (index: number) => void;
+  onAddHomePeekId?: (id: string) => void;
+  homePeekPositions?: Record<string, string>;
+  onUpdateHomePeekPosition?: (id: string, position: string) => void;
 }
 
 const CATEGORIES = ["abstract", "architecture", "nature", "portraits", "street", "wildlife", "product"];
@@ -173,6 +181,48 @@ function SortableBullet({ id, bullet, onEdit, onDelete }: {
   );
 }
 
+function CategorizedPhotoPicker({ photos, excludeIds, onSelect, galleryIds }: {
+  photos: { id: string; title: string; url: string; category?: string }[];
+  excludeIds: string[];
+  onSelect: (id: string) => void;
+  galleryIds?: string[];
+}) {
+  const filtered = photos.filter(p => !excludeIds.includes(p.id));
+  const grouped: Record<string, typeof filtered> = {};
+  filtered.forEach(p => {
+    const cat = (p.category || "other").charAt(0).toUpperCase() + (p.category || "other").slice(1);
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(p);
+  });
+
+  return (
+    <div className="admin-categorized-picker">
+      {Object.entries(grouped).map(([category, items]) => (
+        <details key={category} open>
+          <summary className="admin-picker-category">{category} ({items.length})</summary>
+          <div className="admin-photo-picker-grid">
+            {items.map((p) => {
+              const isInGallery = galleryIds?.includes(p.id) ?? false;
+              return (
+                <button
+                  key={p.id}
+                  className={`admin-photo-picker-item ${isInGallery ? "in-gallery" : ""}`}
+                  onClick={() => onSelect(p.id)}
+                  title={p.title}
+                  disabled={isInGallery}
+                >
+                  <img src={p.url} alt={p.title} />
+                  {isInGallery && <span className="admin-picker-check">{"\u2713"}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </details>
+      ))}
+    </div>
+  );
+}
+
 export default function PropertiesPanel({
   selection,
   onUpdatePhoto,
@@ -196,7 +246,13 @@ export default function PropertiesPanel({
   onUpdateHome,
   onUpdateHomePeekId,
   onUpdateSocialLinks,
+  homeCtas,
+  onUpdateHomeCta,
   availablePhotos,
+  onRemoveHomePeekId,
+  onAddHomePeekId,
+  homePeekPositions,
+  onUpdateHomePeekPosition,
 }: PropertiesPanelProps) {
   const [showExif, setShowExif] = useState(false);
   const bulletSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -256,7 +312,19 @@ export default function PropertiesPanel({
             </>
           )}
           {selection.tab === "home" && (
-            <p className="admin-props-hint">Click any element on the homepage to edit it.</p>
+            <>
+              <p className="admin-props-hint">Click elements to edit. Drag gallery photos to reorder.</p>
+              {homeData && homeData.peekIds.length < 8 && availablePhotos && onAddHomePeekId && (
+                <div className="admin-props-section">
+                  <h4 className="admin-props-section-title">Add Photo to Gallery</h4>
+                  <CategorizedPhotoPicker
+                    photos={availablePhotos}
+                    excludeIds={homeData.peekIds}
+                    onSelect={(id) => onAddHomePeekId(id)}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -655,6 +723,9 @@ export default function PropertiesPanel({
   if (selection.type === "homeGallery" && homeData && onUpdateHomePeekId && availablePhotos) {
     const idx = selection.photoIndex;
     const currentId = homeData.peekIds[idx] || "";
+    const currentPhoto = availablePhotos.find(p => p.id === currentId);
+    const currentPosition = homePeekPositions?.[currentId] || "50% 50%";
+
     return (
       <div className="admin-props">
         <div className="admin-props-header">
@@ -662,14 +733,74 @@ export default function PropertiesPanel({
           <button className="admin-props-close" onClick={onDeselect}>×</button>
         </div>
         <div className="admin-props-body">
-          <label className="admin-field">
-            <span className="admin-field-label">Photo</span>
-            <select value={currentId} onChange={(e) => onUpdateHomePeekId(idx, e.target.value)} className="admin-input">
-              {availablePhotos.map((p) => (
-                <option key={p.id} value={p.id}>{p.title} ({p.id})</option>
-              ))}
-            </select>
-          </label>
+          {currentPhoto && (
+            <div className="admin-field">
+              <span className="admin-field-label">Position (drag to adjust)</span>
+              <div
+                className="admin-pan-frame"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  const frame = e.currentTarget;
+                  const img = frame.querySelector("img") as HTMLImageElement;
+                  if (!img) return;
+
+                  const startX = e.clientX;
+                  const startY = e.clientY;
+                  const pos = (currentPosition || "50% 50%").split(" ");
+                  const startPosX = parseFloat(pos[0]) || 50;
+                  const startPosY = parseFloat(pos[1]) || 50;
+
+                  const handleMove = (ev: MouseEvent) => {
+                    const dx = ev.clientX - startX;
+                    const dy = ev.clientY - startY;
+                    const newX = Math.max(0, Math.min(100, startPosX - (dx / 2)));
+                    const newY = Math.max(0, Math.min(100, startPosY - (dy / 2)));
+                    const newPos = `${Math.round(newX)}% ${Math.round(newY)}%`;
+                    img.style.objectPosition = newPos;
+                    frame.dataset.currentPos = newPos;
+                  };
+
+                  const handleUp = () => {
+                    document.removeEventListener("mousemove", handleMove);
+                    document.removeEventListener("mouseup", handleUp);
+                    const finalPos = frame.dataset.currentPos;
+                    if (finalPos) {
+                      onUpdateHomePeekPosition?.(currentId, finalPos);
+                    }
+                  };
+
+                  document.addEventListener("mousemove", handleMove);
+                  document.addEventListener("mouseup", handleUp);
+                }}
+              >
+                <img
+                  src={currentPhoto.url}
+                  alt="Position preview"
+                  className="admin-pan-img"
+                  style={{ objectPosition: currentPosition || "50% 50%" }}
+                  draggable={false}
+                />
+                <div className="admin-pan-crosshair" />
+              </div>
+              <p className="admin-props-hint" style={{ marginTop: "4px" }}>Drag the image to adjust which part shows in the card</p>
+            </div>
+          )}
+
+          {onRemoveHomePeekId && (
+            <button className="admin-btn admin-btn-secondary" style={{ width: "100%", justifyContent: "center", color: "#e74c3c", borderColor: "#e74c3c" }} onClick={() => onRemoveHomePeekId(idx)}>
+              Remove from Gallery
+            </button>
+          )}
+
+          <div className="admin-props-section" style={{ marginTop: "12px" }}>
+            <h4 className="admin-props-section-title">Replace with</h4>
+            <CategorizedPhotoPicker
+              photos={availablePhotos}
+              excludeIds={[]}
+              onSelect={(id) => onUpdateHomePeekId(idx, id)}
+              galleryIds={homeData.peekIds}
+            />
+          </div>
         </div>
       </div>
     );
@@ -722,6 +853,66 @@ export default function PropertiesPanel({
           <button className="admin-add-pill" onClick={addLink}>
             + Add Link
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Home CTA button
+  if (selection.type === "homeCta" && homeCtas && onUpdateHomeCta) {
+    const cta = homeCtas[selection.ctaIndex];
+    if (!cta) return null;
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Button</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <label className="admin-field">
+            <span className="admin-field-label">Text</span>
+            <input type="text" value={cta.text} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { text: e.target.value })} className="admin-input" />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Link</span>
+            <input type="text" value={cta.link} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { link: e.target.value })} className="admin-input" placeholder="/photography" />
+          </label>
+          <label className="admin-field">
+            <span className="admin-field-label">Style</span>
+            <select value={cta.style} onChange={(e) => onUpdateHomeCta(selection.ctaIndex, { style: e.target.value as "primary" | "secondary" })} className="admin-input">
+              <option value="primary">Primary (filled)</option>
+              <option value="secondary">Secondary (outlined)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  // Resume
+  if (selection.type === "resume") {
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Resume</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <p className="admin-props-hint">
+            Current resume: <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)", textDecoration: "underline" }}>Download PDF</a>
+          </p>
+          <div className="admin-props-section">
+            <h4 className="admin-props-section-title">Upload New Resume</h4>
+            <label className="admin-btn admin-btn-secondary" style={{ cursor: "pointer", textAlign: "center", display: "flex", justifyContent: "center" }}>
+              <IconPlus size={14} /> Choose PDF
+              <input type="file" accept=".pdf" hidden onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  alert(`Selected: ${file.name}\n\nTo update the resume, replace public/resume.pdf in the repo and deploy. Automatic upload coming in a future update.`);
+                }
+              }} />
+            </label>
+          </div>
         </div>
       </div>
     );

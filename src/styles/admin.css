@@ -1675,8 +1675,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
-  max-height: calc(100vh - 350px);
-  min-height: 200px;
+  max-height: calc(100vh - 250px);
+  min-height: 400px;
   overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1706,4 +1706,34 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* ===== Focal Point Selector ===== */
+.admin-focal-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.admin-focal-btn {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.admin-focal-btn:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink-body);
+}
+
+.admin-focal-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
 }

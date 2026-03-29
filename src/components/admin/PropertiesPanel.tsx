@@ -132,6 +132,8 @@ interface PropertiesPanelProps {
   availablePhotos?: { id: string; title: string; url: string }[];
   onRemoveHomePeekId?: (index: number) => void;
   onAddHomePeekId?: (id: string) => void;
+  homePeekPositions?: Record<string, string>;
+  onUpdateHomePeekPosition?: (id: string, position: string) => void;
 }
 
 const CATEGORIES = ["abstract", "architecture", "nature", "portraits", "street", "wildlife", "product"];
@@ -207,6 +209,8 @@ export default function PropertiesPanel({
   availablePhotos,
   onRemoveHomePeekId,
   onAddHomePeekId,
+  homePeekPositions,
+  onUpdateHomePeekPosition,
 }: PropertiesPanelProps) {
   const [showExif, setShowExif] = useState(false);
   const bulletSensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -685,6 +689,16 @@ export default function PropertiesPanel({
     const idx = selection.photoIndex;
     const currentId = homeData.peekIds[idx] || "";
     const currentPhoto = availablePhotos.find(p => p.id === currentId);
+    const currentPosition = homePeekPositions?.[currentId] || "center";
+
+    const POSITIONS = [
+      { value: "top", label: "Top" },
+      { value: "center", label: "Center" },
+      { value: "bottom", label: "Bottom" },
+      { value: "left", label: "Left" },
+      { value: "right", label: "Right" },
+    ];
+
     return (
       <div className="admin-props">
         <div className="admin-props-header">
@@ -694,10 +708,32 @@ export default function PropertiesPanel({
         <div className="admin-props-body">
           {currentPhoto && (
             <div className="admin-props-thumb">
-              <img src={currentPhoto.url} alt={currentPhoto.title} />
+              <img src={currentPhoto.url} alt={currentPhoto.title} style={{ objectPosition: currentPosition }} />
             </div>
           )}
-          <div className="admin-props-section">
+
+          <div className="admin-field">
+            <span className="admin-field-label">Focal Point</span>
+            <div className="admin-focal-buttons">
+              {POSITIONS.map((pos) => (
+                <button
+                  key={pos.value}
+                  className={`admin-focal-btn ${currentPosition === pos.value ? "active" : ""}`}
+                  onClick={() => onUpdateHomePeekPosition?.(currentId, pos.value)}
+                >
+                  {pos.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {onRemoveHomePeekId && (
+            <button className="admin-btn admin-btn-secondary" style={{ width: "100%", justifyContent: "center", color: "#e74c3c", borderColor: "#e74c3c" }} onClick={() => onRemoveHomePeekId(idx)}>
+              Remove from Gallery
+            </button>
+          )}
+
+          <div className="admin-props-section" style={{ marginTop: "12px" }}>
             <h4 className="admin-props-section-title">Replace with</h4>
             <div className="admin-photo-picker-grid">
               {availablePhotos.filter(p => !homeData.peekIds.includes(p.id)).map((p) => (
@@ -712,11 +748,6 @@ export default function PropertiesPanel({
               ))}
             </div>
           </div>
-          {onRemoveHomePeekId && (
-            <button className="admin-delete-link" onClick={() => onRemoveHomePeekId(idx)}>
-              Remove from gallery
-            </button>
-          )}
         </div>
       </div>
     );

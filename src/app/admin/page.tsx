@@ -244,29 +244,17 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("category", metadata.category);
+      formData.append("title", metadata.title);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { tempKey } = await uploadRes.json() as { tempKey: string };
+      const result = await uploadRes.json() as { error?: string; message?: string };
+      if (!uploadRes.ok) throw new Error(result.error || "Upload failed");
 
-      setIsDispatching(true);
-      const dispatchRes = await fetch("/api/dispatch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tempKey,
-          title: metadata.title,
-          category: metadata.category,
-          tags: metadata.tags,
-        }),
-      });
-      if (!dispatchRes.ok) throw new Error("Dispatch failed");
-
-      alert("Photo uploaded! It will appear after the GitHub Action completes and the site rebuilds.");
+      alert(result.message || "Photo uploaded! The GitHub Action will process it and the site will rebuild.");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Upload failed");
     } finally {
       setIsUploading(false);
-      setIsDispatching(false);
     }
   }, []);
 

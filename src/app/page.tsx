@@ -37,7 +37,7 @@ export default function HomePage() {
         {peekPhotos.map((photo) => (
           <div key={photo!.id} className="hd-gallery-item">
             <Image
-              src={photo!.urls.medium}
+              src={photo!.urls.small || photo!.urls.medium}
               width={400}
               height={267}
               alt={photo!.title}

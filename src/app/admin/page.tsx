@@ -99,6 +99,12 @@ function SortableGalleryItem({ id, photo, isSelected, objectPosition, onClick }:
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("photography");
   const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [dirtyFiles, setDirtyFiles] = useState<Set<string>>(new Set());
+
+  const markDirty = useCallback((file: string) => {
+    setHasUnsaved(true);
+    setDirtyFiles(prev => new Set(prev).add(file));
+  }, []);
   const [selection, setSelection] = useState<Selection>({ type: "none", tab: "photography" });
 
   const [photos, setPhotos] = useState<PortfolioPhoto[]>(initialPhotos);
@@ -452,7 +458,11 @@ export default function AdminPage() {
           resume: { experience, projects, skills, education },
           siteConfig: { categoryColumns },
           homeConfig: { title: homeTitle, subtitle: homeSubtitle, intro: homeIntro, peekIds: homePeekIds, peekPositions: homePeekPositions, socialLinks, ctas: homeCtas },
-          onDeploySuccess: () => setHasUnsaved(false),
+          initialPhotos: initialPhotos,
+          initialResume: resumeData as unknown as Record<string, unknown>,
+          initialSiteConfig: siteConfig as unknown as Record<string, unknown>,
+          initialHomeConfig: homeConfig as unknown as Record<string, unknown>,
+          onDeploySuccess: () => { setHasUnsaved(false); setDirtyFiles(new Set()); },
           disabled: isDispatching,
         }}
       />

@@ -14,6 +14,10 @@ interface DeployButtonProps {
   };
   siteConfig?: Record<string, unknown>;
   homeConfig?: Record<string, unknown>;
+  initialPhotos?: unknown[];
+  initialResume?: Record<string, unknown>;
+  initialSiteConfig?: Record<string, unknown>;
+  initialHomeConfig?: Record<string, unknown>;
   onDeploySuccess: () => void;
   disabled?: boolean;
 }
@@ -30,7 +34,7 @@ function timestamp() {
   return new Date().toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
-export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, homeConfig, onDeploySuccess, disabled }: DeployButtonProps) {
+export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, homeConfig, initialPhotos, initialResume, initialSiteConfig, initialHomeConfig, onDeploySuccess, disabled }: DeployButtonProps) {
   const [status, setStatus] = useState<DeployStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -47,17 +51,38 @@ export default function DeployButton({ hasUnsaved, photos, resume, siteConfig, h
     addLog("Preparing files for deploy...");
 
     try {
-      addLog("Committing to GitHub...");
+      // Only send files that actually changed
+      const files: Record<string, string> = {};
+      const photosStr = JSON.stringify(photos, null, 2);
+      const resumeStr = JSON.stringify(resume, null, 2);
+      const siteConfigStr = siteConfig ? JSON.stringify(siteConfig, null, 2) : "";
+      const homeConfigStr = homeConfig ? JSON.stringify(homeConfig, null, 2) : "";
+
+      if (photosStr !== JSON.stringify(initialPhotos, null, 2)) {
+        files["data/portfolio_images.json"] = photosStr;
+      }
+      if (resumeStr !== JSON.stringify(initialResume, null, 2)) {
+        files["data/resume.json"] = resumeStr;
+      }
+      if (siteConfigStr && siteConfigStr !== JSON.stringify(initialSiteConfig, null, 2)) {
+        files["data/site_config.json"] = siteConfigStr;
+      }
+      if (homeConfigStr && homeConfigStr !== JSON.stringify(initialHomeConfig, null, 2)) {
+        files["data/home_config.json"] = homeConfigStr;
+      }
+
+      if (Object.keys(files).length === 0) {
+        addLog("No changes detected", "info");
+        setStatus("idle");
+        return;
+      }
+
+      addLog(`Committing ${Object.keys(files).length} file(s): ${Object.keys(files).map(f => f.split("/").pop()).join(", ")}...`);
       const res = await fetch("/api/deploy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          files: {
-            "data/portfolio_images.json": JSON.stringify(photos, null, 2),
-            "data/resume.json": JSON.stringify(resume, null, 2),
-            ...(siteConfig ? { "data/site_config.json": JSON.stringify(siteConfig, null, 2) } : {}),
-            ...(homeConfig ? { "data/home_config.json": JSON.stringify(homeConfig, null, 2) } : {}),
-          },
+          files,
           baseSha: "latest",
           message: "chore: update portfolio data via admin",
         }),

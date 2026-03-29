@@ -19,6 +19,10 @@ interface AdminTopBarProps {
     };
     siteConfig?: Record<string, unknown>;
     homeConfig?: Record<string, unknown>;
+    initialPhotos?: unknown[];
+    initialResume?: Record<string, unknown>;
+    initialSiteConfig?: Record<string, unknown>;
+    initialHomeConfig?: Record<string, unknown>;
     onDeploySuccess: () => void;
     disabled?: boolean;
   };

@@ -49,6 +49,36 @@ async function extractExif(filePath) {
   }
 }
 
+async function addWatermark(imageBuffer, width) {
+  const fontSize = Math.max(10, Math.min(24, Math.round(width * 0.01)));
+  const xOffset = Math.round(width * 0.015);
+  const yOffset = Math.round(width * 0.015);
+
+  // Get image height for positioning
+  const metadata = await sharp(imageBuffer).metadata();
+  const height = metadata.height || Math.round(width * 0.67);
+
+  const svgText = `
+    <svg width="${width}" height="${height}">
+      <text
+        x="${width - xOffset}"
+        y="${height - yOffset}"
+        font-family="monospace"
+        font-size="${fontSize}"
+        font-weight="400"
+        fill="rgba(255,255,255,0.20)"
+        text-anchor="end"
+        dominant-baseline="auto"
+        letter-spacing="0.08em"
+      >akhil saxena</text>
+    </svg>
+  `;
+
+  return sharp(imageBuffer)
+    .composite([{ input: Buffer.from(svgText), gravity: "center" }])
+    .toBuffer();
+}
+
 async function processImage(filePath, category, r2Client, bucket, publicUrl) {
   const ext = path.extname(filePath).toLowerCase();
   const baseName = path.basename(filePath, ext);
@@ -63,12 +93,16 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
 
   const urls = { original: "", medium: "", thumb: "" };
 
+  // Process and upload variants with watermark
   for (const variant of VARIANTS) {
     const width = Math.min(variant.maxWidth, sourceWidth);
-    const webpBuffer = await sharp(imageBuffer)
+    const resizedBuffer = await sharp(imageBuffer)
       .resize({ width, withoutEnlargement: true })
       .webp({ quality: variant.quality })
       .toBuffer();
+
+    // Apply watermark to original and medium (not thumb)
+    const watermarkedBuffer = await addWatermark(resizedBuffer, width);
 
     const r2Key = `photos/${category}/${slug}${variant.suffix}.webp`;
 
@@ -76,7 +110,7 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
       new PutObjectCommand({
         Bucket: bucket,
         Key: r2Key,
-        Body: webpBuffer,
+        Body: watermarkedBuffer,
         ContentType: "image/webp",
       })
     );
@@ -85,6 +119,22 @@ async function processImage(filePath, category, r2Client, bucket, publicUrl) {
     urls[urlKey] = `${publicUrl}/${r2Key}`;
   }
 
+  // Upload clean (unwatermarked) original to /private/
+  const cleanOriginal = await sharp(imageBuffer)
+    .resize({ width: Math.min(2000, sourceWidth), withoutEnlargement: true })
+    .webp({ quality: 85 })
+    .toBuffer();
+
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: `private/${category}/${slug}-clean.webp`,
+      Body: cleanOriginal,
+      ContentType: "image/webp",
+    })
+  );
+
+  // Generate base64 thumbnail (no watermark — too small)
   const thumbBuffer = await sharp(imageBuffer)
     .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
     .webp({ quality: THUMB_QUALITY })
@@ -120,4 +170,4 @@ function createR2Client() {
   });
 }
 
-module.exports = { processImage, createR2Client, slugify, titleCase, extractExif };
+module.exports = { processImage, createR2Client, slugify, titleCase, extractExif, addWatermark };

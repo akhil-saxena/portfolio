@@ -125,6 +125,7 @@ export default function AdminPage() {
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
+  const [categoryColumns, setCategoryColumns] = useState<Record<string, number>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
 
@@ -470,15 +471,39 @@ export default function AdminPage() {
                 <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
 
+              <div className="admin-layout-selector">
+                <span className="admin-layout-label">Columns:</span>
+                {[2, 3, 4, 5].map((n) => (
+                  <button
+                    key={n}
+                    className={`admin-layout-btn ${(categoryColumns[photoCategory] || 4) === n ? "active" : ""}`}
+                    onClick={() => {
+                      setCategoryColumns(prev => ({ ...prev, [photoCategory]: n }));
+                      setHasUnsaved(true);
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+
               <DraggableMasonry
                 photos={fullPhotos}
+                columns={categoryColumns[photoCategory] || 4}
                 selectedId={selection.type === "photo" ? selection.photo.id : undefined}
                 onPhotoClick={(index) => {
                   const photo = filteredPhotos[index];
                   if (photo) setSelection({ type: "photo", photo });
                 }}
                 onReorder={(reordered) => {
-                  setPhotos(reordered as unknown as PortfolioPhoto[]);
+                  // Merge reordered subset back into full array
+                  const reorderedIds = new Set(reordered.map((p) => p.id));
+                  const untouched = photos.filter((p) => !reorderedIds.has(p.id));
+                  const merged = [
+                    ...reordered.map((p, i) => ({ ...p, order: i + 1 })),
+                    ...untouched.map((p, i) => ({ ...p, order: reordered.length + i + 1 })),
+                  ];
+                  setPhotos(merged as unknown as PortfolioPhoto[]);
                   setHasUnsaved(true);
                 }}
               />

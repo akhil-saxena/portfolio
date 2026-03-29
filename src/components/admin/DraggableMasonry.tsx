@@ -9,6 +9,7 @@ import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 interface DraggableMasonryProps {
   photos: Photo[];
   selectedId?: string;
+  columns?: number;
   onPhotoClick: (index: number) => void;
   onReorder: (photos: Photo[]) => void;
 }
@@ -94,6 +95,7 @@ function DraggablePhoto({
 export default function DraggableMasonry({
   photos,
   selectedId,
+  columns = 4,
   onPhotoClick,
   onReorder,
 }: DraggableMasonryProps) {
@@ -116,7 +118,7 @@ export default function DraggableMasonry({
   }
 
   return (
-    <div className="masonry-grid">
+    <div className="masonry-grid" style={{ columns }}>
       {photos.map((photo, index) => (
         <DraggablePhoto
           key={photo.id}

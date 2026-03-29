@@ -1458,6 +1458,50 @@
   box-shadow: 0 0 0 6px rgba(238, 238, 238, 0.1);
 }
 
+/* Layout column selector */
+.admin-layout-selector {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.admin-layout-label {
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-right: 4px;
+}
+
+.admin-layout-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.admin-layout-btn:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink-body);
+}
+
+.admin-layout-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
 .admin-wysiwyg-content .masonry-item {
   cursor: grab;
 }

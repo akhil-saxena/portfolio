@@ -32,13 +32,13 @@
   ],
   "ctas": [
     {
-      "text": "View Photography →",
-      "link": "/photography",
+      "text": "View Portfolio →",
+      "link": "/portfolio",
       "style": "primary"
     },
     {
       "text": "View Resume",
-      "link": "/dev",
+      "link": "/resume",
       "style": "secondary"
     }
   ]

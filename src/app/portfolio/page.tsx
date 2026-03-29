@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
-import Nav from "@/components/Nav";
-import ThemeToggle from "@/components/ThemeToggle";
+import PageNav from "@/components/PageNav";
 import Footer from "@/components/Footer";
 import SearchBar from "@/components/SearchBar";
 import FilterTabs from "@/components/FilterTabs";
 import MasonryGrid from "@/components/MasonryGrid";
 import Lightbox from "@/components/Lightbox";
+import { useScrollTitle } from "@/hooks/useScrollTitle";
 import portfolioData from "../../../data/portfolio_images.json";
 import siteConfig from "../../../data/site_config.json";
 import "@/styles/photography.css";
@@ -16,6 +15,7 @@ import { Photo } from "@/types";
 
 export default function PhotographyPage() {
   const photos = (portfolioData as Photo[]).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const { titleRef, spacerRef } = useScrollTitle();
 
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -23,7 +23,6 @@ export default function PhotographyPage() {
 
   const filtered = useMemo(() => {
     let result = photos;
-
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -34,7 +33,6 @@ export default function PhotographyPage() {
     } else if (category !== "All") {
       result = result.filter((p) => p.category.toLowerCase() === category.toLowerCase());
     }
-
     return result;
   }, [photos, category, search]);
 
@@ -49,16 +47,10 @@ export default function PhotographyPage() {
 
   return (
     <>
-      <Nav title="" backHref="/" />
-      <ThemeToggle />
+      <PageNav backHref="/" />
       <main className="photo-page" id="main">
-        <header className="photo-header">
-          <p className="photo-label">Portfolio</p>
-          <div className="photo-header-row">
-            <h1 className="photo-title">Photography</h1>
-            <span className="photo-count">{filtered.length} photos</span>
-          </div>
-        </header>
+        <div ref={spacerRef} />
+        <h1 ref={titleRef} className="page-scroll-title">Portfolio</h1>
 
         <div className="photo-toolbar">
           <FilterTabs

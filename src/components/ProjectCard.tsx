@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { IconArrowUpRight, getIcon } from "./icons";
 
 interface ProjectCardProps {
@@ -22,7 +23,7 @@ export default function ProjectCard({ title, label, description, tech, icon, bad
       <div className="pc-top">
         <div className="pc-logo">
           {icon ? (
-            <img src={icon} alt={`${title} icon`} width={48} height={48} />
+            <Image src={icon} alt={`${title} icon`} width={48} height={48} />
           ) : (
             getIcon("code", { size: 24, className: "pc-logo-fallback" })
           )}

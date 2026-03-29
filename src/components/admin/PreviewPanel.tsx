@@ -11,6 +11,7 @@ import { getIcon, IconDownload } from "../icons";
 import { Photo } from "@/types";
 import "@/styles/dev.css";
 import "@/styles/photography.css";
+import "@/styles/home.css";
 
 interface SkillGroup {
   category: string;
@@ -60,11 +61,10 @@ interface PreviewPanelProps {
     education: EducationEntry[];
   };
   onClose: () => void;
-  onPhotoReorder?: (photos: Photo[]) => void;
 }
 
 export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelProps) {
-  const [tab, setTab] = useState<"dev" | "photography">("dev");
+  const [tab, setTab] = useState<"home" | "photography" | "dev">("home");
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -115,150 +115,170 @@ export default function PreviewPanel({ photos, resume, onClose }: PreviewPanelPr
   }));
 
   return (
-    <div className="admin-preview-overlay" onClick={onClose}>
-      <div className="admin-preview-panel" onClick={(e) => e.stopPropagation()}>
-        <div className="admin-preview-header">
-          <h3 className="admin-preview-title">Preview</h3>
-          <div className="admin-preview-tabs">
-            <button
-              className={`admin-pill ${tab === "dev" ? "active" : ""}`}
-              onClick={() => setTab("dev")}
-            >
-              Dev Page
-            </button>
-            <button
-              className={`admin-pill ${tab === "photography" ? "active" : ""}`}
-              onClick={() => setTab("photography")}
-            >
-              Photography
-            </button>
+    <div className="admin-preview-panel">
+      <div className="admin-preview-header">
+        <h3 className="admin-preview-title">Preview</h3>
+        <div className="admin-preview-tabs">
+          <button
+            className={`admin-pill ${tab === "home" ? "active" : ""}`}
+            onClick={() => setTab("home")}
+          >
+            Home
+          </button>
+          <button
+            className={`admin-pill ${tab === "photography" ? "active" : ""}`}
+            onClick={() => setTab("photography")}
+          >
+            Photography
+          </button>
+          <button
+            className={`admin-pill ${tab === "dev" ? "active" : ""}`}
+            onClick={() => setTab("dev")}
+          >
+            Development
+          </button>
+        </div>
+        <button className="admin-preview-close" onClick={onClose}>← Back to editor</button>
+      </div>
+
+      <div className="admin-preview-content">
+        {tab === "home" && (
+          <div style={{ maxWidth: "800px", margin: "0 auto", textAlign: "center", padding: "4rem 2rem" }}>
+            <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "3rem", fontWeight: 700, color: "var(--ink)", marginBottom: "0.25rem" }}>Akhil Saxena</h1>
+            <p style={{ fontFamily: "var(--font-serif)", fontSize: "1.125rem", color: "var(--ink-muted)", fontStyle: "italic", marginBottom: "2rem" }}>Interfaces & Imagery</p>
+            <div className="hd-gallery" style={{ maxWidth: "800px" }}>
+              {photos.slice(0, 6).map((photo) => (
+                <div key={photo.id} className="hd-gallery-item">
+                  <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: "1rem", color: "var(--ink-body)", marginTop: "2rem" }}>Building for the web. Photographing everything else.</p>
+            <p style={{ color: "var(--ink-faint)", fontSize: "0.7rem", marginTop: "3rem" }}>&copy; {new Date().getFullYear()} Akhil Saxena</p>
           </div>
-          <button className="admin-preview-close" onClick={onClose}>← Back to editor</button>
-        </div>
+        )}
 
-        <div className="admin-preview-content">
-          {tab === "dev" && (
-            <div className="dev-page" style={{ padding: "0 2rem 2rem" }}>
-              <header className="dev-header">
-                <p className="dev-label">Resume & Portfolio</p>
-                <div className="dev-header-row">
-                  <h1 className="dev-title">Development</h1>
-                  <span className="resume-btn">
-                    <IconDownload size={16} />
-                    Resume
-                  </span>
-                </div>
-              </header>
+        {tab === "dev" && (
+          <div className="dev-page" style={{ padding: "0 2rem 2rem" }}>
+            <header className="dev-header">
+              <p className="dev-label">Resume & Portfolio</p>
+              <div className="dev-header-row">
+                <h1 className="dev-title">Development</h1>
+                <span className="resume-btn">
+                  <IconDownload size={16} />
+                  Resume
+                </span>
+              </div>
+            </header>
 
-              <section>
-                <h2 className="section-title">Experience</h2>
-                <Timeline entries={resume.experience} />
-              </section>
+            <section>
+              <h2 className="section-title">Experience</h2>
+              <Timeline entries={resume.experience} />
+            </section>
 
-              <section className="skills-section">
-                <h2 className="section-title">Skills</h2>
-                {resume.skills.map((group) => (
-                  <div key={group.category} className="skills-group">
-                    <p className="skills-label">
-                      {group.icon && getIcon(group.icon, { size: 14 })}
-                      {group.category}
-                    </p>
-                    <div className="skills-tags">
-                      {group.items.map((s) => (
-                        <span key={s} className="skill-tag">{s}</span>
-                      ))}
-                    </div>
+            <section className="skills-section">
+              <h2 className="section-title">Skills</h2>
+              {resume.skills.map((group) => (
+                <div key={group.category} className="skills-group">
+                  <p className="skills-label">
+                    {group.icon && getIcon(group.icon, { size: 14 })}
+                    {group.category}
+                  </p>
+                  <div className="skills-tags">
+                    {group.items.map((s) => (
+                      <span key={s} className="skill-tag">{s}</span>
+                    ))}
                   </div>
-                ))}
-              </section>
+                </div>
+              ))}
+            </section>
 
-              <section className="education-section">
-                <h2 className="section-title">Education</h2>
-                {resume.education.map((edu) => (
-                  <div key={edu.id} className="education-entry">
-                    <div className="education-header">
-                      <div className="education-header-left">
-                        {edu.logo && (
-                          <img
-                            src={edu.logo}
-                            alt={`${edu.school} logo`}
-                            className="education-logo"
-                            width={32}
-                            height={32}
-                          />
+            <section className="education-section">
+              <h2 className="section-title">Education</h2>
+              {resume.education.map((edu) => (
+                <div key={edu.id} className="education-entry">
+                  <div className="education-header">
+                    <div className="education-header-left">
+                      {edu.logo && (
+                        <img
+                          src={edu.logo}
+                          alt={`${edu.school} logo`}
+                          className="education-logo"
+                          width={32}
+                          height={32}
+                        />
+                      )}
+                      <p className="education-school">
+                        {edu.url ? (
+                          <a href={edu.url} target="_blank" rel="noopener noreferrer">{edu.school}</a>
+                        ) : (
+                          edu.school
                         )}
-                        <p className="education-school">
-                          {edu.url ? (
-                            <a href={edu.url} target="_blank" rel="noopener noreferrer">{edu.school}</a>
-                          ) : (
-                            edu.school
-                          )}
-                        </p>
-                      </div>
-                      <span className="education-period">{edu.period}</span>
+                      </p>
                     </div>
-                    <p className="education-detail">{edu.degree} · {edu.cgpa} CGPA</p>
-                    <div className="education-leadership">
-                      {edu.leadership.map((l) => (
-                        <span key={l} className="education-badge">{l}</span>
-                      ))}
-                    </div>
+                    <span className="education-period">{edu.period}</span>
                   </div>
+                  <p className="education-detail">{edu.degree} · {edu.cgpa} CGPA</p>
+                  <div className="education-leadership">
+                    {edu.leadership.map((l) => (
+                      <span key={l} className="education-badge">{l}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+
+            <section>
+              <h2 className="section-title">Projects</h2>
+              <div className="projects-grid">
+                {resume.projects.map((p) => (
+                  <ProjectCard key={p.id} {...p} />
                 ))}
-              </section>
-
-              <section>
-                <h2 className="section-title">Projects</h2>
-                <div className="projects-grid">
-                  {resume.projects.map((p) => (
-                    <ProjectCard key={p.id} {...p} />
-                  ))}
-                </div>
-              </section>
-            </div>
-          )}
-
-          {tab === "photography" && (
-            <div className="photo-page" style={{ maxWidth: "100%", padding: "0" }}>
-              <header className="photo-header">
-                <p className="photo-label">Portfolio</p>
-                <div className="photo-header-row">
-                  <h1 className="photo-title">Photography</h1>
-                  <span className="photo-count">{filteredPhotos.length} photos</span>
-                </div>
-              </header>
-
-              <div className="photo-toolbar">
-                <FilterTabs
-                  active={photoCategory}
-                  onSelect={(cat) => {
-                    setPhotoCategory(cat);
-                    setPhotoSearch("");
-                  }}
-                  searchActive={photoSearch.trim().length > 0}
-                  counts={photoCounts}
-                />
-                <SearchBar value={photoSearch} onChange={setPhotoSearch} />
               </div>
+            </section>
+          </div>
+        )}
 
-              <div className="admin-watermarked-grid">
-                <MasonryGrid
-                  photos={fullPhotos}
-                  onPhotoClick={setLightboxIndex}
-                />
+        {tab === "photography" && (
+          <div className="photo-page" style={{ maxWidth: "100%", padding: "0" }}>
+            <header className="photo-header">
+              <p className="photo-label">Portfolio</p>
+              <div className="photo-header-row">
+                <h1 className="photo-title">Photography</h1>
+                <span className="photo-count">{filteredPhotos.length} photos</span>
               </div>
+            </header>
 
-              {lightboxIndex !== null && (
-                <Lightbox
-                  photos={fullPhotos}
-                  currentIndex={lightboxIndex}
-                  onClose={() => setLightboxIndex(null)}
-                  onNavigate={setLightboxIndex}
-                />
-              )}
+            <div className="photo-toolbar">
+              <FilterTabs
+                active={photoCategory}
+                onSelect={(cat) => {
+                  setPhotoCategory(cat);
+                  setPhotoSearch("");
+                }}
+                searchActive={photoSearch.trim().length > 0}
+                counts={photoCounts}
+              />
+              <SearchBar value={photoSearch} onChange={setPhotoSearch} />
             </div>
-          )}
-        </div>
+
+            <div className="admin-watermarked-grid">
+              <MasonryGrid
+                photos={fullPhotos}
+                onPhotoClick={setLightboxIndex}
+              />
+            </div>
+
+            {lightboxIndex !== null && (
+              <Lightbox
+                photos={fullPhotos}
+                currentIndex={lightboxIndex}
+                onClose={() => setLightboxIndex(null)}
+                onNavigate={setLightboxIndex}
+              />
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

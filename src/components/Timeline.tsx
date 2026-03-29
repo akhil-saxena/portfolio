@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 interface TimelineEntry {
   id?: string;
   company: string;
@@ -23,7 +25,7 @@ export default function Timeline({ entries }: TimelineProps) {
             <div className="timeline-header">
               <div className="timeline-header-left">
                 {entry.logo && (
-                  <img src={entry.logo} alt={`${entry.company} logo`} className="timeline-logo" width={32} height={32} />
+                  <Image src={entry.logo} alt={`${entry.company} logo`} className="timeline-logo" width={32} height={32} />
                 )}
                 <div>
                   <h3 className="timeline-company">

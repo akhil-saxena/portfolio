@@ -7,7 +7,7 @@ import MasonryGrid from "@/components/MasonryGrid";
 import FilterTabs from "@/components/FilterTabs";
 import SearchBar from "@/components/SearchBar";
 import Lightbox from "@/components/Lightbox";
-import { getIcon, IconDownload, IconGitHub, IconLinkedIn, IconMail } from "@/components/icons";
+import { getIcon, IconDownload } from "@/components/icons";
 import type { Photo } from "@/types";
 import AdminTopBar from "@/components/admin/AdminTopBar";
 import PropertiesPanel from "@/components/admin/PropertiesPanel";
@@ -75,6 +75,17 @@ export default function AdminPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDispatching, setIsDispatching] = useState(false);
 
+  // Home tab state
+  const [homeTitle, setHomeTitle] = useState("Akhil Saxena");
+  const [homeSubtitle, setHomeSubtitle] = useState("Interfaces & Imagery");
+  const [homeIntro, setHomeIntro] = useState("Building for the web. Photographing everything else.");
+  const [homePeekIds, setHomePeekIds] = useState(["abstract-intothemist", "architecture-singapore", "nature-sunrisepoint", "street-tunnelvision", "wildlife-kingfisher", "architecture-eiffeljpg"]);
+  const [socialLinks, setSocialLinks] = useState([
+    { icon: "github", url: "https://github.com/akhil-saxena", label: "GitHub" },
+    { icon: "linkedin", url: "https://www.linkedin.com/in/akhil-saxena", label: "LinkedIn" },
+    { icon: "mail", url: "mailto:saxena.akhil42@gmail.com", label: "Email" },
+  ]);
+
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
@@ -136,18 +147,16 @@ export default function AdminPage() {
 
   // Homepage peek photos
   const peekPhotos = useMemo(() => {
-    const peekIds = [
-      "abstract-intothemist",
-      "architecture-singapore",
-      "nature-sunrisepoint",
-      "street-tunnelvision",
-      "wildlife-kingfisher",
-      "architecture-eiffeljpg",
-    ];
-    return peekIds
+    return homePeekIds
       .map((id) => sortedPhotos.find((p) => p.id === id))
       .filter(Boolean) as PortfolioPhoto[];
-  }, [sortedPhotos]);
+  }, [sortedPhotos, homePeekIds]);
+
+  // Available photos for home gallery picker
+  const availablePhotos = useMemo(() =>
+    sortedPhotos.map((p) => ({ id: p.id, title: p.title })),
+    [sortedPhotos]
+  );
 
   // Click handler for photos in masonry
   const handlePhotoClick = useCallback((index: number) => {
@@ -214,6 +223,53 @@ export default function AdminPage() {
     setPhotos((prev) => prev.filter((p) => p.id !== id).map((p, i) => ({ ...p, order: i + 1 })));
     setHasUnsaved(true);
     setSelection((prev) => prev.type === "photo" && prev.photo.id === id ? { type: "none", tab: "photography" } : prev);
+  }, []);
+
+  const handleMovePhotoUp = useCallback((id: string) => {
+    setPhotos(prev => {
+      const sorted = [...prev].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const idx = sorted.findIndex(p => p.id === id);
+      if (idx <= 0) return prev;
+      const temp = sorted[idx].order;
+      sorted[idx] = { ...sorted[idx], order: sorted[idx - 1].order };
+      sorted[idx - 1] = { ...sorted[idx - 1], order: temp };
+      return sorted;
+    });
+    setHasUnsaved(true);
+  }, []);
+
+  const handleMovePhotoDown = useCallback((id: string) => {
+    setPhotos(prev => {
+      const sorted = [...prev].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const idx = sorted.findIndex(p => p.id === id);
+      if (idx >= sorted.length - 1) return prev;
+      const temp = sorted[idx].order;
+      sorted[idx] = { ...sorted[idx], order: sorted[idx + 1].order };
+      sorted[idx + 1] = { ...sorted[idx + 1], order: temp };
+      return sorted;
+    });
+    setHasUnsaved(true);
+  }, []);
+
+  // Home tab handlers
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleUpdateHome = useCallback((field: string, value: any) => {
+    switch (field) {
+      case "title": setHomeTitle(value); break;
+      case "subtitle": setHomeSubtitle(value); break;
+      case "intro": setHomeIntro(value); break;
+    }
+    setHasUnsaved(true);
+  }, []);
+
+  const handleUpdateHomePeekId = useCallback((index: number, newId: string) => {
+    setHomePeekIds(prev => prev.map((id, i) => i === index ? newId : id));
+    setHasUnsaved(true);
+  }, []);
+
+  const handleUpdateSocialLinks = useCallback((links: { icon: string; url: string; label: string }[]) => {
+    setSocialLinks(links);
+    setHasUnsaved(true);
   }, []);
 
   const handleUpdateExperience = useCallback((index: number, updated: ExperienceEntry) => {
@@ -411,6 +467,7 @@ export default function AdminPage() {
                       className={`admin-editable ${selection.type === "role" && selection.entryIndex === i ? "selected" : ""}`}
                       onClick={(e) => { e.stopPropagation(); setSelection({ type: "role", entry, entryIndex: i }); }}
                     >
+                      <span className="admin-edit-badge">&#9998;</span>
                       <div className="timeline-entry reveal">
                         <div className="timeline-dot" />
                         <div className="timeline-content">
@@ -454,6 +511,7 @@ export default function AdminPage() {
                     className={`admin-editable ${selection.type === "skillGroup" && selection.groupIndex === gi ? "selected" : ""}`}
                     onClick={(e) => { e.stopPropagation(); setSelection({ type: "skillGroup", group, groupIndex: gi }); }}
                   >
+                    <span className="admin-edit-badge">&#9998;</span>
                     <div className="skills-group reveal">
                       <p className="skills-label">
                         {group.icon && getIcon(group.icon, { size: 14 })}
@@ -478,6 +536,7 @@ export default function AdminPage() {
                     className={`admin-editable ${selection.type === "education" && selection.entryIndex === ei ? "selected" : ""}`}
                     onClick={(e) => { e.stopPropagation(); setSelection({ type: "education", entry: edu, entryIndex: ei }); }}
                   >
+                    <span className="admin-edit-badge">&#9998;</span>
                     <div className="education-entry reveal">
                       <div className="education-header">
                         <div className="education-header-left">
@@ -513,6 +572,7 @@ export default function AdminPage() {
                       className={`admin-editable ${selection.type === "project" && selection.projectIndex === pi ? "selected" : ""}`}
                       onClick={(e) => { e.stopPropagation(); setSelection({ type: "project", project: p, projectIndex: pi }); }}
                     >
+                      <span className="admin-edit-badge">&#9998;</span>
                       <ProjectCard {...p} />
                     </div>
                   ))}
@@ -525,42 +585,65 @@ export default function AdminPage() {
           {activeTab === "home" && (
             <div className="home-d" style={{ minHeight: "auto" }}>
               <header className="hd-hero">
-                <h1 className="hd-name">Akhil Saxena</h1>
-                <p className="hd-tagline">Interfaces & Imagery</p>
-                <p className="hd-intro">
-                  Building for the web. Photographing everything else.
-                </p>
+                <div
+                  className={`admin-editable ${selection.type === "homeTitle" ? "selected" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeTitle" }); }}
+                >
+                  <span className="admin-edit-badge">&#9998;</span>
+                  <h1 className="hd-name">{homeTitle}</h1>
+                </div>
+                <div
+                  className={`admin-editable ${selection.type === "homeSubtitle" ? "selected" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeSubtitle" }); }}
+                >
+                  <span className="admin-edit-badge">&#9998;</span>
+                  <p className="hd-tagline">{homeSubtitle}</p>
+                </div>
+                <div
+                  className={`admin-editable ${selection.type === "homeIntro" ? "selected" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeIntro" }); }}
+                >
+                  <span className="admin-edit-badge">&#9998;</span>
+                  <p className="hd-intro">{homeIntro}</p>
+                </div>
               </header>
 
               <div className="hd-gallery">
-                {peekPhotos.map((photo) => (
-                  <div key={photo.id} className="hd-gallery-item">
-                    <img
-                      src={photo.urls.medium}
-                      alt={photo.title}
-                      style={{ width: "100%", height: "160px", objectFit: "cover" }}
-                    />
-                  </div>
-                ))}
+                {homePeekIds.map((id, i) => {
+                  const photo = sortedPhotos.find((p) => p.id === id);
+                  if (!photo) return null;
+                  return (
+                    <div
+                      key={id}
+                      className={`hd-gallery-item admin-editable ${selection.type === "homeGallery" && selection.photoIndex === i ? "selected" : ""}`}
+                      onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeGallery", photoIndex: i }); }}
+                    >
+                      <span className="admin-edit-badge">&#9998;</span>
+                      <img src={photo.urls.medium} alt={photo.title} style={{ width: "100%", height: "160px", objectFit: "cover" }} />
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="hd-ctas">
-                <span className="hd-cta hd-cta-primary" style={{ cursor: "default" }}>
-                  View Photography →
-                </span>
-                <span className="hd-cta hd-cta-secondary" style={{ cursor: "default" }}>
-                  View Resume
-                </span>
+                <span className="hd-cta hd-cta-primary" style={{ cursor: "default" }}>View Photography &#8594;</span>
+                <span className="hd-cta hd-cta-secondary" style={{ cursor: "default" }}>View Resume</span>
               </div>
 
-              <footer className="hd-bottom">
-                <div className="hd-social">
-                  <span aria-label="GitHub"><IconGitHub size={18} /></span>
-                  <span aria-label="LinkedIn"><IconLinkedIn size={18} /></span>
-                  <span aria-label="Email"><IconMail size={18} /></span>
-                </div>
-                <p className="hd-footer">&copy; {new Date().getFullYear()} Akhil Saxena</p>
-              </footer>
+              <div
+                className={`admin-editable ${selection.type === "homeSocial" ? "selected" : ""}`}
+                onClick={(e) => { e.stopPropagation(); setSelection({ type: "homeSocial" }); }}
+              >
+                <span className="admin-edit-badge">&#9998;</span>
+                <footer className="hd-bottom">
+                  <div className="hd-social">
+                    {socialLinks.map((link, i) => (
+                      <span key={i} aria-label={link.label}>{getIcon(link.icon, { size: 18 })}</span>
+                    ))}
+                  </div>
+                  <p className="hd-footer">&copy; {new Date().getFullYear()} Akhil Saxena</p>
+                </footer>
+              </div>
             </div>
           )}
         </div>
@@ -583,6 +666,13 @@ export default function AdminPage() {
           onAddProject={handleAddProject}
           onAddSkillGroup={handleAddSkillGroup}
           onDeselect={handleDeselect}
+          onMovePhotoUp={handleMovePhotoUp}
+          onMovePhotoDown={handleMovePhotoDown}
+          homeData={{ title: homeTitle, subtitle: homeSubtitle, intro: homeIntro, peekIds: homePeekIds, socialLinks }}
+          onUpdateHome={handleUpdateHome}
+          onUpdateHomePeekId={handleUpdateHomePeekId}
+          onUpdateSocialLinks={handleUpdateSocialLinks}
+          availablePhotos={availablePhotos}
         />
       </div>
     </div>

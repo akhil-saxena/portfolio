@@ -1,0 +1,126 @@
+{
+  "experience": [
+    {
+      "id": "brevo",
+      "company": "Brevo (Formerly Sendinblue)",
+      "role": "Senior Software Engineer",
+      "period": "Jul 2023 – Present",
+      "location": "Noida",
+      "logo": null,
+      "url": "https://www.brevo.com",
+      "bullets": [
+        "Engineered a unified settings navigation package adopted across <strong>18+ micro-frontend apps</strong>, accelerating development cycles by <strong>20%</strong>",
+        "Migrated login to Next.js, revamped UIs with NAOS design system; migrated 2FA from PHP Twig to React with <strong>90%+ test coverage</strong>",
+        "Redesigned checkout for <strong>2.5M+ users</strong> to a 3-step flow, leading to <strong>15% conversion uplift</strong>",
+        "Reduced support tickets by <strong>12%</strong> in the senders module (<strong>10K+ weekly users</strong>) via automated domain authentication",
+        "Led A/B testing and onboarding revamp with address autosuggest, building FE/BE systems with Omni dashboards"
+      ]
+    },
+    {
+      "id": "pharmeasy",
+      "company": "PharmEasy",
+      "role": "Software Engineer",
+      "period": "Nov 2022 – Jun 2023",
+      "location": "Bengaluru",
+      "logo": null,
+      "url": null,
+      "bullets": [
+        "Modernized orders page for the B2B portal, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
+        "Achieved <strong>30% decrease</strong> in support ticket volume by developing receipt generation UIs with React and Redux",
+        "Delivered a client-side recommendation system leveraging a proprietary rule engine for product upsell and cross-sell",
+        "Integrated CleverTap into ThyroNext for real-time analytics, driving retention and engagement"
+      ]
+    },
+    {
+      "id": "maq",
+      "company": "MAQ Software",
+      "role": "Data Engineer",
+      "period": "Dec 2021 – Nov 2022",
+      "location": "Mumbai",
+      "logo": null,
+      "url": null,
+      "bullets": [
+        "Led data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
+        "Built a real-time write-back sync system for a live app deployed to <strong>16K+ stores</strong>",
+        "Automated reporting across <strong>8+ teams</strong> by developing a real-time Power BI dashboard used by <strong>100+ employees</strong>",
+        "Reduced pipeline execution time by <strong>6×</strong> by replacing Power Automate with Azure Data Factory"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "momentum",
+      "title": "Momentum",
+      "label": {
+        "text": "Android App",
+        "icon": "android"
+      },
+      "description": "Goal tracker with adaptive daily targets, streaks, milestones, badges, home screen widgets, and cloud sync.",
+      "tech": ["Kotlin", "Jetpack Compose", "Room", "Hilt", "Material 3"],
+      "icon": "/assets/momentum-icon.png",
+      "href": "https://github.com/akhil-saxena/momentum-android",
+      "badges": [
+        { "label": "Play Store", "href": "#", "icon": "play-store" },
+        { "label": "GitHub", "href": "https://github.com/akhil-saxena/momentum-android", "icon": "github" }
+      ]
+    },
+    {
+      "id": "timeshift",
+      "title": "TimeShift",
+      "label": {
+        "text": "Chrome Extension",
+        "icon": "chrome"
+      },
+      "description": "Right-click any time on the web to convert it instantly. NLP-powered parsing with smart timezone disambiguation and DST awareness.",
+      "tech": ["JavaScript", "Chrome APIs", "NLP"],
+      "icon": "/assets/timeshift-icon.png",
+      "href": "https://github.com/akhil-saxena/convert-timezone",
+      "badges": [
+        { "label": "Chrome Store", "href": "#", "icon": "chrome-store" },
+        { "label": "GitHub", "href": "https://github.com/akhil-saxena/convert-timezone", "icon": "github" }
+      ]
+    },
+    {
+      "id": "steganography",
+      "title": "Steganography",
+      "label": {
+        "text": "CLI Tool",
+        "icon": "terminal"
+      },
+      "description": "Hide images inside images using LSB encoding. Supports multithreaded encode/decode, verbose mode, and lossless output.",
+      "tech": ["C++", "Multithreading", "Image Processing"],
+      "icon": null,
+      "href": "https://github.com/akhil-saxena/Steganography",
+      "badges": [
+        { "label": "GitHub", "href": "https://github.com/akhil-saxena/Steganography", "icon": "github" }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Frontend",
+      "icon": "code",
+      "items": ["React", "Next.js", "TypeScript", "JavaScript", "Redux", "HTML5", "CSS3"]
+    },
+    {
+      "category": "Platform & Experience",
+      "icon": "layers",
+      "items": ["Responsive UI", "a11y", "i18n", "CI/CD", "Monitoring", "Metabase", "Omni"]
+    }
+  ],
+  "education": [
+    {
+      "id": "vit",
+      "school": "Vellore Institute of Technology (VIT), Vellore",
+      "logo": null,
+      "degree": "B.Tech, Computer Science & Engineering",
+      "cgpa": "8.62",
+      "period": "Jul 2018 – Jun 2022",
+      "url": null,
+      "leadership": [
+        "Director of Events, SEDS-VIT",
+        "Lead, NASA-sponsored CAMS-SETI"
+      ]
+    }
+  ]
+}

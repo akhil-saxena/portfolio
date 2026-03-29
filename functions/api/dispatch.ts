@@ -26,6 +26,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { GITHUB_PAT, GITHUB_REPO } = context.env;
 
   try {
+    // Auth check — require CF Access session
+    const cookie = context.request.headers.get("cookie") || "";
+    if (!cookie.includes("CF_Authorization=")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const body = await context.request.json<DispatchRequest>();
     const { tempKey, title, category, tags } = body;
 

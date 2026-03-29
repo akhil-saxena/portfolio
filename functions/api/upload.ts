@@ -8,6 +8,15 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { PORTFOLIO_BUCKET } = context.env;
 
   try {
+    // Auth check — require CF Access session
+    const cookie = context.request.headers.get("cookie") || "";
+    if (!cookie.includes("CF_Authorization=")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
     const formData = await context.request.formData();
     const file = formData.get("file") as File | null;
 

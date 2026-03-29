@@ -316,8 +316,8 @@
   height: 24px;
   border-radius: 4px;
   border: none;
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--ink);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -326,7 +326,7 @@
 }
 
 .admin-photo-action:hover {
-  background: #fff;
+  background: rgba(0, 0, 0, 0.8);
 }
 
 .admin-photo-info {
@@ -348,6 +348,18 @@
   font-size: 0.5625rem;
   color: var(--ink-muted);
   text-transform: lowercase;
+}
+
+.admin-photo-category-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-orphan-dot {
+  color: #e67e22;
+  font-size: 0.5rem;
+  cursor: help;
 }
 
 /* ===== Upload Zone ===== */
@@ -956,4 +968,40 @@
   .admin-preview-panel {
     width: 100%;
   }
+}
+
+/* ===== EXIF Grid ===== */
+.admin-exif-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* ===== Category Pill Wrapper ===== */
+.admin-pill-wrapper {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.admin-pill-delete {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: none;
+  background: var(--ink-muted);
+  color: var(--bg);
+  font-size: 0.5rem;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.admin-pill-wrapper:hover .admin-pill-delete {
+  display: flex;
 }

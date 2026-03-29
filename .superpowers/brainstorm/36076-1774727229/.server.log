@@ -1,9 +1,0 @@
-{"type":"server-started","port":63899,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:63899","screen_dir":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229"}
-{"type":"screen-added","file":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229/admin-layout.html"}
-{"source":"user-event","type":"click","text":"Admin\n          📷 Photos\n          📄 Experience\n          🛠 Projects\n          ⚡ Skills\n          🎓 Education\n          \n          👁 Preview\n          🚀 Deploy\n        \n        \n        \n          \n            Photos\n            + Upload\n          \n          \n            \n            \n            \n            \n            \n            \n            \n            \n          \n        \n      \n    \n    \n      A. Sidebar Navigation\n      Persistent sidebar with all sections visible. Content area on the right. Better for frequent switching between sections. Feels like a dashboard.","choice":"sidebar","id":null,"timestamp":1774728015663}
-{"type":"screen-added","file":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229/admin-layout-v2.html"}
-{"type":"screen-added","file":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229/admin-layout-v3.html"}
-{"type":"screen-added","file":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229/watermark-preview.html"}
-{"source":"user-event","type":"click","text":"C\n      \n        Make it subtler\n        Decrease to 15-20% opacity or smaller text","choice":"subtler","id":null,"timestamp":1774728659048}
-{"type":"screen-added","file":"/Users/akhilsaxena/Documents/Repositories/portfolio-new/.superpowers/brainstorm/36076-1774727229/watermark-preview-v2.html"}
-{"type":"server-stopped","reason":"idle timeout"}

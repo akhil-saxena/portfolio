@@ -23,6 +23,11 @@ interface ExperienceEntry {
   company: string;
   role: string;
   period: string;
+  startMonth: string;
+  startYear: string;
+  endMonth: string;
+  endYear: string;
+  isPresent: boolean;
   location: string;
   logo: string | null;
   url: string | null;

@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import Nav from "@/components/Nav";
+import Link from "next/link";
 import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
 import ProjectCard from "@/components/ProjectCard";
+import ThemeToggle from "@/components/ThemeToggle";
 import { useInView } from "@/hooks/useInView";
 import { IconDownload, getIcon } from "@/components/icons";
 import resumeData from "../../../data/resume.json";
@@ -15,25 +16,36 @@ export default function DevPage() {
 
   return (
     <>
-      <Nav title="Development" />
-      <main className="dev-page" id="main" ref={ref}>
-        <header className="dev-header reveal">
-          <p className="dev-label">Resume & Projects</p>
-          <div className="dev-header-row">
-            <h1 className="dev-title">Development</h1>
-            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-btn">
-              <IconDownload size={16} />
+      <div className="page-sticky-bar">
+        <div className="page-sticky-row-1">
+          <div className="page-sticky-left">
+            <Link href="/" className="page-back" aria-label="Go back">←</Link>
+            <h1 className="page-sticky-title">Development</h1>
+            <span className="page-sticky-subtitle">Resume & Projects</span>
+          </div>
+          <div className="page-sticky-right">
+            <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="page-sticky-btn">
+              <IconDownload size={14} />
               Resume
             </a>
+            <ThemeToggle />
           </div>
-        </header>
+        </div>
+        <div className="page-sticky-row-2">
+          <a href="#experience" className="page-anchor active">Experience</a>
+          <a href="#skills" className="page-anchor">Skills</a>
+          <a href="#education" className="page-anchor">Education</a>
+          <a href="#projects" className="page-anchor">Projects</a>
+        </div>
+      </div>
 
-        <section>
+      <main className="dev-page" id="main" ref={ref}>
+        <section id="experience">
           <h2 className="section-title reveal">Experience</h2>
           <Timeline entries={resumeData.experience} />
         </section>
 
-        <section className="skills-section">
+        <section className="skills-section" id="skills">
           <h2 className="section-title reveal">Skills</h2>
           {resumeData.skills.map((group) => (
             <div key={group.category} className="skills-group reveal">
@@ -50,7 +62,7 @@ export default function DevPage() {
           ))}
         </section>
 
-        <section className="education-section">
+        <section className="education-section" id="education">
           <h2 className="section-title reveal">Education</h2>
           {resumeData.education.map((edu) => (
             <div key={edu.id} className="education-entry reveal">
@@ -79,7 +91,7 @@ export default function DevPage() {
           ))}
         </section>
 
-        <section>
+        <section id="projects">
           <h2 className="section-title reveal">Projects</h2>
           <div className="projects-grid">
             {resumeData.projects.map((p) => (

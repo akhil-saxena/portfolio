@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Nav from "@/components/Nav";
+import Link from "next/link";
 import Footer from "@/components/Footer";
 import SearchBar from "@/components/SearchBar";
 import FilterTabs from "@/components/FilterTabs";
 import MasonryGrid from "@/components/MasonryGrid";
 import Lightbox from "@/components/Lightbox";
+import ThemeToggle from "@/components/ThemeToggle";
 import portfolioData from "../../../data/portfolio_images.json";
 import siteConfig from "../../../data/site_config.json";
 import "@/styles/photography.css";
@@ -47,17 +48,17 @@ export default function PhotographyPage() {
 
   return (
     <>
-      <Nav title="Photography" />
-      <main className="photo-page" id="main">
-        <header className="photo-header">
-          <p className="photo-label">Portfolio</p>
-          <div className="photo-header-row">
-            <h1 className="photo-title">Photography</h1>
-            <span className="photo-count">{filtered.length} photos</span>
+      {/* Merged sticky header */}
+      <div className="page-sticky-bar">
+        <div className="page-sticky-row-1">
+          <div className="page-sticky-left">
+            <Link href="/" className="page-back" aria-label="Go back">←</Link>
+            <h1 className="page-sticky-title">Photography</h1>
+            <span className="page-sticky-count">{filtered.length} photos</span>
           </div>
-        </header>
-
-        <div className="photo-toolbar">
+          <ThemeToggle />
+        </div>
+        <div className="page-sticky-row-2">
           <FilterTabs
             active={category}
             onSelect={(cat) => {
@@ -74,7 +75,9 @@ export default function PhotographyPage() {
             }}
           />
         </div>
+      </div>
 
+      <main className="photo-page" id="main">
         <MasonryGrid photos={filtered} columns={(siteConfig.categoryColumns as Record<string, number>)?.[category] || 4} onPhotoClick={setLightboxIndex} />
 
         {lightboxIndex !== null && (

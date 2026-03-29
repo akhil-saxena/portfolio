@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Development — Akhil Saxena",
+  title: "Resume — Akhil Saxena",
   description: "Senior Software Engineer. Experience at Brevo, PharmEasy, MAQ Software. Projects, skills, and resume.",
   alternates: {
-    canonical: "https://akhilsaxena.pages.dev/dev",
+    canonical: "https://akhilsaxena.pages.dev/resume",
   },
 };
 
-export default function DevLayout({ children }: { children: React.ReactNode }) {
+export default function ResumeLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

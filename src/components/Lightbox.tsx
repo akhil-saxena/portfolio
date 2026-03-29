@@ -32,9 +32,11 @@ export default function Lightbox({ photos, currentIndex, onClose, onNavigate }: 
     onSwipedLeft: () => { setSwipeOffset(0); goNext(); },
     onSwipedRight: () => { setSwipeOffset(0); goPrev(); },
     onTouchEndOrOnMouseUp: () => setSwipeOffset(0),
-    delta: 50,
+    delta: 30,
     trackMouse: false,
+    trackTouch: true,
     preventScrollOnSwipe: true,
+    swipeDuration: 500,
   });
 
   // Reset loaded state on navigation

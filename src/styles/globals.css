@@ -212,10 +212,26 @@ a {
   color: var(--ink);
   text-decoration: none;
   transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .nav-back:hover {
   opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .nav-back {
+    font-size: 1.5rem;
+    min-width: 48px;
+    min-height: 48px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+  }
 }
 
 .nav-title {

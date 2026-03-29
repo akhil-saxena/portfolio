@@ -226,7 +226,7 @@ export default function AdminPage() {
 
   // Available photos for home gallery picker
   const availablePhotos = useMemo(() =>
-    sortedPhotos.map((p) => ({ id: p.id, title: p.title, url: p.urls.medium })),
+    sortedPhotos.map((p) => ({ id: p.id, title: p.title, url: p.urls.medium, category: p.category })),
     [sortedPhotos]
   );
 

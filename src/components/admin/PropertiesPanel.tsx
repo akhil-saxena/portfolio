@@ -181,16 +181,37 @@ export default function PropertiesPanel({
           {selection.tab === "dev" && (
             <>
               <p className="admin-props-hint">Click any section on the page to edit it.</p>
-              <div className="admin-props-actions">
-                <button className="admin-btn admin-btn-primary" onClick={onAddRole}>
-                  <IconPlus size={14} /> Add Role
-                </button>
-                <button className="admin-btn admin-btn-primary" onClick={onAddProject}>
-                  <IconPlus size={14} /> Add Project
-                </button>
-                <button className="admin-btn admin-btn-primary" onClick={onAddSkillGroup}>
-                  <IconPlus size={14} /> Add Skill Group
-                </button>
+
+              <div className="admin-props-section">
+                <h4 className="admin-props-section-title">Resume PDF</h4>
+                <p className="admin-props-hint" style={{ marginBottom: "8px" }}>
+                  Current: <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)" }}>resume.pdf</a>
+                </p>
+                <label className="admin-btn admin-btn-secondary" style={{ cursor: "pointer", textAlign: "center" }}>
+                  Upload New Resume
+                  <input type="file" accept=".pdf" hidden onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // For now, just show a message — actual upload would need an API endpoint
+                      alert("Resume upload: In a full implementation, this would upload to /public/resume.pdf via the deploy API. For now, replace the file manually in the repo.");
+                    }
+                  }} />
+                </label>
+              </div>
+
+              <div className="admin-props-section" style={{ marginTop: "16px" }}>
+                <h4 className="admin-props-section-title">Add Content</h4>
+                <div className="admin-props-actions">
+                  <button className="admin-btn admin-btn-primary" onClick={onAddRole}>
+                    <IconPlus size={14} /> Add Role
+                  </button>
+                  <button className="admin-btn admin-btn-primary" onClick={onAddProject}>
+                    <IconPlus size={14} /> Add Project
+                  </button>
+                  <button className="admin-btn admin-btn-primary" onClick={onAddSkillGroup}>
+                    <IconPlus size={14} /> Add Skill Group
+                  </button>
+                </div>
               </div>
             </>
           )}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import ThemeToggle from "@/components/ThemeToggle";
 import { IconGitHub, IconLinkedIn, IconMail } from "@/components/icons";
 import portfolioData from "../../data/portfolio_images.json";
@@ -35,13 +36,14 @@ export default function HomePage() {
       <div className="hd-gallery">
         {peekPhotos.map((photo) => (
           <div key={photo!.id} className="hd-gallery-item">
-            <img
+            <Image
               src={photo!.urls.small}
-              srcSet={`${photo!.urls.small} 400w, ${photo!.urls.medium} 800w`}
+              width={400}
+              height={267}
               sizes="(max-width: 600px) 33vw, 270px"
               alt={photo!.title}
               loading="lazy"
-              style={{ backgroundImage: `url(${photo!.urls.thumb})` }}
+              style={{ width: "100%", height: "160px", objectFit: "cover", backgroundImage: `url(${photo!.urls.thumb})` }}
             />
           </div>
         ))}

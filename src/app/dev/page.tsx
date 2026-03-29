@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Nav from "@/components/Nav";
 import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
@@ -56,7 +57,7 @@ export default function DevPage() {
               <div className="education-header">
                 <div className="education-header-left">
                   {edu.logo && (
-                    <img src={edu.logo} alt={`${edu.school} logo`} className="education-logo" width={32} height={32} />
+                    <Image src={edu.logo} alt={`${edu.school} logo`} className="education-logo" width={32} height={32} />
                   )}
                   <p className="education-school">
                     {edu.url ? (

@@ -19,6 +19,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  overflow: visible;
 }
 
 .admin-topbar-left {
@@ -83,6 +84,11 @@
   font-size: 0.8125rem;
   border-radius: 8px;
   white-space: nowrap;
+  overflow: visible;
+}
+
+.admin-topbar-right {
+  overflow: visible;
 }
 
 .admin-topbar-right .admin-deploy-confirm {

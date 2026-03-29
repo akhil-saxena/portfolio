@@ -100,7 +100,8 @@ export type Selection =
   | { type: "homeSubtitle" }
   | { type: "homeIntro" }
   | { type: "homeGallery"; photoIndex: number }
-  | { type: "homeSocial" };
+  | { type: "homeSocial" }
+  | { type: "resume" };
 
 interface PropertiesPanelProps {
   selection: Selection;
@@ -722,6 +723,35 @@ export default function PropertiesPanel({
           <button className="admin-add-pill" onClick={addLink}>
             + Add Link
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Resume
+  if (selection.type === "resume") {
+    return (
+      <div className="admin-props">
+        <div className="admin-props-header">
+          <h3 className="admin-props-title">Resume</h3>
+          <button className="admin-props-close" onClick={onDeselect}>×</button>
+        </div>
+        <div className="admin-props-body">
+          <p className="admin-props-hint">
+            Current resume: <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" style={{ color: "var(--ink)", textDecoration: "underline" }}>Download PDF</a>
+          </p>
+          <div className="admin-props-section">
+            <h4 className="admin-props-section-title">Upload New Resume</h4>
+            <label className="admin-btn admin-btn-secondary" style={{ cursor: "pointer", textAlign: "center", display: "flex", justifyContent: "center" }}>
+              <IconPlus size={14} /> Choose PDF
+              <input type="file" accept=".pdf" hidden onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  alert(`Selected: ${file.name}\n\nTo update the resume, replace public/resume.pdf in the repo and deploy. Automatic upload coming in a future update.`);
+                }
+              }} />
+            </label>
+          </div>
         </div>
       </div>
     );

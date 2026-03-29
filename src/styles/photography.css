@@ -4,6 +4,43 @@
   padding: 0 2rem 2rem;
 }
 
+.photo-header {
+  margin-bottom: 2rem;
+}
+
+.photo-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+}
+
+.photo-title {
+  font-size: 2rem;
+}
+
+.photo-header-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.photo-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--ink-muted);
+}
+
+.photo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
 
 .search-bar {
   flex-shrink: 0;

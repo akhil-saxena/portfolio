@@ -188,6 +188,43 @@ a {
   border-color: var(--ink-muted);
 }
 
+/* ===== Nav ===== */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 2rem;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 50;
+  transition: var(--transition-theme);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-back {
+  font-size: 1.25rem;
+  color: var(--ink);
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.nav-back:hover {
+  opacity: 0.7;
+}
+
+.nav-title {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  color: var(--ink);
+  font-weight: 700;
+}
+
 /* ===== Merged Sticky Bar ===== */
 .page-sticky-bar {
   position: sticky;

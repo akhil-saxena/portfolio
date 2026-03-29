@@ -33,6 +33,7 @@ import "@/styles/photography.css";
 import "@/styles/home.css";
 import portfolioData from "../../../data/portfolio_images.json";
 import resumeData from "../../../data/resume.json";
+import siteConfig from "../../../data/site_config.json";
 
 type Tab = "home" | "photography" | "dev";
 
@@ -125,7 +126,7 @@ export default function AdminPage() {
   // Photography state
   const [photoCategory, setPhotoCategory] = useState("All");
   const [photoSearch, setPhotoSearch] = useState("");
-  const [categoryColumns, setCategoryColumns] = useState<Record<string, number>>({});
+  const [categoryColumns, setCategoryColumns] = useState<Record<string, number>>(siteConfig.categoryColumns || {});
   const [categoryOrders, setCategoryOrders] = useState<Record<string, string[]>>({});
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -455,6 +456,7 @@ export default function AdminPage() {
           hasUnsaved,
           photos,
           resume: { experience, projects, skills, education },
+          siteConfig: { categoryColumns },
           onDeploySuccess: () => setHasUnsaved(false),
           disabled: isDispatching,
         }}

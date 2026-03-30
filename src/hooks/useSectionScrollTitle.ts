@@ -85,11 +85,22 @@ export function useSectionScrollTitle(sectionIds: string[]) {
         s.spacer.style.marginBottom = cs.marginBottom;
       }
 
+      measureMaxRight();
       ready = true;
     }
 
     function ease(t: number) {
       return 1 - (1 - t) * (1 - t) * (1 - t);
+    }
+
+    // Right edge the title must not cross (actions area)
+    let maxRight = 0;
+
+    function measureMaxRight() {
+      const actions = nav.querySelector(".page-nav-actions") as HTMLElement;
+      if (actions) {
+        maxRight = actions.getBoundingClientRect().left - 12;
+      }
     }
 
     function applyFixed(h2: HTMLHeadingElement, z: number) {
@@ -104,6 +115,12 @@ export function useSectionScrollTitle(sectionIds: string[]) {
       h2.style.lineHeight = "1.2";
       h2.style.transformOrigin = "0 0";
       h2.style.willChange = "transform";
+      h2.style.overflow = "hidden";
+      h2.style.textOverflow = "ellipsis";
+      h2.style.whiteSpace = "nowrap";
+      if (maxRight > 0) {
+        h2.style.maxWidth = (maxRight - targetLeft) + "px";
+      }
     }
 
     function tick() {

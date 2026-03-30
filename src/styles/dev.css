@@ -27,6 +27,15 @@
   border-color: var(--ink-muted);
 }
 
+@media (max-width: 480px) {
+  .resume-nav-btn-label {
+    display: none;
+  }
+  .resume-nav-btn {
+    padding: 0.3rem;
+  }
+}
+
 .section-title {
   font-size: 1.5rem;
   margin-bottom: 2rem;

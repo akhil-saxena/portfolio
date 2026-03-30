@@ -22,7 +22,7 @@ export default function DevPage() {
       <PageNav backHref="/">
         <a href="/resume.pdf" target="_blank" rel="noopener noreferrer" className="resume-nav-btn">
           <IconDownload size={14} />
-          Resume
+          <span className="resume-nav-btn-label">Resume</span>
         </a>
       </PageNav>
       <main className="dev-page" id="main" ref={ref}>

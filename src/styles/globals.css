@@ -280,7 +280,6 @@ a {
 }
 
 .page-nav-back {
-  font-size: 1.25rem;
   color: var(--ink);
   text-decoration: none;
   display: inline-flex;
@@ -289,6 +288,10 @@ a {
   min-width: 44px;
   min-height: 44px;
   transition: opacity 0.2s;
+}
+
+.page-nav-back svg {
+  display: block;
 }
 
 .page-nav-back:hover {

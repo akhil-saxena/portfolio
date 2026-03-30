@@ -32,7 +32,11 @@
     display: none;
   }
   .resume-nav-btn {
-    padding: 0.3rem;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
   }
 }
 

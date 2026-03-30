@@ -295,6 +295,15 @@ a {
   opacity: 0.7;
 }
 
+@media (max-width: 768px) {
+  .page-nav {
+    padding: 0 1.25rem;
+  }
+  .page-nav-back {
+    margin-left: -10px;
+  }
+}
+
 .page-nav-actions {
   display: flex;
   align-items: center;

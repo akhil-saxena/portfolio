@@ -33,15 +33,7 @@
   padding-bottom: 0.5rem;
   padding-top: 0.75rem;
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 56px;
-  z-index: 40;
-  background: var(--bg);
   transition: var(--transition-theme);
-  margin-left: -2rem;
-  margin-right: -2rem;
-  padding-left: 2rem;
-  padding-right: 2rem;
 }
 
 .timeline {

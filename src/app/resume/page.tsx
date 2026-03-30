@@ -6,14 +6,16 @@ import Footer from "@/components/Footer";
 import Timeline from "@/components/Timeline";
 import ProjectCard from "@/components/ProjectCard";
 import { useInView } from "@/hooks/useInView";
-import { useScrollTitle } from "@/hooks/useScrollTitle";
+import { useSectionScrollTitle } from "@/hooks/useSectionScrollTitle";
 import { IconDownload, getIcon } from "@/components/icons";
 import resumeData from "../../../data/resume.json";
 import "@/styles/dev.css";
 
+const SECTION_IDS = ["experience", "skills", "education", "projects"];
+
 export default function DevPage() {
   const ref = useInView();
-  const { titleRef, spacerRef } = useScrollTitle();
+  useSectionScrollTitle(SECTION_IDS);
 
   return (
     <>
@@ -24,8 +26,6 @@ export default function DevPage() {
         </a>
       </PageNav>
       <main className="dev-page" id="main" ref={ref}>
-        <div ref={spacerRef} />
-        <h1 ref={titleRef} className="page-scroll-title">Resume</h1>
 
         <section id="experience">
           <h2 className="section-title reveal">Experience</h2>

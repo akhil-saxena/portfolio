@@ -35,7 +35,7 @@
 .hd-intro {
   font-size: 1rem;
   color: var(--ink-body);
-  font-family: var(--font-sans);
+  font-family: var(--font-serif);
 }
 
 /* ===== Gallery grid — 3x2 teaser ===== */

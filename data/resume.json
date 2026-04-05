@@ -49,6 +49,32 @@
   ],
   "projects": [
     {
+      "id": "hued",
+      "title": "hued",
+      "label": {
+        "text": "Android App",
+        "icon": "android"
+      },
+      "description": "See your life through color. Extracts dominant palettes from your photo gallery by week, month, and year. Privacy-first, all on-device.",
+      "tech": [
+        "Kotlin",
+        "Jetpack Compose",
+        "Room",
+        "Hilt",
+        "CIELAB",
+        "Canvas"
+      ],
+      "icon": "/assets/hued-icon.png",
+      "href": "https://github.com/akhil-saxena/hued",
+      "badges": [
+        {
+          "label": "GitHub",
+          "href": "https://github.com/akhil-saxena/hued",
+          "icon": "github"
+        }
+      ]
+    },
+    {
       "id": "momentum",
       "title": "Momentum",
       "label": {

@@ -1698,6 +1698,10 @@
 }
 
 /* ===== Link row in properties panel ===== */
+.admin-props .admin-props-section > .admin-link-row {
+  margin-bottom: 8px;
+}
+
 .admin-props .admin-link-row {
   flex-wrap: wrap;
 }

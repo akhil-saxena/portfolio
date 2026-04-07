@@ -1105,5 +1105,32 @@
       "width": 2000,
       "height": 1333
     }
+  },
+  {
+    "id": "nature-fairwayreflections",
+    "title": "Fairway Reflections",
+    "category": "nature",
+    "tags": [],
+    "date": "2026-04-07",
+    "exif": {
+      "camera": "SONY ILCE-7CM2",
+      "lens": "FE 28-60mm F4-5.6",
+      "aperture": "f/5.6",
+      "shutter": "1/80",
+      "iso": 100,
+      "focalLength": "28mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/fairwayreflections.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/fairwayreflections-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/fairwayreflections-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/fairwayreflections-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRhICAABXRUJQVlA4IAYCAAAQCgCdASooABsAPrVKoEonJCMhqqwA4BaJaACdMwz1/X/AROeZ02CBOvJ2fLI6ddSXssI0byOEH8xMypauxWpfw8L3BYhLWefglUeDZtYvfVD3TOZI2fHp8AD5XsAFWfNdLVKn11xRw3u0/N/B/QpGC0shL4fRA+AJpLtlJLH7BGYGq95vGJvgWsXogWJsQUOR6UFIGxyq/hIzXeLUKWIr/VHEtdKtDZsIGP3xOGkWsNrsruQKfw3nkXN5qkodMjc6meDnuCMwDTl46M0C2cqjO7I98bnDZ76rlh9LlEUijb+HvvgGG3U+eJt4twQ433RC8Qsoeu3vde58y7dm4C79uFNQwYo2a/lNvv60qo1Islsbb6qe/zUuXezWst9qz/R5ctKEZ4UnXN+D6SUkRzMN4g6gGuQtP+OzKr0Hg8awc425Ec2E51NVaFVfaa3QrjKP7b3Z1I765pkV2Hjj6/oRPKEZ+xRJ+Ov775IechonEYoHhw0Sl/PBJdvYIx3M26JQ3xd7lsYbrTtsq7xFd7iVclvy0PzpPgLMyar30ie2LGvQsfNV57zqyCfO5RAjER1WFdgWAGsaQWvzdnMtzQxPvsE+Z7CNKSGGDILImL8G7HvoIQxy69pBFJ/vzVMQhVUN2pjit5+Pwn3agumsjV+zLySJhcXDeY0PF4r+XW+bfAR3NuAAAA=="
+    },
+    "dimensions": {
+      "width": 4608,
+      "height": 3072
+    },
+    "order": 42
   }
 ]

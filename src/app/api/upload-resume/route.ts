@@ -21,9 +21,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing env vars" }, { status: 500 });
     }
 
-    // Convert to base64
+    // Convert to base64 (loop to avoid call stack overflow on large files)
     const buffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
 
     // First, get the current file SHA (needed to update an existing file)
     const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/public/resume.pdf`, {

@@ -25,9 +25,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "GitHub credentials not configured" }, { status: 500 });
     }
 
-    // Convert file to base64
+    // Convert file to base64 (chunked to avoid call stack overflow on large files)
     const buffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64 = btoa(binary);
 
     // Sanitize filename
     const safeName = title.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_");

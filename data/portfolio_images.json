@@ -15,10 +15,10 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
-      "thumb": "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAADQBQCdASooABsAPrVOokwnJCMiqrgKAOAWiWkA0JGrigvSOyFNznNyamSUPeuWLz5YF8dgOw8AAP7U1bOd/Pg68JI4AIm1He9UVQm7DtlLf0CpTqPMBVxnIji1gXA7GlVqS/rdt1HYPIiwgNYs5WnEgHMAAA==",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRoAAAABXRUJQVlA4IHQAAADQBQCdASooABsAPrVOokwnJCMiqrgKAOAWiWkA0JGrigvSOyFNznNyamSUPeuWLz5YF8dgOw8AAP7U1bOd/Pg68JI4AIm1He9UVQm7DtlLf0CpTqPMBVxnIji1gXA7GlVqS/rdt1HYPIiwgNYs5WnEgHMAAA=="
     },
     "order": 1,
     "dimensions": {
@@ -42,42 +42,15 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart-md.webp",
-      "thumb": "data:image/webp;base64,UklGRgABAABXRUJQVlA4IPQAAACQBgCdASooABsAPrVInUunI6KhsBVaqOAWiWMAzFmLR/Vf2AJohgq3rTamfik8EPTdxUG3QqQ+cjYHzvAAAP78RhWxEcUfM3yErOLb4wg+lLAku9WRwxq/1hiGkfLP4V5MuXkaJbC9vKWRaGdScptxYQH31MpRPc9RlL05wnMNyQtDBFNjT3oG314S8o/N6UD/bP2yWjgrqemupLVoBYBToSwSZTZ0dawzlwRz1g64rg09ELZhAWJfYef6evxbeEXYhpg4MaeLqTckRL63tetJs7D/wxSo2nMSUcw0cU6AVLPiJaeRa2AggG6udHKoGvIQ0AAA",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/lightscameraart-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRgABAABXRUJQVlA4IPQAAACQBgCdASooABsAPrVInUunI6KhsBVaqOAWiWMAzFmLR/Vf2AJohgq3rTamfik8EPTdxUG3QqQ+cjYHzvAAAP78RhWxEcUfM3yErOLb4wg+lLAku9WRwxq/1hiGkfLP4V5MuXkaJbC9vKWRaGdScptxYQH31MpRPc9RlL05wnMNyQtDBFNjT3oG314S8o/N6UD/bP2yWjgrqemupLVoBYBToSwSZTZ0dawzlwRz1g64rg09ELZhAWJfYef6evxbeEXYhpg4MaeLqTckRL63tetJs7D/wxSo2nMSUcw0cU6AVLPiJaeRa2AggG6udHKoGvIQ0AAA"
     },
     "order": 2,
     "dimensions": {
       "width": 2000,
       "height": 1333
-    }
-  },
-  {
-    "id": "abstract-plane",
-    "title": "Plane",
-    "category": "abstract",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "samsung Galaxy Z Fold5",
-      "lens": "Samsung Galaxy Z Fold5 Rear Wide Camera",
-      "aperture": "f/1.8",
-      "shutter": "1/190",
-      "iso": 64,
-      "focalLength": "5.4mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-md.webp",
-      "thumb": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAABQBACdASooAEcAPrVKoUynI6OiqJQNEOAWiWcAyjwHd6eEAomAZ9eSfqE4APhBrL/F3YjxgUn5t5G8AghWF9TLgSYIUI9bJG/tOF9KlyXfHOzLFNDjUChcxFkGGrvKU+EMfO8uIB+NB3i2mztCoLgyEqweAAAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-sm.webp"
-    },
-    "order": 3,
-    "dimensions": {
-      "width": 1318,
-      "height": 2341
     }
   },
   {
@@ -96,120 +69,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture-md.webp",
-      "thumb": "data:image/webp;base64,UklGRgoBAABXRUJQVlA4IP4AAADQBwCdASooABsAPrVKoksnJCMhqrgMAOAWiWcArDPph7LUmqrge+2NG+KhxvU7bt1v1Frk9+KMbz9qgIVwV2ubAZ6OtTngAAD+7sR5qb6AGnQCQ0VHXEjDWFkwkJj3bt6L/SiESWVHjAVhtJVjBbi2/8O+0Nd7wTApQgIcSQOW/cIWNO7GJNLAS0v20zT6ghH4F0hLcWoOZyGnRZUPMveXNtm055RQr3kDrZUXwKBarOkHyR46SNedHGeSHtxP4LH0+1zTX4wcwQKkF7MeO2IvAziIBb1A/lIWs4ReB8Vd+SBwpQqlZRKy6dhjJGVrQOyzKl2AjtxA8nf89gAAAA==",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/watertexture-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRgoBAABXRUJQVlA4IP4AAADQBwCdASooABsAPrVKoksnJCMhqrgMAOAWiWcArDPph7LUmqrge+2NG+KhxvU7bt1v1Frk9+KMbz9qgIVwV2ubAZ6OtTngAAD+7sR5qb6AGnQCQ0VHXEjDWFkwkJj3bt6L/SiESWVHjAVhtJVjBbi2/8O+0Nd7wTApQgIcSQOW/cIWNO7GJNLAS0v20zT6ghH4F0hLcWoOZyGnRZUPMveXNtm055RQr3kDrZUXwKBarOkHyR46SNedHGeSHtxP4LH0+1zTX4wcwQKkF7MeO2IvAziIBb1A/lIWs4ReB8Vd+SBwpQqlZRKy6dhjJGVrQOyzKl2AjtxA8nf89gAAAA=="
     },
-    "order": 4,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "architecture-citypalacegate",
-    "title": "City Palace Gate",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/7.1",
-      "shutter": "1/200",
-      "iso": 400,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-md.webp",
-      "thumb": "data:image/webp;base64,UklGRl4CAABXRUJQVlA4IFICAACQDQCdASooADIAPrVOnEunJCKhrVmZIOAWiWwAnTlBVR5dfh+U1ComroAPMBjoG8ro3XcTK6G7Hh11tRSV99c16vuNJWznX63yGJ9fEFlI/4UxGf8Z6B2IQxianWpLTSGwUfnNAqfFjV+lj4zWhFe6/psQeAAA/uxWSkX/OJfcvuXwP/Rh/0Yf9Tj9IWdExowHyEmvru3oI8i7dEAzayFa5vvh2wRrbjICDrQjsC4cGiunrI8pLgxPt+jNndUiIneYt7mI1FrR5q/zqSBp1tKTm0HhPiddn4hfyqF0CuefinDPhMtafl5UTQHh5JzHQkEfGR+b8lDFt7Y88wqouHoAEwe59iN56jIhdWqJWmGKoVtDd6Xst2t4dyZtsz7zORCOe27NtLR5wuSIXJFCa3tKcdLuMEUb1NUnSV3nipiSQ4fIlwIstgxE7FRkhlRELd5DntKbTEiAaFOrk8aZfqd0/IDberG1rDp7X5NXJlfn8SJgrs6rvLi8Bb8f5E30G8X9xe1jgoo8LWEAYwuV5Kn7dHT3ixhKSQnse5nFBs5VT7hyIumnmV67aRy9FLVXGWgKLA0gjpcVoVf8r6seKSVnx418XOShnxhlf74SrLuF0ClDCHyef6NP6rFwnBjWD06OpNPpGmyJQd9W1V3nGAhNyN6C4ZMQJJESfx6428dB3crHra6/mFQlq3CjOZTbTWTH2uD7LhpE81+WdFow5wnbTJHZIBO6Q8/X8BnkpfATfx7kqH4PSRMpXdzWVSSlC688Rp7wx3z1+Z4QUdWB9V/1UAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-sm.webp"
-    },
-    "order": 5,
-    "dimensions": {
-      "width": 2000,
-      "height": 2500
-    }
-  },
-  {
-    "id": "architecture-citypalacewide",
-    "title": "City Palace Wide",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/10",
-      "shutter": "1/320",
-      "iso": 400,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-md.webp",
-      "thumb": "data:image/webp;base64,UklGRpQBAABXRUJQVlA4IIgBAADQCACdASooAB8APrVSoEynJKMiJWzI4BaJagCdM3H9PaYSAiYCAAlQPdjyGR8Bf8gamw6o8yqpZn5HKdeUl9xAAZnMSg1LJqOOtjbDrmYAAP7nP016FDUnxxW3C7/1/fqNZVnhYueNFJITCre1+4rumldIxxttMKEscJjuLnnOnv2uATJi/J4k9JtvkjDImnHdmQ8/Tsld8w/6Nwe/PZ396uzumkDpDBg3oPWhJL0G8Rq+/2UieyqtGlgPl39JfmYcN9nTXF8Vr2kaGgtLCfo0VB58m/RwK7irF6YF9FuM5q3SaRRQcmyaWwlTiAq+6O4tnA49LmO72IMs4DvvXe76b959W3DpLzsHsP6IXvUeXfjmlSdVZHToeJ8DQWbDJA+ocBm9qR2olf7WINk/mcuY9doF+3AUyQyEF8OXRoE54cLkdfilDaR2pWrllOQnprA6PpIMLxFYhMxXDz0+we9Vv2hGH2JxAaV+d3QpgM7EBPJ3WZAyUs9OdVs+yxZxyEV8eiLsdt9wAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-sm.webp"
-    },
-    "order": 6,
-    "dimensions": {
-      "width": 2000,
-      "height": 1531
-    }
-  },
-  {
-    "id": "architecture-eiffeljpg",
-    "title": "Eiffel",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/3.5",
-      "shutter": "1/60",
-      "iso": 1400,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRiIBAABXRUJQVlA4IBYBAAAwBwCdASooABsAPq1CnUmmI6MhNVgMAMAViWgAvmj2CNYUUXYIv1Kh+LK5fvbFztedT5VXT70SLF8vtMLjjumtaXgA/v4UGXMX8ff0vqi3zbGqx+4RqNM1kPv/aFM9WLZ+ECyBY0UecjU/Db+5roKKxKX39Br1QoUI0KXMeIVC6PL8+qXXILrY38onkmRyMlTlWxMc706xPYJAIEPkh0PwqAjzb+4yszGggUMU6IQsLxLruLubqQceyO8vyVeUz7yUsu4V6KG4AJIC2L60ONJMB+bgSvv0iSyfwVh8VVgwiCup9XKWNhGnFZCmXPMwMjwe06H3ZaxYv6CoT9sABPgFfhuyx0W5WUXV2RjdRQ02aZI+YNLgAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-sm.webp"
-    },
-    "order": 7,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "architecture-europepalacejpg",
-    "title": "Europe Palace",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/10",
-      "shutter": "1/400",
-      "iso": 200,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRjwBAABXRUJQVlA4IDABAABwBwCdASooABsAPrVKoksnJCMhqrgMAOAWiWQAyQeQb/54bAd8YN4SdYREOo44L3e0nvFgLDj6hBnNt8iLYhhjjPFVwAD7RfJrjrHpaDK1eN90Ux/bXXoaktw4hccq1OcdJfFvSGfHbNP+O5dTGA/T8AzCjGFVM92oQvoLjNlJjIt23jBYlTTjHaBLirHa5r7FPotFEHS5ylcok4zv9z8MOL1axFQ+zuPHP/EbBxazcsiffnzre/iTlDvfol7vAVWKTDUaShOQ9z5T1S1TyiQmZB4ac/sbk9OWfkFQCAX1FGpI6jIlTCnhnpL+5B40ZzDq4A82vlZYP4FIQZtJJ9WtDQhWHpX3hxLsgf4ODqTCfcGWGxpGIetiDZ6fSRXDSM+diBcgqiUPL1YWaMuAwAAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-sm.webp"
-    },
-    "order": 8,
+    "order": 3,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -231,42 +96,15 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwBwCdASooABsAPq1AnUmmI6MhNVgMAMAViWMAuzOKJbgxT+PjgCW4LiMm8DMOhvZXtEn8s7u6FvJ3NjseGH4weX/lQAD++hM/bzuybNAT0JszOWSyyut7QHhFZ/PLioriy66k2SoEv7OevK11FTcf5bd2xIJvmI9wc8F53Wt27q6b+nk2zABKfomecvfbokXsiK5l0PPddMgq5OeQbc3m6Lzzpkir/LrcYldjJhCiPuUkxwHLJuf628NISZDQ1JBkK56W30Di/xIJtpEdcpKsk8UMvlBsuUVTJc2+QbreuHsziCP6SvJtJfbVJnELQmyqxigrlUeN5W4uxlOkXYPDsqoKSE4IEwLPL2s6dt/GgDINDNo2MhVZ94csLRFDEowM286yU87lxuI+4E/zEuSqntKCOJaWnZ5ObTOA/vT2pkQd/G/ro5O9d1ejnmWeckBvG4Ta6g2uoAAA",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hauntedmansionjpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRmYBAABXRUJQVlA4IFoBAABwBwCdASooABsAPq1AnUmmI6MhNVgMAMAViWMAuzOKJbgxT+PjgCW4LiMm8DMOhvZXtEn8s7u6FvJ3NjseGH4weX/lQAD++hM/bzuybNAT0JszOWSyyut7QHhFZ/PLioriy66k2SoEv7OevK11FTcf5bd2xIJvmI9wc8F53Wt27q6b+nk2zABKfomecvfbokXsiK5l0PPddMgq5OeQbc3m6Lzzpkir/LrcYldjJhCiPuUkxwHLJuf628NISZDQ1JBkK56W30Di/xIJtpEdcpKsk8UMvlBsuUVTJc2+QbreuHsziCP6SvJtJfbVJnELQmyqxigrlUeN5W4uxlOkXYPDsqoKSE4IEwLPL2s6dt/GgDINDNo2MhVZ94csLRFDEowM286yU87lxuI+4E/zEuSqntKCOJaWnZ5ObTOA/vT2pkQd/G/ro5O9d1ejnmWeckBvG4Ta6g2uoAAA"
     },
-    "order": 9,
+    "order": 4,
     "dimensions": {
       "width": 2000,
       "height": 1333
-    }
-  },
-  {
-    "id": "architecture-hawamahaldaytime",
-    "title": "Hawa Mahal Daytime",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/5.6",
-      "shutter": "1/125",
-      "iso": 400,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
-      "thumb": "data:image/webp;base64,UklGRj4DAABXRUJQVlA4IDIDAACQDwCdASooADwAPrVKoEunJCMhqrv7AOAWiWwAuzNQw67M+e+gngRYWAzVEUpdOeA8wOLDvPb2dQNRESAicFnZkBSsEHGT2agTtOJiwmkdaP2OsaPvi99+cyPrEUv8iUOezbngUX0/22QxBX/jf9p2qaPREvKP7L++GCSanZcMKWizqcCAANnf4O0mdqGfXSeJ4//9PuWoMf9yeX/9ybUZ+fPt71P7Ni5H95GZhmzuYanHazZTvFHB35OajOc36BzOBBEfC4FQIThPT10MLrm/sieLW4frwTn+lc6G21WMISB960/bGQFkmvkfkn/mf6WNq4ynnueJ5+jjtmVo5GuM86l9Lp8gnRo5CDLcrNkSwwNRgu+sso2mDTz3tqg5oswi853jZWg0Smam+bNYRXDo62cc/RwXu2E0TQhyqMx8zCKT3wEEJju2v04WcaLIMQTj2LEEamEAiDAmwoLb859KTqLHfsxn/tpqF+X4ZN+knJpGMLhYbQCe/5Bs5bfu4ZGvvDWeed0ZQpaD7hUWUnZEAqU40szrATL+XepOe64o3kU5P2qgFdHNwKwmUtwxZhlcar523nE5w989NbBCgEMiSf3NQpMH6a9SZKcnjRWadEqIhkHxCKI99D3OlS//ksw2J2eimukFggcOP5b6J42o7EeveYpUxPh6Lnuyfz4eWIFTCM4F2tuklks2wKKqps1QVZg1vtM1TYlVy+1+aN9EmzAuQmnkUva8H25y8N3C6LfGSe1DpPxOp6MIcxQDISc0xuVvTp6Uldz9JvCWeEqhqb2vaTOIXMM/bCaggJqhiaM2tcwuv6f0rFqjknrwuFe1nKWjfbhIeHcD0gQsqm5dBxVwVk0cUUeJqmInGVtLKKGPSeNaDUpKYAg3SxSZN55nGMGPNNSynVo5OvsJuFs7ShbQ43aAu2HmbCK5TpySEJsWuzK+eRx1ugnb1SvKgU94jCt8IJTmuiadd6lawABweXGC6lN4xoqSOn2V5W3kaLR7YiVR2oEL1le3JgCpQ2OuGmwAJp3bPexrhvVs4ECT+6J0BDowDcF5J2EEqIzDvWETnjAUAc+VibMSjqsdYvAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-sm.webp"
-    },
-    "order": 10,
-    "dimensions": {
-      "width": 2000,
-      "height": 3000
     }
   },
   {
@@ -285,12 +123,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens-md.webp",
-      "thumb": "data:image/webp;base64,UklGRpQCAABXRUJQVlA4IIgCAABwDQCdASooAEcAPrVOoEwnJDgiKJgMWwAWiUAXon5Jsgh13WZH2no/WSgrmHme9n/HmrHoHrlkhyuzQOHvu3cDHsv5LYhatPvBVsSG6WPnPcLRv2fYn1u6DZxr3R5V8149js080Ecq9wj4tFEstXYSqub8qAD+7/iVql5/i0+LrBw7H/o811kYhFiHS/GCFJvQFc6Naz285k48fAyWZVsQJcadhVJwerN6e5sqo2M1SUiQgQ4fyOEEJi4h5rXL/xT6KOnsapI7S3DlTu5ECkx7V2+sR2fbXDMnrIf17wJLaqslC5czY2aW4ZW8G5OmK0qEF6WSjeaqfpPpgrICMR1r2fJ6AEfCDMbki96EZrUYKP0BcmpLyCjMJth+XRa41gqjI13411P+L6LyAI1wpGpCA8ugN6vcFACRGw1ctUl0VwEyayCwqs31q/0zjMvN22gxEosm8VLoi+wHbWEu66pkMONlCdEypVV4AX9Pz+OCOl5yDfEDnoVVv0iok8/3yzcZGY29ZHSTSR7MPfowneVTEbf3daCJaazJwXokbn6IOszeJ/q8/aW58G5IWpKegVKMZkunRSIRqVkP8aQ/eswRpXTwlnqw7UkqXr9m+fqJfckv7WqNkpYATXPzpVa1bZOHlfVqMrWoYHPAOUwyxVKA1YEUV5oHqB+mSDLAyq/a4QifHfeMq4Hp772lKbd9Audku38d/rHV1T8Kk8zcKV7j7J041xZJjXr42pSFlk/Ks/HPIJ4/UGjus4TngsbsKI2TzfUFNQ2nsDH7+Xqze6wBwRayI62lsim9jGqOxsdEjmmH8x/a1vLkhG/NRRaPE5jf2yIA7KshNA9kyjBU8m7Gi44FihAAAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/officegreens-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRpQCAABXRUJQVlA4IIgCAABwDQCdASooAEcAPrVOoEwnJDgiKJgMWwAWiUAXon5Jsgh13WZH2no/WSgrmHme9n/HmrHoHrlkhyuzQOHvu3cDHsv5LYhatPvBVsSG6WPnPcLRv2fYn1u6DZxr3R5V8149js080Ecq9wj4tFEstXYSqub8qAD+7/iVql5/i0+LrBw7H/o811kYhFiHS/GCFJvQFc6Naz285k48fAyWZVsQJcadhVJwerN6e5sqo2M1SUiQgQ4fyOEEJi4h5rXL/xT6KOnsapI7S3DlTu5ECkx7V2+sR2fbXDMnrIf17wJLaqslC5czY2aW4ZW8G5OmK0qEF6WSjeaqfpPpgrICMR1r2fJ6AEfCDMbki96EZrUYKP0BcmpLyCjMJth+XRa41gqjI13411P+L6LyAI1wpGpCA8ugN6vcFACRGw1ctUl0VwEyayCwqs31q/0zjMvN22gxEosm8VLoi+wHbWEu66pkMONlCdEypVV4AX9Pz+OCOl5yDfEDnoVVv0iok8/3yzcZGY29ZHSTSR7MPfowneVTEbf3daCJaazJwXokbn6IOszeJ/q8/aW58G5IWpKegVKMZkunRSIRqVkP8aQ/eswRpXTwlnqw7UkqXr9m+fqJfckv7WqNkpYATXPzpVa1bZOHlfVqMrWoYHPAOUwyxVKA1YEUV5oHqB+mSDLAyq/a4QifHfeMq4Hp772lKbd9Audku38d/rHV1T8Kk8zcKV7j7J041xZJjXr42pSFlk/Ks/HPIJ4/UGjus4TngsbsKI2TzfUFNQ2nsDH7+Xqze6wBwRayI62lsim9jGqOxsdEjmmH8x/a1vLkhG/NRRaPE5jf2yIA7KshNA9kyjBU8m7Gi44FihAAAAA="
     },
-    "order": 11,
+    "order": 5,
     "dimensions": {
       "width": 2000,
       "height": 3553
@@ -312,42 +150,15 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum-md.webp",
-      "thumb": "data:image/webp;base64,UklGRuoAAABXRUJQVlA4IN4AAADQBgCdASooABsAPrVMn0qnJCKhqqwA4BaJZQDO7q5Rpka97mtDGE47kLi9CyhvLoQXp5kk6fLfvxuLYMak26AA/FyMIBg6/8ZXVhjrywEnmbJVurOS9LnQSFoRXS111uR9smhCAhNAKjWgMd+ftm0JIBSTMLMYlOzbrrgTmzjvFihXdBcNqyOFJC0xPrDUQzSR72WwQP/ZH7+EaQ85riJ2g6tS1ACtgi3StVO33S+GFsnuxhhkdj77kTY10RmcUnamsGmsZXSrlDZszcbEHd/ziGDg/CBznkU6TnoAAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/parismuseum-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRuoAAABXRUJQVlA4IN4AAADQBgCdASooABsAPrVMn0qnJCKhqqwA4BaJZQDO7q5Rpka97mtDGE47kLi9CyhvLoQXp5kk6fLfvxuLYMak26AA/FyMIBg6/8ZXVhjrywEnmbJVurOS9LnQSFoRXS111uR9smhCAhNAKjWgMd+ftm0JIBSTMLMYlOzbrrgTmzjvFihXdBcNqyOFJC0xPrDUQzSR72WwQP/ZH7+EaQ85riJ2g6tS1ACtgi3StVO33S+GFsnuxhhkdj77kTY10RmcUnamsGmsZXSrlDZszcbEHd/ziGDg/CBznkU6TnoAAAA="
     },
-    "order": 12,
+    "order": 6,
     "dimensions": {
       "width": 2000,
       "height": 1333
-    }
-  },
-  {
-    "id": "architecture-pigeonatumaidbhawan",
-    "title": "Pigeon At Umaid Bhawan",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/5.6",
-      "shutter": "1/250",
-      "iso": 500,
-      "focalLength": "52mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-md.webp",
-      "thumb": "data:image/webp;base64,UklGRqIDAABXRUJQVlA4IJYDAAAQEACdASooADwAPq1Cm0mmI6IhMrtrMMAViWgAnTLrvbG1n+c+1zzenOb0HPrGa1UE8PcOqx+4l8t5AApk+c9t/0jskwSDQcuNt/GzQr1ec176HAy5mWl+QfR2jnHQIDTgJfPt+GpH+DUL5MeCQflkyc3cD1W+1CwigUf6YB0udjb+cmIZWexgAAD94xXKvy3CTM1fOCFM2V5ltgoTfhiu7hBLCt6a3vAMwRJchUXkY2eOZtOjHv5N2fZH0xTlKjhoZVw/DWtmy0sZl39hWoXCKW+f/BHqIaG2HTKsqO53sAW2ZjWm3QndBkXBWPAWzrDamiuBezv3Dtr2R/r2CCeVmOzUBUDLIA5uWYkmjqUwntf2o5rKjEGhBX0ByDOWZNGjVGWow6Fc1gemTxz9OiMOn8595uTggy1g19PxX7B8fgGbttwuvunLG4jyTPhFePxfyf6fP6OvPPIYmnEqn4do7eUUFzffHOkG8ei8hCbORpRLpLzD+MK2wbZqUVMYlmkPI8t7afngUsxrNvfliAlxiIe5vGoDI9TKe3d+3Cneh6A2ICPSMPifQcN2jT3/5MXskYK08TELnRpGmp6vpNyh0kq2Wclzgs2EhMAhqq08MtTTMJdoUznEt29t2XQtuubnlm/q51w419aUEqvdtflsUDN38yYGOyx3mOyXpmI8IKaSDNMkbODfobIly7dbHxhV6yrR+AujDuf8qiSAcY11q7b0yGDdDPhMn819Jw2n2v+nY8z0yN+uAnQOk27QfDERn5BtqYSm763T3h91Hg3VzRBCu93D2WlWYqWgkuH4Wg1P8wIa9+YzwX2cn1HZ7H6Kq2Dy06Dt2XM1KDnfP1mha/jvrv2vdRCYaOmfKfFyA7abjECtSttIjHU4wjOZW0UpkUM84gW+22G88yaCyWkB3GyIkF9GdEYyPDphbBWe0n0MvF0ZJ5JlUwLAR4SAs/G/ftemdYRSrhnibt2/9ntzt3pIX/h0Krulj9s/Q8DbXbIpsUj/b3pGKbjqhreyox0+ov+uxpjFy8tFs5AbdO53tiJAfujJYLTfsF7BwQvg1eqYwTc3R8p8kb0hrRn7WsnH3wemfBfaNhFTTw5yhy1CWNLc7lr/rPefQCH/b1OScxzt9+kB3DY+m1cY4war327TFBJUC0KaYPxq6PVL/1Z4+ON3zz0ndPzJzbJ1ngj+qxV99Gne9s6CsryHwQGASHCESFxGAAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-sm.webp"
-    },
-    "order": 13,
-    "dimensions": {
-      "width": 2000,
-      "height": 2996
     }
   },
   {
@@ -366,12 +177,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding-md.webp",
-      "thumb": "data:image/webp;base64,UklGRvABAABXRUJQVlA4IOQBAADwCQCdASooABsAPrVMnUunJCKhqrgN+OAWiWwAnTLG/VEhdDmpPSAlmbebivcdyAp2usIRKeD4iGpnxBZco8t8p5l1Yj9QeEna330EUyOhrEHKV89/JTYAAM3xJeIfi6dqZzKq4xHvCZGmN+zOociPDxzCSp4qaaQlUFuof+qgvwO0tZcrPxDIMJpI/M4YuFDE+ECFx2+4YnZXrZ3BwmIaykjhZIt3i1npsFctJuvhr11ohsZ+WK/OTDJdOKE39m0ucbD5hdM3rRM50FrcgdAw8PZ9lf14KcDU2U7wCYEGpOpDLQ/wc2IBs/4sNPwqeh5k6jnRoiLM3CH3SCPxo4miXufN0DoTnPMa2DIUn8CqHC9xPMHddDZyQi3PvMzmvplOP0XLkKOLH7n/n7Ej6rZ6c3+DKfg/nQCKfzCKZI6PNV+TqJWDJpIIMl1Oq7B8WQNAbpg934Vci/GZEcJT4F3cfo1RcG9NI7bPE9gJSRhzWe5ORYzBuO0+Csa9ybuOyM3mNUG2flXncdG3+4XrEAhvpVeM0QiWfnUYzihRXlqNLSxsZq5CnFscfxiHFvCfNB4nasU5qUilKu+Je19y9UKD4R+ie0mt6Nphpui49AhOBChDgJVGuLKYJRENFKPwHBaOkwAA",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/redbuilding-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRvABAABXRUJQVlA4IOQBAADwCQCdASooABsAPrVMnUunJCKhqrgN+OAWiWwAnTLG/VEhdDmpPSAlmbebivcdyAp2usIRKeD4iGpnxBZco8t8p5l1Yj9QeEna330EUyOhrEHKV89/JTYAAM3xJeIfi6dqZzKq4xHvCZGmN+zOociPDxzCSp4qaaQlUFuof+qgvwO0tZcrPxDIMJpI/M4YuFDE+ECFx2+4YnZXrZ3BwmIaykjhZIt3i1npsFctJuvhr11ohsZ+WK/OTDJdOKE39m0ucbD5hdM3rRM50FrcgdAw8PZ9lf14KcDU2U7wCYEGpOpDLQ/wc2IBs/4sNPwqeh5k6jnRoiLM3CH3SCPxo4miXufN0DoTnPMa2DIUn8CqHC9xPMHddDZyQi3PvMzmvplOP0XLkKOLH7n/n7Ej6rZ6c3+DKfg/nQCKfzCKZI6PNV+TqJWDJpIIMl1Oq7B8WQNAbpg934Vci/GZEcJT4F3cfo1RcG9NI7bPE9gJSRhzWe5ORYzBuO0+Csa9ybuOyM3mNUG2flXncdG3+4XrEAhvpVeM0QiWfnUYzihRXlqNLSxsZq5CnFscfxiHFvCfNB4nasU5qUilKu+Je19y9UKD4R+ie0mt6Nphpui49AhOBChDgJVGuLKYJRENFKPwHBaOkwAA"
     },
-    "order": 14,
+    "order": 7,
     "dimensions": {
       "width": 1920,
       "height": 1280
@@ -393,39 +204,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
-      "thumb": "data:image/webp;base64,UklGRj4BAABXRUJQVlA4IDIBAADQBwCdASooABsAPrVQoUynJKMiJWzI4BaJZgCsM6Yz78BTQhs2OQyO8qHD3H6OGUa8TIVAbctV638+vSg1TOA++ejGRXGhbAD+7aLPRAbpjN6puZT4f8xGdh/j2fmtXvT5kJOOHfqD/H6uAen+BIXPh7Y/zbLzgiQzEiycu6cQ6MBU94fIs45jz3W75UMvyb5eX3aEndNCPchursXNezUbtEMszCLgRPS6kryTe9LD5kOdror9wQ9uNrVEtPTrDdfVpBV59FqqbTUp/SvKzSI+BbWaSISfd/9HqMbKCRR/bu+ddDqNKpp2D2shk6pXjhUhmXjF/5BV8evT0Gn03y9x4CkAgZNgHuwN1MT39dbH6D88En+Bfi3c51qf0xFRbhxx4OnYRjxFbREZpuoTak1OAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRj4BAABXRUJQVlA4IDIBAADQBwCdASooABsAPrVQoUynJKMiJWzI4BaJZgCsM6Yz78BTQhs2OQyO8qHD3H6OGUa8TIVAbctV638+vSg1TOA++ejGRXGhbAD+7aLPRAbpjN6puZT4f8xGdh/j2fmtXvT5kJOOHfqD/H6uAen+BIXPh7Y/zbLzgiQzEiycu6cQ6MBU94fIs45jz3W75UMvyb5eX3aEndNCPchursXNezUbtEMszCLgRPS6kryTe9LD5kOdror9wQ9uNrVEtPTrDdfVpBV59FqqbTUp/SvKzSI+BbWaSISfd/9HqMbKCRR/bu+ddDqNKpp2D2shk6pXjhUhmXjF/5BV8evT0Gn03y9x4CkAgZNgHuwN1MT39dbH6D88En+Bfi3c51qf0xFRbhxx4OnYRjxFbREZpuoTak1OAAA="
     },
-    "order": 15,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "architecture-singaporeflyer",
-    "title": "Singapore Flyer",
-    "category": "architecture",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": null,
-      "aperture": "f/3.5",
-      "shutter": "1/1000",
-      "iso": 100,
-      "focalLength": "18mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-md.webp",
-      "thumb": "data:image/webp;base64,UklGRnIBAABXRUJQVlA4IGYBAADwBwCdASooABsAPrVMoUsnJCMhqrgMAOAWiWgAnTKEEBIAEfWMTPuA34fassSRTHV/xyfmD5ZO8ABbxXHNoq0xDdTp5u3ZSyAA/tT+utUcZtbegjmfTkzTcNpjitA0d7iDixfCJ0Zu2vE1ruQYx4xVzjOi7FY4A2kH2G4PnJlERf3ySBCYuL4r7/fIFmhXqtaye14sRSPkB4siO7ZS76yDz2hVHVD6xKYGbWceUs8MiutA8pzh3uTYDmM982L0nFO0Imn4/2b3RwMfMNECh6BCRCrfuiU3bAfqVfdI0z57rd0SZZKdqeQo74w7Br56XfeJgFvkj+sS51psn2C0iz+RfbahMgIH/VcgMMcrIzSYJxBczKzvvhnQovm4KKnWzw2mz/20MF0buxDgo5ABWtScsxU5BkluLvgr816eRkBQTM8w34cD1sa+Yipov/fCANM0EutRUEMFqX1TTOgsNjWJ/U2+n4gA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-sm.webp"
-    },
-    "order": 16,
+    "order": 8,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -447,12 +231,39 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa-md.webp",
-      "thumb": "data:image/webp;base64,UklGRlABAABXRUJQVlA4IEQBAABQBwCdASooABsAPrVSnkunJKKhqrgMAOAWiWwAnTKEdzEscUAYV0wn2vySipcpwWsGL31Phr/+lmoktyMDoK2kHYAAAP7I6ZSHs4Lc8eAu8dJNHGSqfR2NOoUCfeGr0yE0OxCdc/f92K7KEPA5Fn+DarLOSJtppwbIqY82GOJ/ozCO/GUyU6d5dLxOhg76VnHgH0oKq7pTU/QAurTatrhTH+aDDxfuD9Es2FJZxIfV0XZtuUJXJJja0kkE+3BQnXfU3QtZoDVU4ZiAb0QVU9UoF1AH9hVEydr/dOS5KodadpqpbKVpkmWtGI346XUAXiYhFMjOC6xgK3Brw/yn/PxB1wlbKMd2KLCsLXNvIrTnwEgAEsLJ4hgPmnIeFo1GbWhN25kY8ewBWdmplhmbAt6Lg22qlJgfQlNDlpJXJqVIRBAaAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporesentosa-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRlABAABXRUJQVlA4IEQBAABQBwCdASooABsAPrVSnkunJKKhqrgMAOAWiWwAnTKEdzEscUAYV0wn2vySipcpwWsGL31Phr/+lmoktyMDoK2kHYAAAP7I6ZSHs4Lc8eAu8dJNHGSqfR2NOoUCfeGr0yE0OxCdc/f92K7KEPA5Fn+DarLOSJtppwbIqY82GOJ/ozCO/GUyU6d5dLxOhg76VnHgH0oKq7pTU/QAurTatrhTH+aDDxfuD9Es2FJZxIfV0XZtuUJXJJja0kkE+3BQnXfU3QtZoDVU4ZiAb0QVU9UoF1AH9hVEydr/dOS5KodadpqpbKVpkmWtGI346XUAXiYhFMjOC6xgK3Brw/yn/PxB1wlbKMd2KLCsLXNvIrTnwEgAEsLJ4hgPmnIeFo1GbWhN25kY8ewBWdmplhmbAt6Lg22qlJgfQlNDlpJXJqVIRBAaAAA="
     },
-    "order": 17,
+    "order": 9,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "nature-acrossthetrees",
+    "title": "Across The Trees",
+    "category": "nature",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "70.0-300.0 mm f/4.5-6.3",
+      "aperture": "f/11",
+      "shutter": "1/500",
+      "iso": 200,
+      "focalLength": "70mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRjgBAABXRUJQVlA4ICwBAABwBgCdASooABsAPrVQn0unJKKhqqoA4BaJYwC7OUAKibNGhB15FXkEb8DVEZe0p2mh1BZAocEXnJ9MyYAA/TedvhhSUIgNCiNe+XjO9hW40oJsX+EDw8j7HjBA6pOb5xQzB2FY98OTTkVDsdR57YAhRs8mIRbLFppcbq3UyO8KHEg17HQtXUNgIfzUN2bFUTL0Hn+l/iKWUM/Mr+AjD9gEe6uqzcg1wQAdFG6WkhUzC3wRW0UHQ6PJsXesSTZ5ysT4FKXn3189d7BjPKWad1Pda2A15D31G5NjDk4FuyVC+6WLJAvaD5DHu/FVeur47ZjaaYzj7ruBHc5kCPJDu/ruy2s6KKLP+cXj95sspNKaEtgab/KEeKID09bOn6GWzs8sC29X+wdT14cXgAA="
+    },
+    "order": 10,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -474,39 +285,39 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram-md.webp",
-      "thumb": "data:image/webp;base64,UklGRoQBAABXRUJQVlA4IHgBAACQCACdASooABsAPrFGnEmnI6KhNVgIAOAWCWwAnTLG+1khsiQNHhW4jED/ndnZnp9mIbfazV46zigTwNMbXxHN2aH1xqfd63JDNvUZAAD+40j8g9Y/5w4GGPXD6iXOBaAZtrpCEghWaR7//fJugaNXJn87yu/nfdHxqv8CcVFtfjcWyxPGzTE+NDTrSydtyXnEaF/TSLtghBpUARSB8YhXC+b42lk+VIVvIDvgUWsqp+93nstCHTo5HoGGai3rTzprGnXcTSS68awdJENlHh2Gryf9aROZYx+onJywd3dAknXtpOYzgxEBkOQ4xb8dvNIMEFu3VFG6Svb2CTG7t2AEIRUnPH1zEEci6p3a3bpzSUM0orJ6/k9AYWiYjJGQHxIvq4hjL16zU9AVb+H1wuHMegkqnSF9UURtATo+dOP2kFYbqoGw5Rs57nX88I4Lrq0XTkCNqaYyQ/aBFo5B8UVEvwJNTAroOQFEKHhgT5jsR/Bux6bk7QAA",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/templemahabalipuram-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRoQBAABXRUJQVlA4IHgBAACQCACdASooABsAPrFGnEmnI6KhNVgIAOAWCWwAnTLG+1khsiQNHhW4jED/ndnZnp9mIbfazV46zigTwNMbXxHN2aH1xqfd63JDNvUZAAD+40j8g9Y/5w4GGPXD6iXOBaAZtrpCEghWaR7//fJugaNXJn87yu/nfdHxqv8CcVFtfjcWyxPGzTE+NDTrSydtyXnEaF/TSLtghBpUARSB8YhXC+b42lk+VIVvIDvgUWsqp+93nstCHTo5HoGGai3rTzprGnXcTSS68awdJENlHh2Gryf9aROZYx+onJywd3dAknXtpOYzgxEBkOQ4xb8dvNIMEFu3VFG6Svb2CTG7t2AEIRUnPH1zEEci6p3a3bpzSUM0orJ6/k9AYWiYjJGQHxIvq4hjL16zU9AVb+H1wuHMegkqnSF9UURtATo+dOP2kFYbqoGw5Rs57nX88I4Lrq0XTkCNqaYyQ/aBFo5B8UVEvwJNTAroOQFEKHhgT5jsR/Bux6bk7QAA"
     },
-    "order": 18,
+    "order": 11,
     "dimensions": {
       "width": 2000,
       "height": 1369
     }
   },
   {
-    "id": "nature-acrossthetrees",
-    "title": "Across The Trees",
-    "category": "nature",
+    "id": "architecture-eiffeljpg",
+    "title": "Eiffel",
+    "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
     "exif": {
       "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "70.0-300.0 mm f/4.5-6.3",
-      "aperture": "f/11",
-      "shutter": "1/500",
-      "iso": 200,
-      "focalLength": "70mm"
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/3.5",
+      "shutter": "1/60",
+      "iso": 1400,
+      "focalLength": "18mm"
     },
     "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
-      "thumb": "data:image/webp;base64,UklGRjgBAABXRUJQVlA4ICwBAABwBgCdASooABsAPrVQn0unJKKhqqoA4BaJYwC7OUAKibNGhB15FXkEb8DVEZe0p2mh1BZAocEXnJ9MyYAA/TedvhhSUIgNCiNe+XjO9hW40oJsX+EDw8j7HjBA6pOb5xQzB2FY98OTTkVDsdR57YAhRs8mIRbLFppcbq3UyO8KHEg17HQtXUNgIfzUN2bFUTL0Hn+l/iKWUM/Mr+AjD9gEe6uqzcg1wQAdFG6WkhUzC3wRW0UHQ6PJsXesSTZ5ysT4FKXn3189d7BjPKWad1Pda2A15D31G5NjDk4FuyVC+6WLJAvaD5DHu/FVeur47ZjaaYzj7ruBHc5kCPJDu/ruy2s6KKLP+cXj95sspNKaEtgab/KEeKID09bOn6GWzs8sC29X+wdT14cXgAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-sm.webp"
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRiIBAABXRUJQVlA4IBYBAAAwBwCdASooABsAPq1CnUmmI6MhNVgMAMAViWgAvmj2CNYUUXYIv1Kh+LK5fvbFztedT5VXT70SLF8vtMLjjumtaXgA/v4UGXMX8ff0vqi3zbGqx+4RqNM1kPv/aFM9WLZ+ECyBY0UecjU/Db+5roKKxKX39Br1QoUI0KXMeIVC6PL8+qXXILrY38onkmRyMlTlWxMc706xPYJAIEPkh0PwqAjzb+4yszGggUMU6IQsLxLruLubqQceyO8vyVeUz7yUsu4V6KG4AJIC2L60ONJMB+bgSvv0iSyfwVh8VVgwiCup9XKWNhGnFZCmXPMwMjwe06H3ZaxYv6CoT9sABPgFfhuyx0W5WUXV2RjdRQ02aZI+YNLgAA=="
     },
-    "order": 19,
+    "order": 12,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -528,39 +339,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens-md.webp",
-      "thumb": "data:image/webp;base64,UklGRsAAAABXRUJQVlA4ILQAAAAQBgCdASooABsAPq1Im0mmJKKhMBqtUMAViUAQV8C52vrVkX0s9ojFWhOn24tjk7PV2+DlXOvlUQAA/u1Pw/A1zf1ifW0thvC78pt/7D8CGvqkh6xfTJyPrDcj29kCRlTZDPSmlY9HrU8INplBdNqTMxVGvlXjfkmv4rAZbZUrqUKJrV2AdD506XGJ9qU0M/aUm0JiFoeKPAy3jhbmDO9vxdZvobiWcW3g8+HPdUrR8dyQAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/hillsandgreens-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRsAAAABXRUJQVlA4ILQAAAAQBgCdASooABsAPq1Im0mmJKKhMBqtUMAViUAQV8C52vrVkX0s9ojFWhOn24tjk7PV2+DlXOvlUQAA/u1Pw/A1zf1ifW0thvC78pt/7D8CGvqkh6xfTJyPrDcj29kCRlTZDPSmlY9HrU8INplBdNqTMxVGvlXjfkmv4rAZbZUrqUKJrV2AdD506XGJ9qU0M/aUm0JiFoeKPAy3jhbmDO9vxdZvobiWcW3g8+HPdUrR8dyQAAA="
     },
-    "order": 20,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "nature-lonetree",
-    "title": "Lone Tree",
-    "category": "nature",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/11",
-      "shutter": "1/500",
-      "iso": 250,
-      "focalLength": "30mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-md.webp",
-      "thumb": "data:image/webp;base64,UklGRlABAABXRUJQVlA4IEQBAADQBwCdASooABsAPrVSokwnJKMiKrgKAOAWiWwAnTLLuE+qhVp2/PLuNpvse92eW0puLGZNBpLXZPBQXflejj9jjBwAy7WrgAD+6Tbure4yNHYpS2C0mp8ouf0H7WY4lExTO1feZLO9PVf/yWAtlWDOl/dxqwc/3pQLy6r9HBZ3E0qC7WCbar5TxgFEu0PmKGrctU4FR2oSl6vx90xXqAdjjrGkLCWtRV+Pbpo7LX5N9LArH9w2qYivZ+KZkSuqmmYgSztydH4y11VcycBSqQ72sS005ZsBe6KERRTuexUC2vT90f7b9wdLIuUioAnRFoV23447sw//tCNsiwGJxvle0J0NZjXVcQGBkQPh8ZsmyBaCCu/Ml9DDnFE02BzWOrvsgcr4fCs2X+JYyTKx3i+uYjdsJaqFVdV6mN0b4tl3/qQAAAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-sm.webp"
-    },
-    "order": 21,
+    "order": 13,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -582,15 +366,150 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills-md.webp",
-      "thumb": "data:image/webp;base64,UklGRpwAAABXRUJQVlA4IJAAAABQBQCdASooABsAPqlEm0mmJCKhNVgMAMAVCWMAwNwKQ5opixQLaZ809M/1mG9k0Y7bxUAA/nC6v/hSohr28ukluDDCcYjZ12u1FpEwdkvnuk9CsxegRd4DSXkdO2ip7F6sYm44dv2T+PrhcyV44Rx4EEYCi25K5nCjZ186oKlvjRiIdUTW3cn4fmdb48AAAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturehills-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRpwAAABXRUJQVlA4IJAAAABQBQCdASooABsAPqlEm0mmJCKhNVgMAMAVCWMAwNwKQ5opixQLaZ809M/1mG9k0Y7bxUAA/nC6v/hSohr28ukluDDCcYjZ12u1FpEwdkvnuk9CsxegRd4DSXkdO2ip7F6sYm44dv2T+PrhcyV44Rx4EEYCi25K5nCjZ186oKlvjRiIdUTW3cn4fmdb48AAAAA="
     },
-    "order": 22,
+    "order": 14,
     "dimensions": {
       "width": 2000,
       "height": 1333
+    }
+  },
+  {
+    "id": "architecture-citypalacegate",
+    "title": "City Palace Gate",
+    "category": "architecture",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/7.1",
+      "shutter": "1/200",
+      "iso": 400,
+      "focalLength": "18mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacegate-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRl4CAABXRUJQVlA4IFICAACQDQCdASooADIAPrVOnEunJCKhrVmZIOAWiWwAnTlBVR5dfh+U1ComroAPMBjoG8ro3XcTK6G7Hh11tRSV99c16vuNJWznX63yGJ9fEFlI/4UxGf8Z6B2IQxianWpLTSGwUfnNAqfFjV+lj4zWhFe6/psQeAAA/uxWSkX/OJfcvuXwP/Rh/0Yf9Tj9IWdExowHyEmvru3oI8i7dEAzayFa5vvh2wRrbjICDrQjsC4cGiunrI8pLgxPt+jNndUiIneYt7mI1FrR5q/zqSBp1tKTm0HhPiddn4hfyqF0CuefinDPhMtafl5UTQHh5JzHQkEfGR+b8lDFt7Y88wqouHoAEwe59iN56jIhdWqJWmGKoVtDd6Xst2t4dyZtsz7zORCOe27NtLR5wuSIXJFCa3tKcdLuMEUb1NUnSV3nipiSQ4fIlwIstgxE7FRkhlRELd5DntKbTEiAaFOrk8aZfqd0/IDberG1rDp7X5NXJlfn8SJgrs6rvLi8Bb8f5E30G8X9xe1jgoo8LWEAYwuV5Kn7dHT3ixhKSQnse5nFBs5VT7hyIumnmV67aRy9FLVXGWgKLA0gjpcVoVf8r6seKSVnx418XOShnxhlf74SrLuF0ClDCHyef6NP6rFwnBjWD06OpNPpGmyJQd9W1V3nGAhNyN6C4ZMQJJESfx6428dB3crHra6/mFQlq3CjOZTbTWTH2uD7LhpE81+WdFow5wnbTJHZIBO6Q8/X8BnkpfATfx7kqH4PSRMpXdzWVSSlC688Rp7wx3z1+Z4QUdWB9V/1UAA="
+    },
+    "order": 15,
+    "dimensions": {
+      "width": 2000,
+      "height": 2500
+    }
+  },
+  {
+    "id": "architecture-hawamahaldaytime",
+    "title": "Hawa Mahal Daytime",
+    "category": "architecture",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/5.6",
+      "shutter": "1/125",
+      "iso": 400,
+      "focalLength": "18mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRj4DAABXRUJQVlA4IDIDAACQDwCdASooADwAPrVKoEunJCMhqrv7AOAWiWwAuzNQw67M+e+gngRYWAzVEUpdOeA8wOLDvPb2dQNRESAicFnZkBSsEHGT2agTtOJiwmkdaP2OsaPvi99+cyPrEUv8iUOezbngUX0/22QxBX/jf9p2qaPREvKP7L++GCSanZcMKWizqcCAANnf4O0mdqGfXSeJ4//9PuWoMf9yeX/9ybUZ+fPt71P7Ni5H95GZhmzuYanHazZTvFHB35OajOc36BzOBBEfC4FQIThPT10MLrm/sieLW4frwTn+lc6G21WMISB960/bGQFkmvkfkn/mf6WNq4ynnueJ5+jjtmVo5GuM86l9Lp8gnRo5CDLcrNkSwwNRgu+sso2mDTz3tqg5oswi853jZWg0Smam+bNYRXDo62cc/RwXu2E0TQhyqMx8zCKT3wEEJju2v04WcaLIMQTj2LEEamEAiDAmwoLb859KTqLHfsxn/tpqF+X4ZN+knJpGMLhYbQCe/5Bs5bfu4ZGvvDWeed0ZQpaD7hUWUnZEAqU40szrATL+XepOe64o3kU5P2qgFdHNwKwmUtwxZhlcar523nE5w989NbBCgEMiSf3NQpMH6a9SZKcnjRWadEqIhkHxCKI99D3OlS//ksw2J2eimukFggcOP5b6J42o7EeveYpUxPh6Lnuyfz4eWIFTCM4F2tuklks2wKKqps1QVZg1vtM1TYlVy+1+aN9EmzAuQmnkUva8H25y8N3C6LfGSe1DpPxOp6MIcxQDISc0xuVvTp6Uldz9JvCWeEqhqb2vaTOIXMM/bCaggJqhiaM2tcwuv6f0rFqjknrwuFe1nKWjfbhIeHcD0gQsqm5dBxVwVk0cUUeJqmInGVtLKKGPSeNaDUpKYAg3SxSZN55nGMGPNNSynVo5OvsJuFs7ShbQ43aAu2HmbCK5TpySEJsWuzK+eRx1ugnb1SvKgU94jCt8IJTmuiadd6lawABweXGC6lN4xoqSOn2V5W3kaLR7YiVR2oEL1le3JgCpQ2OuGmwAJp3bPexrhvVs4ECT+6J0BDowDcF5J2EEqIzDvWETnjAUAc+VibMSjqsdYvAAAA=="
+    },
+    "order": 16,
+    "dimensions": {
+      "width": 2000,
+      "height": 3000
+    }
+  },
+  {
+    "id": "architecture-pigeonatumaidbhawan",
+    "title": "Pigeon At Umaid Bhawan",
+    "category": "architecture",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/5.6",
+      "shutter": "1/250",
+      "iso": 500,
+      "focalLength": "52mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/pigeonatumaidbhawan-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRqIDAABXRUJQVlA4IJYDAAAQEACdASooADwAPq1Cm0mmI6IhMrtrMMAViWgAnTLrvbG1n+c+1zzenOb0HPrGa1UE8PcOqx+4l8t5AApk+c9t/0jskwSDQcuNt/GzQr1ec176HAy5mWl+QfR2jnHQIDTgJfPt+GpH+DUL5MeCQflkyc3cD1W+1CwigUf6YB0udjb+cmIZWexgAAD94xXKvy3CTM1fOCFM2V5ltgoTfhiu7hBLCt6a3vAMwRJchUXkY2eOZtOjHv5N2fZH0xTlKjhoZVw/DWtmy0sZl39hWoXCKW+f/BHqIaG2HTKsqO53sAW2ZjWm3QndBkXBWPAWzrDamiuBezv3Dtr2R/r2CCeVmOzUBUDLIA5uWYkmjqUwntf2o5rKjEGhBX0ByDOWZNGjVGWow6Fc1gemTxz9OiMOn8595uTggy1g19PxX7B8fgGbttwuvunLG4jyTPhFePxfyf6fP6OvPPIYmnEqn4do7eUUFzffHOkG8ei8hCbORpRLpLzD+MK2wbZqUVMYlmkPI8t7afngUsxrNvfliAlxiIe5vGoDI9TKe3d+3Cneh6A2ICPSMPifQcN2jT3/5MXskYK08TELnRpGmp6vpNyh0kq2Wclzgs2EhMAhqq08MtTTMJdoUznEt29t2XQtuubnlm/q51w419aUEqvdtflsUDN38yYGOyx3mOyXpmI8IKaSDNMkbODfobIly7dbHxhV6yrR+AujDuf8qiSAcY11q7b0yGDdDPhMn819Jw2n2v+nY8z0yN+uAnQOk27QfDERn5BtqYSm763T3h91Hg3VzRBCu93D2WlWYqWgkuH4Wg1P8wIa9+YzwX2cn1HZ7H6Kq2Dy06Dt2XM1KDnfP1mha/jvrv2vdRCYaOmfKfFyA7abjECtSttIjHU4wjOZW0UpkUM84gW+22G88yaCyWkB3GyIkF9GdEYyPDphbBWe0n0MvF0ZJ5JlUwLAR4SAs/G/ftemdYRSrhnibt2/9ntzt3pIX/h0Krulj9s/Q8DbXbIpsUj/b3pGKbjqhreyox0+ov+uxpjFy8tFs5AbdO53tiJAfujJYLTfsF7BwQvg1eqYwTc3R8p8kb0hrRn7WsnH3wemfBfaNhFTTw5yhy1CWNLc7lr/rPefQCH/b1OScxzt9+kB3DY+m1cY4war327TFBJUC0KaYPxq6PVL/1Z4+ON3zz0ndPzJzbJ1ngj+qxV99Gne9s6CsryHwQGASHCESFxGAAA="
+    },
+    "order": 17,
+    "dimensions": {
+      "width": 2000,
+      "height": 2996
+    }
+  },
+  {
+    "id": "nature-lonetree",
+    "title": "Lone Tree",
+    "category": "nature",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/11",
+      "shutter": "1/500",
+      "iso": 250,
+      "focalLength": "30mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/lonetree-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRlABAABXRUJQVlA4IEQBAADQBwCdASooABsAPrVSokwnJKMiKrgKAOAWiWwAnTLLuE+qhVp2/PLuNpvse92eW0puLGZNBpLXZPBQXflejj9jjBwAy7WrgAD+6Tbure4yNHYpS2C0mp8ouf0H7WY4lExTO1feZLO9PVf/yWAtlWDOl/dxqwc/3pQLy6r9HBZ3E0qC7WCbar5TxgFEu0PmKGrctU4FR2oSl6vx90xXqAdjjrGkLCWtRV+Pbpo7LX5N9LArH9w2qYivZ+KZkSuqmmYgSztydH4y11VcycBSqQ72sS005ZsBe6KERRTuexUC2vT90f7b9wdLIuUioAnRFoV23447sw//tCNsiwGJxvle0J0NZjXVcQGBkQPh8ZsmyBaCCu/Ml9DDnFE02BzWOrvsgcr4fCs2X+JYyTKx3i+uYjdsJaqFVdV6mN0b4tl3/qQAAAA="
+    },
+    "order": 18,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "abstract-plane",
+    "title": "Plane",
+    "category": "abstract",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "samsung Galaxy Z Fold5",
+      "lens": "Samsung Galaxy Z Fold5 Rear Wide Camera",
+      "aperture": "f/1.8",
+      "shutter": "1/190",
+      "iso": 64,
+      "focalLength": "5.4mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/plane-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAABQBACdASooAEcAPrVKoUynI6OiqJQNEOAWiWcAyjwHd6eEAomAZ9eSfqE4APhBrL/F3YjxgUn5t5G8AghWF9TLgSYIUI9bJG/tOF9KlyXfHOzLFNDjUChcxFkGGrvKU+EMfO8uIB+NB3i2mztCoLgyEqweAAAA"
+    },
+    "order": 19,
+    "dimensions": {
+      "width": 1318,
+      "height": 2341
     }
   },
   {
@@ -609,12 +528,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall-md.webp",
-      "thumb": "data:image/webp;base64,UklGRoABAABXRUJQVlA4IHQBAABwCACdASooABsAPrVMn0unJCKhqqoA4BaJQBbZ9YhWJIdqve9UtTFJoonwgoaDPdPq9YLnf09ZOXcZLxwdfFkX8DrWBgGnDH4od5GAAP3D3+gNd9bxz0nGUn9DhJW+uS4d3FNtQSqxhoJ7P/Y36955dqJalUHQpXOi7DeyJm9oIJ0vr//bl2ffmEtOLxeu8NOapmtwiiEHDAAoZTjNBNcSbroeiC0MssXYfvhQwzOKUNA2jcB+Rb3a9f6K6WwjTYFP43FwcAVsPR3Po8OobbOMVyDUJOe1VQfvoumQmOqOxeJtPgVxNFn4TVZkPkn+BXXLC3NIPwSLr4siwAXYAj3nnDdGQCUmU43UZO6MSXJkjuSfKh4IBVS4T90rgnLEm6rMneOGbZ4/+QzLySuyGRarxDeCiMTRd7BwOzNAygEfWLESKgrttZA6MG3J6KUw4rnOnj7vdVUQIOg5QraVahfvMx2J26eitY8aLy+4zgm4UosgAAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/naturewaterfall-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRoABAABXRUJQVlA4IHQBAABwCACdASooABsAPrVMn0unJCKhqqoA4BaJQBbZ9YhWJIdqve9UtTFJoonwgoaDPdPq9YLnf09ZOXcZLxwdfFkX8DrWBgGnDH4od5GAAP3D3+gNd9bxz0nGUn9DhJW+uS4d3FNtQSqxhoJ7P/Y36955dqJalUHQpXOi7DeyJm9oIJ0vr//bl2ffmEtOLxeu8NOapmtwiiEHDAAoZTjNBNcSbroeiC0MssXYfvhQwzOKUNA2jcB+Rb3a9f6K6WwjTYFP43FwcAVsPR3Po8OobbOMVyDUJOe1VQfvoumQmOqOxeJtPgVxNFn4TVZkPkn+BXXLC3NIPwSLr4siwAXYAj3nnDdGQCUmU43UZO6MSXJkjuSfKh4IBVS4T90rgnLEm6rMneOGbZ4/+QzLySuyGRarxDeCiMTRd7BwOzNAygEfWLESKgrttZA6MG3J6KUw4rnOnj7vdVUQIOg5QraVahfvMx2J26eitY8aLy+4zgm4UosgAAA="
     },
-    "order": 23,
+    "order": 20,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -636,12 +555,12 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset-md.webp",
-      "thumb": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAACwBwCdASooABsAPrVKoUsnJCMhqrgMAOAWiWoAnTKEfAEaALnv6b6ywStvv5U5uu14FEvbVndP15tsUMjyJgjRIUx5BcQAAP6CFbHlPC3H0LxnA9oClxisompDfPdRsP8+ifFf5agj1j1uTZX6lsN9//dfS+rcErZMAAPz7iJNz00VmEBs0MlEP4DNsSC5wDeovoLJqsJWaC98e9an4gey8s6VCv/ZGaqGy/7KUyB1JjBmnto+G/Au1IRChiL7F1zq+iZDxLgxQRp2rTLEY5dP5tBSLs7Wncs3TNbLBysrS6SfiBCFpPZSZcpxvWYTUIqs3+4Kj+0XH56c3EXnKHIgCA6AAA==",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/shipsunset-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRhABAABXRUJQVlA4IAQBAACwBwCdASooABsAPrVKoUsnJCMhqrgMAOAWiWoAnTKEfAEaALnv6b6ywStvv5U5uu14FEvbVndP15tsUMjyJgjRIUx5BcQAAP6CFbHlPC3H0LxnA9oClxisompDfPdRsP8+ifFf5agj1j1uTZX6lsN9//dfS+rcErZMAAPz7iJNz00VmEBs0MlEP4DNsSC5wDeovoLJqsJWaC98e9an4gey8s6VCv/ZGaqGy/7KUyB1JjBmnto+G/Au1IRChiL7F1zq+iZDxLgxQRp2rTLEY5dP5tBSLs7Wncs3TNbLBysrS6SfiBCFpPZSZcpxvWYTUIqs3+4Kj+0XH56c3EXnKHIgCA6AAA=="
     },
-    "order": 24,
+    "order": 21,
     "dimensions": {
       "width": 2000,
       "height": 1333
@@ -663,69 +582,42 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint-md.webp",
-      "thumb": "data:image/webp;base64,UklGRroAAABXRUJQVlA4IK4AAADQBQCdASooABsAPrVMn0qnJCKhsBqoAOAWiUAK4j3/vKh5uSuHxBP5qUBeI5yx1M1gnZxjNJgAAP6MLcqwhL6PlEN6Ex/8ahjkFWv+PCPKhif/2MtBXGxHQ09HqiwS4tBvyihs/kclxT5ri11qXuQLow5RwYOdg49BpZvV+4Zowh/Mb3Ga9UshaMcOwUZMW+85rDh10+iRdFzKkgC/ad8rrySeKf0w6BT8RLp4AAA=",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/sunrisepoint-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRroAAABXRUJQVlA4IK4AAADQBQCdASooABsAPrVMn0qnJCKhsBqoAOAWiUAK4j3/vKh5uSuHxBP5qUBeI5yx1M1gnZxjNJgAAP6MLcqwhL6PlEN6Ex/8ahjkFWv+PCPKhif/2MtBXGxHQ09HqiwS4tBvyihs/kclxT5ri11qXuQLow5RwYOdg49BpZvV+4Zowh/Mb3Ga9UshaMcOwUZMW+85rDh10+iRdFzKkgC/ad8rrySeKf0w6BT8RLp4AAA="
     },
-    "order": 25,
+    "order": 22,
     "dimensions": {
       "width": 2000,
       "height": 1333
     }
   },
   {
-    "id": "portraits-patrikagate2",
-    "title": "Patrika Gate 2",
-    "category": "portraits",
+    "id": "architecture-singaporeflyer",
+    "title": "Singapore Flyer",
+    "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
     "exif": {
       "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/8",
-      "shutter": "1/80",
-      "iso": 400,
+      "lens": null,
+      "aperture": "f/3.5",
+      "shutter": "1/1000",
+      "iso": 100,
       "focalLength": "18mm"
     },
     "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/patrikagate2.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/patrikagate2-md.webp",
-      "thumb": "data:image/webp;base64,UklGRrQCAABXRUJQVlA4IKgCAABQDQCdASooADsAPrVOoEqnJCMhrVmaSOAWiWMArDPsRTa2a6fqKbrLL0zzR3+IDLAlQE8fK+uAZW9AjE8rr+haMjpnvZXWxYfj0gSqUwRg5EipyouBis7wL/OrvmNbJOFCb8swQQO2EvCZ1zvE0aKd4ATQAP5M8GD6nSxG1AXXJ+78FkPS57tn1v8JmU5P9fEaX8dI14695avYGZsLBQPHp5pwmYNg6JtF4LCCWhOAQ1NEt7Zo7WtbpDcr3qtvSbf3lwweZBE/EMvjyqNN8hQakkWwWNnSb3qGQdSasN7x40kwvjqePCnH6Pw8OT+9Z3sxq04q900jU89Fh1CeBmNzgufcMw6I2UHpKI9VcdtEkmR83FBQFhECvvv5xhw3oYJy+Bv+DekOeULO9HvhU5WQvIFMtQbzbSghvmxSdd7XVSoY/bE9ip2rPtVW7mT/6U1fiTVdGCXy/x691hNo2aL7nI+03ZB9nfYcBIsORtmMYYDylqz30NYX187xNyM36HTBcq+GdRtwa+ZHLcuODnuu886s5U0LM+YTwrP9My3lVjnE1umOQl4LAQFTYH64MJNcqd75e9gXAlblL9dUT6i7aOfxhDUAH13MYpRqz3/HxRGZ6saGPDsZazwMVgxYu8wrpOmYgh1ie/d0c7syg0b3ezO/bQfJ23PvVl/9ExM2jqbkYzLYzydDD39eAinStJLvfQA/nnRFQ8eJm4Y5hTfpWbyu+DlaMt/A+bcuNikLzxY35TujK3edIbktXFqHCCEbuh3XlQQqkUEwGJZbHMx3I5XFRp0aiqikKFHJLOCiv9slbLCYDzvtRdnKlQXfqrr0si7Gos214Bn+Zo4ADM1EnP48ZWfLROW3cCeSsJnh10aMvoBkTV88pcMdUF3xB7ABTsFZhgAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/patrikagate2-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/patrikagate2-sm.webp"
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singaporeflyer-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRnIBAABXRUJQVlA4IGYBAADwBwCdASooABsAPrVMoUsnJCMhqrgMAOAWiWgAnTKEEBIAEfWMTPuA34fassSRTHV/xyfmD5ZO8ABbxXHNoq0xDdTp5u3ZSyAA/tT+utUcZtbegjmfTkzTcNpjitA0d7iDixfCJ0Zu2vE1ruQYx4xVzjOi7FY4A2kH2G4PnJlERf3ySBCYuL4r7/fIFmhXqtaye14sRSPkB4siO7ZS76yDz2hVHVD6xKYGbWceUs8MiutA8pzh3uTYDmM982L0nFO0Imn4/2b3RwMfMNECh6BCRCrfuiU3bAfqVfdI0z57rd0SZZKdqeQo74w7Br56XfeJgFvkj+sS51psn2C0iz+RfbahMgIH/VcgMMcrIzSYJxBczKzvvhnQovm4KKnWzw2mz/20MF0buxDgo5ABWtScsxU5BkluLvgr816eRkBQTM8w34cD1sa+Yipov/fCANM0EutRUEMFqX1TTOgsNjWJ/U2+n4gA"
     },
-    "order": 26,
+    "order": 23,
     "dimensions": {
       "width": 2000,
-      "height": 2968
-    }
-  },
-  {
-    "id": "portraits-portraitglow",
-    "title": "Portrait Glow",
-    "category": "portraits",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": null,
-      "lens": null,
-      "aperture": null,
-      "shutter": null,
-      "iso": null,
-      "focalLength": null
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitglow.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitglow-md.webp",
-      "thumb": "data:image/webp;base64,UklGRpQCAABXRUJQVlA4IIgCAACQDACdASooADwAPrVIn0qnJCKhrVM+2OAWiUAXMf/pHdc9e70pOHlj6bNohBeuD7PiGzJtvMwYKTCncwDHRTYYAUQ1LpT+fBVZ2+mkTKYxkAipUlspH5xjgG0LNjFiWZLtiYisifSSBRYXhBAAAP78EPDN+bdXFWu70yq7YVzo5ZLrgoJByArL9mSeuHxEO4DP+1w7YeQBTTPpvji0F/aSExcEHP/SqXwv2dX6Q/5fBvnztUpVOLzOwr/SfhoVmm9BL+U4ei5oBa51+iTqwDkFb1/pIOiZ2tk1eZR9/IUSQE5Ew7RsGb906HoRtthUypxvZrXezwtz+5YwHlWeT/R9PD1DQWacLFLWfeJrB72YCbOWbIBtw/I2NvTDuhEDBH1FmHU/tqT8KReHi2MJ1XOdQ91yP/AR1IaZs2KgkvJYkYr3WZ8rNWlCr1491Z1YmUGgHlkE6dh4Ry91r3yACmyWOB3tCOm1kY72UVW+k0DycaIHO2gOmzMRhbeJCyGrN9JkY65eyQ36k6dmU43BiRx8CwgxfA59k9Hlam+7nUVDUtnKIjBOXtB4+CKB8mk2msYIapKzcWHyxU5p0fCrKPgINFzpX9/uhE0t7EMKqf7jUyt45sWmUtbrihHleW9VTBZtXL59X6ngwhh7DgVFq6SQPc/9+zsTKLA59zrkIZS0A+sNvhJJeXfdjEfu4oMY873ORzfkZJgjaE9LM75mrIHo3uVTKTFNkTVkFo+3ao6tzjww92cG/UsQ6ks+EvI5de+6Bs+bKdcKAq7ZXtHG1quUHDpUXawLuRbpMXjozhrrE7cR/dy5SkEYtwjVpki1H1mO5VKeexu4uPtp+tF1A2eHOS8KKP1KAAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitglow-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitglow-sm.webp"
-    },
-    "order": 27,
-    "dimensions": {
-      "width": 2000,
-      "height": 3000
+      "height": 1333
     }
   },
   {
@@ -744,123 +636,15 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1-md.webp",
-      "thumb": "data:image/webp;base64,UklGRnICAABXRUJQVlA4IGYCAABwDQCdASooADwAPrVSoUynJKMiKrQKAOAWiWMAv2wYTd2f0wu9+mT1xcYpJWZgW/kxyADjCMFp9pp+KaZGZyLiZmbMqcMSMHX1R+pHCRzAVJyBSeG2iR6zak29EGzXCX/kKHD4o1EdaZxvTcOXIPadYs8/4AD8BW7yP9203+p88NsdTxe9UmnYAnLPzqgyu6tR+1Osl3+86WYAJ8xvRXMP3yur2qc51eTm9khZl10JN2amLJNQFS1xAoE4xlwldsHpgMEmq5UG3IfcFAcsg9j7mLkMLOPV0uPxIv7xYZgbTzALg6OcjwNp6erGJ4puXeV4lAeOg4U6B0yKNQFy273vdrb9aZdrJujr1HwhberEbNIWfXtQqIIl+7DwTNUqD+/s5eWEhidvbHHUmZKW6EPJf42f3l1e3pDYwupzQjph6tlsJ31Ia8P9SUU4BQCzbFdRK+hfvWnsQsVSLzPVuJqFjToJYNEYR549rkFqvKa4KYqpYdJkW45mFadw0kVdlXYWai3GvbQvqjUwhfXFZs6ANkQL+IRBussnBNr4koI0MchEqOFzTqbILrOYhqvp1YPJlxx7gFEjafxE3tBbKZwjYQh+8BG8vQHx9sReS8/Ug3SiCQoYo7g4gh+o4p9CiE144M5boeHJ0JZt3PH1lnNMpcUQM66oOi+DzwyKAN9dypKzDRFkKo6zVggaFkksO4+QBxPHKVmnTk45cGFHhUCwbS+uaWj0Z/QKcvBK3lppj4ZsMvxLRJyRxWH7m7oKugxprQFhNhN+gLI2SiokuCJCkqJGs9MVbN4NyZv6yztduVmgOeAAAA==",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/portraitpatrikagate1-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRnICAABXRUJQVlA4IGYCAABwDQCdASooADwAPrVSoUynJKMiKrQKAOAWiWMAv2wYTd2f0wu9+mT1xcYpJWZgW/kxyADjCMFp9pp+KaZGZyLiZmbMqcMSMHX1R+pHCRzAVJyBSeG2iR6zak29EGzXCX/kKHD4o1EdaZxvTcOXIPadYs8/4AD8BW7yP9203+p88NsdTxe9UmnYAnLPzqgyu6tR+1Osl3+86WYAJ8xvRXMP3yur2qc51eTm9khZl10JN2amLJNQFS1xAoE4xlwldsHpgMEmq5UG3IfcFAcsg9j7mLkMLOPV0uPxIv7xYZgbTzALg6OcjwNp6erGJ4puXeV4lAeOg4U6B0yKNQFy273vdrb9aZdrJujr1HwhberEbNIWfXtQqIIl+7DwTNUqD+/s5eWEhidvbHHUmZKW6EPJf42f3l1e3pDYwupzQjph6tlsJ31Ia8P9SUU4BQCzbFdRK+hfvWnsQsVSLzPVuJqFjToJYNEYR549rkFqvKa4KYqpYdJkW45mFadw0kVdlXYWai3GvbQvqjUwhfXFZs6ANkQL+IRBussnBNr4koI0MchEqOFzTqbILrOYhqvp1YPJlxx7gFEjafxE3tBbKZwjYQh+8BG8vQHx9sReS8/Ug3SiCQoYo7g4gh+o4p9CiE144M5boeHJ0JZt3PH1lnNMpcUQM66oOi+DzwyKAN9dypKzDRFkKo6zVggaFkksO4+QBxPHKVmnTk45cGFHhUCwbS+uaWj0Z/QKcvBK3lppj4ZsMvxLRJyRxWH7m7oKugxprQFhNhN+gLI2SiokuCJCkqJGs9MVbN4NyZv6yztduVmgOeAAAA=="
     },
-    "order": 28,
+    "order": 24,
     "dimensions": {
       "width": 2000,
       "height": 3000
-    }
-  },
-  {
-    "id": "portraits-whitedressfull",
-    "title": "White Dress Full",
-    "category": "portraits",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": null,
-      "aperture": "f/1.8",
-      "shutter": "1/200",
-      "iso": 1250,
-      "focalLength": "50mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedressfull.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedressfull-md.webp",
-      "thumb": "data:image/webp;base64,UklGRmACAABXRUJQVlA4IFQCAADQCwCdASooADwAPrFKm0mnJKIhLUyQ4BYJaQASDsEVu/lm/Llsd+DIDsRWCgsNPHNGAms5a12aDxgcalMHbatVsay0dO9W4Jg8hQBJC3Ss+JdrV/9L57ss+88B2mvWqrdjzzhRtNaAAP4nvJ/3a0NOlh3NzeI2kvGy5G0q+ai/km0VdnE753nQs0Z+atAobUSmTfPxvWIKAgwBnl5gBO7hIr9OlO5lyteYkl00AdHJE0zY4AzRS7El83mJUTnA6Putx7RHa1l8Z1OAXvUTQTYgjaLfGoiHtwnH9F78Rt4xjajE6PMYtCjYavj/bQwFvY8h1BVPqWGRz1sRmTVCL8W35QuJPfNvwXRBMF+CWCUd+hZkcOCmkv3MJdjV/GJT6hOAM7DbwWfEJF/FSl1PQ6XOHATAta9xyzU113fHoGmXRFsXT67Am8CY5SMGNInhPN+0h9MxHmpp/TARju7D36l+U//fV4h+OFTTRh02G/RkWd6F5L8jgqDT2UctyWX6wzPYYUVkYF55FfzfLes+ry6HfHAjXvO37o/zuO5jwuzoM0JTUeeD/ZWlsvrsIrt4w9tll3CPD6QURL/SJOihu524nGcNA+rMduALeIeQYhe5GnUcl3zHUHxcjcaebEIzLaLdFyMpuOsx4eOVtUw9xrG/f+bLljquhvwPMbJZznoL2c6X+ivRmzBfqNXwxIwPj2tG9jZKf05WJ5kLhNxPK1iPc+cRC2T8bVBSQJU+WVbv6vxaH4EapldFsH1LIF8DQDGCUkq7rsecjWU+3t9nq0rErIAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedressfull-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedressfull-sm.webp"
-    },
-    "order": 29,
-    "dimensions": {
-      "width": 2000,
-      "height": 3000
-    }
-  },
-  {
-    "id": "portraits-whitedresshalf",
-    "title": "White Dress Half",
-    "category": "portraits",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": null,
-      "aperture": "f/1.8",
-      "shutter": "1/200",
-      "iso": 1250,
-      "focalLength": "50mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-md.webp",
-      "thumb": "data:image/webp;base64,UklGRiACAABXRUJQVlA4IBQCAADwDACdASooADwAPrVSoUwnJKMiKrQLAOAWiWkAEg7fGmgVxvgnxe6ncOJyTqsLbFuMNUQkXKsHePI1G8c9+JDYUF/70XfqXszACCPxRSS286QShCSr9RQHm3/mzSFLpnR5V0aLurKPTyS0qwEfRNsAAP6xH9nswfAZyuko8K23Mw2dW0p2FmwxUw2KqisJAo7Y8zm2x8f1ktGzRXLbyre+aZbncuLHzoeeer3bNecjbpuOA/mSUrNrHlz1HWgITS+1G0YWarxrOxnkMZLOR48MiaZicfXfes3yTLTSIOmc16+mmPtYEw3fMgdP+NY81Mg7BPoxqOTTu2Gd2lt+NXp9vu4J8JeXuNUog73AdKSD9BYF7aOFHcid/GpVFpdNT9lm3Lv3ukNJVP6YYTg+4p+gJJYQzgC4RTKyfgrCiyFjTbN4jqWZ5VECBYEi29LxOGHbyBqkCpRl6fpXpjWG0hTZG08RNRUZ/jtAxbutPSkWgQcPH4X4Kh/sKwl5bc/fVR4VhEeR3oeL/kJBV7hHlp44u6VPsjjeXPwQuQFcaxKLZnbop8yp9xC4Ug3TIYxEkwEqKSypaf28aS8iaHhoSeXkicG/Q+Vg0U0R9fPf+ovEzhnzEBmrNlPzk3vDAKEn0SDjLfeRVoQy4XJ+V1gfzjJYToRlisMhd1FdSD0yOrx6eRLftjJIoDlNONW+DwMKGjw6ewAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-sm.webp"
-    },
-    "order": 30,
-    "dimensions": {
-      "width": 2000,
-      "height": 3000
-    }
-  },
-  {
-    "id": "product-gadgets",
-    "title": "Gadgets",
-    "category": "product",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "SONY ILCE-7CM2",
-      "lens": "FE 28-60mm F4-5.6",
-      "aperture": "f/4",
-      "shutter": "1/25",
-      "iso": 500,
-      "focalLength": "28mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-md.webp",
-      "thumb": "data:image/webp;base64,UklGRgIBAABXRUJQVlA4IPYAAAAwBwCdASooABsAPrVWpE6nJKMiJWgA4BaJaQDS6YuIHy97QjDYy3XdutcioQ4aR1O7Q6Hb2a5hjN9jTbWNVQxBNlwA/vlLll9mrdrFmH9C2hDn4wzBNNyABdUwFB7rQxtRJ6Uy1QFQF1wAble7gU6NQJPk+eRc2ubpLDR5NEUE1dxz41ZTI9+dKQt2R90d/KoHpgRUKT/A9Xa2XRtVHS9xQzJV76vahHIBtYSgBZqpSzEOhHaXTlxqFezJlksJeqIDl7HO1pDf4Y0HlV0jklx3naTqHl3ztYSETLY0V7o17cgxUCrCf1eMmnJvTZMhs/cShfQKAAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-sm.webp"
-    },
-    "order": 31,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "product-peppers",
-    "title": "Peppers",
-    "category": "product",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": null,
-      "lens": null,
-      "aperture": null,
-      "shutter": null,
-      "iso": null,
-      "focalLength": null
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-md.webp",
-      "thumb": "data:image/webp;base64,UklGRrQBAABXRUJQVlA4IKgBAAAQCQCdASooABsAPrVQoUwnJKMiJWzI4BaJbACdM0aNT4E8xt4Lsr3nciQyZjeh8f5iN2CqIy3OZXTSUhJLCoXPaZyi6HsSfB/k8LHLbw0eMAAA/tlfyNlZ12JC6Z5Fo5chk//7Y+N8+pvB1U3y0N3BZRjVd+zcYcwbiPOTHU209JcTHRH8B/akLHB/GaFVCmdVy+TQWlVae9z2JfcRnMWgfv2pC4WZ1ia5joxO5RUCUBbQDHLnmlcwXLP9H2pn5W/kKEi4wj1qsxn6s2X2JS2p5lxLGrlR7LVHYvG+CnFXbN0qARzs9/xSZQ/Tnt4drJVn1Je8z9oPvsYUuvPPWkTjrhN/F6evnaJnVYusKUS1+SM2p14Dn4EpMILLgaT50Q5sOs972cdKq2CyQjFLfrqz2QdpbOVjzlf1cZzypofufO2mmOTKjn54BM58smj080LBTBM/mopgTgTpRfJBNBHfQIyanI+cENis/9hSY1b9Bkyafr2t7RPEgJbV/LxNDgOIAtT8SBx86UMKVwQTi7cgc+pzEq7xWh1c2rTt7iT2ea9pUrnzzsAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-sm.webp"
-    },
-    "order": 32,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
     }
   },
   {
@@ -879,123 +663,15 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRuAAAABXRUJQVlA4INQAAABwBQCdASooABsAPrVQo0ynJKMtpWsxsBaJQBfJC8rhgnfpWgQFe5hu1rXyWE6NnmSfE9fgAP6AwVFt/z66I//O34g/UGtL/G/5r+yMhnzM66GRzNRx921yHrtJIruVOABzcwdfDAC9wCBUZPcwRNZrfW5L5dSWQ8+vwI5cetwwqXLWLBcJRPxw3/kTXD7zcs/5Xx9Jb80sNFBNKCKqytlsGEb/Qhn60jBviA1v0RYKDr2Jf37f7XuDAgxYm9Wi+UKsrhiZCoBeuOWz7aFLiESHjAAAAA==",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/davidjpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRuAAAABXRUJQVlA4INQAAABwBQCdASooABsAPrVQo0ynJKMtpWsxsBaJQBfJC8rhgnfpWgQFe5hu1rXyWE6NnmSfE9fgAP6AwVFt/z66I//O34g/UGtL/G/5r+yMhnzM66GRzNRx921yHrtJIruVOABzcwdfDAC9wCBUZPcwRNZrfW5L5dSWQ8+vwI5cetwwqXLWLBcJRPxw3/kTXD7zcs/5Xx9Jb80sNFBNKCKqytlsGEb/Qhn60jBviA1v0RYKDr2Jf37f7XuDAgxYm9Wi+UKsrhiZCoBeuOWz7aFLiESHjAAAAA=="
     },
-    "order": 33,
+    "order": 25,
     "dimensions": {
       "width": 2000,
       "height": 1333
-    }
-  },
-  {
-    "id": "street-disneylandwalle",
-    "title": "Disneyland Wall E",
-    "category": "street",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/7.1",
-      "shutter": "1/200",
-      "iso": 100,
-      "focalLength": "26mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-md.webp",
-      "thumb": "data:image/webp;base64,UklGRmICAABXRUJQVlA4IFYCAADQCwCdASooACgAPrVMnEunJCKhqqqo4BaJZgC7OcDWfjuUx2az3rja7n5Y+lQZzKTTSJSbvZD98y8rNJ4SaRWTvceaAVD5ndCrazcRd99a9AuA8ugBV6j+NnOeWZ/CMWFNiR3DT2XgAP5/SFb0YtLO4VHd/5edCnut8UTZRvTnumf7Qekea2zPQKlqDlbeRnPKzXBk41MnUuB6dBZqBm2orb0H4lbNbV12P+teq4xullp7lHTIFWyFM0us3q4HkgcFSLQcbAez8jLyvZa0pCvHIeFejL6ny/pA2m3kE+OEzgAScnD7DhHKK7DAIdC57k1hG0UA2zsAZdWyb3ioLGPXGALXvWagsRw/D5lwZLspUlLrd1cnBKvqd4kZT74D5+jMgrFrzcSc4Tgew7vftEELGVdVnNy0g6eCWI2+CLHDhyLETh4QJpd7JaomxwdsNPl5VtAFtS5oMO+D5ggnrdG0kpJRZuDgVTnljnm2QRzT/j8KM6jWMzxeAK536Hd/dBwdrSeMZti/lydcVSSZjuuyRZ5YxCz8wwZNSV4VhU898EANSr6yyOV2mpLyfoqi6haIE9dRaIcvdJOTQ+G9k1faUC7xt+sY+qMd92fO+drXRWCCYHXqWK9H4nS9F3/bCtcFGuNN65ZspE01PSZESmk+Sydgm3Sl8ZkDjC+Pt3YZPfLtD/KS11JbAsZUUVd3L1YfMGCOif5w9d4IUqtQBPltRaUorLRnbbfsP5PWhwNsIMniX/Uy2AcGscGfWvlPe3/JRtrQgYaRlfpm8+KEx8RYL8EA/AAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-sm.webp"
-    },
-    "order": 34,
-    "dimensions": {
-      "width": 2000,
-      "height": 2000
-    }
-  },
-  {
-    "id": "street-slothjpg",
-    "title": "Sloth",
-    "category": "street",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/4.5",
-      "shutter": "1/25",
-      "iso": 1250,
-      "focalLength": "32mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRlgBAABXRUJQVlA4IEwBAACQCACdASooABsAPrVOoUwnJCMiJWzI4BaJZQDAH6JpTNCyvp5u1wcb95n2pqG1inF02C3Y6qnlFYTCUS0i+pe+AnWYdR8ZMCpsfOKAAAD++o9Mjgzwt70OTzfcbmHKOC2TbhydCcYfThGhNJRdZWvFWe2LUY3VVx6lknLt5ThjWr2hiSTI/AD295CkEOtAdqpYbBJza9tXthd7gpYpVzqgcCpd9E5IakGbNYo0+ccUADG8rp0QfNVdSQ+zBbAfAmDiGbUq5e3TsBH8Cpduwvuw4759FEqPCSChki9t0QQj2fCB43okHiT7xaXfmXlLSMo/QimFlKjzBriQbPxxwFzYjcEFKtBvnyurulMw+VbKntTw2yliZhGMhpHaUy7Y3KckpG440wxwl4/g045aCEzjxLs2h9oK58fAurBBq1MNOocc3qdUeUyzhIAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-sm.webp"
-    },
-    "order": 35,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
-    }
-  },
-  {
-    "id": "street-tunnelvision",
-    "title": "Tunnel Vision",
-    "category": "street",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "samsung Galaxy Z Fold5",
-      "lens": "Samsung Galaxy Z Fold5 Rear Wide Camera",
-      "aperture": "f/1.8",
-      "shutter": "1/250",
-      "iso": 25,
-      "focalLength": "5.4mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-md.webp",
-      "thumb": "data:image/webp;base64,UklGRooCAABXRUJQVlA4IH4CAADQDACdASooADwAPqlCnUmmI6MhMBquqMAVCWcAyJ7zvk2BDGS27y3NM20MUqREt1Wv+BcOx/yu1zb6MbJ6Tg1dXlAqd2/7xUHTPpz0qBU4XteR2wdryVkFPvMU68ydpwDgfGtzEEJDBjPOu0GaSgAA/uSQx8L1NPVWVC7DlK8QLNj6WwX6bzox4QaLMmIkvWs4UfrmFduS32+Ltv8ozGiY0vPi59OGqh7JcYsOHRJkozTBDsYaN45/aGQiS4xk6H2de9CyJKp18a84yY8DUIRf364IxjM/FhlEl0/LNMeYLrMLkfVL8enhbU/xno4I0TU+B+cHD1rDLxuKsQNoHHN7AdbitoTViSXwfP7mXc2rdgHwYxdBha+bF7EdaJqc6k9z7zNdxT9wDq4sUnNqFXJ8HTWGJkXtewesx9ZoeJUCjDil6pzdC0XDZ4OpVCeLGWL0dCvQ8h8aEOXHKMpM5IiEPIjM1g8kETK48M0WgDKwZNl1lNrdaKvhQvZSZ4LsE8V1oufOBlbY5gLWDnqvmGCKXN1vS/odT0PET0ElSYBp37ePsdqKf1HmNo4ZHsbxD2s4+WOQT+Slycnv7CgmhTH1ZI7htaUZsrO72TpxhtJkg7Ef6MueszZQjIu9hWJeJLfCYY3OLunEYxgQLRSnLw0ae3NpD7Nxk4Buzg2yP/Cv/gvqxHH5UV2g1RbbIiyQycCpawfS3V3rmPX4jeKXE8VUASKF0+capy3lj1WeHNTfa6O3AfS7YlBnNYlWxyzGrwnLEA8CoWcdlF537tfLta5nqoHE7FoK03UramDxg+mbClxHPm+lFGByoSYuRJJqNMVbIOO+B03jhI0KhoAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-sm.webp"
-    },
-    "order": 36,
-    "dimensions": {
-      "width": 2000,
-      "height": 3000
-    }
-  },
-  {
-    "id": "wildlife-deerinsight",
-    "title": "Deer In Sight",
-    "category": "wildlife",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "70.0-300.0 mm f/4.5-6.3",
-      "aperture": "f/6.3",
-      "shutter": "1/500",
-      "iso": 320,
-      "focalLength": "300mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-md.webp",
-      "thumb": "data:image/webp;base64,UklGRgYBAABXRUJQVlA4IPoAAACwBgCdASooABsAPrVMn0qnJCKhsBVaqOAWiUAYPabAgz8bpDALKjPXcn0xTvCtyO5+3ZwQNGbDq6Vu8pd4AAD++E5h9VCq7hCFC6qlcrT/IcORDoOs84QcoUCEupPd26BCxC60YHOxgjQ3Yd5x6v2p+QNadlaFqmqLCjGU0LJw7CFvd7c18eZQGiwzPYAmXiEHBwhz9KmWwHYr37SAOmdjZhF0Ila/NZTOblp0ajKMYBOdFhMrYeYCFU8Ufj1Lz/iagf8bcz+OCUHbls8488Q1avfNGxiETpNyKNCbtL3Gadr4MfnIXde7JCtlXAQeM/ddFV0gIzMYgAAA",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-sm.webp"
-    },
-    "order": 37,
-    "dimensions": {
-      "width": 2000,
-      "height": 1353
     }
   },
   {
@@ -1014,96 +690,42 @@
     },
     "urls": {
       "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
-      "thumb": "data:image/webp;base64,UklGRq4BAABXRUJQVlA4IKIBAADwCACdASooABsAPrVOnkonJKKhsBVaqOAWiWQAv/LzNZT0lthQVu5AWda7vfztTLa+EmIoEL98LFIbLocdxQa2QmMesBJOU6Anmc6Nr7NCZAD+9ILKGSu2DxHDJ8mK753y6hXJo6g4uUBY+7KN2q+l1MJ7v10xyRFVQ/Gp3iFOGfqfNvAk8pGloRWqo0k8eWMkY9Q9sqHZgKaeOyXE56qF1muUDpfRwhTTpocsOCWZcXpmslkqfOniLak1zDR8HULXgL8OBOLX7FdrxSbATdrdUcL+EpnNaPn3xzYcNXitpP7eVyZKDqPlkZptvFY/hxBAKnqIt/i+P7OyzZGdlZoeSqwhyLrnG288aq4KP+6gYzk3UL5AK5Luhd56G1uNT5xHCNmEInPAhYOdmL7FX+fdB/Bdykb3nGIPX8/r2sMgn6mbhwY6oEjiTxHjNEk3Sc2j6W9Vix38pxm+B6xMgEhoB8Z5VZNFMplXkVDJaUPXaJ3atzJ5br5PeXziwQJBryTJfPdSywQ2O3l3IFxyUQenW/w47/gEo/wR/g4jM2ALVgAA",
       "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-sm.webp"
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRq4BAABXRUJQVlA4IKIBAADwCACdASooABsAPrVOnkonJKKhsBVaqOAWiWQAv/LzNZT0lthQVu5AWda7vfztTLa+EmIoEL98LFIbLocdxQa2QmMesBJOU6Anmc6Nr7NCZAD+9ILKGSu2DxHDJ8mK753y6hXJo6g4uUBY+7KN2q+l1MJ7v10xyRFVQ/Gp3iFOGfqfNvAk8pGloRWqo0k8eWMkY9Q9sqHZgKaeOyXE56qF1muUDpfRwhTTpocsOCWZcXpmslkqfOniLak1zDR8HULXgL8OBOLX7FdrxSbATdrdUcL+EpnNaPn3xzYcNXitpP7eVyZKDqPlkZptvFY/hxBAKnqIt/i+P7OyzZGdlZoeSqwhyLrnG288aq4KP+6gYzk3UL5AK5Luhd56G1uNT5xHCNmEInPAhYOdmL7FX+fdB/Bdykb3nGIPX8/r2sMgn6mbhwY6oEjiTxHjNEk3Sc2j6W9Vix38pxm+B6xMgEhoB8Z5VZNFMplXkVDJaUPXaJ3atzJ5br5PeXziwQJBryTJfPdSywQ2O3l3IFxyUQenW/w47/gEo/wR/g4jM2ALVgAA"
     },
-    "order": 38,
+    "order": 26,
     "dimensions": {
       "width": 2000,
       "height": 1333
     }
   },
   {
-    "id": "wildlife-pigeon",
-    "title": "Pigeon",
-    "category": "wildlife",
+    "id": "architecture-citypalacewide",
+    "title": "City Palace Wide",
+    "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
     "exif": {
       "camera": "NIKON CORPORATION NIKON D5300",
       "lens": "18.0-55.0 mm f/3.5-5.6",
       "aperture": "f/10",
-      "shutter": "1/400",
-      "iso": 200,
-      "focalLength": "55mm"
+      "shutter": "1/320",
+      "iso": 400,
+      "focalLength": "18mm"
     },
     "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-md.webp",
-      "thumb": "data:image/webp;base64,UklGRoIBAABXRUJQVlA4IHYBAAAwCACdASooADcAPrVMnkwnJCKiLVZqSOAWiUAYZQY9n+RhMrC7dZAuZHNJj9RA8qrW92zO6gGiu0j553eROIv4aXTJaPZX2I1NgAD+sRDhR/8Q58uXxBYav/gPEHxbMECOwMu21Fxvoupy9hwNOm7ffu0XyIUmEUQHCPsokDaFVgHN3GDJ20LoeTKeyVmXSFfekpIewX3+fLc2kLSm57U5Z/cwNsHsLHCX3ItvZwtvByyYChNSAheo5SX3Cm5P57mcSaLkOeGoRBk0Ip7aoc1wNnETIE1TL6KHlbjJOEHtsh6+sqDv0KUUNS/8Ok2ecCJyjvV7iAntRPslDv8l17lrjOEtZolDRwmv+FyDHkjdfiRuvaUxw+6Sh9q6frzgNhzAL2cYWthHx04NE9RnkU4H0ZyH4v3SvTCGVHNVB0f1ORcZcFZ9oxQYmip6yiuIvZEkYAO+Btax9S5badGs+PtumruInHh/ogUlX9dlUDo1sjaLhAAAAA==",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-sm.webp"
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/citypalacewide-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRpQBAABXRUJQVlA4IIgBAADQCACdASooAB8APrVSoEynJKMiJWzI4BaJagCdM3H9PaYSAiYCAAlQPdjyGR8Bf8gamw6o8yqpZn5HKdeUl9xAAZnMSg1LJqOOtjbDrmYAAP7nP016FDUnxxW3C7/1/fqNZVnhYueNFJITCre1+4rumldIxxttMKEscJjuLnnOnv2uATJi/J4k9JtvkjDImnHdmQ8/Tsld8w/6Nwe/PZ396uzumkDpDBg3oPWhJL0G8Rq+/2UieyqtGlgPl39JfmYcN9nTXF8Vr2kaGgtLCfo0VB58m/RwK7irF6YF9FuM5q3SaRRQcmyaWwlTiAq+6O4tnA49LmO72IMs4DvvXe76b959W3DpLzsHsP6IXvUeXfjmlSdVZHToeJ8DQWbDJA+ocBm9qR2olf7WINk/mcuY9doF+3AUyQyEF8OXRoE54cLkdfilDaR2pWrllOQnprA6PpIMLxFYhMxXDz0+we9Vv2hGH2JxAaV+d3QpgM7EBPJ3WZAyUs9OdVs+yxZxyEV8eiLsdt9wAA=="
     },
-    "order": 39,
+    "order": 27,
     "dimensions": {
       "width": 2000,
-      "height": 2748
-    }
-  },
-  {
-    "id": "wildlife-starfish",
-    "title": "Starfish",
-    "category": "wildlife",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "OnePlus AC2001",
-      "lens": null,
-      "aperture": "f/1.8",
-      "shutter": "1/2800",
-      "iso": 125,
-      "focalLength": "4.745mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-md.webp",
-      "thumb": "data:image/webp;base64,UklGRhgDAABXRUJQVlA4IAwDAABwDgCdASooADUAPrFKmUmnJCIhMB1cAOAWCWUAuzRgaS/NG/dwB9QSSByBnYsANJkzXvMxbXLxFLsiQGmVaMRIYwhlPh+P1iOotESgN+b5XwtbhyV3KcJ3X5Vganft9R8I3DRjb2UMzTW4zUjBY6Vtllq0aJlkVc3Dg/4AAP7ywLAZkgxpFt0Jtf6DaI9ZMU3SumtLcPtEDMeZ49I30fsX6SWBOHD6WYR/N1r3Uq2eQZKjAciFE1NeFzQ9cM7VEh5qvgjtuOauTIx3H63ykd6NJ1zgT7qxiURjz3fj9oqEY97l9+HvDnSFt8AP+NaU7gDoG973xYtqFk97g/YL94UscrhTgCF+cW02Qve/RimC1P2eS7RBD+L4uoFPJ1kjge0RKOv+W11fDhWOHI/M9ZGmCss4Ldv3nMGcH7O90N+CQM2MBxPSGWDF7W+8nZy79R81dQcdYiveOh/7lqkFsZ5y8vcDIutDvj1SHoBdMRsY5JjqCiwIy0+n/gBBwyu8plrzAsFwVWWAwtnXo7/kOWTQVfeJiiPbEkwNs8QjhmpgsGFpveft51G5jrc076aTzSksGmowgXgqUik9Mjge1oPM6FdHDL+WUAhLQ8qqtJ2kYajTqswL+Z1uvuLymNJAqp5v8UuevYULk1R7zYOjGc9N+vtAYxgvZkQ+ga1Ck8BkLlaCd+jI5Y8v7/S+C+poO7KZ0dKPrm6J4GdLewaLK3pxoyMh4JrS3HX0gF7TsBh9osTaFgrdl3xuOvtYqC8xnw5F9h0qT0MK/g5TZnrfpluZIW/UPig/U5TbAd5HMGXHhPtnclwqkGKGzXX851QsT9bYPHce9+FQDZk+s/lAkCx32JQXgKQvgapoxPcRypcdOu3fJQ32cl0+GKYZGASNSNKalflqMovq+cOXWpYvEnbZdtojXn76VFMjPWBcOQWsRtJa5ZpleKqPEUAsmwK6NDBeOstqlSCItVvZQRKXxfL3ZDHdugmtyNp6y2wWv8i1cQEu1FKE+wPbaShvbZfiRj6puGqe+KEMlM4AAAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-sm.webp"
-    },
-    "order": 40,
-    "dimensions": {
-      "width": 2000,
-      "height": 2667
-    }
-  },
-  {
-    "id": "wildlife-yinyangjpg",
-    "title": "Yin Yang",
-    "category": "wildlife",
-    "tags": [],
-    "date": "2026-03-28",
-    "exif": {
-      "camera": "NIKON CORPORATION NIKON D5300",
-      "lens": "18.0-55.0 mm f/3.5-5.6",
-      "aperture": "f/10",
-      "shutter": "1/400",
-      "iso": 200,
-      "focalLength": "55mm"
-    },
-    "urls": {
-      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg.webp",
-      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-md.webp",
-      "thumb": "data:image/webp;base64,UklGRiYBAABXRUJQVlA4IBoBAABwBwCdASooABsAPrVInUonJCKhsBVdUOAWiWQAuzNidThkk6zlRL+qzpQoASbh/+E5udd2JfKg0UL2g8gszKVxI/Kg8AD++96T2/AnjGJLA6mA8dagA+g+pqqi1/UE9UCr1jEhr2FDw4UkvA/3c61dqb/MieA+fmrSqDI7VBZ2/aLqBmQ2Wz7cnpZLH2tFXLK+wtpbKBvc7fzgrUakxlruXsUa+ibtcSyGBW5DZ7e33b/4jIbhsYGIdamUID19WGweR9nvdvJB0x65UnYf6m/RdpQlu/mXgogRSUL2/S0NhNb5UQv0RjdnRA6DcyN5QLR4Vrp2sSBuqCImHZj0AP3e0gIrRgYdnP9rVpBQKDHRxf4+/pgCvr00IAA=",
-      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-lg.webp",
-      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-sm.webp"
-    },
-    "order": 41,
-    "dimensions": {
-      "width": 2000,
-      "height": 1333
+      "height": 1531
     }
   },
   {
@@ -1131,6 +753,303 @@
       "width": 4608,
       "height": 3072
     },
-    "order": 42
+    "order": 28
+  },
+  {
+    "id": "product-peppers",
+    "title": "Peppers",
+    "category": "product",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": null,
+      "lens": null,
+      "aperture": null,
+      "shutter": null,
+      "iso": null,
+      "focalLength": null
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/peppers-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRrQBAABXRUJQVlA4IKgBAAAQCQCdASooABsAPrVQoUwnJKMiJWzI4BaJbACdM0aNT4E8xt4Lsr3nciQyZjeh8f5iN2CqIy3OZXTSUhJLCoXPaZyi6HsSfB/k8LHLbw0eMAAA/tlfyNlZ12JC6Z5Fo5chk//7Y+N8+pvB1U3y0N3BZRjVd+zcYcwbiPOTHU209JcTHRH8B/akLHB/GaFVCmdVy+TQWlVae9z2JfcRnMWgfv2pC4WZ1ia5joxO5RUCUBbQDHLnmlcwXLP9H2pn5W/kKEi4wj1qsxn6s2X2JS2p5lxLGrlR7LVHYvG+CnFXbN0qARzs9/xSZQ/Tnt4drJVn1Je8z9oPvsYUuvPPWkTjrhN/F6evnaJnVYusKUS1+SM2p14Dn4EpMILLgaT50Q5sOs972cdKq2CyQjFLfrqz2QdpbOVjzlf1cZzypofufO2mmOTKjn54BM58smj080LBTBM/mopgTgTpRfJBNBHfQIyanI+cENis/9hSY1b9Bkyafr2t7RPEgJbV/LxNDgOIAtT8SBx86UMKVwQTi7cgc+pzEq7xWh1c2rTt7iT2ea9pUrnzzsAA"
+    },
+    "order": 29,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "architecture-europepalacejpg",
+    "title": "Europe Palace",
+    "category": "architecture",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/10",
+      "shutter": "1/400",
+      "iso": 200,
+      "focalLength": "18mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/europepalacejpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRjwBAABXRUJQVlA4IDABAABwBwCdASooABsAPrVKoksnJCMhqrgMAOAWiWQAyQeQb/54bAd8YN4SdYREOo44L3e0nvFgLDj6hBnNt8iLYhhjjPFVwAD7RfJrjrHpaDK1eN90Ux/bXXoaktw4hccq1OcdJfFvSGfHbNP+O5dTGA/T8AzCjGFVM92oQvoLjNlJjIt23jBYlTTjHaBLirHa5r7FPotFEHS5ylcok4zv9z8MOL1axFQ+zuPHP/EbBxazcsiffnzre/iTlDvfol7vAVWKTDUaShOQ9z5T1S1TyiQmZB4ac/sbk9OWfkFQCAX1FGpI6jIlTCnhnpL+5B40ZzDq4A82vlZYP4FIQZtJJ9WtDQhWHpX3hxLsgf4ODqTCfcGWGxpGIetiDZ6fSRXDSM+diBcgqiUPL1YWaMuAwAAA"
+    },
+    "order": 30,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "product-gadgets",
+    "title": "Gadgets",
+    "category": "product",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "SONY ILCE-7CM2",
+      "lens": "FE 28-60mm F4-5.6",
+      "aperture": "f/4",
+      "shutter": "1/25",
+      "iso": 500,
+      "focalLength": "28mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/product/gadgets-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRgIBAABXRUJQVlA4IPYAAAAwBwCdASooABsAPrVWpE6nJKMiJWgA4BaJaQDS6YuIHy97QjDYy3XdutcioQ4aR1O7Q6Hb2a5hjN9jTbWNVQxBNlwA/vlLll9mrdrFmH9C2hDn4wzBNNyABdUwFB7rQxtRJ6Uy1QFQF1wAble7gU6NQJPk+eRc2ubpLDR5NEUE1dxz41ZTI9+dKQt2R90d/KoHpgRUKT/A9Xa2XRtVHS9xQzJV76vahHIBtYSgBZqpSzEOhHaXTlxqFezJlksJeqIDl7HO1pDf4Y0HlV0jklx3naTqHl3ztYSETLY0V7o17cgxUCrCf1eMmnJvTZMhs/cShfQKAAA="
+    },
+    "order": 31,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "portraits-whitedresshalf",
+    "title": "White Dress Half",
+    "category": "portraits",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": null,
+      "aperture": "f/1.8",
+      "shutter": "1/200",
+      "iso": 1250,
+      "focalLength": "50mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/portraits/whitedresshalf-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRiACAABXRUJQVlA4IBQCAADwDACdASooADwAPrVSoUwnJKMiKrQLAOAWiWkAEg7fGmgVxvgnxe6ncOJyTqsLbFuMNUQkXKsHePI1G8c9+JDYUF/70XfqXszACCPxRSS286QShCSr9RQHm3/mzSFLpnR5V0aLurKPTyS0qwEfRNsAAP6xH9nswfAZyuko8K23Mw2dW0p2FmwxUw2KqisJAo7Y8zm2x8f1ktGzRXLbyre+aZbncuLHzoeeer3bNecjbpuOA/mSUrNrHlz1HWgITS+1G0YWarxrOxnkMZLOR48MiaZicfXfes3yTLTSIOmc16+mmPtYEw3fMgdP+NY81Mg7BPoxqOTTu2Gd2lt+NXp9vu4J8JeXuNUog73AdKSD9BYF7aOFHcid/GpVFpdNT9lm3Lv3ukNJVP6YYTg+4p+gJJYQzgC4RTKyfgrCiyFjTbN4jqWZ5VECBYEi29LxOGHbyBqkCpRl6fpXpjWG0hTZG08RNRUZ/jtAxbutPSkWgQcPH4X4Kh/sKwl5bc/fVR4VhEeR3oeL/kJBV7hHlp44u6VPsjjeXPwQuQFcaxKLZnbop8yp9xC4Ug3TIYxEkwEqKSypaf28aS8iaHhoSeXkicG/Q+Vg0U0R9fPf+ovEzhnzEBmrNlPzk3vDAKEn0SDjLfeRVoQy4XJ+V1gfzjJYToRlisMhd1FdSD0yOrx6eRLftjJIoDlNONW+DwMKGjw6ewAA"
+    },
+    "order": 32,
+    "dimensions": {
+      "width": 2000,
+      "height": 3000
+    }
+  },
+  {
+    "id": "street-disneylandwalle",
+    "title": "Disneyland Wall E",
+    "category": "street",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/7.1",
+      "shutter": "1/200",
+      "iso": 100,
+      "focalLength": "26mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/disneylandwalle-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRmICAABXRUJQVlA4IFYCAADQCwCdASooACgAPrVMnEunJCKhqqqo4BaJZgC7OcDWfjuUx2az3rja7n5Y+lQZzKTTSJSbvZD98y8rNJ4SaRWTvceaAVD5ndCrazcRd99a9AuA8ugBV6j+NnOeWZ/CMWFNiR3DT2XgAP5/SFb0YtLO4VHd/5edCnut8UTZRvTnumf7Qekea2zPQKlqDlbeRnPKzXBk41MnUuB6dBZqBm2orb0H4lbNbV12P+teq4xullp7lHTIFWyFM0us3q4HkgcFSLQcbAez8jLyvZa0pCvHIeFejL6ny/pA2m3kE+OEzgAScnD7DhHKK7DAIdC57k1hG0UA2zsAZdWyb3ioLGPXGALXvWagsRw/D5lwZLspUlLrd1cnBKvqd4kZT74D5+jMgrFrzcSc4Tgew7vftEELGVdVnNy0g6eCWI2+CLHDhyLETh4QJpd7JaomxwdsNPl5VtAFtS5oMO+D5ggnrdG0kpJRZuDgVTnljnm2QRzT/j8KM6jWMzxeAK536Hd/dBwdrSeMZti/lydcVSSZjuuyRZ5YxCz8wwZNSV4VhU898EANSr6yyOV2mpLyfoqi6haIE9dRaIcvdJOTQ+G9k1faUC7xt+sY+qMd92fO+drXRWCCYHXqWK9H4nS9F3/bCtcFGuNN65ZspE01PSZESmk+Sydgm3Sl8ZkDjC+Pt3YZPfLtD/KS11JbAsZUUVd3L1YfMGCOif5w9d4IUqtQBPltRaUorLRnbbfsP5PWhwNsIMniX/Uy2AcGscGfWvlPe3/JRtrQgYaRlfpm8+KEx8RYL8EA/AAA"
+    },
+    "order": 33,
+    "dimensions": {
+      "width": 2000,
+      "height": 2000
+    }
+  },
+  {
+    "id": "street-slothjpg",
+    "title": "Sloth",
+    "category": "street",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/4.5",
+      "shutter": "1/25",
+      "iso": 1250,
+      "focalLength": "32mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/slothjpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRlgBAABXRUJQVlA4IEwBAACQCACdASooABsAPrVOoUwnJCMiJWzI4BaJZQDAH6JpTNCyvp5u1wcb95n2pqG1inF02C3Y6qnlFYTCUS0i+pe+AnWYdR8ZMCpsfOKAAAD++o9Mjgzwt70OTzfcbmHKOC2TbhydCcYfThGhNJRdZWvFWe2LUY3VVx6lknLt5ThjWr2hiSTI/AD295CkEOtAdqpYbBJza9tXthd7gpYpVzqgcCpd9E5IakGbNYo0+ccUADG8rp0QfNVdSQ+zBbAfAmDiGbUq5e3TsBH8Cpduwvuw4759FEqPCSChki9t0QQj2fCB43okHiT7xaXfmXlLSMo/QimFlKjzBriQbPxxwFzYjcEFKtBvnyurulMw+VbKntTw2yliZhGMhpHaUy7Y3KckpG440wxwl4/g045aCEzjxLs2h9oK58fAurBBq1MNOocc3qdUeUyzhIAAAA=="
+    },
+    "order": 34,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
+  },
+  {
+    "id": "street-tunnelvision",
+    "title": "Tunnel Vision",
+    "category": "street",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "samsung Galaxy Z Fold5",
+      "lens": "Samsung Galaxy Z Fold5 Rear Wide Camera",
+      "aperture": "f/1.8",
+      "shutter": "1/250",
+      "iso": 25,
+      "focalLength": "5.4mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/street/tunnelvision-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRooCAABXRUJQVlA4IH4CAADQDACdASooADwAPqlCnUmmI6MhMBquqMAVCWcAyJ7zvk2BDGS27y3NM20MUqREt1Wv+BcOx/yu1zb6MbJ6Tg1dXlAqd2/7xUHTPpz0qBU4XteR2wdryVkFPvMU68ydpwDgfGtzEEJDBjPOu0GaSgAA/uSQx8L1NPVWVC7DlK8QLNj6WwX6bzox4QaLMmIkvWs4UfrmFduS32+Ltv8ozGiY0vPi59OGqh7JcYsOHRJkozTBDsYaN45/aGQiS4xk6H2de9CyJKp18a84yY8DUIRf364IxjM/FhlEl0/LNMeYLrMLkfVL8enhbU/xno4I0TU+B+cHD1rDLxuKsQNoHHN7AdbitoTViSXwfP7mXc2rdgHwYxdBha+bF7EdaJqc6k9z7zNdxT9wDq4sUnNqFXJ8HTWGJkXtewesx9ZoeJUCjDil6pzdC0XDZ4OpVCeLGWL0dCvQ8h8aEOXHKMpM5IiEPIjM1g8kETK48M0WgDKwZNl1lNrdaKvhQvZSZ4LsE8V1oufOBlbY5gLWDnqvmGCKXN1vS/odT0PET0ElSYBp37ePsdqKf1HmNo4ZHsbxD2s4+WOQT+Slycnv7CgmhTH1ZI7htaUZsrO72TpxhtJkg7Ef6MueszZQjIu9hWJeJLfCYY3OLunEYxgQLRSnLw0ae3NpD7Nxk4Buzg2yP/Cv/gvqxHH5UV2g1RbbIiyQycCpawfS3V3rmPX4jeKXE8VUASKF0+capy3lj1WeHNTfa6O3AfS7YlBnNYlWxyzGrwnLEA8CoWcdlF537tfLta5nqoHE7FoK03UramDxg+mbClxHPm+lFGByoSYuRJJqNMVbIOO+B03jhI0KhoAAAA=="
+    },
+    "order": 35,
+    "dimensions": {
+      "width": 2000,
+      "height": 3000
+    }
+  },
+  {
+    "id": "wildlife-deerinsight",
+    "title": "Deer In Sight",
+    "category": "wildlife",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "70.0-300.0 mm f/4.5-6.3",
+      "aperture": "f/6.3",
+      "shutter": "1/500",
+      "iso": 320,
+      "focalLength": "300mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/deerinsight-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRgYBAABXRUJQVlA4IPoAAACwBgCdASooABsAPrVMn0qnJCKhsBVaqOAWiUAYPabAgz8bpDALKjPXcn0xTvCtyO5+3ZwQNGbDq6Vu8pd4AAD++E5h9VCq7hCFC6qlcrT/IcORDoOs84QcoUCEupPd26BCxC60YHOxgjQ3Yd5x6v2p+QNadlaFqmqLCjGU0LJw7CFvd7c18eZQGiwzPYAmXiEHBwhz9KmWwHYr37SAOmdjZhF0Ila/NZTOblp0ajKMYBOdFhMrYeYCFU8Ufj1Lz/iagf8bcz+OCUHbls8488Q1avfNGxiETpNyKNCbtL3Gadr4MfnIXde7JCtlXAQeM/ddFV0gIzMYgAAA"
+    },
+    "order": 36,
+    "dimensions": {
+      "width": 2000,
+      "height": 1353
+    }
+  },
+  {
+    "id": "wildlife-pigeon",
+    "title": "Pigeon",
+    "category": "wildlife",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/10",
+      "shutter": "1/400",
+      "iso": 200,
+      "focalLength": "55mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/pigeon-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRoIBAABXRUJQVlA4IHYBAAAwCACdASooADcAPrVMnkwnJCKiLVZqSOAWiUAYZQY9n+RhMrC7dZAuZHNJj9RA8qrW92zO6gGiu0j553eROIv4aXTJaPZX2I1NgAD+sRDhR/8Q58uXxBYav/gPEHxbMECOwMu21Fxvoupy9hwNOm7ffu0XyIUmEUQHCPsokDaFVgHN3GDJ20LoeTKeyVmXSFfekpIewX3+fLc2kLSm57U5Z/cwNsHsLHCX3ItvZwtvByyYChNSAheo5SX3Cm5P57mcSaLkOeGoRBk0Ip7aoc1wNnETIE1TL6KHlbjJOEHtsh6+sqDv0KUUNS/8Ok2ecCJyjvV7iAntRPslDv8l17lrjOEtZolDRwmv+FyDHkjdfiRuvaUxw+6Sh9q6frzgNhzAL2cYWthHx04NE9RnkU4H0ZyH4v3SvTCGVHNVB0f1ORcZcFZ9oxQYmip6yiuIvZEkYAO+Btax9S5badGs+PtumruInHh/ogUlX9dlUDo1sjaLhAAAAA=="
+    },
+    "order": 37,
+    "dimensions": {
+      "width": 2000,
+      "height": 2748
+    }
+  },
+  {
+    "id": "wildlife-starfish",
+    "title": "Starfish",
+    "category": "wildlife",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "OnePlus AC2001",
+      "lens": null,
+      "aperture": "f/1.8",
+      "shutter": "1/2800",
+      "iso": 125,
+      "focalLength": "4.745mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/starfish-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRhgDAABXRUJQVlA4IAwDAABwDgCdASooADUAPrFKmUmnJCIhMB1cAOAWCWUAuzRgaS/NG/dwB9QSSByBnYsANJkzXvMxbXLxFLsiQGmVaMRIYwhlPh+P1iOotESgN+b5XwtbhyV3KcJ3X5Vganft9R8I3DRjb2UMzTW4zUjBY6Vtllq0aJlkVc3Dg/4AAP7ywLAZkgxpFt0Jtf6DaI9ZMU3SumtLcPtEDMeZ49I30fsX6SWBOHD6WYR/N1r3Uq2eQZKjAciFE1NeFzQ9cM7VEh5qvgjtuOauTIx3H63ykd6NJ1zgT7qxiURjz3fj9oqEY97l9+HvDnSFt8AP+NaU7gDoG973xYtqFk97g/YL94UscrhTgCF+cW02Qve/RimC1P2eS7RBD+L4uoFPJ1kjge0RKOv+W11fDhWOHI/M9ZGmCss4Ldv3nMGcH7O90N+CQM2MBxPSGWDF7W+8nZy79R81dQcdYiveOh/7lqkFsZ5y8vcDIutDvj1SHoBdMRsY5JjqCiwIy0+n/gBBwyu8plrzAsFwVWWAwtnXo7/kOWTQVfeJiiPbEkwNs8QjhmpgsGFpveft51G5jrc076aTzSksGmowgXgqUik9Mjge1oPM6FdHDL+WUAhLQ8qqtJ2kYajTqswL+Z1uvuLymNJAqp5v8UuevYULk1R7zYOjGc9N+vtAYxgvZkQ+ga1Ck8BkLlaCd+jI5Y8v7/S+C+poO7KZ0dKPrm6J4GdLewaLK3pxoyMh4JrS3HX0gF7TsBh9osTaFgrdl3xuOvtYqC8xnw5F9h0qT0MK/g5TZnrfpluZIW/UPig/U5TbAd5HMGXHhPtnclwqkGKGzXX851QsT9bYPHce9+FQDZk+s/lAkCx32JQXgKQvgapoxPcRypcdOu3fJQ32cl0+GKYZGASNSNKalflqMovq+cOXWpYvEnbZdtojXn76VFMjPWBcOQWsRtJa5ZpleKqPEUAsmwK6NDBeOstqlSCItVvZQRKXxfL3ZDHdugmtyNp6y2wWv8i1cQEu1FKE+wPbaShvbZfiRj6puGqe+KEMlM4AAAA="
+    },
+    "order": 38,
+    "dimensions": {
+      "width": 2000,
+      "height": 2667
+    }
+  },
+  {
+    "id": "wildlife-yinyangjpg",
+    "title": "Yin Yang",
+    "category": "wildlife",
+    "tags": [],
+    "date": "2026-03-28",
+    "exif": {
+      "camera": "NIKON CORPORATION NIKON D5300",
+      "lens": "18.0-55.0 mm f/3.5-5.6",
+      "aperture": "f/10",
+      "shutter": "1/400",
+      "iso": 200,
+      "focalLength": "55mm"
+    },
+    "urls": {
+      "original": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg.webp",
+      "large": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-lg.webp",
+      "medium": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-md.webp",
+      "small": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/yinyangjpg-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRiYBAABXRUJQVlA4IBoBAABwBwCdASooABsAPrVInUonJCKhsBVdUOAWiWQAuzNidThkk6zlRL+qzpQoASbh/+E5udd2JfKg0UL2g8gszKVxI/Kg8AD++96T2/AnjGJLA6mA8dagA+g+pqqi1/UE9UCr1jEhr2FDw4UkvA/3c61dqb/MieA+fmrSqDI7VBZ2/aLqBmQ2Wz7cnpZLH2tFXLK+wtpbKBvc7fzgrUakxlruXsUa+ibtcSyGBW5DZ7e33b/4jIbhsYGIdamUID19WGweR9nvdvJB0x65UnYf6m/RdpQlu/mXgogRSUL2/S0NhNb5UQv0RjdnRA6DcyN5QLR4Vrp2sSBuqCImHZj0AP3e0gIrRgYdnP9rVpBQKDHRxf4+/pgCvr00IAA="
+    },
+    "order": 39,
+    "dimensions": {
+      "width": 2000,
+      "height": 1333
+    }
   }
 ]

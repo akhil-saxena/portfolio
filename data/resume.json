@@ -58,15 +58,16 @@
       "description": "See your life through color. Extracts dominant palettes from your photo gallery by week, month, and year. Privacy-first, all on-device.",
       "tech": [
         "Kotlin",
-        "Jetpack Compose",
-        "Room",
-        "Hilt",
-        "CIELAB",
-        "Canvas"
+        "CIELAB"
       ],
       "icon": "/assets/hued-icon.png",
       "href": "https://github.com/akhil-saxena/hued",
       "badges": [
+        {
+          "label": "Play Store",
+          "href": "https://play.google.com/store/apps/details?id=app.hued",
+          "icon": "play-store"
+        },
         {
           "label": "GitHub",
           "href": "https://github.com/akhil-saxena/hued",
@@ -84,9 +85,6 @@
       "description": "Goal tracker with adaptive daily targets, streaks, milestones, badges, home screen widgets, and cloud sync.",
       "tech": [
         "Kotlin",
-        "Jetpack Compose",
-        "Room",
-        "Hilt",
         "Material 3"
       ],
       "icon": "/assets/momentum-icon.png",

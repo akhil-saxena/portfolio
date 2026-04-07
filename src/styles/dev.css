@@ -40,6 +40,49 @@
   }
 }
 
+/* Dev page header (admin preview) */
+.dev-header {
+  margin-bottom: 1.5rem;
+}
+
+.dev-label {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  margin-bottom: 0.25rem;
+}
+
+.dev-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dev-title {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.resume-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  cursor: default;
+  white-space: nowrap;
+}
+
 .section-title {
   font-size: 1.5rem;
   margin-bottom: 2rem;

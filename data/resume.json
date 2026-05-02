@@ -131,24 +131,24 @@
       ]
     },
     {
-      "id": "steganography",
-      "title": "Steganography",
+      "id": "project-1777750009929",
+      "title": "Design System",
       "label": {
-        "text": "CLI Tool",
-        "icon": "terminal"
+        "text": "Web",
+        "icon": "code"
       },
-      "description": "Hide images inside images using LSB encoding. Supports multithreaded encode/decode, verbose mode, and lossless output.",
+      "description": "55-component React library with semantic tokens, dark mode, and live Storybook docs.",
       "tech": [
-        "C++",
-        "Multithreading",
-        "Image Processing"
+        "React",
+        "TypeScript",
+        "CSS"
       ],
       "icon": null,
-      "href": "https://github.com/akhil-saxena/Steganography",
+      "href": "design-system-ed1.pages.dev",
       "badges": [
         {
           "label": "GitHub",
-          "href": "https://github.com/akhil-saxena/Steganography",
+          "href": "https://github.com/akhil-saxena/design-system",
           "icon": "github"
         }
       ]

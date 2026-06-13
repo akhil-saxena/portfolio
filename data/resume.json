@@ -9,11 +9,17 @@
       "logo": null,
       "url": "https://www.brevo.com",
       "bullets": [
-        "Engineered a unified settings navigation package adopted across <strong>18+ micro-frontend apps</strong>, accelerating development cycles by <strong>20%</strong>",
-        "Migrated login to Next.js, revamped UIs with NAOS design system; migrated 2FA from PHP Twig to React with <strong>90%+ test coverage</strong>",
-        "Redesigned checkout for <strong>2.5M+ users</strong> to a 3-step flow, leading to <strong>15% conversion uplift</strong>",
-        "Led A/B testing and onboarding revamp with address autosuggest, building FE/BE systems with Omni dashboards",
-        "Reduced support tickets by <strong>12%</strong> in the senders module (<strong>10K+ weekly users</strong>) via automated domain authentication"
+        "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows",
+        "Improved <strong>conversion by 15%</strong> by transforming a one-page checkout for <strong>2.5M+ users</strong> into a 3-step flow",
+        "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control",
+        "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance",
+        "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences",
+        "Engineered a unified, responsive settings navigation package adopted across <strong>18+ micro-frontend apps</strong>",
+        "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript",
+        "Integrated <strong>18+ GoLang APIs</strong> and optimized payload structures, reducing <strong>API response size by 50%</strong>",
+        "Reduced support tickets by <strong>12–20%</strong> in high-traffic modules (<strong>10K+ weekly users</strong>) via UX improvements and automated domain authentication",
+        "Integrated Sniper Links into signup emails, boosting engagement across <strong>5M+ annual signups</strong>",
+        "Introduced RBAC with <strong>40+ permissions</strong> across 6 business verticals, scaling access for <strong>1K+ enterprise users</strong>"
       ]
     },
     {
@@ -25,10 +31,9 @@
       "logo": null,
       "url": null,
       "bullets": [
-        "Modernized orders page for the B2B portal, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
-        "Achieved <strong>30% decrease</strong> in support ticket volume by developing receipt generation UIs with React and Redux",
-        "Delivered a client-side recommendation system leveraging a proprietary rule engine for product upsell and cross-sell",
-        "Integrated CleverTap into ThyroNext for real-time analytics, driving retention and engagement"
+        "Modernized the UX for the B2B portal orders page, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
+        "Developed UIs for receipt generation and editing, reducing support tickets and <strong>response time by 30%</strong>",
+        "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
       ]
     },
     {
@@ -40,14 +45,38 @@
       "logo": null,
       "url": null,
       "bullets": [
-        "Led data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
-        "Built a real-time write-back sync system for a live app deployed to <strong>16K+ stores</strong>",
-        "Automated reporting across <strong>8+ teams</strong> by developing a real-time Power BI dashboard used by <strong>100+ employees</strong>",
-        "Reduced pipeline execution time by <strong>6×</strong> by replacing Power Automate with Azure Data Factory"
+        "Built analytics pipelines from <strong>7+ data sources</strong>, modeling data into a Delta Lake (bronze, silver, gold) architecture",
+        "Developed a real-time write-back sync system for an app deployed to <strong>16K+ stores</strong>, ensuring operational reliability",
+        "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
+        "Improved pipeline execution time by <strong>6×</strong> by replacing Power Automate workflows with Azure Data Factory"
       ]
     }
   ],
   "projects": [
+    {
+      "id": "cairn",
+      "title": "Cairn",
+      "label": {
+        "text": "Web",
+        "icon": "code"
+      },
+      "description": "Job application tracker with interview workflows and feedback tracking, built on a custom design system. Deliberately anti-gamified and runs entirely on Cloudflare's free tier.",
+      "tech": [
+        "Astro",
+        "React",
+        "TypeScript",
+        "Cloudflare"
+      ],
+      "icon": null,
+      "href": "https://cairn.co.in",
+      "badges": [
+        {
+          "label": "Live",
+          "href": "https://cairn.co.in",
+          "icon": "arrow-up-right"
+        }
+      ]
+    },
     {
       "id": "hued",
       "title": "hued",
@@ -137,7 +166,7 @@
         "text": "Web",
         "icon": "code"
       },
-      "description": "55-component React library with semantic tokens, dark mode, and live Storybook docs.",
+      "description": "77-component React library with semantic tokens, dark mode, and live Storybook docs.",
       "tech": [
         "React",
         "TypeScript",
@@ -156,27 +185,35 @@
   ],
   "skills": [
     {
-      "category": "Frontend",
+      "category": "Frontend & Backend",
       "icon": "code",
       "items": [
         "React",
         "Next.js",
         "TypeScript",
-        "JavaScript",
-        "Redux",
-        "HTML5",
-        "CSS3"
+        "Node.js",
+        "PHP",
+        "Go"
       ]
     },
     {
-      "category": "Platform & Experience",
+      "category": "Platform & AI",
       "icon": "layers",
       "items": [
-        "Responsive UI",
+        "Architecture Design",
+        "CI/CD",
         "a11y",
         "i18n",
-        "CI/CD",
-        "Monitoring",
+        "AI-driven Personalization"
+      ]
+    },
+    {
+      "category": "Analytics",
+      "icon": "filter",
+      "items": [
+        "A/B Testing",
+        "Funnel Optimization",
+        "Attribution & Event Tracking (GTM)",
         "Metabase",
         "Omni"
       ]

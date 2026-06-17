@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAccess } from "@/lib/access";
 
 export const runtime = "edge";
 
@@ -21,11 +22,8 @@ interface WorkflowRunsResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check — require CF Access session
-    const cookie = request.headers.get("cookie") || "";
-    if (!cookie.includes("CF_Authorization=")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = await requireAccess(request);
+    if (denied) return denied;
 
     const pat = process.env.GITHUB_PAT;
     const repo = process.env.GITHUB_REPO;
@@ -41,6 +39,12 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields: tempKey, title, category" },
         { status: 400 }
       );
+    }
+
+    // tempKey is an R2 object key the Action will read — constrain it to the
+    // expected upload prefix so a caller can't point processing at arbitrary keys.
+    if (typeof tempKey !== "string" || !/^temp\/[a-zA-Z0-9._/-]+$/.test(tempKey)) {
+      return NextResponse.json({ error: "Invalid tempKey" }, { status: 400 });
     }
 
     const githubHeaders = {
@@ -70,11 +74,8 @@ export async function POST(request: NextRequest) {
     );
 
     if (!dispatchRes.ok) {
-      const text = await dispatchRes.text();
-      return NextResponse.json(
-        { error: `GitHub dispatch failed: ${text}` },
-        { status: 502 }
-      );
+      console.error("GitHub dispatch failed:", dispatchRes.status, await dispatchRes.text());
+      return NextResponse.json({ error: "Failed to dispatch workflow" }, { status: 502 });
     }
 
     // Poll for the run ID that was created after dispatchedAt
@@ -112,9 +113,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ runId });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    console.error("dispatch failed:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

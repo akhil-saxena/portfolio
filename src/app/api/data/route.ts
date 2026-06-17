@@ -1,14 +1,12 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAccess } from "@/lib/access";
 
 export const runtime = "edge";
 
 export async function GET(request: NextRequest) {
   try {
-    // Auth check — require CF Access session
-    const cookie = request.headers.get("cookie") || "";
-    if (!cookie.includes("CF_Authorization=")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = await requireAccess(request);
+    if (denied) return denied;
 
     const pat = process.env.GITHUB_PAT;
     const repo = process.env.GITHUB_REPO;
@@ -50,9 +48,7 @@ export async function GET(request: NextRequest) {
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    console.error("data fetch failed:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

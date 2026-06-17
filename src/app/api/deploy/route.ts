@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAccess } from "@/lib/access";
 
 export const runtime = "edge";
 
@@ -26,11 +27,8 @@ interface GitRefResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check — require CF Access session
-    const cookie = request.headers.get("cookie") || "";
-    if (!cookie.includes("CF_Authorization=")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const denied = await requireAccess(request);
+    if (denied) return denied;
 
     const pat = process.env.GITHUB_PAT;
     const repo = process.env.GITHUB_REPO;
@@ -86,7 +84,12 @@ export async function POST(request: NextRequest) {
     const headData = (await headRes.json()) as GitRefResponse;
     const currentSha = headData.object.sha;
 
-    // Skip conflict check if baseSha is "latest" — just use current HEAD
+    // Optimistic concurrency: the client should send the commit SHA its edits
+    // were based on (from GET /api/data) so a stale overwrite is rejected here.
+    // The current admin sends "latest", which BYPASSES this guard and can
+    // silently clobber newer data — the rebuilt admin must load /api/data on
+    // mount, seed its editor state from it, and pass that commitSha as baseSha
+    // (then this "latest" escape hatch can be removed).
     if (baseSha !== "latest" && currentSha !== baseSha) {
       return NextResponse.json(
         {
@@ -204,9 +207,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ sha: commit.sha, status: "committed" });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    console.error("deploy failed:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

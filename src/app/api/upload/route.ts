@@ -1,22 +1,32 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { requireAccess } from "@/lib/access";
+import { toBase64 } from "@/lib/base64";
 
 export const runtime = "edge";
 
+const MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+const ALLOWED_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "tif", "tiff"]);
+
 export async function POST(request: NextRequest) {
-  // Auth check
-  const cookie = request.headers.get("cookie") || "";
-  if (!cookie.includes("CF_Authorization=")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await requireAccess(request);
+  if (denied) return denied;
 
   try {
     const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const category = formData.get("category") as string || "uncategorized";
-    const title = formData.get("title") as string || file?.name || "untitled";
+    const file = formData.get("file");
+    const category = (formData.get("category") as string) || "uncategorized";
+    const title =
+      (formData.get("title") as string) || (file instanceof File ? file.name : "untitled");
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: "File too large (max 25 MB)" }, { status: 413 });
+    }
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    if (!ALLOWED_EXT.has(ext) || !(file.type === "" || file.type.startsWith("image/"))) {
+      return NextResponse.json({ error: "Only image files are allowed" }, { status: 415 });
     }
 
     const pat = process.env.GITHUB_PAT;
@@ -25,21 +35,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "GitHub credentials not configured" }, { status: 500 });
     }
 
-    // Convert file to base64 (chunked to avoid call stack overflow on large files)
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64 = btoa(binary);
-
-    // Sanitize filename
+    const base64 = toBase64(await file.arrayBuffer());
     const safeName = title.toLowerCase().replace(/[^a-z0-9]/g, "_").replace(/_+/g, "_");
-    const ext = file.name.split(".").pop() || "jpg";
-    const path = `new-photos/${category}/${safeName}.${ext}`;
+    const safeCategory = category.replace(/[^a-zA-Z0-9_-]/g, "") || "uncategorized";
+    const path = `new-photos/${safeCategory}/${safeName}.${ext}`;
 
-    // Commit file to GitHub repo — this triggers the process-photos Action
+    // Commit to the repo — this triggers the process-photos Action.
     const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
       method: "PUT",
       headers: {
@@ -55,8 +56,8 @@ export async function POST(request: NextRequest) {
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      return NextResponse.json({ error: `GitHub upload failed: ${res.status} — ${err}` }, { status: 502 });
+      console.error("GitHub upload failed:", res.status, await res.text());
+      return NextResponse.json({ error: "Upload to repository failed" }, { status: 502 });
     }
 
     return NextResponse.json({
@@ -65,9 +66,7 @@ export async function POST(request: NextRequest) {
       path,
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Upload failed" },
-      { status: 500 }
-    );
+    console.error("upload failed:", err);
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Node/CommonJS scripts run by GitHub Actions (not the Next bundle).
+    "scripts/**",
   ]),
 ]);
 

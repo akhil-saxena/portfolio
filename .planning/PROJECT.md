@@ -43,8 +43,10 @@ to rebuild them.
 
 - [ ] Charcoal/ochre/Playfair identity ships as a theme from `@akhil-saxena/design-system`, published to npm
 - [ ] Theme's light mode passes the design system's own WCAG AA contrast contract
-- [ ] Astro + React islands app on `@astrojs/cloudflare`, public pages prerendered
-- [ ] Deploys to akhilsaxena.com via Cloudflare Pages
+- [ ] Astro 7 + React islands app on `@astrojs/cloudflare`, public pages prerendered
+- [ ] Deploys to akhilsaxena.com via **Cloudflare Workers + Static Assets** (not Pages)
+- [ ] All 39 photo URLs migrated off `pub-*.r2.dev` onto a cached R2 custom domain
+- [ ] `/portfolio` → `/photos` 301, and `akhilsaxena.pages.dev` → apex 301
 
 **Public site**
 
@@ -109,7 +111,20 @@ faithfully reproduced as bugs:
    was never acted on.
 3. **Auth fails open** — `access.ts:38-61` falls back to checking only that a cookie
    *exists* when `CF_ACCESS_TEAM_DOMAIN`/`CF_ACCESS_AUD` are unset.
-4. **The documented pipeline is dead code** — `AGENTS.md` describes an R2 `temp/` →
+4. **A second, composed fail-open path** (found in research, not in the legacy code):
+   Astro prerenders `src/pages/api/*` **by default** under `output: 'static'`, and
+   Cloudflare Workers serve **static assets before the Worker** — the opposite of Pages,
+   where Functions ran first. Miss `export const prerender = false` on one endpoint and
+   Cloudflare serves a build-time-baked file; `requireAccess()` is never invoked, and a
+   prerendered `GET /api/data` returns plausible JSON so smoke tests still pass.
+   Mitigation: `run_worker_first: ["/admin","/admin/*","/api/*"]` plus a build assertion
+   that `dist/api/` does not exist.
+5. **`baseSha` has a root cause, not just a bug.** HEAD-comparison is *too strict* — the
+   photo pipeline commits constantly, so it 409s unrelated edits. Someone hit that and
+   disabled the guard. The fix is per-file **blob**-SHA comparison (GitHub's
+   `PUT /contents/{path}` wants the blob SHA of the file being replaced and returns 409 on
+   mismatch), not "remember to pass a real SHA".
+6. **The documented pipeline is dead code** — `AGENTS.md` describes an R2 `temp/` →
    `/api/dispatch` → `workflow_dispatch` flow, but nothing calls it. The live path is
    `/api/upload` base64-ing images straight into `new-photos/` via the GitHub Contents
    API. The rebuild deliberately implements the *documented* design, not the live one:
@@ -132,6 +147,30 @@ hard parts of this site: `Lightbox`, `InfiniteList`, `Pagination`, `Chip`,
 admin. It currently has exactly two theme scopes — `:root` and `:root.dark` — so a
 charcoal brand theme introduces a third axis it has never had.
 
+**Design system findings, measured from the published tarball** (each is a fix to
+upstream, not to work around — that is what the Core Value requires):
+
+- `dist/index.js` is a single **334 KB / 71 KB-gzip barrel with no per-component JS
+  subpath exports**. Only CSS splits. It statically imports `@tiptap/*`, `lowlight`,
+  `@dnd-kit/*` and `lucide-react` at top level, so a single `Chip` import risks pulling
+  ProseMirror into a public island. Whether tree-shaking saves us is a 5-minute build
+  experiment and must be an explicit early task.
+- CSS is **204 KB** total (`primitives.css` alone is 176-181 KB), but 74 split
+  per-component sheets already exist in `dist/css/` — public pages need roughly 30 KB.
+  This is the single biggest Lighthouse lever.
+- **`tokens.css` conflates tokens with font delivery**: 14-15 `@fontsource` imports
+  declaring ~73 `@font-face` rules across Inter/Archivo/JetBrains Mono/Newsreader — and
+  **none** of the handoff's Playfair Display, DM Sans or IBM Plex Mono. A charcoal theme
+  that only redefines `--font-serif` will silently fall back to Georgia.
+- Those font `@import`s are **bare specifiers that Vite inlines at build time**, so there
+  is no render-blocking `@import` waterfall. The problem is font *count*, not sequencing.
+- Cascade risk: `:root[data-brand]` ties with `:root.dark` at specificity (0,2,0), so
+  source order decides the winner — and Astro does not guarantee CSS ordering across
+  `.astro` and React imports. All DS CSS must be imported from a single file.
+- `Lightbox` already ships focus trap and restore, reference-counted scroll lock,
+  layer-aware Escape, arrow keys and `role="dialog"`. It lacks backdrop-click close,
+  `srcset` (it takes `src: string`), swipe, and `aria-live` slide announcements.
+
 **Contrast measurements already taken** against the handoff palette:
 
 | Theme | Token | Ratio | Body AA |
@@ -150,8 +189,28 @@ for focus rings and body text — exactly the fix the design system already appl
 **Content.** `data/portfolio_images.json` holds 39 photos across architecture (14),
 nature (8), wildlife (5), abstract (4), street (4), portraits (2), product (2). Each has
 five URL variants (`thumb`/`small`/`medium`/`large`/`original`) — a better responsive
-`srcset` than the handoff assumed. All 39 are titled; one lacks camera EXIF, so the
-lightbox needs a graceful empty state.
+`srcset` than the handoff assumed. All 39 are titled.
+
+Measured facts that shape the gallery build:
+
+- **All 39 at `small` total 0.9 MB.** The handoff's "SHOWING 8 OF 39 — implement real
+  pagination" is over-engineering; no pagination is needed.
+- **LQIP and dimensions already exist.** Every photo carries `dimensions` and a base64
+  placeholder in `urls.thumb` (21.6 KB for all 39), so CLS prevention and blur-up are
+  nearly free and no Astro image service is required.
+- **EXIF gaps are field-level, not photo-level.** 11 of 39 have at least one null field;
+  `lens` is null on 11; `product-peppers` has none at all; `architecture-redbuilding` has
+  camera only. Missing fields must be omitted entirely — a `—` beside `f/11` reads as a
+  data bug.
+- **Camera strings are raw model codes** (`NIKON CORPORATION NIKON D5300`,
+  `samsung SM-N970F`, `OnePlus AC2001`, `SONY ILCE-7CM2`). Only 5 distinct cameras — a
+  5-entry display lookup.
+- **`pub-*.r2.dev` is uncached, rate-limited and development-only** per Cloudflare's docs.
+  All 39 URLs point at it. This alone blocks Lighthouse 95+, and fixing it is a manifest
+  data migration, so it belongs early rather than in a performance pass.
+- `home_config.peekPositions` already carries per-photo `object-position` for the 3:2 hero
+  crops — surface it in the admin or it will rot.
+- The `tags` field is unused across all 39 photos.
 
 ## Constraints
 
@@ -160,13 +219,16 @@ lightbox needs a graceful empty state.
   preference.
 - **Cross-repo dependency**: The charcoal theme must be built and published from the
   `design-system` repo (`../design-system`) before the portfolio can consume it. During
-  development the portfolio links it locally (`file:`), switching to the published
-  version at integration — so "consumes it from npm" is a ship-time guarantee verified by
-  an explicit gate, not an every-hour truth.
-- **Platform**: Cloudflare Pages. Public pages prerendered static; `/admin` and its API
-  routes server-rendered via `@astrojs/cloudflare`. Cloudflare bindings (R2
-  `PORTFOLIO_BUCKET`) come from `locals.runtime.env`, not `process.env`, and are absent
-  in local dev — access must be guarded.
+  development the portfolio consumes it as a **packed tarball** (`npm pack` →
+  `file:*.tgz`), never `file:../design-system` or `npm link` — both are symlinks and
+  carry the duplicate-React "invalid hook call" hazard. A CI gate fails the build if the
+  dependency spec still starts with `file:` at ship time.
+- **Platform**: Cloudflare **Workers + Static Assets** — `@astrojs/cloudflare` dropped
+  Pages support in v13. Config is `output: 'static'` (the default) + `adapter:
+  cloudflare()`, with `export const prerender = false` on `/admin` and every
+  `src/pages/api/*` route. Bindings come from `import { env } from "cloudflare:workers"`
+  (`Astro.locals.runtime` is removed) and **work in local dev** — `astro dev` runs real
+  `workerd`, so binding access must NOT be guarded; a guard would mask a real failure.
 - **No runtime filesystem**: Content is committed JSON. The admin publishes by committing
   to the repo via the GitHub API; there is nothing to write to at runtime.
 - **Security**: Auth fails closed. Mutating routes verify the signed Cloudflare Access
@@ -186,6 +248,12 @@ lightbox needs a graceful empty state.
 | Implement the R2 staging pipeline, not the live one | Keeps binaries out of git history and off the base64-through-a-Worker path. The dead `/api/dispatch` code was the better design, just abandoned | — Pending |
 | Auth fails closed, deny by default | The legacy cookie-presence fallback validates nothing. A personal admin that can commit to a repo and dispatch GitHub Actions warrants a real auth boundary | — Pending |
 | Purge `main` immediately, accept downtime | Explicitly chosen over branch-and-merge after the downtime cost was raised twice. Legacy preserved on `legacy/nextjs-portfolio` | — Pending |
+| Deploy to Workers + Static Assets, not Pages | Forced: `@astrojs/cloudflare` v13 dropped Pages support outright. Cloudflare has *not* deprecated Pages — the break is on Astro's side | — Pending |
+| DS components everywhere, no `client:*` directive by default | Research found the DS primitives are pure `forwardRef` with zero hooks, so Astro renders them to static HTML with no JS. Dissolves the apparent conflict between "built on the design system" and "Lighthouse 95+". Only `/photos` hydrates | — Pending |
+| Consume the DS as a packed tarball in dev, never a symlink | `file:../design-system` and `npm link` both symlink, duplicating React and causing "invalid hook call". `npm pack` → `file:*.tgz` actually copies | — Pending |
+| Fail-closed auth lands in the foundation phase, not the admin phase | The moment `/admin` exists in a deployed Worker it is a live surface. Treating auth as an admin-phase concern is precisely how the legacy fail-open fallback came to be written | — Pending |
+| Split the photo pipeline: Actions half before admin UI | The Actions half depends only on the schemas and can be driven with `gh workflow run`, taking the riskiest integration (sharp + exifr + R2 + concurrent git push) off the critical path instead of wedging it behind the admin at the end | — Pending |
+| No gallery pagination | Measured: all 39 photos at `small` total 0.9 MB. The handoff's "SHOWING 8 OF 39" pagination requirement is unjustified | — Pending |
 | Form-based admin, not WYSIWYG | "Good usable admin panel" with fewer moving parts; design-system inputs already carry the accessibility work | — Pending |
 | Claude drafts copy, Akhil edits | Reacting to concrete first-pass copy beats a blank field, and build phases then work against real text lengths | — Pending |
 
@@ -207,4 +275,7 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-08-16 after initialization*
+*Last updated: 2026-08-16 after initialization, revised same day with research corrections
+(Astro 7 not 5; Workers not Pages; `cloudflare:workers` env not `locals.runtime`; bindings
+work in local dev; tarball not symlink for DS linking; field-level EXIF gaps; r2.dev is
+uncached).*

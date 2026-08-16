@@ -141,16 +141,89 @@
 
 ## Traceability
 
-Filled during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| _(pending roadmap)_ | — | — |
+| DSGN-01 | Phase 0. Design & Ideation | Pending |
+| DSGN-02 | Phase 0. Design & Ideation | Pending |
+| DSGN-03 | Phase 0. Design & Ideation | Pending |
+| DSGN-04 | Phase 0. Design & Ideation | Pending |
+| DSGN-05 | Phase 0. Design & Ideation | Pending |
+| DSGN-06 | Phase 0. Design & Ideation | Pending |
+| DS-01 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-02 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-03 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-04 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-05 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-06 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-07 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-08 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-09 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| FND-01 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-02 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-03 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-04 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-05 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-06 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| FND-07 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| AUTH-01 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| AUTH-02 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| AUTH-03 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| AUTH-04 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
+| CONT-01 | Phase 3. Content Layer & Image Origin | Pending |
+| CONT-02 | Phase 3. Content Layer & Image Origin | Pending |
+| CONT-03 | Phase 3. Content Layer & Image Origin | Pending |
+| CONT-04 | Phase 3. Content Layer & Image Origin | Pending |
+| CONT-05 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| PUB-01 | Phase 5. Public Site | Pending |
+| PUB-02 | Phase 5. Public Site | Pending |
+| PUB-03 | Phase 5. Public Site | Pending |
+| PUB-04 | Phase 5. Public Site | Pending |
+| PUB-05 | Phase 5. Public Site | Pending |
+| PUB-06 | Phase 5. Public Site | Pending |
+| PUB-07 | Phase 5. Public Site | Pending |
+| PUB-08 | Phase 5. Public Site | Pending |
+| PUB-09 | Phase 5. Public Site | Pending |
+| PUB-10 | Phase 5. Public Site | Pending |
+| PUB-11 | Phase 5. Public Site | Pending |
+| PUB-12 | Phase 5. Public Site | Pending |
+| PUB-13 | Phase 5. Public Site | Pending |
+| PUB-14 | Phase 5. Public Site | Pending |
+| CASE-01 | Phase 6. Case Studies | Pending |
+| CASE-02 | Phase 6. Case Studies | Pending |
+| CASE-03 | Phase 6. Case Studies | Pending |
+| PIPE-01 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| PIPE-02 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| PIPE-03 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| PIPE-04 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| PIPE-05 | Phase 4. Photo Pipeline (Actions half) | Pending |
+| ADMIN-01 | Phase 7. Admin CMS | Pending |
+| ADMIN-02 | Phase 7. Admin CMS | Pending |
+| ADMIN-03 | Phase 7. Admin CMS | Pending |
+| ADMIN-04 | Phase 7. Admin CMS | Pending |
+| ADMIN-05 | Phase 7. Admin CMS | Pending |
+| ADMIN-06 | Phase 7. Admin CMS | Pending |
+| ADMIN-07 | Phase 7. Admin CMS | Pending |
+| ADMIN-08 | Phase 7. Admin CMS | Pending |
+| ADMIN-09 | Phase 7. Admin CMS | Pending |
+| ADMIN-10 | Phase 7. Admin CMS | Pending |
+| SEO-01 | Phase 5. Public Site | Pending |
+| SEO-02 | Phase 5. Public Site | Pending |
+| SEO-03 | Phase 5. Public Site | Pending |
+| SEO-04 | Phase 8. Harden & Cut Over | Pending |
+| SEO-05 | Phase 5. Public Site | Pending |
+| SEO-06 | Phase 8. Harden & Cut Over | Pending |
+| QUAL-01 | Phase 8. Harden & Cut Over | Pending |
+| QUAL-02 | Phase 8. Harden & Cut Over | Pending |
+| QUAL-03 | Phase 8. Harden & Cut Over | Pending |
+| QUAL-04 | Phase 8. Harden & Cut Over | Pending |
 
 **Coverage:**
 - v1 requirements: 73 total
-- Mapped to phases: 0
-- Unmapped: 73 ⚠️ — resolved by roadmap creation
+- Mapped to phases: 73 ✓
+- Unmapped: 0
+
+*Phase 1 executes cross-repo in `../design-system`. Phases 1 and 2 are parallel
+(different repositories); Phase 4 is parallel with Phases 5–6.*
 
 ---
 *Requirements defined: 2026-08-16*

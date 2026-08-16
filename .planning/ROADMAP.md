@@ -1,0 +1,280 @@
+# Roadmap: akhilsaxena.com — Portfolio Rebuild
+
+## Overview
+
+The site is being rebuilt from scratch on Astro 7 + React islands, deployed to Cloudflare
+Workers with Static Assets, consuming Akhil's own published design system. The journey
+runs: design the two screens nobody has designed yet (admin, case studies) and validate
+the charcoal identity against real components → ship that identity as a published design
+system release while, in parallel, standing up an Astro Worker whose auth already fails
+closed → make all content schema-validated and move every image off the uncached
+`r2.dev` origin → debug the riskiest integration (sharp + exifr + concurrent R2/git
+writes) from the command line before any UI depends on it → build the public site at
+Lighthouse-grade weight → write the case studies → build the admin behind the
+already-proven auth gate → harden and cut over to the apex domain.
+
+**Live-site status shaping the schedule.** `akhilsaxena.com` is *not* currently serving —
+the domain sits on Cloudflare nameservers with no host records. `akhilsaxena.pages.dev`
+is still serving the *old* site only because the purged `main` fails to build and
+Cloudflare keeps the last successful deployment alive. So there is real schedule
+pressure but no hard outage, and the first successful new deploy replaces the old site.
+That is why long-lead cutover items (nameserver verification, R2 custom domain) are
+front-loaded into Phase 2 rather than left to Phase 8.
+
+## Phases
+
+**Phase Numbering:**
+- Integer phases (0, 1, 2, …): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the charcoal identity against real components — no production code
+- [ ] **Phase 1: Design System — Charcoal Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
+- [ ] **Phase 2: Astro Foundation & Fail-Closed Auth** - A deployed Worker that denies every unauthenticated request before any admin surface exists
+- [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`
+- [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
+- [ ] **Phase 5: Public Site** - Home, Work, Photos, Résumé on the charcoal identity, four of five routes shipping zero framework JS
+- [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected
+- [ ] **Phase 7: Admin CMS** - Edit, preview, publish and upload from a browser, with concurrency caught and deploy status told truthfully
+- [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving
+
+### Parallel Tracks
+
+This is one developer. "Parallel" means **safe to interleave or reorder** — not
+simultaneous. The value is knowing a stall in one track does not stall another.
+
+| Track | Phases | Independence |
+|-------|--------|--------------|
+| Design | 0 | Pure design artefact. Zero code dependency. Blocks only Phases 6 and 7. |
+| Design system | 1 | **Separate repo** (`../design-system`), separate release. Zero shared code or build with Phase 2/3. |
+| Platform | 2 → 3 | This repo. Blocks everything downstream — start immediately. |
+| Pipeline | 4 | Unblocked the moment Phase 3 lands. Drivable with `gh workflow run`, no UI. Can absorb slack whenever Phase 5/6 stall on a design question. |
+| Product | 5 → 6 → 7 | The serial spine. Needs Phases 1 + 3. |
+
+**Phase 1 ∥ Phase 2 is the load-bearing parallelism.** Phase 1 is the project's declared
+blocker and Phase 2 is the longest-lead-time item. Neither should wait on the other.
+
+## Phase Details
+
+### Phase 0: Design & Ideation
+**Goal**: Every screen the build phases need has a design, and the charcoal identity is proven against real design-system components before the theme release is cut
+**Depends on**: Nothing (first phase)
+**Requirements**: DSGN-01, DSGN-02, DSGN-03, DSGN-04, DSGN-05, DSGN-06
+**Success Criteria** (what must be TRUE):
+  1. A reviewable wireframe set exists for the admin CMS — every screen, its information architecture, and its states — where no design existed before
+  2. A case-study page template exists as a design, with the problem → decisions → outcome structure laid out against real drafted content rather than lorem ipsum
+  3. Work and Photos are resolved onto the charcoal dark palette, replacing the handoff's earlier ivory iteration
+  4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
+  5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the four project one-liners and the case studies, drafted for Akhil to edit
+**Plans**: TBD
+**UI hint**: yes
+
+> **Scope guard — no implementation.** This phase produces design artefacts only. The one
+> deliberate exception is DSGN-04: the sketches are *running code* that imports the real
+> design system package, because that is the only way to validate the theme before the
+> release is cut. They are throwaway. No production application code is written here.
+
+### Phase 1: Design System — Charcoal Theme
+**Goal**: The charcoal identity ships as a consumable, contrast-safe, correctly-fonted theme from a published version of `@akhil-saxena/design-system`
+**Depends on**: Phase 0 (theme API decided in DSGN-05, gaps found in DSGN-04)
+**Parallel with**: Phase 2 — different repository, no shared code or build
+**Requirements**: DS-01, DS-02, DS-03, DS-04, DS-05, DS-06, DS-07, DS-08, DS-09
+**Success Criteria** (what must be TRUE):
+  1. `npm install @akhil-saxena/design-system@<new version>` from the public registry yields a working charcoal theme consumable by version number, with no local path or tarball required
+  2. Applying the charcoal scope alongside `:root.dark` produces charcoal in both light and dark, regardless of which stylesheet the bundler ordered first
+  3. Light-mode muted text and the ochre accent pass WCAG AA for body text, a darkened ochre token exists for focus rings, and `tokens.test.ts` fails CI if either regresses
+  4. A page consuming only the charcoal theme downloads Playfair Display, DM Sans and IBM Plex Mono — and does not download Inter, Archivo, JetBrains Mono or Newsreader
+  5. `Lightbox` closes on backdrop click, accepts a `srcset`, responds to swipe, and announces slide changes to a screen reader; and a public island importing design-system components pulls in no TipTap, ProseMirror or dnd-kit
+**Plans**: TBD
+**UI hint**: yes
+
+> **CROSS-REPO.** This entire phase executes in the sibling repository `../design-system`,
+> not in this one. It ends with a published npm version (DS-08); nothing in this repo
+> consumes it until that version exists. During Phase 5's development the portfolio may
+> consume it as a packed tarball (`npm pack` → `file:*.tgz`, never a symlink), but the
+> phase is not done until the registry version is live.
+
+> **DS-09 is a measurement, then a decision.** Whether the 334 KB barrel tree-shakes
+> TipTap/ProseMirror out of a public island is unmeasured. Measure it here using the
+> Phase 0 sketches. If tree-shaking already works, DS-09 is satisfied by evidence. If it
+> does not, the fix is per-component JS subpath exports in this repo — an upstream fix,
+> never a local workaround in the portfolio. Phase 5 re-checks the result as a gate.
+
+### Phase 2: Astro Foundation & Fail-Closed Auth
+**Goal**: A deployed Cloudflare Worker serves prerendered public routes and denies every unauthenticated request to `/admin`, `/api/*` and `/_actions/*` — before any admin surface exists to protect
+**Depends on**: Nothing (parallel with Phase 1)
+**Parallel with**: Phase 1 — different repository, no shared code or build
+**Requirements**: FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, AUTH-01, AUTH-02, AUTH-03, AUTH-04
+**Success Criteria** (what must be TRUE):
+  1. A push to `main` deploys an Astro 7 + React 19 app to Cloudflare Workers with Static Assets, gated by CI running lint, typecheck, build and tests
+  2. A request to `/admin`, `/api/*` or `/_actions/*` carrying no valid Cloudflare Access JWT is rejected — including when the Access configuration is entirely absent — proven by a test running against real workerd rather than a mock
+  3. The build fails, loudly, if any API or admin route was prerendered into `dist/`, and fails if a required secret is unset — there is no path that degrades to permissive at runtime
+  4. R2 bindings resolve from `cloudflare:workers` in both `astro dev` and production, with no absence-guard in the code path that could mask a genuinely broken binding
+  5. `akhilsaxena.com` is confirmed on Cloudflare-managed nameservers, an R2 custom domain is provisioned and serving cached images, and CI fails the build if the design-system dependency spec still starts with `file:`
+**Plans**: TBD
+
+> **Auth lands here, not in Phase 7.** The moment `/admin` exists as a route in a deployed
+> Worker it is a live attack surface. This is the single most important sequencing call in
+> the roadmap, and it mirrors the exact failure mode found in the legacy app, where auth
+> was to be "tightened later" via a comment nobody acted on.
+
+> **FND-07 is here because of lead time, not because it feels like cutover work.**
+> Nameserver propagation and R2 custom-domain provisioning are the longest-lead items in
+> the project. Discovering a problem with either at cutover means redoing DNS, secrets and
+> CI simultaneously under outage pressure.
+
+### Phase 3: Content Layer & Image Origin
+**Goal**: All site content is schema-validated from a single source of truth, unsanitized HTML cannot structurally reach a page, and no image is served from the uncached `r2.dev` origin
+**Depends on**: Phase 2
+**Requirements**: CONT-01, CONT-02, CONT-03, CONT-04
+**Success Criteria** (what must be TRUE):
+  1. One schema module validates photos, résumé, home config and site config, and that same module is what the build, the write path and the admin's form errors all consume — validation cannot drift between them
+  2. Committing a malformed `data/*.json` fails the build with a readable error instead of shipping a broken site
+  3. A résumé bullet containing a script tag is stripped at both the write boundary and the render boundary, verified by a test — the legacy stored-XSS class is closed structurally, not by convention
+  4. No `pub-*.r2.dev` URL remains anywhere in the repository, and a photo request returns `cf-cache-status: HIT` from the R2 custom domain
+**Plans**: TBD
+
+> **CONT-04 is early on purpose.** Building the gallery against URLs that are about to
+> change is rework, and the uncached, rate-limited `r2.dev` origin makes Lighthouse scores
+> non-reproducible. This is a data migration of all 39 manifest entries, not a config
+> tweak, and it must precede Phase 5.
+
+### Phase 4: Photo Pipeline (Actions half)
+**Goal**: A photo goes from an R2 staging object to resized variants, extracted EXIF and a committed manifest entry — driven entirely from the command line, with no admin UI in existence
+**Depends on**: Phase 3
+**Parallel with**: Phase 5 and Phase 6 — no UI dependency in either direction
+**Requirements**: PIPE-01, PIPE-02, PIPE-03, PIPE-04, PIPE-05, CONT-05
+**Success Criteria** (what must be TRUE):
+  1. `gh workflow run process-photos.yml` against a staged upload produces resized variants in R2 and a schema-valid manifest entry committed to `main`, with EXIF read from the original
+  2. Re-running the same job for the same upload adds no duplicate manifest entry
+  3. A job that fails partway leaves the manifest consistent with the bucket, and staged `temp/` objects expire on their own rather than accumulating
+  4. A pipeline commit and a concurrent manual edit to the same files cannot clobber each other — one retries or reports a conflict
+  5. Re-uploading a photo serves the new bytes from the CDN without a manual cache purge
+**Plans**: TBD
+
+> **Why this precedes the public site.** The Actions half depends only on the Phase 3
+> schemas and R2 credentials — not on any admin UI — and is fully drivable with
+> `gh workflow run`. Sequencing it here takes the riskiest, least-familiar integration
+> (sharp + exifr + concurrent R2/git writes) off the critical path and gets it debugged
+> early instead of last, wedged behind the admin. It also settles the manifest shape and
+> the content-hashed key scheme (CONT-05) *before* the gallery builds `srcset` URLs
+> against them — the same rework argument that puts CONT-04 in Phase 3.
+
+### Phase 5: Public Site
+**Goal**: Visitors get the whole public site — Home, Work, Photos, Résumé — on the charcoal identity, at Lighthouse-grade weight, with four of the five routes shipping no framework JavaScript
+**Depends on**: Phase 1 (published theme), Phase 3 (content layer)
+**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08, PUB-09, PUB-10, PUB-11, PUB-12, PUB-13, PUB-14, SEO-01, SEO-02, SEO-03, SEO-05
+**Success Criteria** (what must be TRUE):
+  1. Home presents two acts — identity and photo grid filling the first viewport, work below; Work lists the four projects and the Brevo engineering strip; Résumé renders from structured data, offers the maintained PDF, and prints legibly
+  2. Photos shows all 39 images in a masonry gallery with no pagination, nothing shifts as it loads, and category filtering works as real links to prerendered `/photos/[category]` routes — crawlable, Back-button-capable, zero JavaScript
+  3. Clicking a photo opens a lightbox dismissible by keyboard, backdrop and swipe, showing EXIF with absent fields omitted entirely rather than placeheld, and cameras and lenses shown as human names; each photo also has its own prerendered page with a social card
+  4. A visitor can switch between dark and light, the choice persists, there is no flash of the wrong theme on first paint, motion is suppressed under `prefers-reduced-motion`, and four of the five public routes ship zero framework JavaScript
+  5. Every page carries a canonical URL plus Open Graph and Twitter card metadata, the résumé carries `Person` structured data, a sitemap is generated, and the legacy `/portfolio` path 301s to `/photos`
+**Plans**: TBD
+**UI hint**: yes
+
+> **Bundle gate — go/no-go, not an assumption.** This is the first phase to build a public
+> page. Before the gallery is considered done, run the bundle visualizer against the
+> `/photos` build. If `prosemirror`, `tiptap`, `lowlight` or `dnd-kit` appear in a public
+> chunk, that is a **stop**: the fix is an upstream design-system change (per-component JS
+> subpath exports, feeding a patch release), never a local workaround here. The entire
+> Lighthouse 95+ goal and PUB-14 rest on this measurement. Also audit DevTools → Network →
+> Font: at most three families should download.
+
+### Phase 6: Case Studies
+**Goal**: Each project is told as a real case study — problem, decisions and outcome, including what was rejected — reusing the vocabulary the public site established
+**Depends on**: Phase 0 (template design + drafted copy), Phase 5 (layout and typography vocabulary)
+**Requirements**: CASE-01, CASE-02, CASE-03
+**Success Criteria** (what must be TRUE):
+  1. Every project listed on Work links to a case-study page structured as problem → decisions → outcome, and each names alternatives that were rejected and why — not only what was chosen
+  2. Case studies are authored as Markdown in a content collection, so adding one is adding a file rather than editing a template
+  3. The design-system case study reads as the flagship — it carries measured specifics and genuine depth, not a product description
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 7: Admin CMS
+**Goal**: Akhil can edit content, upload photos and publish the site from a browser, with concurrent edits caught per-file and deploy status reported truthfully
+**Depends on**: Phase 0 (wireframes), Phase 2 (auth gate already proven), Phase 3 (schemas), Phase 4 (pipeline to drive)
+**Requirements**: ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, ADMIN-06, ADMIN-07, ADMIN-08, ADMIN-09, ADMIN-10
+**Success Criteria** (what must be TRUE):
+  1. The whole round trip works without touching a terminal — open `/admin`, edit the résumé, home config and site config through design-system form editors, preview the change, publish it, and see it live
+  2. Editing a file that changed underneath surfaces a recoverable "reload and re-apply" prompt, detected per-file by blob SHA — not a dead-end error, and never a silent overwrite
+  3. The admin reports "deployed" only once the build actually succeeded, and the last publish can be reverted in one click
+  4. Photos upload through the admin and the processing job's completion is reported back in the UI
+  5. Per-photo `object-position` for the home hero crops is editable in the admin, and navigating away with unsaved changes warns first
+**Plans**: TBD
+**UI hint**: yes
+
+> **Deliberately after the public site.** The accepted-downtime clock only stops when the
+> public site is live. The admin serves one authenticated operator who has `git` and a
+> text editor as a perfectly serviceable fallback in the meantime.
+
+### Phase 8: Harden & Cut Over
+**Goal**: `akhilsaxena.com` serves the new site at 95+ across the board, with the boundaries that matter under automated test and the old hostname redirecting
+**Depends on**: Phase 7
+**Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04, SEO-04, SEO-06
+**Success Criteria** (what must be TRUE):
+  1. Public pages score 95+ on Lighthouse performance, accessibility, best practices and SEO, enforced as a standing CI gate rather than a one-off run
+  2. The auth boundary, the publish path and the photo pipeline each have automated tests that fail when the behaviour breaks
+  3. `akhilsaxena.com` serves the site with certificates issued and Cloudflare Access still admitting Akhil to `/admin`
+  4. `akhilsaxena.pages.dev` 301s to the apex, so the already-indexed production hostname does not compete with the new one
+  5. Application CSS beyond the design system is confined to layout, and the built site matches the design handoff on layout, typography, spacing and interaction
+**Plans**: TBD
+
+> **Cutover is a written pre-flight, not an improvised sequence.** Recreating rather than
+> editing the Cloudflare Access application issues a new AUD and locks the admin out — a
+> documented, easy mistake. The long-lead items (nameservers, R2 custom domain, secrets
+> migration) were deliberately resolved back in Phase 2 so this phase is a flip, not a
+> provisioning exercise.
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 0 → 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+
+Phases 1 and 2 are genuinely parallel (different repositories) and may be interleaved or
+reordered freely. Phase 4 is unblocked after Phase 3 and may be interleaved with Phases 5
+and 6.
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 0. Design & Ideation | 0/TBD | Not started | - |
+| 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
+| 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
+| 3. Content Layer & Image Origin | 0/TBD | Not started | - |
+| 4. Photo Pipeline (Actions half) | 0/TBD | Not started | - |
+| 5. Public Site | 0/TBD | Not started | - |
+| 6. Case Studies | 0/TBD | Not started | - |
+| 7. Admin CMS | 0/TBD | Not started | - |
+| 8. Harden & Cut Over | 0/TBD | Not started | - |
+
+## Requirement Coverage
+
+**73 of 73 v1 requirements mapped. No orphans, no duplicates.**
+
+| Phase | Requirements | Count |
+|-------|--------------|------:|
+| 0. Design & Ideation | DSGN-01 … DSGN-06 | 6 |
+| 1. Design System — Charcoal Theme | DS-01 … DS-09 | 9 |
+| 2. Astro Foundation & Fail-Closed Auth | FND-01 … FND-07, AUTH-01 … AUTH-04 | 11 |
+| 3. Content Layer & Image Origin | CONT-01, CONT-02, CONT-03, CONT-04 | 4 |
+| 4. Photo Pipeline (Actions half) | PIPE-01 … PIPE-05, CONT-05 | 6 |
+| 5. Public Site | PUB-01 … PUB-14, SEO-01, SEO-02, SEO-03, SEO-05 | 18 |
+| 6. Case Studies | CASE-01, CASE-02, CASE-03 | 3 |
+| 7. Admin CMS | ADMIN-01 … ADMIN-10 | 10 |
+| 8. Harden & Cut Over | QUAL-01 … QUAL-04, SEO-04, SEO-06 | 6 |
+| **Total** | | **73** |
+
+### Placement notes for requirements that could plausibly sit elsewhere
+
+| Requirement | Placed in | Why not elsewhere |
+|-------------|-----------|-------------------|
+| DS-09 (tree-shaking) | Phase 1 | The *fix*, if needed, is per-component JS exports in `../design-system`. The *measurement* is re-run as a go/no-go gate in Phase 5, but the requirement is owned upstream. |
+| FND-07 (nameservers, R2 domain) | Phase 2 | Longest lead time in the project. Discovering a problem at cutover means redoing DNS, secrets and CI at once, under pressure. |
+| AUTH-01…04 | Phase 2 | `/admin` is a live attack surface the moment it is routable. Treating auth as an admin-phase concern is exactly how the legacy fail-open fallback came to exist. |
+| CONT-04 (r2.dev migration) | Phase 3 | A data migration of all 39 manifest entries. Building pages against URLs about to change is rework, and the uncached origin makes Lighthouse non-reproducible. |
+| CONT-05 (stale re-uploads) | Phase 4 | Only observable via a re-upload, and the content-hashed key scheme is implemented in the pipeline. Depends on CONT-04's cached domain existing. |
+| SEO-05 (`/portfolio` → `/photos`) | Phase 5 | An in-app redirect, verifiable the moment the routes exist. No DNS dependency. |
+| SEO-04 (`pages.dev` → apex) | Phase 8 | Cannot be verified until the apex is actually serving. |
+| QUAL-04 (handoff fidelity) | Phase 8 | A cross-cutting review pass over Phases 5–7 output. Splitting it per-phase would fragment the judgement. |

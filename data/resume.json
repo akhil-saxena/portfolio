@@ -160,13 +160,13 @@
       ]
     },
     {
-      "id": "project-1777750009929",
+      "id": "design-system",
       "title": "Design System",
       "label": {
         "text": "Web",
         "icon": "code"
       },
-      "description": "77-component React library with semantic tokens, dark mode, and live Storybook docs.",
+      "description": "80-component React library with semantic tokens, dark mode, and live Storybook docs.",
       "tech": [
         "React",
         "TypeScript",

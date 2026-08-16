@@ -216,10 +216,14 @@ the fence that keeps it from becoming the Phase 2 foundation.
 - **D-38:** **All five projects get case studies, with the design system as the flagship** —
   it is the only one whose outcome the reader is looking at while reading it, and the only
   one that can close with "this page is built on it."
-  **Note: `resume.json` has five projects, not the four stated in PROJECT.md and
-  ROADMAP.md** — Cairn, hued, Momentum, TimeShift, and the Design System. The design-system
-  entry is also stale: auto-generated id `project-1777750009929`, a dead
-  `design-system-ed1.pages.dev` URL, and "77-component" when it is now 80 at v1.11.4.
+  **Note: `resume.json` has five projects, not the four originally stated in PROJECT.md and
+  ROADMAP.md** — Cairn, hued, Momentum, TimeShift, and the Design System.
+  **Resolved 2026-08-17:** the "four projects" count was corrected to five across
+  PROJECT.md, ROADMAP.md and REQUIREMENTS.md (DSGN-06, PUB-02); the design-system entry's
+  auto-generated id `project-1777750009929` became `design-system`, and its stale
+  "77-component" became "80-component" (the DS README's own current claim at v1.11.4).
+  Its `design-system-ed1.pages.dev` URL was **verified live (HTTP 200)** — an earlier
+  claim in this discussion that it was dead was wrong. No URL change is needed.
 - **D-39:** Case studies are **tiered by depth** — a long form for the design system and
   Cairn, a short form for hued, Momentum and TimeShift. Two templates to design and sketch.
 - **D-40:** Substance comes from **the repos, with gaps flagged**; the interview that fills
@@ -273,8 +277,9 @@ the fence that keeps it from becoming the Phase 2 foundation.
 ### Project intent and scope
 - `.planning/PROJECT.md` — Core Value (the site is the proof the design system works),
   measured design-system findings, contrast measurements, content facts, and locked Key
-  Decisions. **Note: its "no runtime filesystem" constraint and "four projects" count are
-  both superseded by this phase — see Deferred Ideas.**
+  Decisions. **Note: its "no runtime filesystem" constraint is superseded by D-10 and is
+  still unfixed — see Deferred Ideas.** (Its "four projects" count was corrected to five on
+  2026-08-17.)
 - `.planning/REQUIREMENTS.md` — DSGN-01…DSGN-06 for this phase; DS-01…DS-09 for Phase 1,
   which this phase's DSGN-05 output feeds directly.
 - `.planning/ROADMAP.md` §"Phase 0: Design & Ideation" — goal, success criteria, and the
@@ -380,8 +385,11 @@ creep into Phase 0 — they are impacts to record before planning.**
 - **`PROJECT.md`'s "No runtime filesystem" constraint is superseded by D-10** and must be
   reworded: no runtime store for *published* content; drafts are the exception; published
   JSON stays in git.
-- **`PROJECT.md` and `ROADMAP.md` say "four own projects"; there are five** (D-38). The
-  design-system entry also needs its id, URL and component count corrected.
+- ~~**`PROJECT.md` and `ROADMAP.md` say "four own projects"; there are five** (D-38). The
+  design-system entry also needs its id and component count corrected.~~
+  **DONE 2026-08-17** — corrected across PROJECT.md, ROADMAP.md and REQUIREMENTS.md
+  (DSGN-06, PUB-02); `resume.json`'s design-system id is now `design-system` and its
+  description reads "80-component". The Storybook URL was verified live and needed no change.
 
 ### Phase scope this discussion grew
 - **Phase 1** ships as **v2.0.0** (D-36), and gains a no-flash module (D-34) and full
@@ -400,9 +408,11 @@ creep into Phase 0 — they are impacts to record before planning.**
   drafts to final before cutover. It currently has no copy work in it.
 
 ### New work with no phase yet
-- **A separate design-system release after Phase 1** migrating CSS to `@layer` and adding
-  the `data-density` axis (D-28, D-32), verified independently against existing Playwright
-  snapshots. **Must land before Phase 7 builds the admin.** Not currently a roadmap phase.
+- ~~**A separate design-system release after Phase 1** migrating CSS to `@layer` and adding
+  the `data-density` axis (D-28, D-32).~~ **DONE 2026-08-17** — added to the roadmap as
+  **Phase 06.1: Design System — Cascade Layers & Density Axis**, with new requirements
+  DS-10, DS-11 and DS-12 in REQUIREMENTS.md. Depends on Phase 1, interleavable with 2–6,
+  must land before Phase 7.
 - **A coordinated Cairn update** to consume design-system v2.0.0 with the new
   `fonts/default.css` import (D-36). External to this project's roadmap.
 - **Automated CSS manifest generation** from component usage (D-33), once a hand-maintained

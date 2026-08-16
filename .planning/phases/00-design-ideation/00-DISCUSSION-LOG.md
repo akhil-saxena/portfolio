@@ -382,7 +382,7 @@
 | Depth where there is a story | Full studies only where a narrative exists | |
 
 **User's choice:** All five, DS is the flagship
-**Notes:** Claude surfaced a documentation discrepancy — PROJECT.md and ROADMAP.md say "four own projects" but `resume.json` has five, and the design-system entry is stale (auto-generated id, dead pages.dev URL, "77-component" when it is now 80).
+**Notes:** Claude surfaced a documentation discrepancy — PROJECT.md and ROADMAP.md say "four own projects" but `resume.json` has five, and the design-system entry is stale (auto-generated id, "77-component" when it is now 80). *Correction, 2026-08-17: Claude also described the `design-system-ed1.pages.dev` URL as dead. It is not — it returns HTTP 200 and is the DS README's own Storybook badge link. All other items were confirmed and fixed.*
 
 ### Substance sourcing
 

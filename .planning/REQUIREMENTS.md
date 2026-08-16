@@ -12,7 +12,7 @@
 - [ ] **DSGN-03**: Work and Photos designs are resolved onto the dark palette (the handoff prototypes are an earlier ivory iteration)
 - [ ] **DSGN-04**: Throwaway sketches are built against the real `@akhil-saxena/design-system` package, not hand-written HTML, so the charcoal theme is validated against actual components before the design system release is cut
 - [ ] **DSGN-05**: The charcoal theme's public API is decided — how it scopes, how it composes with `:root.dark`, and how fonts are delivered
-- [ ] **DSGN-06**: First-pass copy exists for the four project one-liners and the case studies, drafted for Akhil to edit, so build phases work against real text lengths
+- [ ] **DSGN-06**: First-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit, so build phases work against real text lengths
 
 ### Design System — cross-repo, delivered from `../design-system`
 
@@ -25,6 +25,19 @@
 - [ ] **DS-07**: `Lightbox` supports backdrop-click close, `srcset`, swipe, and `aria-live` slide announcements
 - [ ] **DS-08**: The theme is published to npm and consumable by version number
 - [ ] **DS-09**: Public-page components can be imported without pulling TipTap, ProseMirror or dnd-kit into the bundle — by tree-shaking if it already works, by per-component JS exports if it does not
+
+### Design System — cascade layers and density, delivered from `../design-system`
+
+<!--
+Added after Phase 0's discussion. Deliberately NOT part of Phase 1: layers must not ship
+in the same release as the font split and contrast fixes, or a visual regression becomes
+unattributable. Density has no legitimate mechanism until this lands, because brand themes
+own colour, type and geometry but not spacing.
+-->
+
+- [ ] **DS-10**: Design-system CSS resolves by declared cascade-layer order rather than specificity arithmetic, so precedence no longer depends on the order a bundler emits stylesheets
+- [ ] **DS-11**: A `data-density="compact"` axis exists alongside brand and mode, redefining spacing tokens so a consumer never overrides spacing itself
+- [ ] **DS-12**: The layers migration ships as an isolated release verified against the existing Playwright snapshot suite, with brand × mode × density combinations covered
 
 ### Foundation
 
@@ -54,7 +67,7 @@
 ### Public Site
 
 - [ ] **PUB-01**: Home presents two acts — identity and photo grid filling the first viewport, work below
-- [ ] **PUB-02**: Work lists the four projects and the Brevo engineering strip
+- [ ] **PUB-02**: Work lists the five projects and the Brevo engineering strip
 - [ ] **PUB-03**: Photos shows all 39 images in a masonry gallery with no pagination
 - [ ] **PUB-04**: Category filtering works as prerendered `/photos/[category]` routes with real links — crawlable, Back-button-capable, zero JavaScript
 - [ ] **PUB-05**: Images reserve space from existing `dimensions` data and blur up from the existing base64 placeholders, so the gallery does not shift as it loads
@@ -158,6 +171,9 @@
 | DS-07 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
 | DS-08 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
 | DS-09 | Phase 1. Design System — Charcoal Theme (cross-repo) | Pending |
+| DS-10 | Phase 06.1. Design System — Cascade Layers & Density Axis (cross-repo) | Pending |
+| DS-11 | Phase 06.1. Design System — Cascade Layers & Density Axis (cross-repo) | Pending |
+| DS-12 | Phase 06.1. Design System — Cascade Layers & Density Axis (cross-repo) | Pending |
 | FND-01 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
 | FND-02 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |
 | FND-03 | Phase 2. Astro Foundation & Fail-Closed Auth | Pending |

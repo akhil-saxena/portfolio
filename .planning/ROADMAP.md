@@ -36,6 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
 - [ ] **Phase 5: Public Site** - Home, Work, Photos, Résumé on the charcoal identity, four of five routes shipping zero framework JS
 - [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected
+- [ ] **Phase 06.1: Design System — Cascade Layers & Density Axis** (INSERTED) - CROSS-REPO (`../design-system`): declared layer order replaces specificity arithmetic, and a density axis lets the admin be compact without portfolio overrides
 - [ ] **Phase 7: Admin CMS** - Edit, preview, publish and upload from a browser, with concurrency caught and deploy status told truthfully
 - [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving
 
@@ -47,7 +48,7 @@ simultaneous. The value is knowing a stall in one track does not stall another.
 | Track | Phases | Independence |
 |-------|--------|--------------|
 | Design | 0 | Pure design artefact. Zero code dependency. Blocks only Phases 6 and 7. |
-| Design system | 1 | **Separate repo** (`../design-system`), separate release. Zero shared code or build with Phase 2/3. |
+| Design system | 1 → 06.1 | **Separate repo** (`../design-system`), separate releases. Zero shared code or build with Phase 2/3. Phase 06.1 needs Phase 1 shipped, is otherwise interleavable with 2–6, and must land before Phase 7. |
 | Platform | 2 → 3 | This repo. Blocks everything downstream — start immediately. |
 | Pipeline | 4 | Unblocked the moment Phase 3 lands. Drivable with `gh workflow run`, no UI. Can absorb slack whenever Phase 5/6 stall on a design question. |
 | Product | 5 → 6 → 7 | The serial spine. Needs Phases 1 + 3. |
@@ -66,7 +67,7 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
   2. A case-study page template exists as a design, with the problem → decisions → outcome structure laid out against real drafted content rather than lorem ipsum
   3. Work and Photos are resolved onto the charcoal dark palette, replacing the handoff's earlier ivory iteration
   4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
-  5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the four project one-liners and the case studies, drafted for Akhil to edit
+  5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
 **Plans**: TBD
 **UI hint**: yes
 
@@ -166,7 +167,7 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
 **Depends on**: Phase 1 (published theme), Phase 3 (content layer)
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08, PUB-09, PUB-10, PUB-11, PUB-12, PUB-13, PUB-14, SEO-01, SEO-02, SEO-03, SEO-05
 **Success Criteria** (what must be TRUE):
-  1. Home presents two acts — identity and photo grid filling the first viewport, work below; Work lists the four projects and the Brevo engineering strip; Résumé renders from structured data, offers the maintained PDF, and prints legibly
+  1. Home presents two acts — identity and photo grid filling the first viewport, work below; Work lists the five projects and the Brevo engineering strip; Résumé renders from structured data, offers the maintained PDF, and prints legibly
   2. Photos shows all 39 images in a masonry gallery with no pagination, nothing shifts as it loads, and category filtering works as real links to prerendered `/photos/[category]` routes — crawlable, Back-button-capable, zero JavaScript
   3. Clicking a photo opens a lightbox dismissible by keyboard, backdrop and swipe, showing EXIF with absent fields omitted entirely rather than placeheld, and cameras and lenses shown as human names; each photo also has its own prerendered page with a social card
   4. A visitor can switch between dark and light, the choice persists, there is no flash of the wrong theme on first paint, motion is suppressed under `prefers-reduced-motion`, and four of the five public routes ship zero framework JavaScript
@@ -192,6 +193,33 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
   3. The design-system case study reads as the flagship — it carries measured specifics and genuine depth, not a product description
 **Plans**: TBD
 **UI hint**: yes
+
+### Phase 06.1: Design System — Cascade Layers & Density Axis (INSERTED)
+**Goal**: The design system's cascade is order-independent by declaration rather than by specificity arithmetic, and it exposes a density axis — so the admin can be compact without a single spacing override in the portfolio
+**Depends on**: Phase 1 (charcoal theme published; compound selectors in place to migrate from), Phase 0 (DSGN-04 findings evidencing what density actually needs)
+**Parallel with**: Phases 2–6 — different repository, no shared code or build. Must land before Phase 7.
+**Requirements**: DS-10, DS-11, DS-12
+**Success Criteria** (what must be TRUE):
+  1. Charcoal, dark and compact applied together resolve deterministically regardless of the order the bundler emits stylesheets — verified in a real Astro build, not only in isolation
+  2. The admin's denser spacing comes entirely from `data-density="compact"`; no spacing token is redefined anywhere in the portfolio repo
+  3. The existing Playwright snapshot suite passes on the layers migration as an isolated release, with no font or contrast changes landing alongside it
+  4. A published npm version carries both changes, consumable by version number
+**Plans**: TBD
+**UI hint**: no
+
+> **CROSS-REPO.** Executes in `../design-system`, not this repository. Inserted after
+> Phase 0's discussion established two things Phase 1 deliberately excludes: that layers
+> are the correct fix for source-order dependence but must not ship in the same release as
+> the font split and contrast fixes (a visual regression would be unattributable), and that
+> brand themes own colour, type and geometry but **not** spacing — leaving the admin's
+> compact layout with no legitimate mechanism until a density axis exists.
+
+> **Why not Phase 1.** Phase 1 uses explicit compound selectors
+> (`:root[data-brand="charcoal"].dark` at (0,3,0) beats `:root.dark` at (0,2,0)) precisely
+> so the charcoal theme is unblocked without a global cascade migration. This phase
+> migrates that arithmetic to declared layer order and adds density as a fourth axis
+> (brand × mode × density) — the combinatorial pressure that justifies layers in the first
+> place.
 
 ### Phase 7: Admin CMS
 **Goal**: Akhil can edit content, upload photos and publish the site from a browser, with concurrent edits caught per-file and deploy status reported truthfully

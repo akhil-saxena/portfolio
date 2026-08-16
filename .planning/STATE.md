@@ -4,10 +4,10 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 0 context gathered
-last_updated: "2026-08-16T18:54:57.335Z"
+last_updated: "2026-08-16T19:00:35.010Z"
 last_activity: 2026-08-16 — Roadmap created; 73/73 v1 requirements mapped across 9 phases
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -54,6 +54,10 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 06.1 inserted after Phase 6: Design System — Cascade Layers & Density Axis: layers migration split out of Phase 1 so a visual regression stays attributable; density axis added because brand themes own colour/type/geometry but not spacing
 
 ### Decisions
 

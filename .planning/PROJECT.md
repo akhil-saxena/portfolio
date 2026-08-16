@@ -51,7 +51,7 @@ to rebuild them.
 **Public site**
 
 - [ ] Two-act Home — identity + photo grid above the fold, work below
-- [ ] Work page listing four own projects + Brevo engineering
+- [ ] Work page listing five own projects + Brevo engineering
 - [ ] Photos gallery — masonry, category filters, all 39 photos
 - [ ] Photo lightbox showing EXIF (camera, lens, aperture, shutter, ISO, focal length)
 - [ ] Résumé page from `resume.json` + static PDF download

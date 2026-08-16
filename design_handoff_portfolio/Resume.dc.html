@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style> body { margin: 0; background: #0C0B0A; } a { text-decoration: none; color: inherit; } </style>
+</helmet>
+
+<div style="background: #0C0B0A; color: #ECE8DF; font-family: 'DM Sans', Helvetica, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh;">
+
+  <!-- NAV -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 88px; max-width: 980px; margin: 0 auto;">
+    <a href="Akhil Saxena — Home.dc.html" style="font-family: 'Playfair Display', serif; font-size: 22px;">Akhil Saxena</a>
+    <div style="display: flex; align-items: center; gap: 32px; font-size: 13.5px; font-weight: 500;">
+      <a href="Work.dc.html" style="color: #8B8678;">Work</a>
+      <a href="Photos.dc.html" style="color: #8B8678;">Photos</a>
+      <span style="border-bottom: 1.5px solid #ECE8DF; padding-bottom: 3px;">Résumé</span>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div style="max-width: 980px; margin: 0 auto; padding: 48px 40px 40px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+      <div>
+        <div style="font-family: 'Playfair Display', serif; font-weight: 400; font-size: 52px; line-height: 1.05;">Akhil Saxena</div>
+        <div style="font-size: 16px; color: #A7A294; margin-top: 10px;">Designer, engineer &amp; photographer — Noida, India</div>
+      </div>
+      <span style="border: 1px solid rgba(236,232,223,0.3); font-size: 13.5px; font-weight: 600; padding: 12px 24px; border-radius: 10px;">Download PDF ↓</span>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div style="max-width: 980px; margin: 0 auto; padding: 0 40px 40px; display: grid; grid-template-columns: 200px 1fr; gap: 48px;">
+
+    <!-- left rail -->
+    <div style="display: flex; flex-direction: column; gap: 32px;">
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: #8B8678; margin-bottom: 12px;">CONTACT</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; color: #C7C2B5;"><span>GitHub</span><span>LinkedIn</span><span>Email</span></div>
+      </div>
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: #8B8678; margin-bottom: 12px;">STACK</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; font-size: 13.5px; color: #C7C2B5;"><span>React · TypeScript</span><span>Next.js · Module Fed.</span><span>Design systems</span><span>Android · Kotlin</span></div>
+      </div>
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: #8B8678; margin-bottom: 12px;">EDUCATION</div>
+        <div style="font-size: 13.5px; color: #C7C2B5; line-height: 1.5;">B.Tech, Computer Science<br><span style="color: #8B8678;">[institution]</span></div>
+      </div>
+    </div>
+
+    <!-- right column -->
+    <div style="display: flex; flex-direction: column; gap: 40px;">
+      <!-- experience -->
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: #8B8678; margin-bottom: 18px;">EXPERIENCE</div>
+        <div style="display: flex; flex-direction: column;">
+          <div style="padding: 18px 0; border-top: 1px solid #232019;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between;"><span style="font-family: 'Playfair Display', serif; font-size: 22px;">Senior Software Engineer — Brevo</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8678;">2022 — NOW</span></div>
+            <ul style="margin: 12px 0 0; padding-left: 18px; color: #A7A294; font-size: 14.5px; line-height: 1.7;">
+              <li>Rebuilt checkout for 2.5M+ users — +15% conversion.</li>
+              <li>Shipped a unified settings-nav package across 18+ micro-frontends — 20% faster cycles.</li>
+              <li>Led login migration to Next.js + NAOS with 90% test coverage.</li>
+            </ul>
+          </div>
+          <div style="padding: 18px 0; border-top: 1px solid #232019; border-bottom: 1px solid #232019;">
+            <div style="display: flex; align-items: baseline; justify-content: space-between;"><span style="font-family: 'Playfair Display', serif; font-size: 22px;">Frontend Engineer — [earlier role]</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8678;">[YEARS]</span></div>
+            <div style="margin-top: 10px; color: #5E5A50; font-size: 14px;">[role summary — send me details]</div>
+          </div>
+        </div>
+      </div>
+      <!-- projects -->
+      <div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; color: #8B8678; margin-bottom: 18px;">PROJECTS</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div style="border: 1px solid #232019; border-radius: 10px; padding: 18px;"><div style="font-family: 'Playfair Display', serif; font-size: 19px;">Design System</div><div style="font-size: 13px; color: #8B8678; margin-top: 5px;">55 components</div></div>
+          <div style="border: 1px solid #232019; border-radius: 10px; padding: 18px;"><div style="font-family: 'Playfair Display', serif; font-size: 19px;">hued</div><div style="font-size: 13px; color: #8B8678; margin-top: 5px;">Android</div></div>
+          <div style="border: 1px solid #232019; border-radius: 10px; padding: 18px;"><div style="font-family: 'Playfair Display', serif; font-size: 19px;">Momentum</div><div style="font-size: 13px; color: #8B8678; margin-top: 5px;">Android</div></div>
+          <div style="border: 1px solid #232019; border-radius: 10px; padding: 18px;"><div style="font-family: 'Playfair Display', serif; font-size: 19px;">TimeShift</div><div style="font-size: 13px; color: #8B8678; margin-top: 5px;">Chrome extension</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="max-width: 980px; margin: 0 auto; padding: 32px 40px 56px; border-top: 1px solid #232019; display: flex; align-items: center; justify-content: space-between;">
+    <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B8678;">© 2026 AKHIL SAXENA</span>
+    <a href="Work.dc.html" style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 18px; color: #C7C2B5;">See the work →</a>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

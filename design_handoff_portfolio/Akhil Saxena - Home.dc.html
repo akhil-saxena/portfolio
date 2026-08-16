@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; background: #161616; }
+    a { text-decoration: none; color: inherit; }
+    a:hover { color: inherit; }
+    @keyframes nudge { 0%, 100% { transform: translateY(0); opacity: 0.65; } 50% { transform: translateY(6px); opacity: 1; } }
+  </style>
+</helmet>
+
+<div id="asx-page" style="background: #161616; color: #EAE7E0; font-family: 'DM Sans', Helvetica, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box;">
+
+  <!-- top bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; padding: 26px 40px 0; flex-shrink: 0;">
+    <div style="display: flex; gap: 24px; font-size: 13.5px; font-weight: 500;">
+      <a href="Work.dc.html" data-themed="muted" style="color: #8F8B82;" style-hover="color: #EAE7E0;">work</a>
+      <a href="Photos.dc.html" data-themed="muted" style="color: #8F8B82;" style-hover="color: #EAE7E0;">photographs</a>
+    </div>
+    <span id="asx-toggle" data-themed="border" style="width: 42px; height: 42px; border: 1px solid #33332F; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 15px; color: #C9C5BC; cursor: pointer; user-select: none;">☀</span>
+  </div>
+
+  <!-- ACT 1 — the existing site, untouched: identity + photo grid fill the first viewport -->
+  <div style="min-height: calc(100vh - 68px); display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+  <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 13px; padding: 8px 40px 48px; flex-shrink: 0;">
+    <div data-themed="primary" style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 60px; line-height: 1;">Akhil Saxena</div>
+    <div data-themed="muted" style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 20px; color: #8F8B82;">Interfaces &amp; Imagery</div>
+    <div data-themed="secondary" style="font-family: 'Playfair Display', serif; font-size: 21px; color: #C9C5BC; margin-top: 6px;">Building for the web. Photographing everything else.</div>
+  </div>
+
+  <a href="Photos.dc.html" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 1080px; width: 100%; margin: 0 auto; padding: 0 40px; box-sizing: border-box; flex-shrink: 0;">
+    <span style="aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;"><img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-sm.webp" alt="Singapore" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);"></span>
+    <span style="aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;"><img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-sm.webp" alt="Into the mist" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);"></span>
+    <span style="aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;"><img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-sm.webp" alt="Across the trees" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);"></span>
+    <span style="aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;"><img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-sm.webp" alt="Hawa Mahal" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);"></span>
+    <span style="aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;"><img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-sm.webp" alt="Kingfisher" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);"></span>
+    <span style="position: relative; aspect-ratio: 3/2; border-radius: 8px; overflow: hidden; display: block;">
+      <img src="https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-sm.webp" alt="Eiffel" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s ease;" style-hover="transform: scale(1.04);">
+      <span style="position: absolute; right: 10px; bottom: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #FFF; background: rgba(22,22,22,0.65); padding: 4px 9px; border-radius: 4px;">ALL 39 →</span>
+    </span>
+  </a>
+
+  <div data-themed="muted" style="text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; letter-spacing: 0.2em; color: #8F8B82; padding: 40px 0 8px; animation: nudge 2.2s ease-in-out infinite;">↓ THE WORK</div>
+  </div>
+
+  <!-- ACT 2 — the work, full stage -->
+  <div style="padding: 72px 40px 24px; max-width: 1080px; width: 100%; margin: 0 auto; box-sizing: border-box;">
+    <div style="display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 40px;">
+      <div data-themed="primary" style="font-family: 'Playfair Display', serif; font-weight: 700; font-size: 42px;">The work</div>
+      <a href="Work.dc.html" data-themed="muted" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8F8B82;">ALL WORK →</a>
+    </div>
+    <a href="Work.dc.html" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 56px;">
+      <span style="display: flex; gap: 18px; align-items: flex-start;">
+        <span style="width: 44px; height: 44px; border-radius: 11px; background: #EAE7E0; color: #161616; display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; flex-shrink: 0;">D</span>
+        <span style="display: flex; flex-direction: column; gap: 5px;">
+          <span data-themed="primary" style="font-family: 'Playfair Display', serif; font-size: 24px;">Design System</span>
+          <span data-themed="muted" style="font-size: 13.5px; color: #8F8B82; line-height: 1.55;">55 components — tokens, primitives and patterns, designed and built end to end.</span>
+        </span>
+      </span>
+      <span style="display: flex; gap: 18px; align-items: flex-start;">
+        <span style="width: 44px; height: 44px; border-radius: 11px; background: #B0722A; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-style: italic; font-size: 20px; flex-shrink: 0;">h</span>
+        <span style="display: flex; flex-direction: column; gap: 5px;">
+          <span data-themed="primary" style="font-family: 'Playfair Display', serif; font-size: 24px;">hued</span>
+          <span data-themed="muted" style="font-size: 13.5px; color: #8F8B82; line-height: 1.55;">A colour companion for everyday design work, on Android.</span>
+        </span>
+      </span>
+      <span style="display: flex; gap: 18px; align-items: flex-start;">
+        <span style="width: 44px; height: 44px; border-radius: 11px; background: #3E5A48; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; flex-shrink: 0;">M</span>
+        <span style="display: flex; flex-direction: column; gap: 5px;">
+          <span data-themed="primary" style="font-family: 'Playfair Display', serif; font-size: 24px;">Momentum</span>
+          <span data-themed="muted" style="font-size: 13.5px; color: #8F8B82; line-height: 1.55;">Habits and focus, quietly tracked.</span>
+        </span>
+      </span>
+      <span style="display: flex; gap: 18px; align-items: flex-start;">
+        <span style="width: 44px; height: 44px; border-radius: 11px; background: #52585E; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; flex-shrink: 0;">T</span>
+        <span style="display: flex; flex-direction: column; gap: 5px;">
+          <span data-themed="primary" style="font-family: 'Playfair Display', serif; font-size: 24px;">TimeShift</span>
+          <span data-themed="muted" style="font-size: 13.5px; color: #8F8B82; line-height: 1.55;">A Chrome extension for working across time zones.</span>
+        </span>
+      </span>
+    </a>
+    <div data-themed="rowline" style="margin-top: 44px; padding-top: 24px; border-top: 1px solid #262622; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; flex-wrap: wrap;">
+      <span data-themed="secondary" style="font-family: 'Playfair Display', serif; font-style: italic; font-size: 17px; color: #C9C5BC;">By day — engineering at Brevo: checkout for 2.5M+ users, a nav package across 18+ micro-frontends.</span>
+      <a href="Resume.dc.html" data-themed="muted" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8F8B82;">RÉSUMÉ →</a>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div style="display: flex; align-items: center; justify-content: center; gap: 20px; padding: 34px 40px 36px; flex-shrink: 0; margin-top: auto;">
+    <span data-themed="muted" style="font-size: 13px; color: #8F8B82;">GitHub</span>
+    <span data-themed="muted" style="font-size: 13px; color: #8F8B82;">LinkedIn</span>
+    <span data-themed="muted" style="font-size: 13px; color: #8F8B82;">Email</span>
+    <span data-themed="muted" style="font-size: 12.5px; color: #8F8B82;">© 2026 Akhil Saxena</span>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultTheme&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;dark&quot;, &quot;light&quot;], &quot;default&quot;: &quot;dark&quot;, &quot;tsType&quot;: &quot;'dark' | 'light'&quot;}}">
+class Component extends DCLogic {
+  componentDidMount() {
+    const page = document.getElementById('asx-page');
+    const btn = document.getElementById('asx-toggle');
+    if (!page || !btn) return;
+    const themes = {
+      dark:  { bg: '#161616', primary: '#EAE7E0', secondary: '#C9C5BC', muted: '#8F8B82', border: '#33332F', icon: '☀' },
+      light: { bg: '#F4F1EA', primary: '#1A1815', secondary: '#44403A', muted: '#7A7568', border: '#D5CFC2', icon: '☾' }
+    };
+    const apply = (t) => {
+      const c = themes[t] || themes.dark;
+      page.style.background = c.bg;
+      page.querySelectorAll('[data-themed="primary"]').forEach(e => e.style.color = c.primary);
+      page.querySelectorAll('[data-themed="secondary"]').forEach(e => e.style.color = c.secondary);
+      page.querySelectorAll('[data-themed="muted"]').forEach(e => e.style.color = c.muted);
+      page.querySelectorAll('[data-themed="border"]').forEach(e => e.style.borderColor = c.border);
+      btn.textContent = c.icon; btn.style.color = c.muted;
+      this._t = t;
+      try { localStorage.setItem('asx-theme', t); } catch (e) {}
+    };
+    let init = this.props.defaultTheme || 'dark';
+    try { const s = localStorage.getItem('asx-theme'); if (s) init = s; } catch (e) {}
+    apply(init);
+    this._click = () => apply(this._t === 'dark' ? 'light' : 'dark');
+    btn.addEventListener('click', this._click);
+  }
+  componentWillUnmount() {
+    const btn = document.getElementById('asx-toggle');
+    if (btn && this._click) btn.removeEventListener('click', this._click);
+  }
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

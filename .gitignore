@@ -29,3 +29,10 @@ yarn-error.log*
 
 # local temp for image processing
 .tmp/
+
+# phase 0 throwaway playground
+# Deleted at Phase 0 exit (plan 17). Gitignored so it leaves no history to be
+# tempted by — the D-02 scope fence depends on the playground not surviving as
+# the Phase 2 foundation. Also keeps the 2.4 MB design-system tarball and
+# node_modules out of the repo.
+.playground/

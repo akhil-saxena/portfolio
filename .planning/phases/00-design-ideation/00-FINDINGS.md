@@ -84,7 +84,7 @@ Phase 06.1 pulls G-2. Phase 7 pulls G-1 and G-7.
 | **G-9** | `SegmentedControl` | **NEW component** *(reclassified from UPDATE)* | **Not a hooks problem — an ARIA-pattern problem.** `SegmentedControl` is a WAI-ARIA **radiogroup** with state-driven `onChange` selection, so it has **no navigable anchor semantics at all**. PUB-04 needs prerendered `/photos/[category]` routes with real links: crawlable, Back-button-capable, zero JS. An `as="nav"` prop on the same component cannot serve radiogroup and nav/link-list ARIA patterns cleanly — the roles, keyboard model and selected-state semantics all differ. | Small **new sibling `FilterNav`** that shares `SegmentedControl`'s CSS classes for visual parity but renders real `<a href>` anchors with `aria-current="page"` | `blocks-Phase-5` | pending |
 | **G-10** | *(none)* | accepted | No masonry / column-gallery component. | — (layout CSS is permitted by QUAL-03) | `backlog` | pending |
 | **G-11** | `--text-*` | UPDATE — additive | **No step at 52px** (44→60 gap) for the Work and Photos display headers. | Add a step, available to every brand | `should-fix-in-Phase-1` | **MEASURED — the hole is real, and the Phase 0 workaround is recorded rather than improvised.** The Work and Photos page headers call for **52**px. The shared scale steps at **44** (`--text-4xl`) and 60 (`--text-5xl`), so 52 sits in an 8px gap — the only one of fifteen handoff sizes that lands further than ±2px from an existing step. Phase 0 sketches therefore render those two headers at **44**px and park a reference screenshot at **52**px beside them, instead of hardcoding 52. The reason is the D-31 boundary, not timidity: `--text-*` is *sizing* and therefore design-system-owned, so a brand needing a missing step files it upstream as a new step available to every brand. The boundary held in practice, not only on paper — `.playground/src/styles/theme-charcoal.css` declares **zero** `--text-*` (and zero `--space-*` / `--lh-*` / `--ls-*` / `--z-*` / `--dur-*` / `--ease-*`) properties, asserted by grep in that plan's acceptance criteria. |
-| **G-12** | `exports` map | UPDATE — additive | `./css/*` requires **extensionless** specifiers (`/css/base`, not `/css/base.css`); `import.meta.resolve` under-reports the broken form. | Add `"./css/*.css"` alongside the existing pattern | `should-fix-in-Phase-1` | **MEASURED.** The `exports` entry is `"./css/*": { "style": "./dist/css/*.css", "default": "./dist/css/*.css" }` — the wildcard already supplies `.css`, so `@akhil-saxena/design-system/css/base.css` expands to `dist/css/base.css.css`, a file that does not exist, and the Rolldown build fails. `@akhil-saxena/design-system/css/base` expands correctly to `dist/css/base.css`. The trap is that the broken form is the one every developer will write first, and `import.meta.resolve()` **does not catch it** — it substitutes the wildcard and returns a URL string without `stat`-ing the target, so it reports the broken specifier as resolvable. Only an actual build fails. 74 per-component sheets ship in `dist/css/`. |
+| **G-12** | `exports` map | UPDATE — additive | `./css/*` requires **extensionless** specifiers (`/css/base`, not `/css/base.css`); `import.meta.resolve` under-reports the broken form. | Add `"./css/*.css"` alongside the existing pattern | `should-fix-in-Phase-1` | **MEASURED.** The `exports` entry is `"./css/*": { "style": "./dist/css/*.css", "default": "./dist/css/*.css" }` — the wildcard already supplies `.css`, so `@akhil-saxena/design-system/css/base.css` expands to `dist/css/base.css.css`, a file that does not exist, and the Rolldown build fails. `@akhil-saxena/design-system/css/base` expands correctly to `dist/css/base.css`. The trap is that the broken form is the one every developer will write first, and `import.meta.resolve()` **does not catch it** — it substitutes the wildcard and returns a URL string without `stat`-ing the target, so it reports the broken specifier as resolvable. Only an actual build fails. 74 per-component sheets ship in `dist/css/`. **RE-MEASURED 2026-08-17 (plan 07), with the observed error text and the `import.meta.resolve()` claim converted from inherited to measured.** A JS `import "@akhil-saxena/design-system/css/base.css"` in an `.astro` page fails the build with exit 1 and `` [vite]: Rolldown failed to resolve import "@akhil-saxena/design-system/css/base.css" from "…/src/pages/probe/scratch-broken.astro" `` — reproducing research's message verbatim. **A CSS `@import` of the same broken specifier fails differently and worse:** `` [vite] Unable to resolve `@import "@akhil-saxena/design-system/css/card.css"` from …/src/styles `` followed by `` [postcss] ENOENT: no such file or directory, open '@akhil-saxena/design-system/css/card.css' ``. That second message quotes the **bare specifier as though it were a filesystem path** and never mentions the doubled extension, so the D-33 manifest — which is entirely CSS `@import` statements — gets the *less* diagnostic of the two failures. `import.meta.resolve()` was then run directly against both spellings: the broken one **returns `…/dist/css/base.css.css` and does not throw**, and `existsSync` on that exact returned path is **false**. So the resolver reports a path it has not checked, confirmed rather than assumed. **The D-35 packaging shape is now tested, not asserted:** a private local fixture (`.playground/fixtures/stub-theme-pkg`) carrying only the proposed map installs as a `file:` dependency and an `.astro` page importing both `…/themes/charcoal.css` and `…/fonts/charcoal.css` **builds clean**, with both sheets' content present in the emitted page. The counter-proof was run on the same fixture: respelling the entry as `"./themes/*"` (the shape the existing `./css/*` entry has) makes the `*` capture `charcoal.css`, substitutes to `themes/charcoal.css.css`, and fails with `` [vite]: Rolldown failed to resolve import "stub-theme-pkg/themes/charcoal.css" ``. **The `.css` inside the wildcard is what makes D-35's specifier string work, and that is now a measurement rather than a reading of the spec.** `../design-system` was not modified. |
 | **G-13** | `Sortable` | UPDATE | Wires dnd-kit's `KeyboardSensor` so items *move* by keyboard, but passes no `announcements` / `screenReaderInstructions` — nothing is announced. (OQ-4) | Pass dnd-kit's announcer | `should-fix-in-Phase-1` | pending |
 | **G-14** | `Lightbox` | UPDATE | Missing backdrop-click close, `srcset`, swipe, `aria-live` slide announcements. | Already scoped as **DS-07** | `blocks-Phase-5` | pending |
 | **G-15** | barrel | UPDATE | **DS-09 tree-shaking fails.** One `import { Chip }` in a hydrated island drags the editor and drag-drop stacks into the browser. | Per-component JS subpath exports | `blocks-Phase-5` | **MEASURED 2026-08-17** at `astro@7.2.2` / `@astrojs/react@6.0.2` / `react@19.2.8` / DS `1.11.4`. Island chunk **570555 bytes raw, 176922 bytes gzip, 99 modules** — prosemirror 10, tiptap 23, lowlight 4, highlight.js 4, dnd-kit 3, lucide-react 43. Source: one `import { Chip }` rendered `client:load`, nothing else. Three configuration fixes were attempted during research and each produced **byte-identical output**: (1) `sideEffects: ["*.css"]` → `sideEffects: false`; (2) removing the leading `"use client"` directive from `dist/index.js`; (3) marking the module-scope `var lowlight = createLowlight();` as `/* @__PURE__ */`. The barrel is therefore **not shakeable by configuration**, and DS-09's per-component-JS-subpath fallback is the live branch, not a contingency. |
@@ -94,13 +94,15 @@ Phase 06.1 pulls G-2. Phase 7 pulls G-1 and G-7.
 Every number below was produced in the throwaway `.playground/` harness against the real
 packed tarball, on a cleared Vite cache. The first two are plan 01's and are the counterpart
 measurements: one claim failed, one held, and they are **not** the same claim. The third is
-plan 04's.
+plan 04's. The fourth and fifth are plan 07's.
 
 | Claim | Result | Measurement |
 |-------|--------|-------------|
 | DS-09 barrel tree-shakes on a hydrated island | **FAILS** | 570555 B raw / 176922 B gzip / 99 modules — see G-15 |
 | Composing the design system statically is free | **HOLDS** | **0** `<script>` tags on `probe/static`, a page rendering eight DS components (`AppBar`, `Heading`, `Text`, `Chip`, `Card`, `StatCard`, `Timeline`, `Footer`) |
 | D-29's tokens/faces split collapses the face layer | **HOLDS** | **8** `@font-face` rules from `fonts-charcoal.css` against the design system's **73** — 10 emitted font files / 200864 B, against 128 files / 2174132 B |
+| The charcoal cascade is order-independent | **HOLDS** | **136 assertions green per run, across 4 constructed import orders × 2 colour modes × 2 `inlineStylesheets` settings** — 17 tokens, every cell identical and every value equal to what `theme-charcoal.css` declares for that mode |
+| D-33's manifest ships materially less than the whole primitives sheet | **HOLDS** | public component set **41179 B raw / 9447 B gzip** (14 sheets), admin **109864 B / 19763 B** (38 sheets), against `primitives.css` whole at **181861 B / 36083 B** — 77.4% / 73.8% less for the public surface |
 
 **The font-split baseline, in full (plan 04).** `fonts-charcoal.css` re-exports four Fontsource
 entry points — `playfair-display/wght.css` (4 subset rules), `dm-sans/wght.css` (2),
@@ -149,6 +151,104 @@ effective.
 180634 B raw / 56513 B gzip, six modules, before any design-system code participates. Any
 per-island budget has to be set with that floor in mind — it is not attributable to the
 design system and no upstream fix removes it.
+
+**Footnote to G-15's byte count, so a re-run is not mistaken for drift (plan 07).** Adding
+two trivial islands to the playground (the cascade probe's variants C and D, one CSS import
+each) caused Rolldown to factor `jsx-runtime` out into its own shared chunk, which moves the
+`ChipIsland` chunk from **570555 B / 176922 B / 99 modules** to **570274 B / 176798 B /
+97 modules**. **The heavy-module counts are byte-for-byte unchanged** — prosemirror 10,
+tiptap 23, lowlight 4, highlight.js 4, dnd-kit 3, lucide 43 — so G-15's verdict, its
+mechanism and its 3.5× overage are all untouched. The 570555/176922/99 figures remain the
+canonical record because they were measured on the one-island tree; the delta is recorded
+here only so nobody re-runs `check-bundle.mjs` after plan 07 and concludes the measurement
+is unstable.
+
+**The cascade probe, in full (plan 07).** Four pages, each differing only in where two
+stylesheets are imported: `casc-a` tokens-then-theme in `.astro`; `casc-b` the reverse;
+`casc-c` tokens in `.astro` with the theme carried by a `client:load` React island;
+`casc-d` the reverse of `c`. Playwright reads
+`getComputedStyle(document.documentElement)` for 17 charcoal tokens in each of the eight
+cells, over a fifteen-line `node:http` server rather than an adapter-aware preview command
+(the D-02 fence). **Every cell is identical, and every value equals what
+`theme-charcoal.css` declares for that mode** — the second assertion matters because
+cross-variant agreement alone would also pass if charcoal had failed to apply on all four
+pages. The two anchors: `--cream` resolves **#161616** dark / **#f4f1ea** light in all four
+orders, and `--ochre-d-strong` **#d4a66d** / **#6b4417**. **This is where research measured
+a failure and this phase measures a pass, and the difference is the invariant, not luck:**
+research probed a deliberately non-exhaustive prototype and watched `--cream` break in both
+orderings; plan 04's theme restates 37/37 tokens at (0,3,0), so there is no tie left to lose.
+
+**The negative control reproduces research's failure exactly, by construction.** Deleting
+the single `--wire` declaration from the charcoal dark block and rebuilding makes the probe
+exit 1 and produces **two different wrong answers from one omission**: `casc-a` and `casc-d`
+apply the charcoal *light* wire `#878173` in dark mode, while `casc-b` and `casc-c` fall
+through to the design system's neutral `rgba(255,255,255,0.22)` → `#ffffff38`. Restoring the
+line returns the file to a byte-identical SHA-256 and the probe to exit 0. That is the
+D-02 claim-3 hazard reproduced on demand in this stack, not inherited from a document.
+
+**Ordering is unaffected by `inlineStylesheets`, and the emitted orders were read out of the
+HTML rather than assumed.** Under `'auto'` the ~2 KB charcoal sheet inlines as a `<style>`
+tag and the 65 KB token layer links; under `'never'` both link. **The emitted sequence is
+identical under both settings** — `casc-a` and `casc-d` emit tokens-then-charcoal, `casc-b`
+and `casc-c` emit charcoal-then-tokens — confirming research's claim with the two orders
+observed directly rather than trusted.
+
+**New mechanism finding: an island's CSS is not "last", it is wherever the component's
+import statement sits.** `casc-c` imports the island component *before* `tokens.css` and
+emits charcoal first; moving the `tokens.css` line above the component import flips the page
+to tokens-first (measured both ways). So island CSS does not get a privileged late position
+merely by being hoisted — its cascade position is decided by the position of the
+**component's** `import` statement in the page. **Operationally this means an import sorter
+or a lint autofix can silently flip which stylesheet wins a tie**, which is a second,
+independent argument for the exhaustiveness invariant: it is the only thing that makes the
+result insensitive to a reformat. The playground's two island variants keep the component
+import first for exactly this reason, and say so in their headers — otherwise `casc-c` and
+`casc-d` would emit the *same* order and the island half of the matrix would silently test
+one order twice while still passing.
+
+**@layer stays deferred, and this is the evidence for that.** Compound selectors plus
+exhaustiveness are sufficient across the whole matrix with no cascade layers and no
+`!important` anywhere. D-28's deferral of `@layer` to Phase 06.1 is therefore a measured
+"not needed yet" rather than an unexamined postponement.
+
+**The D-33 manifest, measured (plan 07).** Two hand-maintained single files, each ordered
+token layer → faces → theme → `base` → per-component sheets, using extensionless
+per-component specifiers throughout:
+
+| Set | Sheets | Raw | Gzip |
+|-----|-------:|----:|-----:|
+| Public component set (`base` + 13) | 14 | **41179 B** | **9447 B** |
+| Admin component set (public + 24) | 38 | **109864 B** | **19763 B** |
+| `primitives.css` whole — the alternative | 1 | 181861 B | 36083 B |
+| Public route, everything it actually ships | — | 86593 B | 33867 B |
+| Admin route, everything it actually ships | — | 122964 B | 39177 B |
+
+The first three rows are the comparison D-33 rests on: the public surface ships **77.4% less
+raw / 73.8% less gzip** of component CSS than the whole sheet, and even the admin — with
+every form control, the data grid, the editor and the overlay surfaces — comes in below it.
+The last two rows are what a visitor downloads, and they are much closer together than the
+first three, which is the finding in the next paragraph.
+
+**Correction: `primitives.css` is 181861 B, not the 178398 B research recorded.** Measured
+three ways and identical in all three — the installed 1.11.4 tarball, `../design-system/dist/`
+and `../design-system/src/` all report **181861 bytes**. Research's other split-CSS figures
+are low by the same margin (`base.css` 7094 vs **8741**; all 74 sheets concatenated 217569 vs
+**221032**, a delta of exactly 3463 B in both the concatenation and `primitives.css`), so the
+discrepancy is systematic rather than a single typo. **The figures above supersede research's
+for any Phase 1 or Phase 5 comparison**; research's `178398` / `41281` / `8923` should not be
+re-quoted. The direction of D-33's conclusion is unaffected and if anything strengthened.
+
+**The manifest ships 81 `@font-face` rules, and D-29's split does not fix that on its own.**
+`manifest.css` and `manifest-admin.css` each emit **81** face rules: the design system's
+**73** (inlined by its `tokens.css`, which the manifest must import because it carries the
+values charcoal overrides) plus charcoal's own **8**. So the 8-vs-73 win recorded above is a
+win *for the charcoal layer in isolation*, and it does **not** survive a consumer that also
+imports the current `tokens.css`. Nothing here is a new gap — it is the same
+face-rules-inside-the-token-layer problem already recorded under D-29/D-36 — but it is the
+first measurement of what the split is worth **at the consumer**, and the answer is that
+D-36's major version has to actually remove the faces from `tokens.css` for the manifest to
+benefit. The public route's 86593 B is ~65 KB token layer and ~21 KB of everything else,
+which is why rows 4-5 of the table are so much closer than rows 1-3.
 
 ## Deferred thresholds
 

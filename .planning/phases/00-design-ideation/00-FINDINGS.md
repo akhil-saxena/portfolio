@@ -22,8 +22,11 @@ the reason that column exists — DS-09 sat in `.planning/` as an unmeasured, lo
 assumption for the whole project, and "the barrel probably tree-shakes" is exactly the
 kind of claim that survives three planning documents and then fails in Phase 5.
 
-The register was seeded from `00-UI-SPEC.md` §"Named gaps" (16 rows, already triaged), and
-plan 01 added the two measured evidence cells. Rows are **not** re-litigated here — where
+The register was seeded from `00-UI-SPEC.md` §"Named gaps" (16 rows, already triaged); plan
+01 measured G-12 and G-15, and plan 04 measured AAA-1 and G-11. Rows are **not** added or
+re-litigated by a measurement plan — a plan that finds something outside the sixteen records
+it in its own SUMMARY instead, so the tier-pull contract below keeps a fixed denominator.
+Where
 a gap statement cites a type signature, that signature was read out of
 `../design-system/dist/index.d.ts` during UI-SPEC review and confirmed by the plan checker.
 
@@ -69,7 +72,7 @@ Phase 06.1 pulls G-2. Phase 7 pulls G-1 and G-7.
 
 | ID | Component | Disposition | Gap | Proposed upstream fix | Tiers | Evidence |
 |----|-----------|-------------|-----|----------------------|-------|----------|
-| **AAA-1** | `tokens.css` | UPDATE — additive | **Targeted AAA, ADOPTED (was contingent).** `--ink-3`/`--ink-4` move to `#4F4C42` / `#B1AEA8`; new `--ochre-d-strong` `#6B4417` / `#D4A66D` for small accent labels. | Ship both in the charcoal theme; extend `tokens.test.ts` with a 7:1 assertion for `--ink-3` and `--ochre-d-strong` on all three surfaces of each mode. **New token name only — `--focus` untouched, no existing token changes role.** | `should-fix-in-Phase-1` | pending |
+| **AAA-1** | `tokens.css` | UPDATE — additive | **Targeted AAA, ADOPTED (was contingent).** `--ink-3`/`--ink-4` move to `#4F4C42` / `#B1AEA8`; new `--ochre-d-strong` `#6B4417` / `#D4A66D` for small accent labels. | Ship both in the charcoal theme; extend `tokens.test.ts` with a 7:1 assertion for `--ink-3` and `--ochre-d-strong` on all three surfaces of each mode. **New token name only — `--focus` untouched, no existing token changes role.** | `should-fix-in-Phase-1` | **MEASURED 2026-08-17** by `.playground/check-contrast.mjs`, which *ports* the design system's own `srgb` / `luminance` / `contrast` / `resolve` helpers from `tokens.test.ts` rather than hand-rolling a second WCAG formula. 54 ratios, every foreground token against **all three surfaces of its own mode**, never the page alone. `--ink-3` / `--ink-4` `#4F4C42` light → **7.61** page / **8.16** paper / **7.09** panel; `#B1AEA8` dark → **8.18** / **7.54** / **7.02**. `--ochre-d-strong` `#6B4417` light → **7.55** / **8.10** / **7.03**; `#D4A66D` dark → **8.16** / **7.53** / **7.01**. All twelve clear 7:1, and in both modes the binding constraint is the **panel** (`--cream-3`) — the surface a page-only measurement never sees. **`--focus` is untouched:** it remains `var(--ochre-d)` and measures 5.22 / 5.60 / 4.86 light and 6.02 / 5.55 / 5.17 dark against a 3:1 non-text floor (SC 1.4.11), so the AAA change added a token name and altered no existing token's role. **The gate is proven to bite:** substituting the earlier proposal `#6E6A5E` for light `--ink-3` fails 6 assertions at 4.79 / 5.14 / **4.46** — a value that reads like an AA pass on the page and fails AA outright on the panel. |
 | **G-1** | *(none)* | **NEW component** | **No focal-point crop picker.** D-23 needs drag-a-marker on a real 3:2 frame with live `object-position`. The legacy `PropertiesPanel` precedent is mouse-only, keyboard-inaccessible and touch-unaware — which is also the evidence for D-09's desktop-only refusal. | New `FocalPointPicker` built from DS primitives, keyboard-operable via arrow keys | `backlog`, **`blocks-Phase-7`** | pending |
 | **G-2** | tokens + primitives | UPDATE | **Density axis cannot work as specified.** 0% of heights, 13.5% of padding, 10.8% of gaps are tokenised; `Button` padding is an inline style unreachable by CSS. | Introduce `--control-h`, `--control-px`, `--row-h`, `--field-gap`; adopt them in primitives; *then* vary by `data-density` | **`blocks-Phase-06.1`** (DS-11) | pending |
 | **G-3** | `RichText` | UPDATE | **Marks cannot be restricted.** No `marks`/`extensions` prop. StarterKit + `Link` + `Underline` + `CodeBlockLowlight` are always on, with ⌘I / ⌘U / ⌘K live even if the toolbar is replaced. D-21 needs bold-only; a segment serializer would **silently drop** italic/underline/link — data loss on save. | `marks?: Array<"bold"\|"italic"\|…>` prop that configures extensions, not just the toolbar | `should-fix-in-Phase-1` | pending |
@@ -80,7 +83,7 @@ Phase 06.1 pulls G-2. Phase 7 pulls G-1 and G-7.
 | **G-8** | `AppShell` | UPDATE — additive | Slots are `sidebar \| topbar \| main \| footer`. D-15's persistent pipeline strip has nowhere to live that survives navigation. **Re-tiered from `backlog`:** it is a trivial additive optional prop, and omitting it invites every admin route to re-implement the strip independently — the divergence D-15 explicitly forbids ("two places that must agree"). | Optional `banner` slot between topbar and main | **`should-fix-in-Phase-1`** | pending |
 | **G-9** | `SegmentedControl` | **NEW component** *(reclassified from UPDATE)* | **Not a hooks problem — an ARIA-pattern problem.** `SegmentedControl` is a WAI-ARIA **radiogroup** with state-driven `onChange` selection, so it has **no navigable anchor semantics at all**. PUB-04 needs prerendered `/photos/[category]` routes with real links: crawlable, Back-button-capable, zero JS. An `as="nav"` prop on the same component cannot serve radiogroup and nav/link-list ARIA patterns cleanly — the roles, keyboard model and selected-state semantics all differ. | Small **new sibling `FilterNav`** that shares `SegmentedControl`'s CSS classes for visual parity but renders real `<a href>` anchors with `aria-current="page"` | `blocks-Phase-5` | pending |
 | **G-10** | *(none)* | accepted | No masonry / column-gallery component. | — (layout CSS is permitted by QUAL-03) | `backlog` | pending |
-| **G-11** | `--text-*` | UPDATE — additive | **No step at 52px** (44→60 gap) for the Work and Photos display headers. | Add a step, available to every brand | `should-fix-in-Phase-1` | pending |
+| **G-11** | `--text-*` | UPDATE — additive | **No step at 52px** (44→60 gap) for the Work and Photos display headers. | Add a step, available to every brand | `should-fix-in-Phase-1` | **MEASURED — the hole is real, and the Phase 0 workaround is recorded rather than improvised.** The Work and Photos page headers call for **52**px. The shared scale steps at **44** (`--text-4xl`) and 60 (`--text-5xl`), so 52 sits in an 8px gap — the only one of fifteen handoff sizes that lands further than ±2px from an existing step. Phase 0 sketches therefore render those two headers at **44**px and park a reference screenshot at **52**px beside them, instead of hardcoding 52. The reason is the D-31 boundary, not timidity: `--text-*` is *sizing* and therefore design-system-owned, so a brand needing a missing step files it upstream as a new step available to every brand. The boundary held in practice, not only on paper — `.playground/src/styles/theme-charcoal.css` declares **zero** `--text-*` (and zero `--space-*` / `--lh-*` / `--ls-*` / `--z-*` / `--dur-*` / `--ease-*`) properties, asserted by grep in that plan's acceptance criteria. |
 | **G-12** | `exports` map | UPDATE — additive | `./css/*` requires **extensionless** specifiers (`/css/base`, not `/css/base.css`); `import.meta.resolve` under-reports the broken form. | Add `"./css/*.css"` alongside the existing pattern | `should-fix-in-Phase-1` | **MEASURED.** The `exports` entry is `"./css/*": { "style": "./dist/css/*.css", "default": "./dist/css/*.css" }` — the wildcard already supplies `.css`, so `@akhil-saxena/design-system/css/base.css` expands to `dist/css/base.css.css`, a file that does not exist, and the Rolldown build fails. `@akhil-saxena/design-system/css/base` expands correctly to `dist/css/base.css`. The trap is that the broken form is the one every developer will write first, and `import.meta.resolve()` **does not catch it** — it substitutes the wildcard and returns a URL string without `stat`-ing the target, so it reports the broken specifier as resolvable. Only an actual build fails. 74 per-component sheets ship in `dist/css/`. |
 | **G-13** | `Sortable` | UPDATE | Wires dnd-kit's `KeyboardSensor` so items *move* by keyboard, but passes no `announcements` / `screenReaderInstructions` — nothing is announced. (OQ-4) | Pass dnd-kit's announcer | `should-fix-in-Phase-1` | pending |
 | **G-14** | `Lightbox` | UPDATE | Missing backdrop-click close, `srcset`, swipe, `aria-live` slide announcements. | Already scoped as **DS-07** | `blocks-Phase-5` | pending |
@@ -88,16 +91,44 @@ Phase 06.1 pulls G-2. Phase 7 pulls G-1 and G-7.
 
 ## Measured baselines
 
-Both numbers below were produced by plan 01 in the throwaway `.playground/` harness against
-the real packed tarball, on a cleared Vite cache. They are the counterpart measurements:
-one claim failed, one held, and they are **not** the same claim.
+Every number below was produced in the throwaway `.playground/` harness against the real
+packed tarball, on a cleared Vite cache. The first two are plan 01's and are the counterpart
+measurements: one claim failed, one held, and they are **not** the same claim. The third is
+plan 04's.
 
 | Claim | Result | Measurement |
 |-------|--------|-------------|
 | DS-09 barrel tree-shakes on a hydrated island | **FAILS** | 570555 B raw / 176922 B gzip / 99 modules — see G-15 |
 | Composing the design system statically is free | **HOLDS** | **0** `<script>` tags on `probe/static`, a page rendering eight DS components (`AppBar`, `Heading`, `Text`, `Chip`, `Card`, `StatCard`, `Timeline`, `Footer`) |
+| D-29's tokens/faces split collapses the face layer | **HOLDS** | **8** `@font-face` rules from `fonts-charcoal.css` against the design system's **73** — 10 emitted font files / 200864 B, against 128 files / 2174132 B |
 
-**These two results must not be conflated.** A zero-JS pass on a static page says nothing
+**The font-split baseline, in full (plan 04).** `fonts-charcoal.css` re-exports four Fontsource
+entry points — `playfair-display/wght.css` (4 subset rules), `dm-sans/wght.css` (2),
+`ibm-plex-mono/latin-400.css` (1) and `latin-500.css` (1) — for **8 `@font-face` rules**,
+counted twice independently: by `grep` on the emitted chunk and by `check-font-names.mjs`
+parsing the packages themselves. The design system's `tokens.css` emits **73** in the same
+build, reproducing research's count exactly. The asset trees measured in one `astro build`
+that loads both: charcoal **10 files (8 woff2 + 2 woff) / 200864 B**, design system
+**128 files (65 woff2 + 63 woff) / 2174132 B** — a 92% cut in files and 91% in bytes. The
+byte figure is smaller than research's "2.36 MB" for the same 128 files because these are
+summed file sizes rather than block-rounded disk usage; the **file counts match exactly**
+(65 woff2 + 63 woff), so the two measurements agree on what is there and differ only in how
+they weigh it. The static IBM Plex Mono package is the reason charcoal emits 10 files for 8
+rules: it ships a legacy `.woff` beside each `.woff2`, which the two variable packages do not.
+
+**D-30's premise is false and this is the correction.** "All three ship variable" does not
+hold — no variable build of IBM Plex Mono is published to npm, so the mono family is served
+from the static package at two weights. This is a factual correction, not a supply-chain
+finding: the guessable variable package name returns a registry 404 and is *unclaimed*, so
+installing it would resolve to whatever eventually claims that name. `fonts-charcoal.css`
+asserts its own absence in the plan's acceptance criteria for exactly that reason.
+
+**"Latin subset only" is also not a package option** for the two variable families — neither
+ships per-subset CSS. What is guaranteed is a latin-only *download*: the non-latin rules carry
+a `unicode-range` this site's content never matches, so the browser fetches one file per
+family. 4 of the 8 rules are Playfair's subsets, and 3 of those 4 will never be requested.
+
+**These first two results must not be conflated.** A zero-JS pass on a static page says nothing
 about tree-shaking, because a page with no hydration directive never produces a client
 bundle to shake. The two fixtures are deliberately separate files —
 `probe/static.astro` and `probe/island.astro` — and a DS-09 result reported without a byte

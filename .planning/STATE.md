@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-08-16)
 Phase: 0 of 8 (Design & Ideation) — 9 phases total, numbered 0–8
 Plan: — of — in current phase
 Status: Ready to plan
-Last activity: 2026-08-16 — Roadmap created; 73/73 v1 requirements mapped across 9 phases
+Last activity: 2026-08-17 — Completed quick task 260817-dqf: scoped CLAUDE.md's legacy Next.js docs to the `legacy/nextjs-portfolio` branch
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -82,6 +82,12 @@ None yet.
 - **Live site:** `akhilsaxena.com` is not serving (Cloudflare nameservers, no host records). `akhilsaxena.pages.dev` still serves the OLD site only because the purged `main` fails to build and Cloudflare retains the last successful deployment. Schedule pressure, not a hard outage — the first successful new deploy replaces the old site.
 - **Cross-repo gate:** Phase 5 cannot be verified against the real identity until Phase 1 publishes. Tarball (`npm pack` → `file:*.tgz`) is the dev bridge; never a symlink (duplicate React).
 - **Open question carried from research:** Playfair Display delivery — shipped from the design-system theme, or via Astro's `fonts` config? Must be settled in Phase 0 (DSGN-05) before the Phase 1 release is cut.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260817-dqf | Scope CLAUDE.md's legacy Next.js docs to the `legacy/nextjs-portfolio` branch; add pre-code repository orientation note | 2026-08-17 | 4e720be | [260817-dqf-update-claude-md-to-scope-legacy-next-js](./quick/260817-dqf-update-claude-md-to-scope-legacy-next-js/) |
 
 ## Deferred Items
 

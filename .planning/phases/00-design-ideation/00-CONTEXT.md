@@ -52,10 +52,18 @@ the fence that keeps it from becoming the Phase 2 foundation.
   conflict, success per screen. Nothing is left for Phase 7 to invent, and design-system
   gaps in error/validation components surface now.
 - **D-04:** Design-system gaps are recorded in a **`00-FINDINGS.md`** in this phase
-  directory: component, gap, proposed upstream fix, and a triage tier —
-  `blocks-Phase-5` / `should-fix-in-Phase-1` / `backlog`. Phase 1's planner reads it and
-  pulls in only the first two tiers, giving Phase 1 an explicit scope boundary rather than
-  an open-ended list.
+  directory: component, gap, proposed upstream fix, and triage tiers. Phase 1's planner
+  reads it and pulls in only `blocks-Phase-5` and `should-fix-in-Phase-1`, giving Phase 1 an
+  explicit scope boundary rather than an open-ended list.
+  **REVISED 2026-08-17** — the original single-enum vocabulary
+  (`blocks-Phase-5` / `should-fix-in-Phase-1` / `backlog`) was found insufficient during
+  UI-SPEC review and confirmed by the checker. It has no way to say "not Phase 1's problem,
+  but must exist before Phase 7." Two gaps sit exactly there: `FocalPointPicker` (D-23) and
+  the D-16 conflict `DiffView` — both new components, correctly excluded from Phase 1's
+  token/theme release, but load-bearing for Phase 7. Tagged `backlog`, they read as
+  "optional, revisit someday."
+  **The field is now `tiers: string[]`, not a single tier**, with a fourth value
+  `blocks-Phase-7`. A gap may carry both `backlog` and `blocks-Phase-7` simultaneously.
 
 ### Admin CMS — navigation and shell
 
@@ -257,6 +265,39 @@ the fence that keeps it from becoming the Phase 2 foundation.
   reader learns whether it is real and current without the page ageing. An honest
   "Archived" reads better than an undated project assumed dead.
 
+### Added after discuss-phase (UI-SPEC review, 2026-08-17)
+
+- **D-46: The contrast bar is targeted AAA, not blanket AAA.** Raised from AA at the user's
+  request, then narrowed once the cost was measured.
+  - `--ink-3/-4` (muted text) moves to **`#4F4C42`** (light) / **`#B1AEA8`** (dark) — clears
+    7:1 against page, card and panel in both modes. Unconditional: it costs nothing
+    stylistically and removes a real legibility risk on admin zebra rows and disabled fields,
+    which sat at 4.5–5.5:1.
+  - `--ochre-d` **keeps** `#8C591F` / `#C6883A`. It feeds `--focus`, which is non-text under
+    SC 1.4.11 and unaffected by AAA at any scenario.
+  - **New token `--ochre-d-strong`**: `#6B4417` (light) / `#D4A66D` (dark), reserved
+    exclusively for small-label accent *text* needing 7:1 — the 11px Brevo metrics and the
+    9.5px badge/pill labels. Never for fills, focus rings, or display type.
+  - **Why not full AAA:** at 7:1 against a near-white `#F4F1EA` page, no hue in the
+    orange/amber family stays recognisably ochre — `--ochre-d` would become `#6B4417`, which
+    reads as dark chocolate-brown. That costs the identity the whole rebuild is organised
+    around. Restricting AAA to body text barely helps, because nearly every accent-as-text
+    usage here is small-label scale; only the 60/44px display period is exempt. WCAG does not
+    recommend AAA as a blanket site-wide policy.
+  - **Consequence:** DS-02 and DS-03 in REQUIREMENTS.md were rewritten. Two accent tokens now
+    exist, so the governing rule must be written down or they will erode into each other.
+
+- **D-47: PROJECT.md's contrast table is wrong in two places and must not be trusted.**
+  Both measured from source and independently re-derived by the checker.
+  - *"The dark palette is clean"* is false. `--ochre` `#B0722A` is 4.56:1 on the page but
+    **4.20:1 on a card and 3.91:1 on a panel** — it fails AA wherever elevation exists.
+    Ochre is therefore **fill-only**; all ochre *text* uses `--ochre-d`.
+  - The proposed `~#6E6A5E` light muted fix is **insufficient** (4.46:1 on an inset panel).
+    Superseded by D-46's `#4F4C42`.
+  - **Method rule going forward:** contrast is measured against **all three surfaces** of a
+    mode (page, card, panel), never against the page alone. Every ratio in PROJECT.md was
+    page-only, which is why both errors survived.
+
 ### Claude's Discretion
 
 - Sidebar shows a per-entity badge distinguishing draft from ready — forced by D-13's
@@ -304,6 +345,15 @@ the fence that keeps it from becoming the Phase 2 foundation.
   `Sortable`, `SortableDndContext`, `SortableItem`, `RichText`, `AppShell`, `EmptyState`,
   `DataGrid`, `FormErrorSummary`, `ProgressBar`, `StatusPill`, `ConfirmDialog`,
   `TypeToConfirm`, `Wizard`, `InlineEdit`, `FileInput`, `Sheet`, `Lightbox`.
+  **A name appearing here means the export exists, NOT that its API can carry the decision
+  it was matched to** — see the corrections in `<code_context>`. `.d.ts` signatures must be
+  read before assuming a component fits; four were matched wrongly on name alone.
+- `../design-system/src/` component sources — the authority when `.d.ts` is ambiguous.
+  Specifically: `inputs/StatusPill`, `interaction/RichText`, `patterns/FormValidation`,
+  `layout/AppShell`, `inputs/Button`, `data-display/SegmentedControl`, `interaction/Sortable`.
+- `../design-system/src/primitives.css` — 0 of 106 height declarations use a spacing token,
+  and `Button` sets `padding: "7px 14px"` as an inline style object unreachable by CSS at
+  any specificity. This is why DS-11's scope must widen to a control-geometry token layer.
 - `../design-system/src/tokens.css` — the `:root.dark, .dark` scope definition D-27 must
   outrank, and the ~73 `@font-face` rules D-29 removes.
 - `../design-system/CAIRN-CONSOLIDATION.md` — establishes Cairn as the second consumer,
@@ -327,13 +377,30 @@ the fence that keeps it from becoming the Phase 2 foundation.
 
 ### Reusable Assets
 
-- **The design system covers far more of the admin than expected.** `Sortable` +
-  `onReorder` (D-22), `RichText` (D-21), `AppShell`, `EmptyState`, `DataGrid`,
-  `FormErrorSummary` (D-18), `ProgressBar` + `StatusPill` (D-15), `ConfirmDialog` +
-  `TypeToConfirm` (D-14), `Sheet` (D-09 mobile), `FileInput`, `InlineEdit`, `Wizard`. The
-  admin is mostly composition, not new components.
-- **Two things the DS does not have**, both confirmed FINDINGS.md entries: a focal-point
-  crop picker (D-23), and a density axis (D-32).
+- **The design system covers much of the admin, but less than this section originally
+  claimed.** `Sortable` + `onReorder` (D-22), `AppShell`, `EmptyState`, `DataGrid`,
+  `ProgressBar`, `ConfirmDialog` + `TypeToConfirm` (D-14), `Sheet` (D-09 mobile),
+  `FileInput`, `InlineEdit`, `Wizard` all exist and carry their surfaces. The admin is
+  substantially composition — but see the corrections below.
+- **CORRECTION 2026-08-17 — this list was too optimistic.** UI-SPEC review inspected the
+  design-system source and the checker independently re-derived it. Four components named
+  above cannot do what this section claimed:
+  - **`StatusPill` does NOT cover D-15.** Its `stage` prop is a closed union of six
+    job-domain literals with no escape hatch — it cannot express draft/ready/published
+    (D-13) or the pipeline states (D-15). This section was wrong; the UI-SPEC is right.
+  - **`RichText` cannot restrict marks** — ⌘I/⌘U/⌘K stay live regardless of the `toolbar`
+    prop, so a bold-only segment serializer would silently drop data. It also has no
+    segment output (`outputFormat` is `"html" | "json"` only). Both matter for D-20/D-21,
+    which exist to design out the legacy stored-XSS class.
+  - **`FormErrorSummary` has no href** (`errors: string[]`), so D-18's deep-link to the
+    offending screen is impossible without a breaking prop-shape change.
+  - **`AppShell` has no banner slot** (`sidebar | topbar | main | footer` only), so D-15's
+    persistent status strip has nowhere to live.
+- **Things the DS does not have at all**, all confirmed FINDINGS.md entries: a focal-point
+  crop picker (D-23), a density axis (D-32), a conflict diff view for D-16 — *"the most
+  substantial single screen in the admin"* has zero DS coverage — and an anchor-based filter
+  nav (`SegmentedControl` is a WAI-ARIA radiogroup with state-driven selection, so it has no
+  navigable `<a href>` semantics).
 - **`data/*.json` already carries more than the handoff assumed** — five URL variants per
   photo, base64 LQIP in `urls.thumb`, `dimensions` on every photo, and an `order` field.
 

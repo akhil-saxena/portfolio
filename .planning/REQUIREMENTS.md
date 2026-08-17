@@ -17,8 +17,31 @@
 ### Design System — cross-repo, delivered from `../design-system`
 
 - [ ] **DS-01**: A charcoal brand theme exists as a third scope alongside `:root` and `:root.dark`, specificity-safe so it cannot lose to `:root.dark` on source order
-- [ ] **DS-02**: Light-mode muted text and ochre accent pass WCAG AA for body text (currently 4.07:1 and 3.52:1 — both fail)
-- [ ] **DS-03**: A darkened ochre token exists for focus rings and light-mode body text, mirroring the existing `--amber-d` treatment
+- [ ] **DS-02**: Muted text passes **WCAG AAA (7:1)** in both modes against all three surfaces (page, card, panel), and every accent-as-text usage passes AA at minimum — measured against elevation, not only against the page background
+- [ ] **DS-03**: Two accent tokens exist and are governed by a written rule: `--ochre-d` for focus rings, fills and display type (mirroring the existing `--amber-d` treatment), and `--ochre-d-strong` for small-label accent text that must reach AAA
+
+<!--
+DS-02/DS-03 revised 2026-08-17 after Phase 0's UI-SPEC review measured the palette against
+card and panel surfaces rather than the page alone. Two findings forced the change:
+
+1. PROJECT.md's claim that "the dark palette is clean" does not survive elevation — ochre
+   #B0722A is 4.56:1 on the page but 4.20:1 on a card and 3.91:1 on a panel, failing AA
+   wherever elevation exists.
+2. PROJECT.md's proposed ~#6E6A5E light-mode muted fix is insufficient at 4.46:1 on an
+   inset panel.
+
+The bar is **targeted AAA**, not blanket AAA — a deliberate choice. Full AAA forces
+--ochre-d to #6B4417 in light mode, which reads as dark chocolate-brown rather than ochre,
+costing the identity the rebuild is organised around. Splitting the token confines the 7:1
+requirement to the small-label accent text that needs it. WCAG does not recommend AAA as a
+blanket site-wide policy.
+
+Locked values: --ink-3/-4 = #4F4C42 (light) / #B1AEA8 (dark);
+--ochre-d = #8C591F / #C6883A (unchanged, feeds --focus, non-text under SC 1.4.11);
+--ochre-d-strong = #6B4417 / #D4A66D (small-label accent text only).
+See .planning/phases/00-design-ideation/00-UI-SPEC.md for the full contract.
+-->
+
 - [ ] **DS-04**: Font delivery is split out of `tokens.css` so consuming a theme does not force four unrelated font families
 - [ ] **DS-05**: The charcoal theme ships Playfair Display, DM Sans and IBM Plex Mono faces, so redefining `--font-serif` cannot silently fall back to Georgia
 - [ ] **DS-06**: `tokens.test.ts` covers the new theme's contrast contract, so a regression fails CI

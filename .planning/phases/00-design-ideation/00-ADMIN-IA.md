@@ -1,0 +1,473 @@
+---
+phase: 0
+slug: design-ideation
+consumers: [phase-7]
+---
+
+# Admin CMS — Information Architecture
+
+**The table is the artefact; the sketches illustrate it.** RESEARCH.md's Architectural
+Responsibility Map is explicit that a 39-control, 13-variant field catalog is unreviewable as
+pictures. This document is what plans 12–16 sketch *against*, and what Phase 7 ports *from*.
+It is the half of DSGN-01 that survives `.playground/`'s deletion at phase exit (D-02).
+
+Everything here composes `@akhil-saxena/design-system`. Where the design system cannot carry
+a surface, the gap is named by its `00-FINDINGS.md` ID and stops there — a gap is a finding,
+never a workaround (Core Value). No bespoke substitute is proposed anywhere in this document.
+
+---
+
+## Routes
+
+Seven routes, one entity each. D-05 names six; the seventh — `/admin/projects/[id]` — is
+implied by D-24 ("a project owns its case study") but absent from D-05's list, and is written
+down here so it stops being implied.
+
+| Route | Entity | Source data | What the screen is for |
+|-------|--------|-------------|------------------------|
+| `/admin` | the pending set | D1 draft rows (D-10) | Pending changes grouped by entity, photos mid-pipeline, last publish time, and Publish. **Its empty state is a first-class screen** (D-06) — "nothing pending" is the state this screen is in most of the time. |
+| `/admin/home` | `home_config.json` | `title`, `subtitle`, `intro`, 6 `peekIds`, `peekPositions` (1 of 6 set), 3 `socialLinks`, 2 `ctas` | Edit the two-act Home's identity block and choose which six photos peek. Hosts the focal-point crop picker (D-23). |
+| `/admin/photos` | `portfolio_images.json` | 39 photos, 7 categories, `order` + the new per-category order (D-22) | Upload, retitle, recategorise and reorder the gallery. Two views: list for metadata, grid for order. |
+| `/admin/resume` | `resume.json` | 3 experience entries (11 / 3 / 4 bullets), 3 skill groups, 1 education entry | Edit the résumé's structured content and replace the hand-maintained PDF (D-26 drift warning). |
+| `/admin/projects` | new `projects.json` (D-24) | 5 projects × `{id, title, label, description, tech, icon, href, badges}` | List the five projects with their status badge. Entry point to the detail screen; no editing here. |
+| `/admin/projects/[id]` | one project **plus its case study** | the project record + case-study body, hero and inline screenshots | The seventh screen. Edits card fields and case-study prose together, matching the visitor path Work → project → case study. |
+| `/admin/site` | `site_config.json` | canonical category records (D-25) | Edit the category id / label / column count triples, and the reassignment path that rename and delete require. |
+
+**This replaces the legacy three-tab model** (`home` / `photography` / `dev`), a tab switcher
+in `AdminTopBar.tsx` driving one giant stateful `admin/page.tsx`. That model **had no home for
+case studies at all** — the `dev` tab edited the project *card* and nothing behind it, which
+is precisely the void D-24 fills and the reason the seventh route exists.
+
+**The form gets the whole content column.** D-07 chose a preview that toggles to full width
+rather than a split pane, so no route below reserves horizontal space for a preview. That is
+what makes `/admin/resume` viable: three experience entries with 11, 3 and 4 bullets, three
+skill groups and an education entry do not fit beside a live preview at any useful width. The
+preview follows the admin's current mode, so a nested-dark case never occurs.
+
+### Design-system composition per route
+
+Taken from `00-UI-SPEC.md` §Component Mapping — not re-derived here. Where the mapping is
+known-broken, the `00-FINDINGS.md` gap ID is named and the route stops at the gap.
+
+| Route | Primary DS composition | Gap |
+|-------|------------------------|-----|
+| `/admin` | `AppShell` · `Card` per entity group · `Badge` (draft / ready) · `RelativeTime` (last publish) · `Button` "Publish changes" · `EmptyState` · `ProgressBar` (photos mid-pipeline) | **G-5** (`StatusPill` stages are job-domain-locked), **G-8** (`AppShell` has no banner slot for the pipeline strip) |
+| `/admin/home` | `Field` + `TextInput` + `Textarea` · `Sortable` (peek order) · `Select` (CTA style) · focal-point crop picker | **G-1** (no crop picker exists in the design system) |
+| `/admin/photos` | `DataGrid` (list view) · `Sortable` / `SortableItem` + `onReorder` (grid view, D-22) · `FileInput variant="dropzone"` · `Chip` (category filter) · `Badge` (per-photo pipeline state) · `EmptyState` | **G-5**, **G-13** (`Sortable` moves by keyboard but announces nothing) |
+| `/admin/resume` | `Field` set · `RichText` bullets (D-21) · `Sortable` (bullet order) · `FileInput variant="button"` (PDF, D-26) · `AlertBanner tone="warning"` (PDF drift) | **G-3** (`RichText` marks cannot be restricted), **G-4** (`RichText` has no segment output) |
+| `/admin/projects` | `DataGrid` or `Card` list · `Badge` (Live / Maintained / Archived, D-45) · `EmptyState` | **G-5** |
+| `/admin/projects/[id]` | `Field` set (card fields) · `RichText` (case-study body) · `FileInput` (hero + screenshots, D-42) · `Tabs` (card ⇄ case study) | **G-3**, **G-4** |
+| `/admin/site` | `Table` or `DataGrid` · `InlineEdit` (label) · `NumberStepper` (column count) · `ConfirmDialog` + `Select` (delete-with-reassignment) | — |
+
+The cross-cutting surfaces that are not routes but are unavoidably screens carry two more
+gaps: **G-6** (`FormErrorSummary` takes `errors: string[]` with no anchor, so D-18's
+deep-link from the publish-block summary to the offending screen is impossible as shipped)
+and **G-7** (D-16's per-file conflict diff — *"the most substantial single screen in the
+admin"* — has zero design-system coverage). Both are recorded, neither is worked around.
+
+---
+
+## Field catalog
+
+### The thirteen `Selection` variants, each with a destination
+
+The legacy `PropertiesPanel.tsx` is 937 lines and switches on a 13-variant tagged union. Every
+variant is mapped below, so none is orphaned by the route split.
+
+| `Selection` variant | Legacy panel title | New route | Note |
+|---------------------|--------------------|-----------|------|
+| `none` | Actions | `/admin` | The legacy "Actions" rail was tab-conditional — three different bodies behind one variant. It dissolves into the dashboard (D-06) plus per-route toolbars. |
+| `photo` | Photo | `/admin/photos` | Includes the EXIF sub-form (below). |
+| `role` | Experience | `/admin/resume` | Company / Role / Location / Period / URL + Bullets. |
+| `project` | Project | `/admin/projects/[id]` | The list at `/admin/projects` opens it; editing happens on the detail route. |
+| `skillGroup` | Skill Group | `/admin/resume` | |
+| `education` | Education | `/admin/resume` | |
+| `homeTitle` | Site Title | `/admin/home` | |
+| `homeSubtitle` | Tagline | `/admin/home` | |
+| `homeIntro` | Intro Text | `/admin/home` | |
+| `homeGallery` | Gallery Photo *N* | `/admin/home` | Carries "Position (drag to adjust)" — the G-1 surface. |
+| `homeSocial` | Social Links | `/admin/home` | |
+| `homeCta` | Button | `/admin/home` | |
+| `resume` | Resume | `/admin/resume` | PDF download link + Upload New Resume. |
+
+**No variant maps to `/admin/site`.** That is the finding, not an omission: `site_config.json`
+had no editor at all in the legacy admin — its `categoryColumns` map was hand-edited in the
+repo. D-25 gives it a screen for the first time, which is also why the drift below was free to
+develop unnoticed.
+
+### Completeness check — the legacy control counts
+
+`PropertiesPanel.tsx` renders **33 `<input>` + 4 `<select>` + 2 `<textarea>` = 39 form
+controls**, and **34 `<button>`**. Those two numbers are the port's completeness test: the
+seven routes together must account for all **39** controls, and the **34** buttons are the
+inventory of actions the admin can take. A route set that lands at 30 controls has silently
+dropped something.
+
+### Every recovered field label, with a home
+
+Labels transcribed verbatim from the legacy panel. "DS composition target" is the design
+system pairing, not a component that has been verified to fit — where it is known not to fit,
+the gap ID is named.
+
+| Field label | Legacy variant | Route | DS composition target |
+|-------------|----------------|-------|-----------------------|
+| Site Title | `homeTitle` | `/admin/home` | `Field` + `TextInput` |
+| Tagline | `homeSubtitle` | `/admin/home` | `Field` + `TextInput` |
+| Subtitle | `homeSubtitle` | `/admin/home` | `Field` + `TextInput` (the field inside the Tagline panel) |
+| Intro Text | `homeIntro` | `/admin/home` | section heading |
+| Introduction | `homeIntro` | `/admin/home` | `Field` + `Textarea` |
+| Social Links | `homeSocial` | `/admin/home` | repeated row group; `Sortable` if order becomes editable |
+| Icon | `homeSocial` | `/admin/home` | `Field` + `Select` (fixed icon set) |
+| URL | `homeSocial`, `role` | `/admin/home`, `/admin/resume` | `Field` + `TextInput` |
+| Button — Text | `homeCta` | `/admin/home` | `Field` + `TextInput` |
+| Button — Link URL | `homeCta` | `/admin/home` | `Field` + `TextInput` |
+| Button — Style | `homeCta` | `/admin/home` | `Field` + `Select` (primary / secondary) |
+| Add Photo to Gallery | `none` (home tab) | `/admin/home` | `Modal` + `Card` grid picker |
+| Replace with | `homeGallery` | `/admin/home` | `Modal` + `Card` grid picker |
+| Photo — Title | `photo` | `/admin/photos` | `Field` + `TextInput` |
+| Photo — Category | `photo` | `/admin/photos` | `Field` + `Select`, sourced from the canonical category records (D-25) |
+| Photo — Tags | `photo` | `/admin/photos` | **dropped** — see below |
+| Photo — Order | `photo` | `/admin/photos` | `Sortable` / `SortableItem` + `onReorder`; **G-13** |
+| Photo — Position | `homeGallery` | `/admin/home` | focal-point crop picker; **G-1** |
+| Camera | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
+| Lens | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
+| Aperture | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
+| Shutter | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
+| ISO | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` (numeric in the manifest) |
+| Focal Length | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
+| Company | `role` | `/admin/resume` | `Field` + `TextInput` |
+| Role | `role` | `/admin/resume` | `Field` + `TextInput` |
+| Period | `role`, `education` | `/admin/resume` | `Field` + `TextInput` — **see schema decision 5** |
+| Location | `role` | `/admin/resume` | `Field` + `TextInput` |
+| Bullets | `role` | `/admin/resume` | `RichText` (bold-only, D-21) + `Sortable`; **G-3, G-4, G-13** |
+| Project — Name | `project` | `/admin/projects/[id]` | `Field` + `TextInput` |
+| Project — Label | `project` | `/admin/projects/[id]` | `Field` + `TextInput` (+ icon `Select`) |
+| Project — Description | `project` | `/admin/projects/[id]` | `Field` + `Textarea` |
+| Project — Tech Stack | `project` | `/admin/projects/[id]` | `Chip` set with an add-on-Enter input |
+| Project — Link | `project` | `/admin/projects/[id]` | `Field` + `TextInput` |
+| Project — Store Links | `project` | `/admin/projects/[id]` | repeated `Select` + `TextInput` rows; becomes D-45's status `Badge` set |
+| Skill Group | `skillGroup` | `/admin/resume` | `Field` + `TextInput` |
+| Skills | `skillGroup` | `/admin/resume` | `Chip` set with an add-on-Enter input |
+| School | `education` | `/admin/resume` | `Field` + `TextInput` |
+| Degree | `education` | `/admin/resume` | `Field` + `TextInput` |
+| CGPA | `education` | `/admin/resume` | `Field` + `TextInput` |
+| Leadership | `education` | `/admin/resume` | `Chip` set with an add-on-Enter input |
+| Resume PDF | `none` (dev tab), `resume` | `/admin/resume` | current-file link + `AlertBanner tone="warning"` on drift (D-26) |
+| Upload New Resume | `resume` | `/admin/resume` | `FileInput variant="button"` |
+| Actions | `none` | `/admin` + per-route toolbars | dissolved; see the variant table above |
+
+**Two labels differ between the recovered list and the rendered source, verified this
+session.** The project title field renders as `Title`, not `Name`; the CTA link field renders
+as `Link`, not `Link URL`. Both are recorded so the port does not chase a label that was never
+on screen.
+
+**`Photo — Tags` is dropped on purpose, not lost.** PROJECT.md lists it under Out of Scope and
+the manifest confirms why: **0 of 39 photos carry a tag**. It is named here so the drop is a
+decision with evidence attached rather than a field that quietly failed to appear in a
+wireframe.
+
+### The EXIF sub-form — six fields, and an omission rule
+
+Camera, Lens, Aperture, Shutter, ISO, Focal Length are one collapsible group behind an
+"Edit EXIF Data" disclosure, exactly as the legacy panel had them.
+
+**Missing fields are OMITTED ENTIRELY — never rendered as an em dash.** A `—` beside `f/11`
+reads as a data bug, not as an absence. The gaps are field-level, not photo-level, and the
+manifest proves both shapes exist:
+
+- **`product-peppers`** carries no EXIF at all — the whole group is absent.
+- **`architecture-redbuilding`** has **camera only** — one field present, five absent.
+
+The admin editor must therefore render an empty EXIF field as empty and editable, while the
+public lightbox renders nothing at all for it. Same data, two different treatments, and the
+rule has to be written down or the public page will grow a row of em dashes.
+
+---
+
+## Schema decisions this IA forces
+
+Five schema questions become unavoidable once the seven routes exist. Each is **resolved in
+writing below with a chosen shape** — none is left as a Phase 3 or Phase 7 discovery, because
+"we will find out when we get there" is the failure mode this section exists to prevent.
+
+1. `projects` extracted from `resume.json` into `projects.json` (D-24)
+2. Résumé bullets become structured segments (D-20)
+3. A per-category photo order field (D-22)
+4. Canonical category records (D-25)
+5. The résumé date-shape drift — `startMonth`/`startYear`/… versus a single `period` string
+
+### 1. `projects` moves out of `resume.json` into `projects.json` (D-24)
+
+**Chosen shape.** A top-level `projects.json` array, each record carrying
+`id, title, label, description, tech, icon, href, badges`. `resume.json` keeps `experience`,
+`skills` and `education` and loses its `projects` key.
+
+**Reason.** A project owns its case study, and a case-study body has no business living inside
+the résumé document. The split is what makes `/admin/projects/[id]` a route rather than a
+modal bolted onto the résumé screen.
+
+`badges` is **already an array of objects** — Cairn carries
+`{label: "Live", href: "https://cairn.co.in", icon: "arrow-up-right"}` today, and the other
+four carry store and GitHub links in the same shape. D-45 extends that field to the
+Live / Maintained / Archived status set, so the status work is an extension of an existing
+array, not a new column. Nothing about the migration is speculative: five records move
+verbatim.
+
+### 2. Résumé bullets become structured segments (D-20)
+
+**Chosen shape.** A bullet is an array of segments — `{text}` for plain runs and
+`{text, emphasis: true}` for emphasised runs — rendered as React elements.
+
+**Reason.** **No HTML string exists anywhere in the shape.** The legacy stored-XSS class
+(`Timeline.tsx:48` plus three admin components rendering bullets through
+`dangerouslySetInnerHTML` with no sanitiser in the repo) is *designed out* rather than
+filtered. A filter can be bypassed or forgotten; a shape that cannot express markup cannot
+carry an injection.
+
+**The migration is narrow, and measured.** Scanning all 18 bullets across the three experience
+entries, the only markup present is `<strong>` / `</strong>` — no anchors, no italics, no
+spans. So the converter has exactly one tag to handle and the emphasis flag is the only mark
+the shape needs.
+
+This is why **G-3** and **G-4** are load-bearing rather than cosmetic: `RichText` cannot
+restrict its marks (⌘I / ⌘U / ⌘K stay live regardless of the toolbar) and cannot emit
+segments (`outputFormat` is `"html" | "json"`). A bold-only segment serializer over today's
+`RichText` would silently drop an italic run on save — data loss, not a styling miss. Both are
+findings against the design system; neither is worked around here.
+
+### 3. A per-category photo order field (D-22)
+
+**Chosen shape.** Photos keep the existing global `order` integer and gain a second
+per-category order field. The per-category value **wins when a category filter is active**;
+the global value governs the unfiltered gallery and the Home peek strip.
+
+**Reason.** One ordering cannot serve both views. The 39 photos are unevenly distributed —
+architecture 14, nature 8, wildlife 5, abstract 4, street 4, portraits 2, product 2 — so a
+global order that reads well end-to-end scatters each category's best frames arbitrarily
+within its own filtered view.
+
+**Consequence for `/admin/photos`:** the grid view's reorder affordance is *modal on the
+active filter*. Reordering with "All" selected writes the global field; reordering inside a
+category writes that category's field. The screen must say which one it is writing, or the
+operator will believe a reorder was lost.
+
+### 4. Canonical category records (D-25)
+
+**Chosen shape.** A category is a record — `{ id (lowercase), label (display), columns }` —
+edited on `/admin/site`. Photos reference `id`. Display code reads `label`. Column counts read
+`columns`.
+
+**The drift, cited at its origin.** `data/portfolio_images.json` stores the category value
+`architecture` (lowercase). `data/site_config.json`'s `categoryColumns` map keys the same
+category as `Architecture` (Title-case). Two files, one concept, two spellings — and nothing
+reconciles them except a render-time transform: the legacy `PropertiesPanel` Title-cased on
+the fly with `c.charAt(0).toUpperCase() + c.slice(1)` to populate the category `<select>`.
+
+**Why the record shape kills it.** Making display and key *different fields* removes the
+transform entirely. The `categoryColumns` map's keys stop being a display string that happens
+to be a key, and become an explicit `id` with an explicit `label` beside it. A transform that
+does not exist cannot disagree with the data.
+
+**Rename and delete need a designed reassignment path.** Renaming a label must not touch `id`
+(otherwise 14 photos lose their category). Deleting a category must ask where its photos go —
+`ConfirmDialog` + `Select`, stating the count plainly: *"12 photos use this."* This is the one
+place on `/admin/site` where a confirm is not ceremonial.
+
+### 5. The résumé date-shape drift — resolved, not discovered
+
+**The drift.** `src/types.ts` on the legacy branch documents it in a header comment: the admin
+"splits experience dates into `startMonth`/`startYear`/… while `resume.json` stores a single
+`period` string." The legacy admin's local `ExperienceEntry` carried **both** —
+`startMonth`, `startYear`, `endMonth`, `endYear`, `isPresent` **and** `period` — which is the
+actual defect. Two representations of one fact, with nothing keeping them in agreement.
+
+**Chosen shape: the structured fields win, and `period` stops being stored.** Experience and
+education entries carry `startMonth`, `startYear`, `endMonth`, `endYear`, `isPresent`. The
+`period` string is **derived at render time by a single formatter** and never persisted.
+
+**Reason.** The fact being edited is a date range; a free-text string is a lossy encoding of it
+that also invites format drift across entries (dash character, month abbreviation, casing).
+Deriving the string gives exactly one source of truth — which is the same failure mode as
+decision 4, in a different file. Choosing `period` instead would keep the display string
+authoritative and leave "is this role current?" un-modelled, which the résumé and Work pages
+both need.
+
+**Consequence for the résumé screen's field set.** The single `Period` `TextInput` in the
+recovered catalog becomes a date-range control: two `Select`s (month), two year inputs, and a
+`Checkbox` "Present" that disables the end pair. Net **+4 controls per experience entry and
+per education entry** against the recovered count. The formatter's acceptance test is exact
+reproduction of the four strings on disk today — `Jul 2023 – Present`, `Nov 2022 – Jun 2023`,
+`Dec 2021 – Nov 2022`, `Jul 2018 – Jun 2022` — with the en dash and the three-letter month, so
+the public page does not visibly change on migration.
+
+---
+
+## What is deliberately not ported
+
+### Seven dead legacy admin components — no wireframe may be drawn from any of them
+
+Verified by `git grep` across `legacy/nextjs-portfolio`: **zero import sites** outside their
+own definitions.
+
+- `PhotoGrid.tsx`
+- `PhotoEditModal.tsx`
+- `PreviewPanel.tsx`
+- `ExperienceEditor.tsx`
+- `EducationEditor.tsx`
+- `ProjectEditor.tsx`
+- `SkillsEditor.tsx`
+
+(`PreviewPanel` appears once more, in a comment at `src/app/admin/page.tsx:158`.) They are a
+superseded grid + modal + split-preview design that the inline WYSIWYG replaced. Sketching
+from them would reconstruct an editor the legacy app itself abandoned.
+
+**The detail worth keeping.** The dead `PreviewPanel` was a **split** preview. D-07
+independently chose a **full-width toggle**. The legacy code already tried the split pane and
+dropped it — which turns D-07 from a preference into a decision with a precedent behind it.
+
+### The five wired components are the only admin analogs
+
+`PropertiesPanel.tsx` (937 lines, the field catalog), `DraggableMasonry.tsx`,
+`PhotoUploadZone.tsx`, `AdminTopBar.tsx`, `DeployButton.tsx`.
+
+Two of them are analogs for what to *fix*, not what to copy:
+
+- **`DeployButton.tsx`** detects change by `JSON.stringify(current) !== JSON.stringify(initial)`
+  per file, and sends `baseSha: "latest"` — which disables the optimistic-concurrency guard
+  that `/api/deploy` implements. D-10's server-side draft row, storing the blob SHA it was
+  based on *at save time*, is the root-cause fix; the conflict screen (D-16) is where a real
+  409 surfaces.
+- **`PropertiesPanel.tsx`** already implements a focal-point control ("Position (drag to
+  adjust)") as a mouse-drag pan with an inverted delta and a clamped `objectPosition`. It is
+  mouse-only, keyboard-inaccessible and touch-unaware — useful twice: as the interaction
+  precedent for D-23, and as the evidence that D-09's desktop-only refusal is honest rather
+  than a cop-out.
+
+The WYSIWYG shell around `PropertiesPanel` is discarded (PROJECT.md, Out of Scope). The field
+inventory it represents is not — that inventory is this document.
+
+---
+
+## States and where each actually lives
+
+D-03 requires the admin's states to be designed **exhaustively** — empty, loading, error,
+dirty, conflict, success. D-13 layers a draft / ready / published axis on top, and D-09 wants
+a second layout for every screen. Multiplied out that is a number nobody can build or review.
+
+**The naive product, stated plainly:** 7 screens × 6 states × 2 layouts = **84**, plus the
+cross-cutting surfaces that are not routes but are unavoidably screens — publish confirm in
+valid and invalid variants (D-14, D-18), the per-file conflict diff (D-16), per-screen and
+global discard confirms (D-17), the 401 re-auth prompt (D-19), the pipeline status strip
+(D-15), the category-reassignment dialog (D-25) and the "open on desktop" refusal (D-09) —
+roughly 12 more surfaces × ~2 states × 2 layouts ≈ 24. **Total ≈ 108 artefacts**, before a
+single line of case-study or Work/Photos work.
+
+**The reduction, and why it does not weaken D-03.** D-03's promise is *"nothing is left for
+Phase 7 to invent."* That promise is kept by an **explicit, complete coverage matrix** — not
+by rendering every cell. Most of the six states do not live at screen scope at all:
+
+| State | The scope it genuinely lives at | Artefacts |
+|-------|----------------------------------|----------:|
+| `loading` | App shell + list-level skeleton — two treatments, not seven | **2** |
+| `conflict` | One dedicated screen (D-16), reached from publish | **1** |
+| `success` | A publish outcome — dashboard confirmation + status strip | **2** |
+| `error` | Three genuinely different treatments: inline field warning under the lenient draft (D-18), the publish-block error summary (D-18), and network / 401 (D-19) | **3** |
+| `dirty` | One badge pattern applied everywhere D-13 requires it — screen, sidebar, dashboard | **1** |
+| `empty` | **The only genuinely per-screen state** — dashboard, photos, projects and a résumé section each mean something different | **4–5** |
+
+**What that buys.** ≈ 20 desktop sketches (seven populated screens, ~5 meaningful empty
+states, ~8 state treatments each applied to its most demanding host screen), ≈ 6 phone
+sketches (D-09 permits exactly four capabilities and requires two refusals — not a 7×
+multiplier), and ≈ 9 overlays and dialogs. **≈ 35 sketches**, down from ≈ 108, with no cell
+left undeclared.
+
+**The contract that makes the reduction checkable.** The contact sheet carries a
+7 screens × 6 states = **42-cell** coverage table in which every cell is exactly one of
+`designed` (with an artefact ID), `inherits: T-n` (with the treatment ID), or
+`n/a: <reason>` (with a one-clause reason). **A blank cell fails review.** That single rule is
+what converts "exhaustively" from an aspiration into a property a reviewer can check by
+inspection — and it is why 35 sketches satisfy D-03 while 108 would merely exhaust everyone.
+
+---
+
+## Artefact inventory
+
+These IDs are **a contract**. Plans 09 through 16 may add IDs; they may not silently rename
+one. Findings, review comments and the coverage table all cite these, so a review comment
+survives `.playground/`'s deletion. The one-line note states **what each artefact proves**,
+not what it shows — a sketch that only shows something is not evidence.
+
+### Screens — `S-` (7)
+
+| ID | What it proves |
+|----|----------------|
+| `S-dashboard` | That pending changes grouped by entity are legible at a glance, so pending state has a permanent home instead of living inside a modal (D-06). |
+| `S-home` | That six peek slots plus a focal position fit one full-width column with no split pane (D-07), and that the missing crop picker (G-1) is a real blocker rather than a nicety. |
+| `S-photos` | That 39 real photos survive `DataGrid` at compact density with a legible row height, and that both ordering fields (D-22) can be expressed without ambiguity. |
+| `S-resume` | That an 11-bullet experience entry plus two shorter ones, three skill groups and an education entry are workable full-width — the case that decided D-07. |
+| `S-projects` | That five records with a status badge are a list, not a grid, and that D-45's three statuses are distinguishable at badge size. |
+| `S-project-detail` | That a card record and a long-form case study can be authored on one route without either reading as an afterthought of the other (D-24). |
+| `S-site` | That the category triple is editable in place and that `id` and `label` are visibly *different* fields — the whole point of decision 4. |
+
+### Empty states — `E-` (5)
+
+| ID | What it proves |
+|----|----------------|
+| `E-dashboard` | That "nothing pending" reads as a finished state rather than a broken one — the state this screen is in most of the time. |
+| `E-photos` | That a gallery with nothing in it still leads with the upload affordance instead of an empty grid. |
+| `E-projects` | That the projects list can be empty at all, and says what to do about it rather than just noting the absence. |
+| `E-resume-section` | That an empty *section* inside an otherwise populated screen is distinguishable from a section still loading. |
+| `E-category-filtered` | That an empty *filter result* is distinguishable from an empty dataset — the confusion that makes an operator think the filter is broken. |
+
+### Treatments — `T-` (8)
+
+| ID | What it proves |
+|----|----------------|
+| `T-loading-shell` | That the shell paints before data arrives, so navigation never blanks the window. |
+| `T-loading-list` | That a list skeleton reserves the right height, so nothing jumps when the data lands. |
+| `T-dirty-badge` | That `dirty` is legible in all three places D-13 requires it: the screen, the sidebar badge, and the dashboard. |
+| `T-ready-badge` | That `ready` is distinguishable from `draft` at badge size — the D-13 distinction a single "unsaved" dot would collapse. |
+| `T-error-inline` | That the lenient-draft warning (D-18) reads as *incomplete*, not as *rejected*. |
+| `T-error-publish` | That the strict-publish block lists its failures and points at them — the surface `FormErrorSummary` cannot currently deep-link from (G-6). |
+| `T-error-network` | That a transport failure is distinguishable from a validation failure, so the operator retries instead of editing. |
+| `T-success-published` | That publish confirmation stays honest across the asynchronous photo half (D-12) — "committed" is not "processed". |
+
+### Overlays — `O-` (9)
+
+| ID | What it proves |
+|----|----------------|
+| `O-publish-valid` | That the confirm modal states exactly what is about to ship before it ships (D-14). |
+| `O-publish-invalid` | That the invalid case is a designed state with a route to the fix, not a greyed-out button (D-18). |
+| `O-discard-screen` | That per-screen discard returns to *published* state, never to an empty form — the D-11 rule made visible. |
+| `O-discard-all` | That the global discard is guarded harder than the per-screen one, via `TypeToConfirm` (D-17). |
+| `O-conflict-diff` | That one conflicted file can be resolved without abandoning an unrelated edit (D-16) — the largest single admin surface, and the one with zero design-system coverage (G-7). |
+| `O-reauth-401` | That an expired session denies and re-authenticates with on-screen state preserved and the save retried in place (D-19) — and **never** depicts a bypass or a client-held credential. |
+| `O-category-reassign` | That rename and delete carry a real reassignment path stating the blast radius: "12 photos use this" (D-25). |
+| `O-pipeline-strip` | That pipeline status survives navigation and agrees with the per-photo tile — the two places D-15 requires to match; needs G-8. |
+| `O-phone-sidebar` | That the sidebar collapses to a `Sheet` without dropping any of the seven routes (D-09). |
+
+### Phone — `P-` (4)
+
+| ID | What it proves |
+|----|----------------|
+| `P-dashboard` | That reviewing pending changes on a phone is a complete task, not a teaser that ends in "open on desktop". |
+| `P-text-edit` | That fixing a typo on a phone actually reaches the field, at the comfortable density's 44px touch floor. |
+| `P-photo-reorder` | That reordering by touch works — the D-09 capability most likely to be quietly dropped. |
+| `P-publish` | That publish is reachable from a phone, which is the entire reason D-09 exists. |
+
+### Refusals — `R-` (2)
+
+| ID | What it proves |
+|----|----------------|
+| `R-crop-picker` | That the desktop-only refusal reads as honest rather than broken — justified by the legacy control being mouse-only and touch-unaware (G-1). |
+| `R-case-study-authoring` | That long-form authoring refuses on a phone *with a reason*, instead of shipping an editor that fails on contact. |
+
+### Public — `X-` (5)
+
+| ID | What it proves |
+|----|----------------|
+| `X-work` | That the two-band Work page (D-44) survives the ivory → charcoal resolution without losing its employment/projects distinction. |
+| `X-photos` | That the category filter row works as real anchors with `aria-current`, not a radiogroup (G-9), and still ships zero framework JS. |
+| `X-case-long` | That the long case-study template holds real drafted prose at real length (D-39, D-40) rather than at placeholder length. |
+| `X-case-short` | That the short template is genuinely a different template, not the long one truncated. |
+| `X-contact-sheet` | The review convention itself: 42 cells, none blank, with the measurement readout on the same page as the design. |

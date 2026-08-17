@@ -20,6 +20,12 @@ appended:
     date: 2026-08-17
     section: Case-study templates
     artefacts: [X-case-long, X-case-short]
+  - plan: none — OFF-PLAN, by direct user direction
+    date: 2026-08-17
+    section: Responsive direction
+    artefacts: []
+    supersedes: [D-39]
+    companion: 00-RESPONSIVE-CONTRACT.md
 ---
 
 # Public design notes — the ivory→charcoal resolution, OQ-1, and the case-study templates
@@ -728,3 +734,223 @@ engineering case study" and Pattern 4, `00-COPY/case-*.md` and `00-COPY/one-line
 `design_handoff_portfolio/Resume.dc.html`, and the six resolutions above. Every word count and
 marker count quoted was produced at build time by `src/lib/copy.mjs` reading the committed
 drafts in place; every contrast ratio quoted was computed in plan 04 by `check-contrast.mjs`.*
+
+---
+---
+
+## Responsive direction
+
+*Appended OFF-PLAN, by direct user direction, 2026-08-17. There is no PLAN.md for this work.
+Technical companion: `00-RESPONSIVE-CONTRACT.md`, which carries the six-class matrix, the
+mode and density resolution, and the full-viewport scroll constraints. **This section records
+the direction and its consequences; that document specifies the behaviour.***
+
+Everything above this line was written when the public design had **one viewport** (1440) and
+**two case-study tiers**. Neither is true any more. This section is the record of what
+changed, in the user's own terms, and of what it invalidates — recorded plainly, because the
+temptation with a mid-phase direction change is to soften the consequences and let a later
+phase discover them.
+
+---
+
+### The direction, as given
+
+Two messages, and one approved decision prompt.
+
+**Message 1:**
+
+> *"I don't need long cases. Even short ones are very long. Also, one page per case, not a
+> long scroll. On homepage, have a single scroll, to scroll to work + resume section. make it
+> fit for all screen types, mobile, tab, foldable, laptop, etc"*
+
+**Message 2**, clarifying after *"one page per case"* was initially misread as a no-scroll
+length constraint:
+
+> *"cases can scroll, but one page per case, not like scroll to 10 cases in single page
+> scrolling down"*
+>
+> *"the sections for photos, work, resume as they exist on home right now stay as is. pages
+> for work/resume/photos stay as is too. just the homepage landing shows the photos section
+> and prompts user to scroll. as scrolled, the photo section moves fully up and only
+> work+resume sections are visible in the view"*
+
+**And, via a decision prompt, approved explicitly:** the sequencing —
+*"Responsive spec, then admin, then public rework"* — and the six-class device matrix **"as
+proposed", including the folded cover screen**.
+
+### What it means, confirmed with the user
+
+Five readings, because four of the five could have gone the other way and one of them already
+did.
+
+1. **"One page per case" is about ROUTING, not length.** One dedicated route per case study
+   instead of five stacked on one scrolling page. **Cases may scroll internally.** This was
+   misread once already, which is why it is stated first and stated twice.
+2. **Case copy must still get materially shorter.** "Even short ones are very long" is a
+   separate complaint from the routing one, and it is about the *short* tier — so the target
+   is below the current short tier, not between the two.
+3. **The long/short tiering is DROPPED. One tier.**
+4. **Nothing collapses.** Home keeps its photos, work and résumé sections. `/work`,
+   `/resume` and `/photos` all survive as their own pages. **No route is removed.** The only
+   route change is additive: five case routes replace two tier routes.
+5. **Responsive across mobile, tablet, foldable and laptop is now a hard requirement**, not
+   a nicety and not a Phase 5 concern.
+
+### What it supersedes
+
+> **D-39 is superseded.** *"Case studies are tiered by depth — a long form for the design
+> system and Cairn, a short form for hued, Momentum and TimeShift. Two templates to design
+> and sketch."* **One tier now. One template.**
+
+The tiering argument recorded above under §Case-study templates was not wrong on its own
+terms — the two studies D-39 gave the long form really are the only two with a
+rationale-carrying decisions record, and that really is why they landed at ~1,700 words
+without padding. **It is superseded because the user does not want a 1,700-word case study at
+all**, which removes the thing the split was distributing. The observation survives as an
+observation about the source material; it stops being a structural decision.
+
+**What survives of §Case-study templates, and it is most of it:** the build-time loader, the
+68ch measure and its derivation, the 200px rail, `case.css`, the three non-final-content
+treatments and their strip-vs-fill split, the gap-block `--wire` rule, the D-41 asset plan,
+the `## Decision` / `## Decisions` heading trap and its fail-loud throw, and the tier-mismatch
+negative controls. **What does not survive: the two-tier split and the two stacked routes.**
+
+### The new Home landing behaviour
+
+Home gains a **two-state, full-viewport** landing that did not exist in any prior document,
+in the handoff, or in `X-home-act2`:
+
+- The **photos section fills the landing view** and prompts the user to scroll.
+- On scroll it **moves fully up and out**, leaving the **work + résumé** sections in the view.
+
+`00-RESPONSIVE-CONTRACT.md` §5 specifies it: a plain document scroll with the photos section
+at `min-height: 100svh` and the prompt as a real `<a href="#work">`, zero JavaScript, with
+`scroll-snap` adopted only as a `proximity` enhancement inside
+`prefers-reduced-motion: no-preference` and never load-bearing.
+
+**One reading of the direction cannot hold, and it is recorded rather than quietly resolved.**
+*"Only work+resume sections are visible in the view"*, read strictly, asks both sections to
+fit one viewport. At **five projects** (D-38) plus a résumé section that is unachievable at
+every one of the six classes — including 1440 × 900. It also collides directly with the same
+message's *"the sections … stay as is."* The resolution taken: **"photos moves fully up" is
+exact and enforceable; "only work + résumé visible" describes what fills the view at the end
+of the transition, not a promise that the whole block fits it.** The block continues below the
+fold at all six classes. The content constraint won because it was stated more emphatically
+and because it protects content. **Flagged for the user** as R-2 in the contract's
+confirm-or-override table — if the strict reading is the intended one, Home's content has to
+shrink, and that is a content decision this work was not authorised to take.
+
+### What this invalidates
+
+Six items. None of them is soft.
+
+**1 — `X-home-act2` (plan 00-09) does not implement the new landing behaviour.** It resolved
+OQ-1 — five projects into the handoff's approved 2 × 2 grid, via a full-width design-system
+flagship row — and that resolution **stands**. But its Act 1 is deliberately *outlined, not
+designed* (Act 1 was PUB-01's, in Phase 5), and the two-state full-viewport landing is
+precisely an Act-1-into-Act-2 transition. **The sketch has no scroll behaviour to inspect.**
+OQ-1 stays closed; the landing is new work.
+
+**2 — Plan 00-10's two templates are obsolete as built.** It built `/case/long` (design system
++ Cairn) and `/case/short` (hued, Momentum, TimeShift), **each rendering every study of its
+tier through one template on ONE page.** That stacked arrangement is exactly what the user
+rejected. The template work is **not wasted** — the loader, the 68ch measure, the
+tier-mismatch negative controls and the `## Decision` vs `## Decisions` handling are all
+reusable — **but the routing and the two-tier split are not.**
+
+*And the collapse re-opens a bug plan 00-10 had already closed.* The five committed drafts on
+disk still spell the middle heading **two different ways**. A single template assuming one
+spelling silently drops a section from three of the five studies **and still renders a page**
+— which is why the previous loader threw. The single template must accept either spelling and
+still throw on neither, or the drafts must be normalised during the compression pass.
+
+**3 — All five drafts need compressing.** **7,011 words whole-file** (Cairn 2,005 · design
+system 1,943 · Momentum 1,197 · TimeShift 943 · hued 923); **5,686** over the four required
+sections only, which is the figure plan 00-10 measured. The 1,325-word delta is the leads and
+drafting comments. Both counts are recorded because quoting either one alone against the other
+looks like an arithmetic error. Proposed target: **500–700 words** over the four required
+sections, one tier — below the current *short* tier, because that is what "even short ones are
+very long" says. Flagged as R-1.
+
+**4 — Plan 00-17's screenshot contract multiplies.** It assumes 1440 and 390; its filename
+regex hardcodes `(1440|390)` and its gate asserts `≥ 35` files. Six classes takes the record
+from **≈ 49 files to ≈ 84**, and three of its automated assertions have to be rewritten. Six
+classes is deliberately **not** a 6× multiplier — the contract's §9 states which artefact
+classes get all six and which do not, and why. The mode rules are untouched: admin light,
+public dark, and the assertion that no admin artefact was captured in dark mode survives
+verbatim.
+
+**5 — Plan 00-11 remains OPEN, and should re-run against the reworked sketches.** Its three
+by-eye judgements are unanswered: the **44px vs 52px** Playfair page header (G-11), the
+**22px `--ochre-d-strong`** cross-link and its stated 24px fallback, and the **1080px** Brevo
+employment-band cap inside a 1280px page. All three require a human eye that no script can
+substitute for, and all three sit on artefacts that are about to change. **It is not marked
+complete and no `00-11-SUMMARY.md` exists.** Re-running it after the rework is cheaper than
+answering it twice.
+
+**6 — The admin sketches (00-12 → 00-16) have not been built, and must be built to this
+contract natively.** That is the entire reason the contract was written before them, and it is
+the sequencing the user approved. One question has to be answered first: **`AppShell` has no
+stated responsive posture** — UI-SPEC assigns `Sheet side="left"` for the phone sidebar (D-09)
+but nothing says at what width the switch happens, or whether `AppShell` or the consumer
+decides. At the foldable-unfolded (673–884) and tablet-portrait (768–834) classes, both
+**coarse pointer**, is it a sidebar or a Sheet? A 240px `--ds-sidebar-w` inside 777px of
+content is 31% of the screen. Answer it before sketching, not twice.
+
+### The finding the matrix forces, and why it belongs here
+
+The matrix produced one result worth reading even by someone who never opens the contract:
+
+> **Width alone cannot decide density.** A 1024px tablet in landscape (coarse pointer) and a
+> 1024px laptop window (fine pointer) need **different densities at the same width**. UI-SPEC
+> states its second density invariant as a *breakpoint* rule and deferred the mechanism to
+> Phase 06.1; with six classes the breakpoint form is provably insufficient, so the mechanism
+> is promoted to a **Phase 0 requirement** and resolved by **`pointer: fine`** — never
+> `any-pointer: fine`, which returns the wrong answer for a tablet with a trackpad keyboard
+> attached.
+
+UI-SPEC's three-row viewport table is **unchanged by this**: 1440 is a fine pointer and 390 is
+a coarse pointer, so its existing rows are a correct special case of the new rule. Admin stays
+light, public stays dark, phone stays `comfortable`, desktop stays `compact`.
+
+The same shape of derivation appears a second time, in the Home landing: at a **short**
+viewport the peek gallery needs *more* columns, not fewer, because fewer columns means more
+rows means taller. So **width alone decides neither the density nor the full-viewport
+composition** — which is the through-line of the whole contract.
+
+### Design-system consequences
+
+**No new row is added to `00-FINDINGS.md`.** That file states its own rule — *"Rows are **not**
+added or re-litigated by a measurement plan — a plan that finds something outside the sixteen
+records it in its own SUMMARY instead, so the tier-pull contract keeps a fixed denominator."*
+This work honours it: the one candidate new gap (`AppShell` responsive posture, invalidation 6
+above) is recorded in `00-RESPONSIVE-SUMMARY.md`, and two acceptance clauses are attached to
+existing rows for whoever next opens them — **G-2** (density must gate on `pointer: fine`,
+never on width, never on `any-pointer`) and **G-9** (the proposed `FilterNav` must reach the
+44px hit area without growing its drawn geometry).
+
+**Three findings already recorded above bear directly on this work and are carried, not
+re-litigated:** the accent reaching no declarative accent (finding 5 — every `tone="accent"`
+renders the design system's `#fbbf24` on charcoal, at ~11:1, so no contrast check catches it);
+`Card` and `Chip` unable to express a boundary on charcoal dark (finding 6 / resolution 3);
+and a page being unable to recolour a design-system `Text`, only to tell it a tone
+(§Case-study templates, finding 1). All three pass every automated gate while being visibly
+wrong, which is the reason the by-eye review in plan 00-11 cannot be skipped — and the reason
+it must re-run rather than be closed on the strength of the old artefacts.
+
+**The 44px touch floor is now the common case, not the exception.** UI-SPEC states it for "a
+phone layout". Under the six-class matrix it binds on **five of six classes** — every coarse
+pointer. It is a floor on the **hit area**, not on the drawn control: a 9.5px mono filter pill
+keeps its geometry and reaches 44px through padding or a `::after` overlay. Read the other way
+it would grow every control into a slab and take the editorial identity with it.
+
+---
+
+*Phase 0 · off-plan, by direct user direction. Sources: the user's two messages and one
+approved decision prompt, quoted above; `00-RESPONSIVE-CONTRACT.md` (the technical companion,
+which carries every number); `00-UI-SPEC.md` §"Viewport and mode contract", §Density Contract,
+§"Screenshot record"; `00-CONTEXT.md` D-09/D-38/D-39/D-40; `00-FINDINGS.md` §"How to read this
+register"; `00-09-SUMMARY.md`, `00-10-SUMMARY.md`, `00-11-PLAN.md`, `00-17-PLAN.md`; and the
+nine resolutions, §OQ-1 and §Case-study templates above. The whole-file word counts are the
+user's; the four-required-sections counts are plan 00-10's build-time measurement. No contrast
+ratio in this section is new — every one is carried from plan 04's `check-contrast.mjs`.*

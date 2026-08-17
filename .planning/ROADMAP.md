@@ -122,7 +122,7 @@ Plans:
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 00-16-PLAN.md — Publish, discard and error overlays, the four phone capabilities, and the generated 42-cell coverage table
+- [x] 00-16-PLAN.md — Publish, discard and error overlays, the four phone capabilities, and the generated 42-cell coverage table
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 15/17 | In Progress|  |
+| 0. Design & Ideation | 16/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

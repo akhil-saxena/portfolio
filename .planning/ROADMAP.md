@@ -110,7 +110,7 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 00-13-PLAN.md — /admin/photos against all 39 real photos, and the Sortable reorder island
+- [x] 00-13-PLAN.md — /admin/photos against all 39 real photos, and the Sortable reorder island
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 12/17 | In Progress|  |
+| 0. Design & Ideation | 13/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

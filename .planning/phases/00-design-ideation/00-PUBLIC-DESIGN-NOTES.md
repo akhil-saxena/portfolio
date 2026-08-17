@@ -14,9 +14,15 @@ artefacts:
 supersedes: >
   design_handoff_portfolio/Work.dc.html and Photos.dc.html — the ivory iteration.
   The handoff's own note says to port them onto the dark palette; this records how.
+appended:
+  - plan: 10
+    requirement: DSGN-02
+    date: 2026-08-17
+    section: Case-study templates
+    artefacts: [X-case-long, X-case-short]
 ---
 
-# Public design notes — the ivory→charcoal resolution and OQ-1
+# Public design notes — the ivory→charcoal resolution, OQ-1, and the case-study templates
 
 `Work.dc.html` and `Photos.dc.html` are the handoff's earlier ivory iteration: 103 and 69
 lines of inline styles, hardcoded hex, not one class name. Every substitution in them is
@@ -386,3 +392,339 @@ a deliberate choice rather than an accident.
 `design_handoff_portfolio/{Work,Photos}.dc.html` and `README.md`, `data/*.json`. Every ratio
 quoted was computed in plan 04 by `check-contrast.mjs` and reproduces UI-SPEC to two decimal
 places; every ratio not from that set is marked where it appears.*
+
+---
+---
+
+## Case-study templates
+
+*Appended by plan 10 · DSGN-02 · artefacts `X-case-long` and `X-case-short`.*
+
+**No case-study page has ever existed in this repository.** Not on the legacy branch, not in
+the handoff, not in the design system — the handoff's own README says it contains no design
+for case-study pages at all. That void is why DSGN-02 exists, and it means there was nothing
+to port and nothing to recolour. The nearest structural cousin in the whole handoff is
+`Resume.dc.html`, the only long-scroll editorial page it drew, and the register the prose is
+written in is `../design-system/CHANGELOG.md`. Both are used below and both are named where
+they are used.
+
+Two templates, five studies, and **every word on both pages is the committed first-pass draft
+read in place at build time** — nothing is lorem, and nothing is a six-word stub standing in
+for a paragraph. That is DSGN-02's success criterion in the terms it is written in, and it is
+the whole reason D-40 required length-realistic drafts in the first place.
+
+---
+
+### Which study renders through which template, and why the split is not arbitrary
+
+| Study | Tier | Words | Sourced claims | Gap blocks |
+|-------|------|------:|---------------:|-----------:|
+| Design System | long | 1,699 | 18 | 1 |
+| Cairn | long | 1,764 | 22 | 1 |
+| Momentum | short | 822 | 6 | 1 |
+| TimeShift | short | 703 | 6 | 1 |
+| hued | short | 698 | 5 | 1 |
+
+Counted at build time over the four required sections of each draft; the leads and the
+drafting comments are excluded, because they are meta about the study rather than the study.
+Totals: **5,686 words and 57 provenance markers across the corpus.**
+
+**The tiering is a consequence of the evidence, not a ranking of the projects.** The two
+studies D-39 assigns the long form are *exactly* the two projects that have a `.planning/`
+directory, a rationale-carrying decisions record and a register of options not taken —
+`CHANGELOG.md` and `REMOVED.md`. Both already write in the register RESEARCH names as the one
+reliable tell of a case study done well: *state the option not taken and what it would have
+cost.* Drafting them was selection and compression rather than authoring, and both landed at
+roughly 1,700 words with a six-entry register without being padded to get there.
+
+The other three have no such record: 19 commits for hued, 59 for TimeShift, 396 for Momentum,
+and **not one of them argues with an alternative anywhere**. A six-entry register for a
+project whose repository holds one recoverable decision would be *inventing decisions* in
+front of the audience most likely to open the repository — which D-40 rules out in as many
+words. So the short tier is a real problem statement, ONE decision that is visible in shipped
+code, and an admitted gap at paragraph scale. All three landed between 698 and 822 words.
+
+**That is what makes the split correct rather than coincidental**, and it is why the ratio is
+2:1 rather than something tidier. Had the tiering been a judgement about which projects
+matter, the design system and Momentum would have been the long ones — Momentum has by far
+the most commits and hued by far the fewest.
+
+**The short tier is not a truncated long form, and the templates are built so a reviewer can
+check that claim.** Both tiers share one loader, one stylesheet, one component set and one
+measure. The differences are exactly three and all three are structural:
+
+1. `## Decision` (singular) is one running section; there is no numbered register and no
+   inset "option not taken" paragraphs, because those constructions do not occur in the
+   drafts.
+2. One hero plus **at most one** inline figure, against the long tier's one plus two.
+3. The inline figure attaches to a *section* rather than to a register entry, because there
+   is no register to attach it to.
+
+**The spacing is deliberately NOT tightened**, and that is a decision rather than an
+omission. The plan's phrasing permits "a shorter overall rhythm" and the first instinct was to
+take one step off the section gap. It was not taken: plan 11 has to answer whether the short
+form reads as a deliberate tier or as a truncated long form, and if the rhythm differed too, a
+reviewer could not tell whether their answer was about the tier or about the gap. Same
+attributability argument that split `X-work-recolour` from `X-work`, and that D-28 used to
+move cascade layers out of Phase 1. The short pages are shorter because there is less to say,
+which is the only reason they should be.
+
+**Both claims are asserted at build time, not left to discipline.** The short template throws
+if a short draft ever grows numbered sub-headings under `## Decision` — the point at which the
+two tiers would have converged and the split would need re-arguing — and both templates throw
+if their asset plan exceeds D-41's budget for their tier.
+
+---
+
+### The measure: 68ch, and one declaration that decides it
+
+**68ch**, from UI-SPEC's layout maxima. The derivation: at `--text-md` **15px** DM Sans, 68ch
+is about **620px**, which sits inside the standard **55–75ch** readability band and scales the
+handoff's 480px-capped sub-paragraph convention up for long-form body. Prose is DM Sans
+`--text-md` 15 at `--lh-relaxed` 1.55.
+
+The literal `68ch` is written in **both** page sources, so the derived number is visible in
+each artefact rather than buried in a shared file — and the shared prose renderer then
+**asserts the two pages declare the same value**. A source grep on its own passes happily on
+two different literals, which is precisely the drift D-39 forbids; the assertion is what makes
+the grep mean something.
+
+**The page is 980px and carries a 200px mono rail beside the measure at a 48px gap.** That
+shape is taken from `Resume.dc.html` — 980px page, 200px rail, 1fr column, 48px gap — because
+it is the only long-scroll editorial page in the handoff and is therefore the stated reference
+for measure and heading rhythm. 48px is `--space-12`, a real step; 200px and 68ch are declared
+once each in `case.css`.
+
+**What the rail carries is not the section name.** Repeating the heading beside the heading is
+furniture. It carries the section's position in the four-part spine (`01 / 04` … `04 / 04`)
+and the section's **real length in words**, measured from the committed draft at build time.
+Two things follow. The problem → decisions → outcome spine becomes a property of the rendered
+page rather than of the source Markdown, without a table of contents. And a reviewer judging
+"does 68ch hold up here" can read the number next to the thing they are judging — the same
+argument the contact sheet's Part 4 makes for putting the byte counts beside the design.
+
+Section lengths, for the two extremes: Cairn's `## Decisions` is **1,016 words** at 68ch,
+which is the longest single stretch either template has to hold; hued's `## Outcome` is
+**117 words**, of which the gap block is most of it.
+
+**Body prose is `tone="secondary"` (`--ink-2`, 10.51:1), not `--ink`.** UI-SPEC specifies the
+family, size and line height for case-study prose and does not specify a tone. `--ink` at
+14.65:1 is the display and heading ink, and running 1,700 words of it on a dark field is
+glaring; `--ink-2` is still comfortably AAA. This is a judgement, it is cheap to reverse, and
+it is listed for the eye review below.
+
+---
+
+### The three kinds of non-final content, and what happens to each
+
+The corpus carries three things that are not finished prose. Each gets one labelled treatment,
+all three treatments live in one file, and **both tiers render all three identically** so that
+a reviewer comparing the tiers is comparing structure rather than styling.
+
+| | What it is | Treatment | What happens to it |
+|---|---|---|---|
+| `[NEEDS AKHIL]` | D-40 gap: placeholder prose at finished length | Paragraph scale, `--ink-3`, behind a 2px `--wire` rule, marker text kept inline | **FILLED** in the final-phase interview |
+| `[source: …]` | Provenance on every factual claim | Inline mono at `--text-2xs` on `--cream-2` | **STRIPPED** in Phase 6 |
+| HTML comment | What was searched and why it came up empty; corrections to stale figures | Offset mono block, dashed `--rule`, labelled | **STRIPPED** in Phase 6 |
+
+**Correction to the plan's own phrasing.** Plan 10 asks for "the decision that gap blocks
+render visibly during design review and are stripped in Phase 6". Gap blocks are **not**
+stripped — they are *filled*, by the interview D-40 defers to the final phase. It is the
+provenance markers and the drafting comments that are stripped, which is what the plan's own
+earlier paragraph says. The distinction matters because it decides what Phase 6's copy pass is
+actually doing: two mechanical deletions and one interview, not three deletions.
+
+**The gap blocks render at paragraph scale and are never collapsed to a marker.** Their
+*length* is the entire reason D-40 required length-realistic placeholders — a reviewer has to
+be able to see that a paragraph-scale gap occupies a paragraph-scale slot, because that is
+what tells them whether the finished copy will fit the layout they are approving. The literal
+`[NEEDS AKHIL]` text stays inside the prose rather than being replaced by the label: a block
+that reads as provisional because of its styling alone stops reading that way the moment
+somebody screenshots it into a slide.
+
+**The gap rule is `--wire`, not `--rule`.** The plan suggests `--rule` as an example. On
+charcoal dark `--rule` is **1.43:1** against the page and would be very nearly invisible,
+which defeats the stated intent of the treatment; `--wire` is **3.72:1**. This is resolution 3
+generalised: on dark, a boundary that carries meaning is carried by a border strong enough to
+draw. `--rule` is still used, correctly, for the decorative hairline that insets the "option
+not taken" paragraphs and for the section dividers — resolution 6's rule, that `--rule` is
+right between two rows on the same page and wrong as a meaningful boundary. **Both are on the
+same page on purpose**, so the difference between the two values is visible in one glance.
+
+**A review affordance, and it is not part of the design.** Both pages carry a labelled
+checkbox that hides the provenance markers and the drafting notes — CSS only, one `:has()`
+selector, no script and no hydration. It exists because one of plan 11's questions cannot be
+answered by looking at the page once: whether the visible scaffolding is legible enough to
+audit *without dominating the page*. It does **not** hide the gap blocks, because those are
+the artefact. It is fenced inside a bordered band with the rest of the review chrome and
+labelled as scaffolding.
+
+---
+
+### The gap boundary rule, and the one paragraph it protects
+
+`check-copy-length.mjs` measures a `[NEEDS AKHIL]` block as **everything from the marker to
+the next heading**. That is the right rule for a length *floor* — it is generous, and being
+generous is safe when what you are enforcing is a minimum.
+
+**It is the wrong rule for rendering, in exactly one file.** In `case-design-system.md` the
+marker sits inside a block quote, the quote closes, and a *finished* paragraph follows before
+`## Assets`: the closing that points at the page the reader is on. Applied literally, the
+counter's rule would render that paragraph muted, hairlined and labelled provisional — a false
+statement about the only claim in the corpus that is **already true**, and about the one
+project D-38 makes the flagship precisely because its outcome is the thing the reader is
+looking at while reading about it.
+
+So the render boundary is: **a marker inside a block quote owns the block quote; a marker
+outside one owns everything to the end of its section.** For four of the five studies the two
+rules agree exactly. For the fifth the difference is one paragraph, and it is the most
+important paragraph on the page — so the long template asserts at build time that the
+design-system study's `## Outcome` still *ends* with that paragraph as ordinary prose, and
+fails the build if the boundary rule ever changes underneath it.
+
+**The trap underneath all of this**, and the reason the loader carries an explicit per-tier
+heading table: the two tiers **do not spell their middle heading the same way**. Long form is
+`## Decisions` (plural); short form is `## Decision` (singular). Within a tier the sequences
+are byte-identical — which is exactly why D-39's two tiers become two templates rather than
+five bespoke pages — but a loader assuming one spelling across both silently drops a section
+from three of the five studies **and still renders a page**. The loader therefore throws,
+naming the file, the missing heading, the headings that were found, and the difference between
+the two tiers. A negative control confirms it: removing `## Outcome` from `case-cairn.md`
+fails the build with that message; restoring it returns exit 0, byte-identically.
+
+It throws a second time for a failure that looks like a passing check: a heading present with
+**nothing under it**. `sections[heading]` is then `[]`, which is truthy, so a presence check
+passes while the page renders an empty section that looks entirely deliberate.
+
+---
+
+### D-41: the asset plan, per study
+
+Eleven slots across five studies. Every caption and every source below is taken from the
+study's own `## Assets` section — the templates render the asset plan the drafts state rather
+than one invented for them.
+
+| Study | Hero | Inline | Where the inline sits |
+|-------|------|--------|------------------------|
+| Design System | this site, rendered *(capture)* | both themes side by side · Storybook a11y panel *(capture)* | after decisions **3** and **6** |
+| Cairn | the board, populated *(capture from cairn.co.in)* | the Rejection Reframe · a detail page in dark mode *(capture)* | after decisions **1** and **6** |
+| hued | `publishing/feature-graphic.png` **(in repo)** | `publishing/screenshots/final/01.png` **(in repo)** | end of `## Decision` |
+| Momentum | `store-listing/feature-graphic.png` **(in repo)** | a goal card with the day's required amount *(capture)* | end of `## Problem` |
+| TimeShift | the right-click conversion on a real page *(capture)* | the resolver reporting medium confidence *(capture)* | end of `## Decision` |
+
+**Placement is the substance of D-41, not decoration.** "Where a decision is easier shown than
+described" is a claim about a *position in the argument*. The long template therefore anchors
+an inline figure to the register entry it illustrates, and asserts that the ordinal exists — a
+mistyped ordinal would otherwise be a silent design error. Momentum's inline sits under
+`## Problem` rather than `## Decision` because its argument *is* the number on the goal card,
+and that number is the problem statement.
+
+**No figure renders an image, including the two that exist.** Three reasons, in order of
+weight. Not one of the eleven assets has been through D-42's path, so a file dropped into the
+playground would be a different artefact from the one that ships — different origin, no
+dimensions captured at upload. Four of the eleven exist in no repository at all and have to be
+captured from live store listings. And rendering hued's two for real while the other nine
+stayed reserved would make one study look different from the rest for a reason that has
+nothing to do with the design, which is exactly the confound a tier review must not carry.
+
+Every slot instead **reserves space at its intended aspect ratio** and states its role, its
+source and whether the file exists today. That answers the question a reviewer actually has —
+where does a screenshot sit and how much vertical room does it take — and answers it for the
+assets that do not exist yet as well as the ones that do. The two Play Store feature graphics
+are reserved at **1024 × 500**, which is that asset's published spec and what both files were
+produced to.
+
+**The hero breaks the measure; inline figures respect it.** The hero sits outside the sections
+and runs the full 884px content width, because its job is to establish the project before the
+argument starts. An inline figure is evidence *inside* the argument and is capped at the same
+68ch, because a screenshot running wider than the paragraph it supports pulls the eye out of
+the reading column exactly when the prose is making its point. Both tiers use both roles.
+
+---
+
+### D-42: the asset path
+
+Screenshots take the **simple R2 asset path**: the admin uploads them **straight to R2 under
+`assets/`**, on the **same custom domain as the photos**, with **width and height captured at
+upload** so the case-study page reserves the space and does not shift as images land. The
+legacy `/api/upload-asset` route is the precedent — it wrote directly to the R2 binding and
+returned a public URL, without a commit.
+
+They **do not go through the photo pipeline.** That pipeline composites a watermark and
+extracts EXIF, and neither belongs on a screenshot of an interface: a watermarked UI capture
+reads as a photograph that has been processed for the gallery, and EXIF on a screenshot is
+either empty or misleading. Skipping it also means no Actions run, so publishing a case study
+stays fast.
+
+Every reserved slot on both pages prints this path in its caption, so the rule is on the
+artefact rather than only in this document.
+
+---
+
+### Design-system findings this plan adds
+
+Two, both new, both small and both the same shape as findings already recorded.
+
+**1. A design-system `Text` cannot be recoloured by the page that contains it.** `Text`
+inlines its variant's colour **whenever the `tone` prop is absent**, and an inline style beats
+a stylesheet — so `.case-gap .ds-atom-text { color: … }` was written, looked correct, and did
+nothing at all: the gap blocks rendered at exactly the same colour as the prose around them.
+The fix is to pass `tone="muted"` and route the colour through the data-attribute path, which
+is the design system's own preferred API. Generalised: **a wrapper class cannot restyle a
+design-system Text; it can only be told its tone.** Same family as G-2 (Button's inline
+padding) and plan 09's observation 3 (Badge is entirely inline-styled). Worth knowing before
+Phase 5 tries to theme a component from its container.
+
+**2. `Heading`'s line-height binding bites again, on every heading these templates use.** Plan
+09 recorded that `data-size="3xl"` and `"4xl"` both carry `--lh-tight` 0.94 while UI-SPEC
+assigns `--lh-snug` 1.08 to headings at 40–44px. These templates use `4xl` for the page
+header, `3xl` for every section heading and `xl` for every register entry, and **all three**
+carry an inline override. That is now four artefacts overriding the same binding, which
+promotes it from an observation to a thing Phase 1 should fix.
+
+**Carried, not re-litigated:** every accent on both pages reaches the charcoal token by name
+rather than through `tone="accent"`, because the tone axis resolves to `--amber-d` and
+charcoal never redeclares it (plan 09's finding 5). Nothing here uses `Card` or `Chip`, so
+the boundary collapse (finding 6) does not bite — the figure slots are dashed `--wire` rules
+because a placeholder should look like a placeholder, not like a card.
+
+---
+
+### Open for the eye review in plan 11
+
+The two the plan names, plus three this one took and would not defend to the death.
+
+**A — Does the short form read as a deliberate tier, or as a truncated long form?** This is
+the question the whole D-39 split rests on, and it is the reason the spacing was deliberately
+left identical: the answer has to be about the structure. If the short pages read as thin
+rather than as tight, the fix is structural — a fourth section, a pull-quote, or promoting the
+one decision to a titled entry — not a spacing change.
+
+**B — Are the visible gap blocks legible enough to judge length without dominating the page?**
+Every study carries exactly one, all five sit in `## Outcome`, and in the short tier the gap is
+most of that section. Use the scaffolding toggle to read each page both ways. If the gaps
+dominate, the alternatives are a lighter rule or a collapsed label — but **not** shortening the
+placeholder prose, which would defeat D-40 outright.
+
+**C — 57 provenance markers inline.** They are unmistakably not prose and they are also
+frequent: Cairn's `## Decisions` carries 22 of them in 1,016 words. The judgement taken is that
+auditable provenance is worth the visual cost during review and that Phase 6 removes the cost
+entirely. The toggle exists so this can be judged rather than argued.
+
+**D — Body prose at `--ink-2` rather than `--ink`.** See the measure section above. If 1,700
+words of `--ink-2` reads washed out rather than comfortable, the change is one prop.
+
+**E — The 200px rail carrying counts rather than the section name.** It is borrowed from
+`Resume.dc.html`, and word counts in it are review scaffolding that Phase 5 will not ship. The
+question is what the rail carries *then* — nothing, and the prose recentres; or the section
+name, and it becomes furniture; or something the shipped page actually needs.
+
+---
+
+*Phase 0 · plan 10 · DSGN-02. Sources: `00-UI-SPEC.md` §Spacing (the 68ch derivation and the
+layout maxima) and §Typography (the public/editorial role table), `00-CONTEXT.md`
+D-38/D-39/D-40/D-41/D-42/D-45, `00-RESEARCH.md` §"What 'done well' looks like for an
+engineering case study" and Pattern 4, `00-COPY/case-*.md` and `00-COPY/one-liners.md`,
+`design_handoff_portfolio/Resume.dc.html`, and the six resolutions above. Every word count and
+marker count quoted was produced at build time by `src/lib/copy.mjs` reading the committed
+drafts in place; every contrast ratio quoted was computed in plan 04 by `check-contrast.mjs`.*

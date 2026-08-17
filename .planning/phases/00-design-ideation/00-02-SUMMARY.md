@@ -161,6 +161,15 @@ None - no external service configuration required.
 - **One open thread for the final-phase interview:** hued's `README.md` colour-name count is
   stale against its own shipped data and should be corrected in that repo.
 
+## Self-Check: PASSED
+
+- `scripts/check-copy-length.mjs` — FOUND
+- `00-COPY/one-liners.md` — FOUND
+- `00-02-SUMMARY.md` — FOUND
+- Commit `cdc7aa7` (Task 1) — FOUND
+- Commit `5c004b4` (Task 2) — FOUND
+- Checker exits 0 against the committed corpus; working tree clean
+
 ---
 *Phase: 00-design-ideation*
 *Completed: 2026-08-17*

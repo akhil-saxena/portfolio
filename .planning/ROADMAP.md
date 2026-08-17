@@ -118,7 +118,7 @@ Plans:
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 00-15-PLAN.md — /admin/projects, /admin/projects/[id], /admin/site, and the per-file conflict diff
+- [x] 00-15-PLAN.md — /admin/projects, /admin/projects/[id], /admin/site, and the per-file conflict diff
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 14/17 | In Progress|  |
+| 0. Design & Ideation | 15/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

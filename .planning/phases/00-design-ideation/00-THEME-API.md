@@ -536,3 +536,460 @@ cascade-layers release (D-28), and it belongs to **Phase 06.1** as **DS-11**, wi
 what it proved is that DS-11 as originally written cannot deliver a compact admin, because
 `Button`'s padding is an inline style object that beats every CSS rule at every specificity
 and is unreachable by any cascade-based density axis whatsoever.
+
+---
+
+## Font delivery
+
+### The split, as decided (D-29)
+
+Font delivery splits into **tokens and faces as two separate entries**:
+
+| Entry | Carries | Must not carry |
+|-------|---------|----------------|
+| `themes/charcoal.css` | the 37 token declarations, both blocks | any `@font-face` rule |
+| `fonts/charcoal.css` | the `@font-face` sets only | any token declaration |
+
+Three things this buys:
+
+1. **DS-04 becomes literally true.** `tokens.css` ends with zero `@font-face` rules — a
+   condition a grep can check, rather than a claim about intent.
+2. **The axis is fixed once, for every present and future theme.** A second brand theme
+   inherits the shape instead of re-deciding it.
+3. **A missing font import fails LOUDLY at integration.** If a consumer imports the theme and
+   forgets the faces, *every* family falls back at once and the page is unmistakably wrong on
+   first load — not subtly wrong in one heading three weeks later.
+
+**Per-family subpaths were rejected** (`fonts/playfair.css`, `fonts/dm-sans.css`,
+`fonts/ibm-plex-mono.css`). Forgetting one of three imports is a **silent single-family
+fallback** — which is exactly the DS-05 failure mode this whole decision exists to eliminate.
+Point 3 is only worth having if the failure is total.
+
+### D-30 corrected in writing: one of the three packages does not exist
+
+> **`@fontsource-variable/ibm-plex-mono` does not exist. `npm view` returns a registry
+> `404`.**
+
+Fontsource mirrors Google Fonts, and Google Fonts has not onboarded the variable IBM Plex
+family — only `@fontsource-variable/ibm-plex-sans` exists.
+`@ibm/plex-mono@2.5.0` on npm ships **static split faces only**, with no variable file. A
+variable IBM Plex Mono does exist upstream in the IBM/plex GitHub releases, but nothing on npm
+packages it.
+
+**D-30's stated GOAL — collapse the `@font-face` count — survives intact. Its stated PREMISE,
+that all three families ship variable, does not. Two of three do.**
+
+**This correction is security-relevant, not merely factual (T-00-12).** The guessable name is
+**unclaimed**, not merely absent. A Phase 1 implementer following D-30 literally would attempt
+to install a package name nobody currently owns — which is an open invitation to whoever
+registers it next. This is why the correction is written into the spec rather than left as an
+implementation detail to rediscover.
+
+### The chosen shape: Option A, re-export the Fontsource entry points
+
+`fonts/charcoal.css` re-exports four Fontsource CSS entry points:
+
+| Entry point | Faces it contributes |
+|-------------|---------------------:|
+| `playfair-display/wght.css` | 4 (cyrillic, vietnamese, latin-ext, latin) |
+| `dm-sans/wght.css` | 2 (latin-ext, latin) |
+| `ibm-plex-mono/latin-400.css` | 1 |
+| `ibm-plex-mono/latin-500.css` | 1 |
+| **Total** | **8** |
+
+**Measured: 8 `@font-face` rules against the design system's 73** — counted twice
+independently, by grep on the emitted chunk and by parsing the installed packages. Zero
+maintenance; the packages own their own file names.
+
+**D-30's "latin subset only" is reworded as "latin-only DOWNLOAD, guaranteed by
+`unicode-range`."** Neither variable package ships per-subset CSS files, so literal
+latin-only is not a package option for Playfair or DM Sans. What *is* guaranteed is the
+network cost: every non-latin rule carries a `unicode-range` the browser never matches on this
+site's content, so the browser fetches one file per family. Four of the eight rules are
+Playfair's subsets and three of those four will never be requested.
+
+**Option B — the road not taken.** Hand-author the four rules, pointing directly at
+`…/files/playfair-display-latin-wght-normal.woff2` and friends (Fontsource's `exports` map
+exposes `./files/*.woff2`). That is **exactly 4 rules and literally latin-only**. Two costs
+made it the wrong trade: it opens a Vite `url()` resolution question for bare specifiers
+inside CSS that would have to be verified before it could be written into a spec, and its
+failure mode when Fontsource renames a woff2 in a *minor* bump is a **silent missing face** —
+the exact class of bug D-29 exists to kill. Option A gets ~89% of the reduction for ~0% of the
+fragility.
+
+**Astro's own top-level `fonts` config — a second road not taken.** Astro can manage font
+loading at the app level, which would work for this site. It is rejected because **delivery
+must live in the design-system package**: Cairn then gets the same fix by upgrading rather
+than by reimplementing it, and the "someone forgot to set up the fonts" failure mode cannot
+recur once per consumer. Putting delivery in the app would also be a bespoke solution to a
+problem the design system exposed — the shape the Core Value forbids.
+
+### The `Variable` suffix is a hard requirement
+
+Fontsource's variable packages register the family as **`'Playfair Display Variable'`** and
+**`'DM Sans Variable'`** — not as `'Playfair Display'` and `'DM Sans'`.
+
+> A charcoal token naming only `"Playfair Display"` while the `@font-face` declares
+> `'Playfair Display Variable'` **silently renders Georgia**, and the page looks *almost*
+> right.
+
+**Both names must appear in the stack, in that order, Variable first** — as the typography
+table above spells them — and **the agreement must be asserted by a test.** IBM Plex Mono has
+no `Variable` alias, so its stack correctly names the plain family.
+
+**D-29's loud-failure design does not cover this.** It catches a *missing* import; it does not
+catch a *name mismatch*, where the faces load fine and the token simply never matches one.
+That is why a separate font-name check exists rather than being folded into the split.
+
+**The check must resolve `var()` aliases, and there is a measurement proving why.** Plan 04's
+negative control stripped `Variable` from `--font-serif`'s head — breaking **one** token
+surfaced **four**: `--font-serif`, `--font-display`, `--display` and `--serif`, because three
+of them resolve through the first. A per-token check that did not follow aliases would have
+reported one failure and left three tokens silently rendering Georgia.
+
+### The measured cost of the current state — what Phase 1 is removing
+
+| Measurement | Current design system | Charcoal face layer |
+|-------------|----------------------:|--------------------:|
+| `@font-face` rules | **73** | **8** |
+| Font files emitted | **128** (65 woff2 + 63 woff) | **10** (8 woff2 + 2 woff) |
+| Font bytes | **2,174,132 B** | **200,864 B** |
+
+That is a **92% cut in files and 91% in bytes** — and **none of the 73 is Playfair Display, DM
+Sans or IBM Plex Mono.** They are Inter, Archivo, JetBrains Mono and Newsreader, pulled in by
+**15 `@fontsource` `@import` lines at the top of `tokens.css`**. Those imports are bare
+specifiers that Vite inlines at build time, so there is no render-blocking `@import` waterfall
+— the problem is face *count*, not sequencing.
+
+**`tokens.css` inflates from 16,007 bytes on disk to 65,493 bytes bundled**, and essentially
+all of that 4× is inlined face rules for four families this site does not use. Plan 07
+corroborated the bundled figure independently from the other direction: the public route ships
+86,593 B of CSS, of which ~65 KB is the token layer and ~21 KB is everything else.
+
+**Two byte figures reconciled, so neither looks like drift.** Research recorded the design
+system's font tree as **2.36** MB; Phase 0 measured **2,174,132 B**. The **file counts match
+exactly** (65 woff2 + 63 woff), so the two measurements agree on what is there and differ only
+in how they weigh it — research reported block-rounded disk usage, Phase 0 summed file sizes.
+Research's on-disk `tokens.css` figure of 14,948 B, however, is **superseded**: read directly
+today, `../design-system/src/tokens.css` and `dist/tokens.css` both measure **16,007 bytes**.
+Use 16,007.
+
+### The 8-vs-73 win does NOT survive a real consumer — and this is the reason D-36 is a major
+
+This is the single most important thing in this section and it is easy to miss.
+
+> **A consumer assembling the D-33 manifest emits 81 `@font-face` rules, not 8** — the design
+> system's **73** plus charcoal's **8**.
+
+Measured on both manifests. The manifest *must* import `tokens.css`, because that sheet
+carries the values charcoal overrides; importing it inlines all 73 faces along with them. So
+D-29's split is a win **for the charcoal layer in isolation**, and it does not survive a
+consumer that also imports the current `tokens.css`.
+
+**Therefore D-36's major version has to actually REMOVE the `@font-face` rules from
+`tokens.css`** for the manifest to benefit at all. Shipping `fonts/charcoal.css` while leaving
+`tokens.css` unchanged delivers 8 extra rules and removes none — strictly worse than doing
+nothing. This is not a new gap; it is the same faces-inside-the-token-layer problem D-29 and
+D-36 already name. It is the first measurement of what the split is worth **at the consumer**,
+and the answer is: nothing, until the faces come out.
+
+### Open: Option A ships no italic axis, and charcoal has two italic roles
+
+The four entry points are all **roman**. UI-SPEC gives two real editorial-italic roles — the
+22px Playfair display subtitle and the 22px italic serif cross-link at the foot of Work and
+Photos — and under Option A both render as a **browser-synthesised oblique** rather than
+Playfair's drawn italic. On an editorial serif identity that is visible.
+
+Adding `playfair-display/wght-italic.css` costs **4 more face rules** and moves the recorded
+baseline from **8 to 12**.
+
+**Plan 04 deliberately did not do it**, and the reason is methodological rather than
+aesthetic: `8` is a recorded acceptance criterion and a measured baseline, and changing what
+"8" measures mid-plan would have silently invalidated it.
+
+**This is an open Phase 1 decision about what the face layer is for**, and it should be made
+explicitly rather than inherited by default. If Phase 1 adds the italic axis, the baseline it
+inherits is 12, not 8, and every downstream comparison must be restated against 12.
+
+---
+
+## Packaging and exports
+
+### The current map — `themes` and `fonts` do not exist
+
+```json
+"exports": {
+  ".":                { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+  "./hooks":          { "types": "./dist/hooks/index.d.ts", "import": "./dist/hooks/index.js" },
+  "./icons":          { "types": "./dist/icons/index.d.ts", "import": "./dist/icons/index.js" },
+  "./tokens.css":     "./dist/tokens.css",
+  "./primitives.css": "./dist/primitives.css",
+  "./utilities.css":  "./dist/utilities.css",
+  "./css/*":          { "style": "./dist/css/*.css", "default": "./dist/css/*.css" }
+}
+```
+
+### The two proposed additions
+
+```json
+"./themes/*.css": { "style": "./dist/themes/*.css", "default": "./dist/themes/*.css" },
+"./fonts/*.css":  { "style": "./dist/fonts/*.css",  "default": "./dist/fonts/*.css"  }
+```
+
+Purely additive — **this is not the breaking part of v2.0.0.**
+
+### The `.css` inside the wildcard is deliberate
+
+Spelling the pattern `"./themes/*.css"` rather than `"./themes/*"` is what makes
+`@akhil-saxena/design-system/themes/charcoal.css` — **the exact string D-35 specifies** —
+resolve to `dist/themes/charcoal.css`. It also avoids the double-extension trap the existing
+`./css/*` entry has, which is **G-12** (cited by ID; `00-FINDINGS.md` carries the full
+evidence, including both error shapes and the `import.meta.resolve()` under-reporting).
+
+**This shape is tested, not asserted.** Plan 07 built a private, zero-dependency stub package
+carrying only the proposed map and two stylesheets, installed it as a `file:` dependency, and
+imported both subpaths from an `.astro` page: **the build succeeds and both sheets' content is
+present in the emitted page.**
+
+**The counter-proof is what makes it a measurement.** Respelling the entry as `"./themes/*"`
+makes the `*` capture `charcoal.css`, substitutes to `themes/charcoal.css.css`, and fails with
+`[vite]: Rolldown failed to resolve import "…/themes/charcoal.css"` — **on the exact D-35
+specifier string.** All of this was proven without a single edit to `../design-system`.
+
+### Two mechanical consequences Phase 1 must not skip
+
+1. **The new CSS must land in `dist/`.** `package.json` `files` is
+   `["dist", "README.md", "LICENSE"]`, so anything outside `dist/` is simply not published.
+   **`scripts/postbuild.mjs`** hard-codes its copy loop as
+   `for (const css of ["tokens.css", "primitives.css", "utilities.css"])` and **throws on a
+   copy failure by design** — its comment says *"a silent failure here publishes a package
+   whose documented stylesheet entrypoints 404. Throwing is the point."* **Phase 1 extends
+   that loop** to carry `themes/` and `fonts/`.
+2. **Test coverage comes free.** **`src/packaging.test.ts`** already asserts *"every path in
+   `exports` actually exists in dist"*, including wildcard patterns — for a pattern it checks
+   the directory exists and holds at least one match. The two new entries inherit that
+   assertion the moment they are added, with no new test to write.
+
+---
+
+## No-flash module
+
+**D-34: the design system ships a real, documented no-flash entry point.** Not a snippet in a
+README — an actual module with an API surface and tests, handling four things together:
+
+| Concern | What the module owns |
+|---------|----------------------|
+| Storage | reading and writing the persisted mode choice |
+| System preference | the fallback when nothing is stored |
+| `prefers-reduced-motion` | suppressing transitions during the initial mode application |
+| Brand attribute | setting `data-brand` alongside the mode class, in the same pass |
+
+**The reasoning: the class-name contract is the design system's.** `:root.dark` / `.dark` and
+`data-brand` are the design system's selectors, defined in its stylesheet, changed on its
+release schedule. Leaving every consumer to reinvent the script that sets them is how
+consumers drift out of sync with a contract they do not own — the portfolio and Cairn would
+each carry their own copy, and a selector change upstream would break both silently.
+
+Setting the brand attribute in the *same* pass as the mode class also matters here
+specifically: a two-pass script can paint one frame of default-brand dark before charcoal
+applies.
+
+---
+
+## Release and versioning
+
+### The theme ships in the same package (D-35)
+
+`@akhil-saxena/design-system/themes/charcoal.css` and
+`@akhil-saxena/design-system/fonts/charcoal.css` — **subpath exports in the SAME package**, not
+a separate one. **One version number covers components and theme, so they cannot mismatch.**
+A separate theme package would introduce a compatibility matrix between two version numbers
+for two consumers, both Akhil's, for no benefit.
+
+### Phase 1 ships as **v2.0.0** (D-36)
+
+**Removing `@font-face` from `tokens.css` is a definite break for Cairn**, which gets its
+fonts that way today. That is a real consumer losing its typography on a version bump, so:
+
+- The release is a **major**. Semver telling the truth is the mitigation, not a footnote.
+- The existing four families (Inter, Archivo, JetBrains Mono, Newsreader) are **preserved as
+  `fonts/default.css`**, so nothing is deleted, only relocated.
+- **The consumer migration is therefore a one-line import** — add `fonts/default.css` — rather
+  than a hunt to work out which four families vanished and where they used to come from.
+
+Understating this break is how a consumer silently loses its typography; the whole point of
+D-36 is that the release notes and the version number both say what happened.
+
+### Charcoal gets full snapshot parity (D-37)
+
+**Every component, both modes, charcoal as well as the default theme.** Nothing regresses
+unseen, and DS-06's contrast contract gains a visual companion — a token can pass a numeric
+contrast assertion while looking wrong. **Accepted cost: doubled snapshot count and doubled
+review burden.** That cost was weighed and taken.
+
+---
+
+## CSS assembly
+
+### The decision (D-33)
+
+DS CSS is assembled through a **hand-maintained manifest file**: one app-level CSS file that
+imports, in order, the token layer → the faces → the charcoal theme → `base` → **exactly the
+per-component sheets in use.**
+
+It satisfies both hard constraints at once:
+
+- **A single file preserves cascade order** — everything arrives through one import graph
+  rather than racing across `.astro` files and React component imports.
+- **A fraction of the whole sheet ships** — only the components actually rendered.
+
+Zero tooling, which is why Phase 0 could produce a real measured number rather than an
+estimate.
+
+### The measured numbers — these supersede D-33's estimate
+
+| Set | Sheets | Raw | Gzip |
+|-----|-------:|----:|-----:|
+| Public component set (`base` + 13) | 14 | **41,179 B** | **9,447 B** |
+| Admin component set (public + 24) | 38 | **109,864 B** | **19,763 B** |
+| `primitives.css` whole — the alternative | 1 | **181,861 B** | **36,083 B** |
+| Public route, everything it actually ships | — | 86,593 B | 33,867 B |
+| Admin route, everything it actually ships | — | 122,964 B | 39,177 B |
+
+The first three rows are the comparison D-33 rests on: **the public surface ships 77.4% less
+raw and 73.8% less gzip** of component CSS than the whole sheet, and even the admin — every
+form control, the data grid, the editor, the overlay surfaces — comes in below it.
+
+Rows 4 and 5 are much closer together than rows 1-3, and the reason is the previous section:
+~65 KB of both routes is the token layer with its 73 inlined faces. **That is the same
+finding from the other direction — the manifest cannot show its full value until D-36 removes
+the faces.**
+
+**Correction: research's split-CSS byte figures are systematically low and must not be
+re-quoted.** `primitives.css` is **181,861 B**, not 178,398 — identical in all three places it
+can be read (the installed 1.11.4 tarball, `../design-system/dist/`, `../design-system/src/`).
+`base.css` is **8,741 B**, not 7,094. All 74 sheets concatenated are **221,032 B**, not
+217,569. The delta is **exactly 3,463 B** in both the concatenation and `primitives.css`, so it
+is systematic rather than a typo. Research's `178398` / `41281` / `8923` should not appear in
+any Phase 1 or Phase 5 comparison. D-33's conclusion is unaffected and slightly strengthened.
+
+### The accepted failure mode
+
+**A visibly unstyled component.** If a component is rendered but its sheet was never added to
+the manifest, it appears with no styling at all — loud, immediate, and impossible to ship past
+a review. That is the tradeoff for having no tooling, and it was accepted with eyes open.
+
+Two practical notes for whoever maintains it:
+
+- **Every specifier must be extensionless** (`…/css/card`, never `…/css/card.css`) until G-12
+  lands. The manifest is entirely CSS `@import` statements, and plan 07 measured that this
+  gets the *less* diagnostic of G-12's two failure shapes: a postcss `ENOENT` that quotes the
+  **bare specifier as though it were a filesystem path** and never mentions the doubled
+  extension.
+- **`SegmentedControl` is deliberately absent from the public manifest.** G-9 reclassified it
+  as a radiogroup that cannot serve PUB-04's crawlable `/photos/[category]` links; the public
+  set is 13 sheets rather than 14 on purpose, and gains a line when `FilterNav` lands.
+
+### Automated manifest generation is deferred
+
+Generating the manifest from actual component usage is real future work, and it is deferred
+with **its scope owner unsettled** — it could reasonably live in the portfolio (which knows
+what it renders) or in the design system (which knows what each component needs). That
+question is open and is not Phase 1's to answer by accident.
+
+---
+
+## Tests Phase 1 inherits
+
+Phase 0 built these as standalone scripts against the prototype. They become `tokens.test.ts`
+cases. **The ratio helpers already exist in the design system's `tokens.test.ts` — `srgb`,
+`luminance`, `contrast` and `resolve` — and must be EXTENDED rather than reimplemented.** Phase
+0's contrast script deliberately ported them rather than hand-rolling a second WCAG formula,
+so that a disagreement between the two would be a real disagreement and not a formula bug.
+
+### 1. Two exhaustiveness assertions — they catch DIFFERENT bugs, and both must exist
+
+| Assertion | Direction | The bug it catches |
+|-----------|-----------|--------------------|
+| **Existing (already shipped)** — *"declares a light value for every token the dark theme overrides"* | dark ⊆ light | A token that exists only under `.dark` resolves to nothing in light mode. **`--rule-strong` shipped that way** — this is a regression that actually happened. |
+| **New (charcoal's mirror)** — *"restates in dark every token declared in light"* | light ⊆ dark | A charcoal token declared only in light ties `:root.dark` at (0,2,0) and is decided by bundler order. See *The exhaustiveness invariant*. |
+
+**Neither is redundant with the other and neither may be dropped as duplicative.** The mirror
+is roughly 15 lines against the existing `block()` / `declaredIn()` helpers.
+
+**Add the parse guard with it.** Phase 0's version asserts a floor — the light block must parse
+to at least 25 properties — because if the block parser truncates on an indented closing brace
+or a nested rule, both sets come back nearly empty, the set difference is trivially empty, and
+**the check passes for the wrong reason.** The failure message should say so in words: *that is
+not a small theme, it is a truncated parse.*
+
+### 2. Tiered contrast assertions — all against three surfaces per mode
+
+| Bar | Tokens |
+|-----|--------|
+| **7:1** (AAA) | `--ink-3`, `--ink-4`, `--ochre-d-strong` |
+| **4.5:1** (AA) | `--ink`, `--ink-2`, `--ochre-d` |
+| **3:1** (SC 1.4.11, non-text) | `--wire`, `--focus` |
+
+**Every token against page, paper AND panel, in its own mode** — 54 ratios in total. Measuring
+against the page alone is the exact methodological error that produced both of PROJECT.md's
+wrong entries.
+
+**Include the directional Rule C-1 assertion.** `--ochre` `#B0722A` must be asserted to **fail**
+the 4.5:1 text bar on 2 of 3 dark surfaces (4.20 paper, 3.91 panel) while passing on the page
+at 4.56. Asserting the failure is what stops someone quietly darkening `--ochre` to make a lint
+pass — the fill/text distinction would then be silently lost.
+
+### 3. Font-family-to-`@font-face` agreement
+
+Assert that **every family named in a `--font-*` token has a matching `@font-face`
+declaration**, resolving `var()` aliases so one broken token surfaces every token that resolves
+through it. This is the `Variable`-suffix guard, and D-29's loud-failure design does not cover
+it (see *Font delivery*).
+
+### 4. Packaging — free, once the exports entries land
+
+`src/packaging.test.ts`'s existing *"every path in `exports` exists in dist"* covers the two
+new wildcard entries with no new test. Phase 1 only has to make sure `postbuild.mjs` actually
+copies the files.
+
+---
+
+## Open items carried to Phase 1
+
+**`00-FINDINGS.md` is the authority for every item below.** They are cited by ID and
+deliberately not restated here, so the two documents cannot drift apart. Read the register for
+the gap statement, the proposed upstream fix, the tier list and the evidence.
+
+### What Phase 1 pulls
+
+The scope rule is membership: **Phase 1's planner pulls only entries whose `tiers` list
+contains `blocks-Phase-5` or `should-fix-in-Phase-1`.** That is what gives Phase 1 an explicit
+scope boundary instead of an open-ended list.
+
+> **AAA-1, G-3, G-4, G-5, G-6, G-8, G-9, G-11, G-12, G-13, G-14, G-15.**
+
+### What is explicitly NOT Phase 1's
+
+- **G-2 belongs to Phase 06.1**, not Phase 1. It is tiered `blocks-Phase-06.1` and is the
+  density-axis gap (DS-11) that ships with the cascade-layers release (D-28/DS-10).
+- **G-1 and G-7 are `backlog` for Phase 1 while being `blocks-Phase-7`.** Each carries **two**
+  tiers, and that pairing is the entire reason the tier vocabulary was widened from a single
+  enum. They are new components — `FocalPointPicker` and `DiffView` — correctly excluded from
+  Phase 1's token/theme release, and both are required before the admin can ship. **Collapsing
+  either row to one tier reintroduces the defect the revision fixed**: tagged `backlog` alone
+  they read as "optional, revisit someday", which is how a Phase 7 blocker goes missing.
+
+### Three decisions this document surfaces rather than resolves
+
+These are not findings-register rows. They are open questions Phase 1 must answer explicitly,
+and each is written up in full above:
+
+1. **The italic axis.** Option A ships roman faces only; charcoal has two italic roles.
+   Adding `playfair-display/wght-italic.css` costs 4 rules and moves the baseline from 8 to 12.
+   See *Font delivery*.
+2. **The five unmapped design-system surface tokens** — `--panel`, `--bg`, `--pg`,
+   `--paper-warm`, `--paper-deep`. Map them or state that they are retired; leaving them
+   unmapped is the one outcome that is not a decision. See *Token contract*.
+3. **The owner of automated manifest generation**, unsettled between the portfolio and the
+   design system. See *CSS assembly*.

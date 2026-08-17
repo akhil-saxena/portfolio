@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 0 UI-SPEC approved (targeted AAA adopted)
-last_updated: "2026-08-17T05:50:31.716Z"
-last_activity: 2026-08-17 -- Phase 0 planning complete
+last_updated: "2026-08-17T05:53:59.227Z"
+last_activity: 2026-08-17 -- Phase 00 execution started
 progress:
   total_phases: 10
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** The site must be the proof that the design system works — where bespoke and design-system conflict, the design system wins and the gap becomes an upstream finding.
-**Current focus:** Phase 0 — Design & Ideation
+**Current focus:** Phase 00 — design-ideation
 
 ## Current Position
 
-Phase: 0 of 8 (Design & Ideation) — 9 phases total, numbered 0–8
-Plan: — of — in current phase
-Status: Ready to execute
-Last activity: 2026-08-17 -- Phase 0 planning complete
+Phase: 00 (design-ideation) — EXECUTING
+Plan: 1 of 17
+Status: Executing Phase 00
+Last activity: 2026-08-17 -- Phase 00 execution started
 
 Progress: [░░░░░░░░░░] 0%
 

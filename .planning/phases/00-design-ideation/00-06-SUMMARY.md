@@ -181,6 +181,26 @@ None — Markdown only, no build, no external service.
 - Plan 05's two long-form studies use `## Decisions` plural; the deliberate singular/plural split between the tiers is the signal that two templates exist, not one.
 - Open for the final-phase interview: three `[NEEDS AKHIL]` gaps, each with a search log naming exactly what was checked, so the interview can go straight to the questions only Akhil can answer.
 
+## Self-Check: PASSED
+
+Claims verified against disk and git rather than asserted:
+
+- `00-COPY/case-timeshift.md` — FOUND
+- `00-COPY/case-hued.md` — FOUND
+- `00-COPY/case-momentum.md` — FOUND
+- `00-06-SUMMARY.md` — FOUND
+- Commit `594abe3` (Task 1) — FOUND
+- Commit `b86d06e` (Task 2) — FOUND
+- Commit `c2d811d` (plan metadata) — FOUND
+- `check-copy-length.mjs` — exit 0, 4 files, 3 markers, shortest block 115 words
+- Heading sequences — two `diff` comparisons, both exit 0
+- Diff against base `38eadc4` — exactly 4 files, all additions, zero deletions
+- `STATE.md` / `ROADMAP.md` — untouched, as required in worktree mode
+
+No stubs. Every `[NEEDS AKHIL]` gap is intentional, is the sanctioned form for an
+unknowable fact under D-40, and is resolved by the final-phase interview rather than by a
+later build plan.
+
 ---
 *Phase: 00-design-ideation*
 *Completed: 2026-08-17*

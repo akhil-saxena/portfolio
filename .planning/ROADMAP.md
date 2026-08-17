@@ -93,8 +93,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 00-08-PLAN.md — 00-THEME-API.md: the charcoal theme's public API decided in writing
-- [ ] 00-09-PLAN.md — Work and Photos resolved onto charcoal, Home Act 2 resolving OQ-1, and the contact sheet started
+- [x] 00-08-PLAN.md — 00-THEME-API.md: the charcoal theme's public API decided in writing
+- [x] 00-09-PLAN.md — Work and Photos resolved onto charcoal, Home Act 2 resolving OQ-1, and the contact sheet started
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 7/17 | In Progress|  |
+| 0. Design & Ideation | 9/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

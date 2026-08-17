@@ -196,6 +196,110 @@ writing below with a chosen shape** — none is left as a Phase 3 or Phase 7 dis
 4. Canonical category records (D-25)
 5. The résumé date-shape drift — `startMonth`/`startYear`/… versus a single `period` string
 
+### 1. `projects` moves out of `resume.json` into `projects.json` (D-24)
+
+**Chosen shape.** A top-level `projects.json` array, each record carrying
+`id, title, label, description, tech, icon, href, badges`. `resume.json` keeps `experience`,
+`skills` and `education` and loses its `projects` key.
+
+**Reason.** A project owns its case study, and a case-study body has no business living inside
+the résumé document. The split is what makes `/admin/projects/[id]` a route rather than a
+modal bolted onto the résumé screen.
+
+`badges` is **already an array of objects** — Cairn carries
+`{label: "Live", href: "https://cairn.co.in", icon: "arrow-up-right"}` today, and the other
+four carry store and GitHub links in the same shape. D-45 extends that field to the
+Live / Maintained / Archived status set, so the status work is an extension of an existing
+array, not a new column. Nothing about the migration is speculative: five records move
+verbatim.
+
+### 2. Résumé bullets become structured segments (D-20)
+
+**Chosen shape.** A bullet is an array of segments — `{text}` for plain runs and
+`{text, emphasis: true}` for emphasised runs — rendered as React elements.
+
+**Reason.** **No HTML string exists anywhere in the shape.** The legacy stored-XSS class
+(`Timeline.tsx:48` plus three admin components rendering bullets through
+`dangerouslySetInnerHTML` with no sanitiser in the repo) is *designed out* rather than
+filtered. A filter can be bypassed or forgotten; a shape that cannot express markup cannot
+carry an injection.
+
+**The migration is narrow, and measured.** Scanning all 18 bullets across the three experience
+entries, the only markup present is `<strong>` / `</strong>` — no anchors, no italics, no
+spans. So the converter has exactly one tag to handle and the emphasis flag is the only mark
+the shape needs.
+
+This is why **G-3** and **G-4** are load-bearing rather than cosmetic: `RichText` cannot
+restrict its marks (⌘I / ⌘U / ⌘K stay live regardless of the toolbar) and cannot emit
+segments (`outputFormat` is `"html" | "json"`). A bold-only segment serializer over today's
+`RichText` would silently drop an italic run on save — data loss, not a styling miss. Both are
+findings against the design system; neither is worked around here.
+
+### 3. A per-category photo order field (D-22)
+
+**Chosen shape.** Photos keep the existing global `order` integer and gain a second
+per-category order field. The per-category value **wins when a category filter is active**;
+the global value governs the unfiltered gallery and the Home peek strip.
+
+**Reason.** One ordering cannot serve both views. The 39 photos are unevenly distributed —
+architecture 14, nature 8, wildlife 5, abstract 4, street 4, portraits 2, product 2 — so a
+global order that reads well end-to-end scatters each category's best frames arbitrarily
+within its own filtered view.
+
+**Consequence for `/admin/photos`:** the grid view's reorder affordance is *modal on the
+active filter*. Reordering with "All" selected writes the global field; reordering inside a
+category writes that category's field. The screen must say which one it is writing, or the
+operator will believe a reorder was lost.
+
+### 4. Canonical category records (D-25)
+
+**Chosen shape.** A category is a record — `{ id (lowercase), label (display), columns }` —
+edited on `/admin/site`. Photos reference `id`. Display code reads `label`. Column counts read
+`columns`.
+
+**The drift, cited at its origin.** `data/portfolio_images.json` stores the category value
+`architecture` (lowercase). `data/site_config.json`'s `categoryColumns` map keys the same
+category as `Architecture` (Title-case). Two files, one concept, two spellings — and nothing
+reconciles them except a render-time transform: the legacy `PropertiesPanel` Title-cased on
+the fly with `c.charAt(0).toUpperCase() + c.slice(1)` to populate the category `<select>`.
+
+**Why the record shape kills it.** Making display and key *different fields* removes the
+transform entirely. The `categoryColumns` map's keys stop being a display string that happens
+to be a key, and become an explicit `id` with an explicit `label` beside it. A transform that
+does not exist cannot disagree with the data.
+
+**Rename and delete need a designed reassignment path.** Renaming a label must not touch `id`
+(otherwise 14 photos lose their category). Deleting a category must ask where its photos go —
+`ConfirmDialog` + `Select`, stating the count plainly: *"12 photos use this."* This is the one
+place on `/admin/site` where a confirm is not ceremonial.
+
+### 5. The résumé date-shape drift — resolved, not discovered
+
+**The drift.** `src/types.ts` on the legacy branch documents it in a header comment: the admin
+"splits experience dates into `startMonth`/`startYear`/… while `resume.json` stores a single
+`period` string." The legacy admin's local `ExperienceEntry` carried **both** —
+`startMonth`, `startYear`, `endMonth`, `endYear`, `isPresent` **and** `period` — which is the
+actual defect. Two representations of one fact, with nothing keeping them in agreement.
+
+**Chosen shape: the structured fields win, and `period` stops being stored.** Experience and
+education entries carry `startMonth`, `startYear`, `endMonth`, `endYear`, `isPresent`. The
+`period` string is **derived at render time by a single formatter** and never persisted.
+
+**Reason.** The fact being edited is a date range; a free-text string is a lossy encoding of it
+that also invites format drift across entries (dash character, month abbreviation, casing).
+Deriving the string gives exactly one source of truth — which is the same failure mode as
+decision 4, in a different file. Choosing `period` instead would keep the display string
+authoritative and leave "is this role current?" un-modelled, which the résumé and Work pages
+both need.
+
+**Consequence for the résumé screen's field set.** The single `Period` `TextInput` in the
+recovered catalog becomes a date-range control: two `Select`s (month), two year inputs, and a
+`Checkbox` "Present" that disables the end pair. Net **+4 controls per experience entry and
+per education entry** against the recovered count. The formatter's acceptance test is exact
+reproduction of the four strings on disk today — `Jul 2023 – Present`, `Nov 2022 – Jun 2023`,
+`Dec 2021 – Nov 2022`, `Jul 2018 – Jun 2022` — with the en dash and the three-letter month, so
+the public page does not visibly change on migration.
+
 ---
 
 ## What is deliberately not ported
@@ -241,3 +345,129 @@ Two of them are analogs for what to *fix*, not what to copy:
 
 The WYSIWYG shell around `PropertiesPanel` is discarded (PROJECT.md, Out of Scope). The field
 inventory it represents is not — that inventory is this document.
+
+---
+
+## States and where each actually lives
+
+D-03 requires the admin's states to be designed **exhaustively** — empty, loading, error,
+dirty, conflict, success. D-13 layers a draft / ready / published axis on top, and D-09 wants
+a second layout for every screen. Multiplied out that is a number nobody can build or review.
+
+**The naive product, stated plainly:** 7 screens × 6 states × 2 layouts = **84**, plus the
+cross-cutting surfaces that are not routes but are unavoidably screens — publish confirm in
+valid and invalid variants (D-14, D-18), the per-file conflict diff (D-16), per-screen and
+global discard confirms (D-17), the 401 re-auth prompt (D-19), the pipeline status strip
+(D-15), the category-reassignment dialog (D-25) and the "open on desktop" refusal (D-09) —
+roughly 12 more surfaces × ~2 states × 2 layouts ≈ 24. **Total ≈ 108 artefacts**, before a
+single line of case-study or Work/Photos work.
+
+**The reduction, and why it does not weaken D-03.** D-03's promise is *"nothing is left for
+Phase 7 to invent."* That promise is kept by an **explicit, complete coverage matrix** — not
+by rendering every cell. Most of the six states do not live at screen scope at all:
+
+| State | The scope it genuinely lives at | Artefacts |
+|-------|----------------------------------|----------:|
+| `loading` | App shell + list-level skeleton — two treatments, not seven | **2** |
+| `conflict` | One dedicated screen (D-16), reached from publish | **1** |
+| `success` | A publish outcome — dashboard confirmation + status strip | **2** |
+| `error` | Three genuinely different treatments: inline field warning under the lenient draft (D-18), the publish-block error summary (D-18), and network / 401 (D-19) | **3** |
+| `dirty` | One badge pattern applied everywhere D-13 requires it — screen, sidebar, dashboard | **1** |
+| `empty` | **The only genuinely per-screen state** — dashboard, photos, projects and a résumé section each mean something different | **4–5** |
+
+**What that buys.** ≈ 20 desktop sketches (seven populated screens, ~5 meaningful empty
+states, ~8 state treatments each applied to its most demanding host screen), ≈ 6 phone
+sketches (D-09 permits exactly four capabilities and requires two refusals — not a 7×
+multiplier), and ≈ 9 overlays and dialogs. **≈ 35 sketches**, down from ≈ 108, with no cell
+left undeclared.
+
+**The contract that makes the reduction checkable.** The contact sheet carries a
+7 screens × 6 states = **42-cell** coverage table in which every cell is exactly one of
+`designed` (with an artefact ID), `inherits: T-n` (with the treatment ID), or
+`n/a: <reason>` (with a one-clause reason). **A blank cell fails review.** That single rule is
+what converts "exhaustively" from an aspiration into a property a reviewer can check by
+inspection — and it is why 35 sketches satisfy D-03 while 108 would merely exhaust everyone.
+
+---
+
+## Artefact inventory
+
+These IDs are **a contract**. Plans 09 through 16 may add IDs; they may not silently rename
+one. Findings, review comments and the coverage table all cite these, so a review comment
+survives `.playground/`'s deletion. The one-line note states **what each artefact proves**,
+not what it shows — a sketch that only shows something is not evidence.
+
+### Screens — `S-` (7)
+
+| ID | What it proves |
+|----|----------------|
+| `S-dashboard` | That pending changes grouped by entity are legible at a glance, so pending state has a permanent home instead of living inside a modal (D-06). |
+| `S-home` | That six peek slots plus a focal position fit one full-width column with no split pane (D-07), and that the missing crop picker (G-1) is a real blocker rather than a nicety. |
+| `S-photos` | That 39 real photos survive `DataGrid` at compact density with a legible row height, and that both ordering fields (D-22) can be expressed without ambiguity. |
+| `S-resume` | That an 11-bullet experience entry plus two shorter ones, three skill groups and an education entry are workable full-width — the case that decided D-07. |
+| `S-projects` | That five records with a status badge are a list, not a grid, and that D-45's three statuses are distinguishable at badge size. |
+| `S-project-detail` | That a card record and a long-form case study can be authored on one route without either reading as an afterthought of the other (D-24). |
+| `S-site` | That the category triple is editable in place and that `id` and `label` are visibly *different* fields — the whole point of decision 4. |
+
+### Empty states — `E-` (5)
+
+| ID | What it proves |
+|----|----------------|
+| `E-dashboard` | That "nothing pending" reads as a finished state rather than a broken one — the state this screen is in most of the time. |
+| `E-photos` | That a gallery with nothing in it still leads with the upload affordance instead of an empty grid. |
+| `E-projects` | That the projects list can be empty at all, and says what to do about it rather than just noting the absence. |
+| `E-resume-section` | That an empty *section* inside an otherwise populated screen is distinguishable from a section still loading. |
+| `E-category-filtered` | That an empty *filter result* is distinguishable from an empty dataset — the confusion that makes an operator think the filter is broken. |
+
+### Treatments — `T-` (8)
+
+| ID | What it proves |
+|----|----------------|
+| `T-loading-shell` | That the shell paints before data arrives, so navigation never blanks the window. |
+| `T-loading-list` | That a list skeleton reserves the right height, so nothing jumps when the data lands. |
+| `T-dirty-badge` | That `dirty` is legible in all three places D-13 requires it: the screen, the sidebar badge, and the dashboard. |
+| `T-ready-badge` | That `ready` is distinguishable from `draft` at badge size — the D-13 distinction a single "unsaved" dot would collapse. |
+| `T-error-inline` | That the lenient-draft warning (D-18) reads as *incomplete*, not as *rejected*. |
+| `T-error-publish` | That the strict-publish block lists its failures and points at them — the surface `FormErrorSummary` cannot currently deep-link from (G-6). |
+| `T-error-network` | That a transport failure is distinguishable from a validation failure, so the operator retries instead of editing. |
+| `T-success-published` | That publish confirmation stays honest across the asynchronous photo half (D-12) — "committed" is not "processed". |
+
+### Overlays — `O-` (9)
+
+| ID | What it proves |
+|----|----------------|
+| `O-publish-valid` | That the confirm modal states exactly what is about to ship before it ships (D-14). |
+| `O-publish-invalid` | That the invalid case is a designed state with a route to the fix, not a greyed-out button (D-18). |
+| `O-discard-screen` | That per-screen discard returns to *published* state, never to an empty form — the D-11 rule made visible. |
+| `O-discard-all` | That the global discard is guarded harder than the per-screen one, via `TypeToConfirm` (D-17). |
+| `O-conflict-diff` | That one conflicted file can be resolved without abandoning an unrelated edit (D-16) — the largest single admin surface, and the one with zero design-system coverage (G-7). |
+| `O-reauth-401` | That an expired session denies and re-authenticates with on-screen state preserved and the save retried in place (D-19) — and **never** depicts a bypass or a client-held credential. |
+| `O-category-reassign` | That rename and delete carry a real reassignment path stating the blast radius: "12 photos use this" (D-25). |
+| `O-pipeline-strip` | That pipeline status survives navigation and agrees with the per-photo tile — the two places D-15 requires to match; needs G-8. |
+| `O-phone-sidebar` | That the sidebar collapses to a `Sheet` without dropping any of the seven routes (D-09). |
+
+### Phone — `P-` (4)
+
+| ID | What it proves |
+|----|----------------|
+| `P-dashboard` | That reviewing pending changes on a phone is a complete task, not a teaser that ends in "open on desktop". |
+| `P-text-edit` | That fixing a typo on a phone actually reaches the field, at the comfortable density's 44px touch floor. |
+| `P-photo-reorder` | That reordering by touch works — the D-09 capability most likely to be quietly dropped. |
+| `P-publish` | That publish is reachable from a phone, which is the entire reason D-09 exists. |
+
+### Refusals — `R-` (2)
+
+| ID | What it proves |
+|----|----------------|
+| `R-crop-picker` | That the desktop-only refusal reads as honest rather than broken — justified by the legacy control being mouse-only and touch-unaware (G-1). |
+| `R-case-study-authoring` | That long-form authoring refuses on a phone *with a reason*, instead of shipping an editor that fails on contact. |
+
+### Public — `X-` (5)
+
+| ID | What it proves |
+|----|----------------|
+| `X-work` | That the two-band Work page (D-44) survives the ivory → charcoal resolution without losing its employment/projects distinction. |
+| `X-photos` | That the category filter row works as real anchors with `aria-current`, not a radiogroup (G-9), and still ships zero framework JS. |
+| `X-case-long` | That the long case-study template holds real drafted prose at real length (D-39, D-40) rather than at placeholder length. |
+| `X-case-short` | That the short template is genuinely a different template, not the long one truncated. |
+| `X-contact-sheet` | The review convention itself: 42 cells, none blank, with the measurement readout on the same page as the design. |

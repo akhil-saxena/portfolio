@@ -68,7 +68,27 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
   3. Work and Photos are resolved onto the charcoal dark palette, replacing the handoff's earlier ivory iteration
   4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
   5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
-**Plans**: TBD
+**Plans**: 17 plans across 12 waves
+
+Plans:
+- [ ] 00-01-PLAN.md — Scaffold the throwaway Astro playground, prove the D-02 fence, measure DS-09 tree-shaking, seed the gap register
+- [ ] 00-02-PLAN.md — The copy-length checker and the five one-liners and card descriptions
+- [ ] 00-03-PLAN.md — The admin information architecture: route-per-entity, the recovered field catalog, the artefact inventory
+- [ ] 00-04-PLAN.md — theme-charcoal.css and fonts-charcoal.css, with the exhaustiveness, font-name and three-surface contrast gates
+- [ ] 00-05-PLAN.md — The two long-form case studies: the design system and Cairn
+- [ ] 00-06-PLAN.md — The three short-form case studies: TimeShift, hued and Momentum
+- [ ] 00-07-PLAN.md — The cascade-order probe, the D-33 CSS manifests, and the proposed exports map proven against a stub package
+- [ ] 00-08-PLAN.md — 00-THEME-API.md: the charcoal theme's public API decided in writing
+- [ ] 00-09-PLAN.md — Work and Photos resolved onto charcoal, Home Act 2 resolving OQ-1, and the contact sheet started
+- [ ] 00-10-PLAN.md — The long-form and short-form case-study templates rendered against the real drafts
+- [ ] 00-11-PLAN.md — Human review of the public charcoal surfaces and the case-study templates *(checkpoint)*
+- [ ] 00-12-PLAN.md — The admin shell, the compact-density prototype, the artefact registry and the pending dashboard
+- [ ] 00-13-PLAN.md — /admin/photos against all 39 real photos, and the Sortable reorder island
+- [ ] 00-14-PLAN.md — /admin/home with the focal-point island, and /admin/resume with the RichText island
+- [ ] 00-15-PLAN.md — /admin/projects, /admin/projects/[id], /admin/site, and the per-file conflict diff
+- [ ] 00-16-PLAN.md — Publish, discard and error overlays, the four phone capabilities, and the generated 42-cell coverage table
+- [ ] 00-17-PLAN.md — Screenshot the artefact record, six review passes, then delete .playground/ per D-02 *(checkpoint)*
+
 **UI hint**: yes
 
 > **Scope guard — no implementation.** This phase produces design artefacts only. The one

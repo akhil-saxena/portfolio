@@ -83,9 +83,9 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 00-04-PLAN.md — theme-charcoal.css and fonts-charcoal.css, with the exhaustiveness, font-name and three-surface contrast gates
-- [ ] 00-05-PLAN.md — The two long-form case studies: the design system and Cairn
-- [ ] 00-06-PLAN.md — The three short-form case studies: TimeShift, hued and Momentum
+- [x] 00-04-PLAN.md — theme-charcoal.css and fonts-charcoal.css, with the exhaustiveness, font-name and three-surface contrast gates
+- [x] 00-05-PLAN.md — The two long-form case studies: the design system and Cairn
+- [x] 00-06-PLAN.md — The three short-form case studies: TimeShift, hued and Momentum
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 3/17 | In Progress|  |
+| 0. Design & Ideation | 6/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

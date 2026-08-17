@@ -76,7 +76,9 @@ This orientation block sits outside the GSD markers and survives regeneration.
 <!-- ORIENTATION:end -->
 
 <!-- GSD:stack-start source:codebase/STACK.md -->
-## Technology Stack
+## Technology Stack (LEGACY — `legacy/nextjs-portfolio` branch)
+
+> The versions, dependencies, bindings and env vars below belong to the Next.js app on the `legacy/nextjs-portfolio` branch, not to this working tree — which has no `src/` and no `package.json` to install from. Read the real manifests with `git show legacy/nextjs-portfolio:package.json`. Treat this as the dependency inventory the Astro rebuild has to replace.
 
 ## Languages
 - TypeScript 5 (`^5` in `package.json`) — all app/route code under `src/`
@@ -135,7 +137,9 @@ This orientation block sits outside the GSD markers and survives regeneration.
 <!-- GSD:stack-end -->
 
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
-## Conventions
+## Conventions (LEGACY — `legacy/nextjs-portfolio` branch)
+
+> The CI gate, naming rules and API-route conventions below are the ones the Next.js app on the `legacy/nextjs-portfolio` branch actually followed — this working tree has no `src/` for any of them to apply to yet. Verify any claim against the source, e.g. `git show legacy/nextjs-portfolio:eslint.config.mjs`. Read it as the convention inventory the Astro rebuild must knowingly keep, fix or drop.
 
 ## CI Gate — what is actually enforced today
 - run: npm ci
@@ -190,7 +194,9 @@ This orientation block sits outside the GSD markers and survives regeneration.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
-## Architecture
+## Architecture (LEGACY — `legacy/nextjs-portfolio` branch)
+
+> The components, layers, data flows and anti-patterns below map the Next.js app as it exists on the `legacy/nextjs-portfolio` branch; none of these files are present in this working tree, which has no `src/`. Open anything named here with `git show legacy/nextjs-portfolio:src/app/admin/page.tsx` (substitute the path). This is the behaviour inventory the Astro rebuild must reproduce or deliberately retire.
 
 ## System Overview
 ```text

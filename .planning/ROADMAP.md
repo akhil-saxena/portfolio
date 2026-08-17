@@ -106,7 +106,7 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 00-12-PLAN.md — The admin shell, the compact-density prototype, the artefact registry and the pending dashboard
+- [x] 00-12-PLAN.md — The admin shell, the compact-density prototype, the artefact registry and the pending dashboard
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 10/17 | In Progress|  |
+| 0. Design & Ideation | 12/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

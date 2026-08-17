@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
+status: executing
 stopped_at: Phase 0 UI-SPEC approved (targeted AAA adopted)
-last_updated: "2026-08-17T03:51:06.637Z"
-last_activity: 2026-08-16 — Roadmap created; 73/73 v1 requirements mapped across 9 phases
+last_updated: "2026-08-17T05:50:31.716Z"
+last_activity: 2026-08-17 -- Phase 0 planning complete
 progress:
   total_phases: 10
   completed_phases: 0
-  total_plans: 0
+  total_plans: 17
   completed_plans: 0
   percent: 0
 ---
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-08-16)
 
 Phase: 0 of 8 (Design & Ideation) — 9 phases total, numbered 0–8
 Plan: — of — in current phase
-Status: Ready to plan
-Last activity: 2026-08-17 — Completed quick task 260817-dqf: scoped CLAUDE.md's legacy Next.js docs to the `legacy/nextjs-portfolio` branch
+Status: Ready to execute
+Last activity: 2026-08-17 -- Phase 0 planning complete
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -82,6 +82,7 @@ None yet.
 - **Live site:** `akhilsaxena.com` is not serving (Cloudflare nameservers, no host records). `akhilsaxena.pages.dev` still serves the OLD site only because the purged `main` fails to build and Cloudflare retains the last successful deployment. Schedule pressure, not a hard outage — the first successful new deploy replaces the old site.
 - **Cross-repo gate:** Phase 5 cannot be verified against the real identity until Phase 1 publishes. Tarball (`npm pack` → `file:*.tgz`) is the dev bridge; never a symlink (duplicate React).
 - **Open question carried from research:** Playfair Display delivery — shipped from the design-system theme, or via Astro's `fonts` config? Must be settled in Phase 0 (DSGN-05) before the Phase 1 release is cut.
+- **Gate override (Phase 0 planning, 2026-08-17):** the decision-coverage gate reported 31 uncovered CONTEXT.md decisions and was overridden as a false positive. Cause is the matcher, not the plans: it greps for the literal `D-NN:` (colon) form, while the plans cite decisions as `D-02`, `(D-02)`, `D-24,` — D-02 appears 26 times, D-03 11 times, and gsd-plan-checker independently found zero contradictions of D-01…D-47. Separately, ~20 of the 31 (D-27…D-37 design-system/Phase 1; D-10…D-26 admin implementation/Phase 7) are genuinely later-phase decisions that Phase 0 only sketches, so the gate will keep misfiring here until they are tagged `[informational]` in CONTEXT.md. Re-surface at verify-phase.
 
 ### Quick Tasks Completed
 

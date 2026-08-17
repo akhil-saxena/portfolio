@@ -24,6 +24,7 @@ front-loaded into Phase 2 rather than left to Phase 8.
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (0, 1, 2, …): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -59,34 +60,72 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
 ## Phase Details
 
 ### Phase 0: Design & Ideation
+
 **Goal**: Every screen the build phases need has a design, and the charcoal identity is proven against real design-system components before the theme release is cut
 **Depends on**: Nothing (first phase)
 **Requirements**: DSGN-01, DSGN-02, DSGN-03, DSGN-04, DSGN-05, DSGN-06
 **Success Criteria** (what must be TRUE):
+
   1. A reviewable wireframe set exists for the admin CMS — every screen, its information architecture, and its states — where no design existed before
   2. A case-study page template exists as a design, with the problem → decisions → outcome structure laid out against real drafted content rather than lorem ipsum
   3. Work and Photos are resolved onto the charcoal dark palette, replacing the handoff's earlier ivory iteration
   4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
   5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
+
 **Plans**: 17 plans across 12 waves
 
 Plans:
+**Wave 1**
+
 - [ ] 00-01-PLAN.md — Scaffold the throwaway Astro playground, prove the D-02 fence, measure DS-09 tree-shaking, seed the gap register
 - [ ] 00-02-PLAN.md — The copy-length checker and the five one-liners and card descriptions
 - [ ] 00-03-PLAN.md — The admin information architecture: route-per-entity, the recovered field catalog, the artefact inventory
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 00-04-PLAN.md — theme-charcoal.css and fonts-charcoal.css, with the exhaustiveness, font-name and three-surface contrast gates
 - [ ] 00-05-PLAN.md — The two long-form case studies: the design system and Cairn
 - [ ] 00-06-PLAN.md — The three short-form case studies: TimeShift, hued and Momentum
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 00-07-PLAN.md — The cascade-order probe, the D-33 CSS manifests, and the proposed exports map proven against a stub package
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 00-08-PLAN.md — 00-THEME-API.md: the charcoal theme's public API decided in writing
 - [ ] 00-09-PLAN.md — Work and Photos resolved onto charcoal, Home Act 2 resolving OQ-1, and the contact sheet started
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 00-10-PLAN.md — The long-form and short-form case-study templates rendered against the real drafts
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [ ] 00-11-PLAN.md — Human review of the public charcoal surfaces and the case-study templates *(checkpoint)*
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 00-12-PLAN.md — The admin shell, the compact-density prototype, the artefact registry and the pending dashboard
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 00-13-PLAN.md — /admin/photos against all 39 real photos, and the Sortable reorder island
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 00-14-PLAN.md — /admin/home with the focal-point island, and /admin/resume with the RichText island
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 00-15-PLAN.md — /admin/projects, /admin/projects/[id], /admin/site, and the per-file conflict diff
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
 - [ ] 00-16-PLAN.md — Publish, discard and error overlays, the four phone capabilities, and the generated 42-cell coverage table
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
 - [ ] 00-17-PLAN.md — Screenshot the artefact record, six review passes, then delete .playground/ per D-02 *(checkpoint)*
 
 **UI hint**: yes
@@ -97,16 +136,19 @@ Plans:
 > release is cut. They are throwaway. No production application code is written here.
 
 ### Phase 1: Design System — Charcoal Theme
+
 **Goal**: The charcoal identity ships as a consumable, contrast-safe, correctly-fonted theme from a published version of `@akhil-saxena/design-system`
 **Depends on**: Phase 0 (theme API decided in DSGN-05, gaps found in DSGN-04)
 **Parallel with**: Phase 2 — different repository, no shared code or build
 **Requirements**: DS-01, DS-02, DS-03, DS-04, DS-05, DS-06, DS-07, DS-08, DS-09
 **Success Criteria** (what must be TRUE):
+
   1. `npm install @akhil-saxena/design-system@<new version>` from the public registry yields a working charcoal theme consumable by version number, with no local path or tarball required
   2. Applying the charcoal scope alongside `:root.dark` produces charcoal in both light and dark, regardless of which stylesheet the bundler ordered first
   3. Light-mode muted text and the ochre accent pass WCAG AA for body text, a darkened ochre token exists for focus rings, and `tokens.test.ts` fails CI if either regresses
   4. A page consuming only the charcoal theme downloads Playfair Display, DM Sans and IBM Plex Mono — and does not download Inter, Archivo, JetBrains Mono or Newsreader
   5. `Lightbox` closes on backdrop click, accepts a `srcset`, responds to swipe, and announces slide changes to a screen reader; and a public island importing design-system components pulls in no TipTap, ProseMirror or dnd-kit
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -123,16 +165,19 @@ Plans:
 > never a local workaround in the portfolio. Phase 5 re-checks the result as a gate.
 
 ### Phase 2: Astro Foundation & Fail-Closed Auth
+
 **Goal**: A deployed Cloudflare Worker serves prerendered public routes and denies every unauthenticated request to `/admin`, `/api/*` and `/_actions/*` — before any admin surface exists to protect
 **Depends on**: Nothing (parallel with Phase 1)
 **Parallel with**: Phase 1 — different repository, no shared code or build
 **Requirements**: FND-01, FND-02, FND-03, FND-04, FND-05, FND-06, FND-07, AUTH-01, AUTH-02, AUTH-03, AUTH-04
 **Success Criteria** (what must be TRUE):
+
   1. A push to `main` deploys an Astro 7 + React 19 app to Cloudflare Workers with Static Assets, gated by CI running lint, typecheck, build and tests
   2. A request to `/admin`, `/api/*` or `/_actions/*` carrying no valid Cloudflare Access JWT is rejected — including when the Access configuration is entirely absent — proven by a test running against real workerd rather than a mock
   3. The build fails, loudly, if any API or admin route was prerendered into `dist/`, and fails if a required secret is unset — there is no path that degrades to permissive at runtime
   4. R2 bindings resolve from `cloudflare:workers` in both `astro dev` and production, with no absence-guard in the code path that could mask a genuinely broken binding
   5. `akhilsaxena.com` is confirmed on Cloudflare-managed nameservers, an R2 custom domain is provisioned and serving cached images, and CI fails the build if the design-system dependency spec still starts with `file:`
+
 **Plans**: TBD
 
 > **Auth lands here, not in Phase 7.** The moment `/admin` exists as a route in a deployed
@@ -146,14 +191,17 @@ Plans:
 > CI simultaneously under outage pressure.
 
 ### Phase 3: Content Layer & Image Origin
+
 **Goal**: All site content is schema-validated from a single source of truth, unsanitized HTML cannot structurally reach a page, and no image is served from the uncached `r2.dev` origin
 **Depends on**: Phase 2
 **Requirements**: CONT-01, CONT-02, CONT-03, CONT-04
 **Success Criteria** (what must be TRUE):
+
   1. One schema module validates photos, résumé, home config and site config, and that same module is what the build, the write path and the admin's form errors all consume — validation cannot drift between them
   2. Committing a malformed `data/*.json` fails the build with a readable error instead of shipping a broken site
   3. A résumé bullet containing a script tag is stripped at both the write boundary and the render boundary, verified by a test — the legacy stored-XSS class is closed structurally, not by convention
   4. No `pub-*.r2.dev` URL remains anywhere in the repository, and a photo request returns `cf-cache-status: HIT` from the R2 custom domain
+
 **Plans**: TBD
 
 > **CONT-04 is early on purpose.** Building the gallery against URLs that are about to
@@ -162,16 +210,19 @@ Plans:
 > tweak, and it must precede Phase 5.
 
 ### Phase 4: Photo Pipeline (Actions half)
+
 **Goal**: A photo goes from an R2 staging object to resized variants, extracted EXIF and a committed manifest entry — driven entirely from the command line, with no admin UI in existence
 **Depends on**: Phase 3
 **Parallel with**: Phase 5 and Phase 6 — no UI dependency in either direction
 **Requirements**: PIPE-01, PIPE-02, PIPE-03, PIPE-04, PIPE-05, CONT-05
 **Success Criteria** (what must be TRUE):
+
   1. `gh workflow run process-photos.yml` against a staged upload produces resized variants in R2 and a schema-valid manifest entry committed to `main`, with EXIF read from the original
   2. Re-running the same job for the same upload adds no duplicate manifest entry
   3. A job that fails partway leaves the manifest consistent with the bucket, and staged `temp/` objects expire on their own rather than accumulating
   4. A pipeline commit and a concurrent manual edit to the same files cannot clobber each other — one retries or reports a conflict
   5. Re-uploading a photo serves the new bytes from the CDN without a manual cache purge
+
 **Plans**: TBD
 
 > **Why this precedes the public site.** The Actions half depends only on the Phase 3
@@ -183,15 +234,18 @@ Plans:
 > against them — the same rework argument that puts CONT-04 in Phase 3.
 
 ### Phase 5: Public Site
+
 **Goal**: Visitors get the whole public site — Home, Work, Photos, Résumé — on the charcoal identity, at Lighthouse-grade weight, with four of the five routes shipping no framework JavaScript
 **Depends on**: Phase 1 (published theme), Phase 3 (content layer)
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08, PUB-09, PUB-10, PUB-11, PUB-12, PUB-13, PUB-14, SEO-01, SEO-02, SEO-03, SEO-05
 **Success Criteria** (what must be TRUE):
+
   1. Home presents two acts — identity and photo grid filling the first viewport, work below; Work lists the five projects and the Brevo engineering strip; Résumé renders from structured data, offers the maintained PDF, and prints legibly
   2. Photos shows all 39 images in a masonry gallery with no pagination, nothing shifts as it loads, and category filtering works as real links to prerendered `/photos/[category]` routes — crawlable, Back-button-capable, zero JavaScript
   3. Clicking a photo opens a lightbox dismissible by keyboard, backdrop and swipe, showing EXIF with absent fields omitted entirely rather than placeheld, and cameras and lenses shown as human names; each photo also has its own prerendered page with a social card
   4. A visitor can switch between dark and light, the choice persists, there is no flash of the wrong theme on first paint, motion is suppressed under `prefers-reduced-motion`, and four of the five public routes ship zero framework JavaScript
   5. Every page carries a canonical URL plus Open Graph and Twitter card metadata, the résumé carries `Person` structured data, a sitemap is generated, and the legacy `/portfolio` path 301s to `/photos`
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -204,26 +258,32 @@ Plans:
 > Font: at most three families should download.
 
 ### Phase 6: Case Studies
+
 **Goal**: Each project is told as a real case study — problem, decisions and outcome, including what was rejected — reusing the vocabulary the public site established
 **Depends on**: Phase 0 (template design + drafted copy), Phase 5 (layout and typography vocabulary)
 **Requirements**: CASE-01, CASE-02, CASE-03
 **Success Criteria** (what must be TRUE):
+
   1. Every project listed on Work links to a case-study page structured as problem → decisions → outcome, and each names alternatives that were rejected and why — not only what was chosen
   2. Case studies are authored as Markdown in a content collection, so adding one is adding a file rather than editing a template
   3. The design-system case study reads as the flagship — it carries measured specifics and genuine depth, not a product description
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 06.1: Design System — Cascade Layers & Density Axis (INSERTED)
+
 **Goal**: The design system's cascade is order-independent by declaration rather than by specificity arithmetic, and it exposes a density axis — so the admin can be compact without a single spacing override in the portfolio
 **Depends on**: Phase 1 (charcoal theme published; compound selectors in place to migrate from), Phase 0 (DSGN-04 findings evidencing what density actually needs)
 **Parallel with**: Phases 2–6 — different repository, no shared code or build. Must land before Phase 7.
 **Requirements**: DS-10, DS-11, DS-12
 **Success Criteria** (what must be TRUE):
+
   1. Charcoal, dark and compact applied together resolve deterministically regardless of the order the bundler emits stylesheets — verified in a real Astro build, not only in isolation
   2. The admin's denser spacing comes entirely from `data-density="compact"`; no spacing token is redefined anywhere in the portfolio repo
   3. The existing Playwright snapshot suite passes on the layers migration as an isolated release, with no font or contrast changes landing alongside it
   4. A published npm version carries both changes, consumable by version number
+
 **Plans**: TBD
 **UI hint**: no
 
@@ -242,15 +302,18 @@ Plans:
 > place.
 
 ### Phase 7: Admin CMS
+
 **Goal**: Akhil can edit content, upload photos and publish the site from a browser, with concurrent edits caught per-file and deploy status reported truthfully
 **Depends on**: Phase 0 (wireframes), Phase 2 (auth gate already proven), Phase 3 (schemas), Phase 4 (pipeline to drive)
 **Requirements**: ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, ADMIN-06, ADMIN-07, ADMIN-08, ADMIN-09, ADMIN-10
 **Success Criteria** (what must be TRUE):
+
   1. The whole round trip works without touching a terminal — open `/admin`, edit the résumé, home config and site config through design-system form editors, preview the change, publish it, and see it live
   2. Editing a file that changed underneath surfaces a recoverable "reload and re-apply" prompt, detected per-file by blob SHA — not a dead-end error, and never a silent overwrite
   3. The admin reports "deployed" only once the build actually succeeded, and the last publish can be reverted in one click
   4. Photos upload through the admin and the processing job's completion is reported back in the UI
   5. Per-photo `object-position` for the home hero crops is editable in the admin, and navigating away with unsaved changes warns first
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -259,15 +322,18 @@ Plans:
 > text editor as a perfectly serviceable fallback in the meantime.
 
 ### Phase 8: Harden & Cut Over
+
 **Goal**: `akhilsaxena.com` serves the new site at 95+ across the board, with the boundaries that matter under automated test and the old hostname redirecting
 **Depends on**: Phase 7
 **Requirements**: QUAL-01, QUAL-02, QUAL-03, QUAL-04, SEO-04, SEO-06
 **Success Criteria** (what must be TRUE):
+
   1. Public pages score 95+ on Lighthouse performance, accessibility, best practices and SEO, enforced as a standing CI gate rather than a one-off run
   2. The auth boundary, the publish path and the photo pipeline each have automated tests that fail when the behaviour breaks
   3. `akhilsaxena.com` serves the site with certificates issued and Cloudflare Access still admitting Akhil to `/admin`
   4. `akhilsaxena.pages.dev` 301s to the apex, so the already-indexed production hostname does not compete with the new one
   5. Application CSS beyond the design system is confined to layout, and the built site matches the design handoff on layout, typography, spacing and interaction
+
 **Plans**: TBD
 
 > **Cutover is a written pre-flight, not an improvised sequence.** Recreating rather than

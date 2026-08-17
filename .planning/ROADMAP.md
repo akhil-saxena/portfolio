@@ -98,7 +98,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 00-10-PLAN.md — The long-form and short-form case-study templates rendered against the real drafts
+- [x] 00-10-PLAN.md — The long-form and short-form case-study templates rendered against the real drafts
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -353,7 +353,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 9/17 | In Progress|  |
+| 0. Design & Ideation | 10/17 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

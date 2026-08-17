@@ -68,7 +68,7 @@ surfaces of both modes with all 54 ratios reproducing UI-SPEC exactly.**
 |------|--------|--------|
 | 1 | 3 Fontsource packages, `theme-charcoal.css`, `fonts-charcoal.css`, `probe/tokens.astro` | *(no commit — gitignored)* |
 | 2 | `check-theme-exhaustive.mjs`, `check-font-names.mjs` | *(no commit — gitignored)* |
-| 3 | `check-contrast.mjs`, AAA-1 + G-11 + font-baseline evidence | `<pending>` |
+| 3 | `check-contrast.mjs`, AAA-1 + G-11 + font-baseline evidence | `f802b86` |
 
 **Tasks 1 and 2 produced no commit by design.** Every file they create lives inside
 `.playground/`, which plan 01 gitignored. That is the D-02 fence working as specified, not a

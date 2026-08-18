@@ -23,7 +23,11 @@
  *      `Decisions` counts three sections and reports a LOW word count as a PASS —
  *      the gate would then certify the exact defect it exists to catch.
  *   2. Band compliance (R-1) — 500-700 words over those four sections, enforced on
- *      the slugs in OWNED, reported for every other slug.
+ *      every one of the five D-38 studies. There is no reported-only tier any more;
+ *      plan 00-20 retired the last unowned draft.
+ *   2b. Corpus membership — the five slugs in CORPUS_SLUGS are all present and
+ *      nothing else is. A superseded draft left beside its replacement is the
+ *      failure this catches, and it is not hypothetical: see CORPUS_SLUGS.
  *   3. Provenance survival — `[source: ...]` markers are stripped BEFORE counting
  *      (they are provenance furniture, not prose; counting them would let a
  *      compression pass reach the band by keeping citations and cutting sentences)
@@ -43,18 +47,34 @@ const MIN_WORDS = 500;
 const MAX_WORDS = 700;
 
 /**
- * The slugs whose band is ENFORCED. `design-system` is measured and printed but
- * never fails the run: it was compressed to this same 500-700 target by a parallel
- * off-plan run (`00-COMPRESSION-NOTE.md`), and plan 00-18 must not edit a file
- * another agent holds open — a collision between two agents in one directory loses
- * work with no conflict marker, because they are different files in the same tree.
+ * The slugs whose band is ENFORCED — all five D-38 studies, no exclusions.
  *
- * This exclusion is a SCHEDULING artefact, not a permanent carve-out. It ends when
- * plan 00-20 lands its build-time loader assertion, which covers all five studies
- * at render time regardless of which plan wrote them. At that point `design-system`
- * moves into OWNED here and this exclusion is deleted.
+ * Plan 00-18 ran this with `design-system` REPORTED rather than owned, because a
+ * parallel off-plan run held that file open (`00-COMPRESSION-NOTE.md`) and two
+ * agents editing one directory lose work with no conflict marker. That exclusion
+ * was a SCHEDULE, and plan 00-20 is where it ends: 00-20 retired the superseded
+ * 1,943-word `case-design-system.md` and promoted the compressed draft into its
+ * name, so there is one file per study and every one of them is owned here.
+ *
+ * This list and CORPUS_SLUGS below are the same five, deliberately written twice:
+ * OWNED says which slugs must PASS, CORPUS_SLUGS says which slugs must EXIST and
+ * that nothing else may. Merging them would lose the second assertion, which is
+ * the one that catches a superseded draft sitting beside its replacement.
  */
-const OWNED = ["cairn", "hued", "momentum", "timeshift"];
+const OWNED = ["cairn", "design-system", "hued", "momentum", "timeshift"];
+
+/**
+ * The corpus is EXACTLY these five files. Asserted, not assumed.
+ *
+ * The failure this closes actually happened. For one whole plan the corpus held
+ * SIX case files: `case-design-system.md` at 1,943 words and
+ * `case-design-system-COMPRESSED.md` at 597, the second superseding the first.
+ * Because neither slug was in OWNED, the gate printed both as "reported, not
+ * owned" and exited 0 — a run that scanned an over-band draft, said so on stdout,
+ * and passed. An unrecognised slug is now a failure rather than a report, so a
+ * `-COMPRESSED`, `-v2` or `-old` draft cannot re-enter the corpus unenforced.
+ */
+const CORPUS_SLUGS = OWNED;
 
 /** Rule 1's middle slot: one section, two accepted spellings. */
 const MIDDLE_HEADING_SPELLINGS = ["## Decisions", "## Decision"];
@@ -165,6 +185,36 @@ if (files.length === 0) {
 	process.exit(1);
 }
 
+// --- Rule 2b: corpus membership, checked before anything is counted ---
+//
+// Set difference both ways. A missing study and an extra study are different
+// failures with different fixes, so they get different messages rather than one
+// "corpus mismatch" that makes the reader diff two lists by eye.
+{
+	const present = files.map(slugOf);
+	for (const slug of CORPUS_SLUGS) {
+		if (!present.includes(slug)) {
+			violations.push(
+				`MISSING-STUDY: no case-${slug}.md under ${relative(process.cwd(), CORPUS_DIR)}.\n` +
+					`    D-38 locks five studies: ${CORPUS_SLUGS.join(", ")}.\n` +
+					"    A study with no draft has a route with nothing to render.",
+			);
+		}
+	}
+	for (const slug of present) {
+		if (!CORPUS_SLUGS.includes(slug)) {
+			violations.push(
+				`UNKNOWN-STUDY: case-${slug}.md is not one of the five D-38 studies.\n` +
+					`    expected: ${CORPUS_SLUGS.join(", ")}\n` +
+					"    A superseded draft parked beside its replacement is the case this catches:\n" +
+					"    it would otherwise be scanned, printed, and passed. Either it is a study —\n" +
+					"    in which case add the slug here and give it a route — or it is retired, in\n" +
+					"    which case delete it. There is no third state.",
+			);
+		}
+	}
+}
+
 for (const file of files) {
 	const text = readFileSync(file, "utf8");
 	const rel = relative(process.cwd(), file);
@@ -232,7 +282,7 @@ for (const file of files) {
 console.log(
 	`Case-study length band (R-1): ${MIN_WORDS}-${MAX_WORDS} words over ${REQUIRED_HEADINGS.length} required sections.`,
 );
-console.log(`Enforced on: ${OWNED.join(", ")}. Reported only: every other slug.\n`);
+console.log(`Enforced on all ${OWNED.length} D-38 studies: ${OWNED.join(", ")}. Nothing is reported-only.\n`);
 for (const r of rows) {
 	const own = r.owned ? "owned   " : "reported";
 	console.log(

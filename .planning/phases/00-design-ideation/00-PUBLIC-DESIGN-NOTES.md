@@ -995,6 +995,14 @@ assertion covers all five, at which point the slug moves into `OWNED` and the ex
 Note the un-compressed `case-design-system.md` still measures 1,633 and is reported OVER band by
 the gate. That is expected — it is the superseded source, kept on disk for comparison.
 
+> **Superseded by plan 00-20.** The two paragraphs above describe a corpus of SIX case files
+> that no longer exists. 00-20 deleted the 1,633-word source and renamed
+> `case-design-system-COMPRESSED.md` into `case-design-system.md`, so the corpus is five files,
+> all five are in the gate's `OWNED` array, and `-COMPRESSED` appears in no filename. The
+> exclusion this section calls a scheduling artefact has been deleted, on schedule. See
+> `## Case routing` at the end of this file. Kept rather than rewritten because it is plan
+> 00-18's own record of what it did, and a record edited to match a later state stops being one.
+
 ### What each study lost
 
 **Cairn (1,713 → 680), the deep cut.** Three of six register entries dropped **whole**, by name:

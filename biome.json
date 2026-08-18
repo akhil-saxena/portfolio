@@ -1,0 +1,42 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.9/schema.json",
+  "vcs": { "enabled": false, "clientKind": "git", "useIgnoreFile": false },
+  "files": {
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.mjs",
+      "**/*.css",
+      "**/*.json",
+      "**/*.jsonc",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.astro",
+      "!**/.wrangler",
+      "!**/.playground",
+      "!**/package-lock.json",
+      "!worker-configuration.d.ts",
+      "!data",
+      "!design_handoff_portfolio",
+      "!public",
+      "!.planning"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": { "preset": "recommended" }
+  },
+  "javascript": {
+    "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "es5" }
+  },
+  "json": {
+    "formatter": { "enabled": true }
+  }
+}

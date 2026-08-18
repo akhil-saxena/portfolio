@@ -1710,3 +1710,347 @@ offenders printed as three and all three AppBar anchors hid behind one line. Its
 | `check-theme-exhaustive` · `check-font-names` · `check-contrast` · `check-css-size` · `check-states` · `check-coverage` · `check-no-ivory` | all **0** |
 | `check-bundle.mjs` | **1 — BY DESIGN.** Finding G-15, not breakage |
 | `audit21.mjs`, 9 routes × 6 classes | **zero H-SCROLL**; remaining `under44` is D-16-1 only |
+
+---
+
+## Home two-state landing
+
+`X-home` at `/home` — the landing the user asked for in as many words, built as
+`00-RESPONSIVE-CONTRACT.md` §5 specifies rather than re-derived. **Everything below is
+measured in a real browser at all six device classes. The contract's own tables are derived,
+and where a measurement disagrees with one, the measurement is what is recorded here.**
+
+> *"just the homepage landing shows the photos section and prompts user to scroll. as
+> scrolled, the photo section moves fully up and only work+resume sections are visible in the
+> view"* — and, from the same message, *"the sections for photos, work, resume as they exist
+> on home right now stay as is."*
+
+Nothing was removed. No route collapsed. No section was cut to make a budget fit.
+
+### The mechanism, and the one number it needs
+
+A plain document scroll. State A is one viewport tall, state B follows it in DOM order, the
+prompt is a real `<a href="#work">`. Zero framework JS, zero aspect-ratio branch, zero JS
+viewport measurement — the whole thing names a viewport-height unit and DOM order, and neither
+is a function of aspect ratio, which is why the near-square foldable needed no special case.
+
+**State A is not `100svh` — it is `100svh` minus the chrome above it, and that turns out to
+matter by 131 pixels.** State A does not start at the top of the document; the AppBar row and
+`.pub-main`'s top padding are above it. A full `100svh` section would have its *bottom* one
+viewport **plus** that chrome down the page, and one viewport of scroll would leave a band of
+photographs on screen. So the chrome comes out of the budget, which is also exactly how §5.2's
+own arithmetic counts it — its class-3 table spends "Nav 56" *inside* the 712px it budgets.
+
+Measured with `navprobe22.mjs`, on `/work/` and then again on `/home/`:
+
+| | 344×882 | 390×844 | 673×620 | 768×1024 | 1024×768 | 1440×900 |
+|---|---|---|---|---|---|---|
+| `.pub-bar` height | 87 | 87 | 87 | 87 | 87 | 87 |
+| `.pub-main` padding-top | 44 | 44 | 44 | 44 | 44 | 44 |
+| first section top | 131 | 131 | 131 | 131 | 131 | 131 |
+
+**Constant at all six — the AppBar does not wrap even at 344.** So
+`min-height: calc(100svh - var(--hm-above))`, `--hm-above: calc(87px + var(--space-11))`.
+
+**The 87px is a hard-coded measurement, and that is a design-system gap rather than a
+shortcut.** `AppBar` paints its own geometry and exposes no custom property carrying its
+height, so a consumer building a full-viewport landing underneath it has nowhere to read the
+number from. It is not left to rot: `audit22.mjs` measures state A's bottom edge against the
+viewport at all six classes, so if AppBar's height ever moves the gate goes red rather than the
+landing going quietly wrong.
+
+### The peek arrangement, per class, with measured heights
+
+All six `peekIds` render at all six classes — R-6, reflow never hide. Column count and tile
+aspect are the variables; tile count is not. **Column count steps on the settled 375 / 673 /
+1024 width rungs; tile aspect steps on a *height* rung at 800px**, because what is being solved
+is a height. That is not an aspect-ratio branch — it is a query on the axis the budget is
+denominated in, which is what §5.3 asks for in as many words.
+
+| Class | Viewport | `svh` | State A budget | Arrangement | Tile (measured) | Gallery | Result |
+|---|---|---|---|---|---|---|---|
+| 1 folded cover | 344×882 | 882 | 751 | 2 × 3 at 3:2 | 148 × 99 | 329 | fits, 751 = budget |
+| 2 phone | 390×844 | 844 | 713 | 2 × 3 at 3:2 | 163 × 109 | 359 | fits |
+| 3 foldable narrow | 673×620 | 620 | 489 | **3 × 2 at 16:9** | **192 × 108** | **232** | **fits** |
+| 4 tablet portrait | 768×1024 | 1024 | 893 | 3 × 2 at 3:2 | 224 × 149 | 314 | fits, wide margin |
+| 5 tablet landscape | 1024×768 | 768 | 637 | 3 × 2 at 16:9 | 299 × 168 | 352 | fits |
+| 6 desktop | 1440×900 | 900 | 769 | 3 × 2 at 3:2 | 317 × 212 | 440 | fits |
+
+**Class 3's narrow end was checked first and it is the binding case, exactly as §5.2 said.**
+At 673 × 620 the tile measures **192 × 108** — 16:9, and the contract's derived table predicted
+192 × 108 for that arrangement to the pixel. 3:2 at the same width would be 192 × 128, two rows
+plus the gap being 272px, which is the ~44px overflow §5.2 names. 16:9 keeps more of the
+photograph than 2:1 and fits, so 16:9 is what shipped.
+
+The 800px height rung is where the arithmetic crosses rather than a round number: at 1024 × 768
+three 3:2 tiles are 301 × 201, two rows plus the gap are 418px, and 418 plus the ~246px of
+name, prompt and padding is 664px against the 637px that 768 − 131 leaves. It does not fit. At
+900 it does.
+
+Gaps are `--space-4` (16px) — the same value `X-home-act2` snapped the handoff's off-grid 14px
+to, so the two peek grids agree. Using it reproduces §5.3's arithmetic exactly at both ends.
+
+**The grid is a grid at every class and never a horizontal rail.** A rail fits any budget,
+which is what makes it tempting, but it nests a horizontal scroller inside this page's vertical
+snap container and on iOS a horizontal rail readily steals the vertical gesture. The Photos
+filter row *is* a rail at classes 1–2 (plan 00-21) precisely because `/photos` has **no**
+vertical snap container. Same pattern, opposite verdict, and the reason is the container.
+
+`home_config.peekPositions`' single entry — `architecture-hawamahaldaytime: "50% 25%"` — is
+applied as `object-position`; the other five default to `50% 50%`. Measured at 1440:
+`["50% 50%","50% 50%","50% 50%","50% 25%","50% 50%","50% 50%"]`. The string is the same shape
+plan 00-19's schema decision 6 gives the per-photo `focalPoint` field, deliberately, so the two
+do not diverge into two representations of one concept before Phase 3 migrates them.
+
+### The departure, measured at six classes
+
+`audit22.mjs` scrolls by exactly one viewport height and reads the photos section's bottom edge
+in viewport coordinates.
+
+| Class | `svh` | State A: top / height / bottom | After scrolling one viewport | State B below the fold |
+|---|---|---|---|---|
+| 344×882 | 882 | 131 / 751 / **882** | `photosBottom=0` **departed** | 1475px |
+| 390×844 | 844 | 131 / 713 / **844** | `photosBottom=0` **departed** | 1388px |
+| 673×620 | 620 | 131 / 489 / **620** | `photosBottom=0` **departed** | 1062px |
+| 768×1024 | 1024 | 131 / 893 / **1024** | `photosBottom=0` **departed** | 1182px |
+| 1024×768 | 768 | 131 / 637 / **768** | `photosBottom=0` **departed** | 1001px |
+| 1440×900 | 900 | 131 / 769 / **900** | `photosBottom=0` **departed** | 1058px |
+
+State A's bottom edge equals `svh` exactly at all six. No class overflows, so no class needs
+the visible-overflow escape `min-height` (never `height`) exists to provide.
+
+`doc == viewport` at all six on both `/home` and `/home-act2` — zero horizontal scroll. The
+`.ha-grid` reflow plan 00-21 added survived the rewrite; re-measured rather than assumed, as
+that file's note asks.
+
+### R-2, as implemented
+
+**"Photos moves fully up" is exact and enforceable, and it is the table above.** *"Only work +
+résumé are visible"* describes what **fills** the view at the end of the transition — it is not
+a promise that both sections fit inside one viewport. With five projects (D-38) plus a résumé
+section that is unachievable at every one of the six classes including 1440 × 900, and
+honouring the strict reading would mean cutting projects or the résumé section from Home, which
+the user explicitly ruled out in the same message.
+
+**State B continues below the fold at all six classes — between 1001px and 1475px of it — and
+that is the resolution, not a defect.**
+
+**State B is also *at least* one viewport tall, and that is a rule the user's own sentence
+forces.** For work and résumé to be what fills the view once state A has gone, they have to be
+able to fill it. It failed at exactly one class and only a browser found it: at 768 × 1024 the
+whole of state B — work, résumé, crosslink and footer together — came to **1012px against a
+1024px viewport**. Twelve pixels short. The consequence was not cosmetic: the document was
+2036px tall, so its maximum scroll offset was 1012px, and *a page that cannot scroll a full
+viewport cannot complete the departure*. The audit read `scrollY=1012, photosBottom=12, NOT
+DEPARTED`. Tablet portrait is the only class in the matrix tall enough in absolute pixels to
+run out of document before it runs out of viewport; the other five clear it by 71px to 563px.
+`.hm-b { min-height: 100svh }` closes it.
+
+### Snap and reduced motion, as shipped
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.hm-a) { scroll-snap-type: y proximity; scroll-behavior: smooth; }
+  .hm-a           { scroll-snap-align: start; scroll-margin-top: var(--hm-above); }
+  #work           { scroll-snap-align: start; }
+}
+```
+
+Measured, `no-preference`: `{type:"y", photos:"start", work:"start", behavior:"smooth"}`.
+Chromium serialises `y proximity` as `y` because `proximity` is the initial strictness — plan
+00-21 verified that against a synthetic control, so `y` is positive confirmation it is **not**
+the strict value. The strict value appears nowhere in the file.
+
+Measured, `reduce`: `{type:"none", photos:"none", work:"none", behavior:"auto"}` — all four
+reduced-motion rules confirmed at once, and **the departure still succeeds at all six classes
+in that run**, which is itself the proof that snap is not load-bearing.
+
+**Without the `scroll-margin-top` on state A the page snaps on load.** A snap area starts at
+the element's own box, and state A's box begins 131px down the document. That puts a snap
+position at 131 rather than at 0 — close enough to the initial scroll offset for proximity to
+pull it — and the page would scroll itself 131px at first paint and hide the nav, which is
+precisely the *"large involuntary viewport translation"* the whole block exists to avoid.
+Outsetting the snap area by the chrome above it puts snap point one at 0, where the landing
+actually is. Snap point two needs no outset: the work band starts exactly one viewport down.
+
+### `scroll-margin-top` per class — it is zero, and that is a measurement
+
+| | 344 | 390 | 673 | 768 | 1024 | 1440 |
+|---|---|---|---|---|---|---|
+| `.pub-bar` / `.ds-atom-appbar` computed `position` | static | static | static | static | static | static |
+| `scroll-margin-top` on `#work` and `#resume` | 0 | 0 | 0 | 0 | 0 | 0 |
+
+§5.6 rule 3 requires the anchor target to clear a sticky nav *"and if the public nav is not
+sticky at a given class, the value is 0 there"*. It is not sticky at any class, so it is 0 at
+all six — the nav scrolls away with the page and any positive value would open a gap rather
+than close one. It ships as `--hm-sticky-nav` rather than being left out, because the value is
+a function of the shell rather than of this page: the moment PUB-09 makes the nav sticky, that
+is the one line to change.
+
+**Zero is indistinguishable from "the rule never matched", so it was proved rather than
+assumed.** `audit22.mjs` overrides `--hm-sticky-nav` with an inline style on `<html>` — which
+outranks the stylesheet rule that sets it — and reads `#work`'s computed `scroll-margin-top`
+back as **37px**. The declaration reaches its target.
+
+### Two scoping traps, both caught by a browser and neither by a grep
+
+**1 — a page's scoped CSS cannot reach a component's root.** Astro scopes a page's rules with
+the *page's* cid and a component renders with its *own*. The work band is
+`components/HomeAct2.astro`, so it emits `data-astro-cid-53zdqmy2` while every rule in
+`home.astro` compiles to `data-astro-cid-vbfttlze`. A bare `#work { }` in the page silently
+matched nothing: `getComputedStyle(work).scrollSnapAlign` read `none` while the source said
+`start`. **That is plan 00-21's rail defect exactly, in a new costume** — and the plan's grep
+gate passes the broken version in both cases. Fixed with `:global(html:has(.hm-a) #work)`, and
+the page's three measurements moved onto the document element so they *inherit* into the
+component.
+
+**2 — the snap container had to reach `<html>` without leaking there.** `scroll-snap-type` sits
+on the scrollport, and a page stylesheet has no other way to reach it; a bare global `html { }`
+would be correct only for as long as the bundler keeps that stylesheet on one page, which is a
+build-tool behaviour rather than a guarantee. `:has(.hm-a)` makes the scoping a property of the
+markup. Asserted, not assumed — `control22.mjs` reads `scroll-snap-type` on `/`, `/work/`,
+`/photos/`, `/home-act2/` and `/work/cairn/`: **`none` on all five, `y` on `/home/` only.**
+
+### The negative controls — and the one the plan specified could not fail
+
+The plan specified: change `100svh` to `60svh` and confirm the **departure** assertion fails at
+every class. Run exactly as written it reported `departed` at all six. **The reason is
+arithmetic, not instrumentation: a *shorter* state A departs more easily, not less.** One
+viewport of scroll clears a 60svh block with room to spare. The mutation is real and the
+assertion is real; they simply do not meet. Reporting that as a pass would have recorded a
+control that cannot fail — which is the thing a control exists to rule out.
+
+State A being *exactly* one viewport is two requirements wearing one declaration, and each
+fails in its own direction. So there are two controls, each asserting on the property its own
+mutation actually breaks. Both measure with snap disabled, because proximity snap parks
+`photosBottom` at exactly 0 even when the budget is wrong — the enhancement masking the
+mechanism.
+
+| Control | Breaks | 344 | 390 | 673 | 768 | 1024 | 1440 |
+|---|---|---|---|---|---|---|---|
+| `60svh` (too short) | state A fills the landing view | 717/882 | 747/844 | 618/620 | 700/1024 | 738/768 | 797/900 |
+| `160svh` (too tall) | one viewport of scroll clears state A | +529 | +506 | +372 | +614 | +461 | +540 |
+
+Row one is state A's bottom against `svh` at rest — the work band is on screen before the
+reader scrolls at all, so *"just the homepage landing shows the photos section"* is false at
+6/6. Row two is `photosBottom` after one viewport of scroll — photographs are still on screen,
+so *"the photo section moves fully up"* is false at 6/6.
+
+**Both bite at 6/6. Both restore to a byte-identical file:**
+
+```
+sha256 before  27d04a4f4163f587b581e1a91ab8890034e1c15946669b95e58d4f81b5ba0ac8
+sha256 after   27d04a4f4163f587b581e1a91ab8890034e1c15946669b95e58d4f81b5ba0ac8
+```
+
+Restored, all six classes read **FILLS + DEPARTS** again.
+
+### Accessibility — the six rules, measured
+
+| Rule | Measured |
+|---|---|
+| DOM order is reading order is tab order | `photos > work > resume` in the built HTML at byte offsets 7725 < 16207 < 19886 |
+| Zero `order`, zero `position: fixed` on a focusable, zero positive `tabindex` | none present; the transition needs none of them |
+| Prompt is a real anchor | `<a href="#work">`, one Tab and one Enter from the landing |
+| Nothing hidden from AT | `display:flex`, `visibility:visible`, no `aria-hidden`, no `inert` on either state |
+| Focus visible after it moves | `--focus` ring inherited from the shell; `proximity` (not the strict value) means nothing re-snaps a revealed element away |
+| Three named landmarks | `aria-label="Photographs"`, `aria-labelledby="hm-work-h"` → "The work", `aria-labelledby="hm-resume-h"` → "The résumé" |
+
+State A moving out of view is a **scroll position**. A screen-reader user reads photos → work →
+résumé linearly and never encounters the two-state framing at all, which is the correct
+outcome, not a degraded one.
+
+Hit areas at the five coarse classes, measured: the scroll prompt is **44px**, the résumé CTA
+is **44px**, and both drop to their painted height at 1440 where the pointer is fine. The floor
+is gated on `pointer: coarse`, never on width. `/home`'s remaining nine `under44` offenders are
+**identical to every other public route's** — three AppBar anchors at 20px, three Footer links
+at 22.5px (both halves of D-16-1, design-system owned), two `.ha-all` at 14px and 28px and one
+`.hm-xlink` at 30px (the layout-owned third of D-16-1, which plan 00-21 recorded as recurring).
+Nothing this plan added is under the floor.
+
+### Observations recorded rather than fixed
+
+**`home_config.ctas` points at `/portfolio`, which is a legacy route.** The public routes are
+`/work`, `/photos` and `/resume`. Rendered as committed. Silently rewriting fixture data here
+would hide a real content migration Phase 3 has to make.
+
+**`resume.json` has no prose summary field.** It is experience / projects / skills / education
+and nothing else. Home's résumé section therefore states the shape of the record — the current
+role, "3 roles and 5 projects", the three skill category names — rather than paraphrasing it.
+Inventing a summary sentence would put copy on Home that exists in no fixture and that Phase 5
+would then have to find an owner for.
+
+**`Card` inlines `display`, so a consumer cannot change it from a stylesheet.** Separate from
+the `class`/`className` finding below and only visible once that one was fixed:
+`.wk-card { display: flex; flex-direction: column }` now matches its element, and
+`flex-direction` applies while `display` does **not** — `Card` sets `display: block` as an
+inline style, which beats a class rule without `!important`. Measured `{cardDisplay:"block",
+cardFlexDirection:"column", cardInlineDisplay:"block"}`. The consequence is real:
+`.wk-tags { margin-top: auto }` does nothing outside a flex column, so `/work`'s cards do not
+bottom-align their tech chips as designed. Not patched with `!important` from the consumer —
+same shape as the recorded "`Text` inlines its variant colour" finding, and the Core Value says
+a gap the design system exposes is a finding rather than a workaround.
+
+### `class` vs `className` on a design-system component — closed
+
+Plan 00-21 recorded that `Card` and `Chip` "silently drop the `class` prop" and attributed it
+upstream. **It is a consumer usage error.** `class` is not a recognised React prop; `className`
+is, and `Card` supports it — `../design-system/src/surfaces/Card/index.tsx:115` reads
+``className={`ds-atom-card${className ? ` ${className}` : ""}`}``. Four call sites fixed:
+`work.astro:219` `.wk-card`, `work.astro:236` `.wk-chip`, `work.astro:265` `.wk-legend-card`,
+`work-recolour.astro:176` `.wr-card`.
+
+Measured in a browser before and after, on both routes:
+
+| | before | after |
+|---|---|---|
+| `class` attribute on the card | `ds-atom-card` | `ds-atom-card wk-card` |
+| elements matching `.wk-card` | **0** | **5** |
+| elements matching `.wk-chip` | **0** | **14** |
+| card border-colour | `rgb(51,51,47)` = `--rule`, **1.43:1** | `rgb(114,114,104)` = `--wire` |
+| chip border-colour | `rgb(51,51,47)` | `rgb(114,114,104)` |
+
+**Ivory→Charcoal exception 3 now applies on `/work`'s project cards for the first time.** The
+painted border had been sitting at exactly the contrast the exception exists to escape.
+`/work-recolour` moved with it. A sweep of every design-system component on every `.astro` page
+finds the corrected total is **0** remaining `class=` usages.
+
+**`Chip` clobbers rather than concatenates, and that is a finding.** Its implementation
+destructures `className` into `...rest` and spreads it *after* `className="ds-atom-chip"`, so a
+consumer `className` **replaces** the atom hook: measured `chipClassAttr: "wk-chip"`,
+`chipKeepsAtomClass: false`. `Card` concatenates; `Chip` does not. The net visual change here
+is nil and that was measured too — `.dark .ds-atom-chip`'s three declarations were already
+fully overridden by Chip's own inline `baseStyle`/`toneStyles`, and its `[data-interactive]`
+focus rules do not apply to a non-interactive chip. Background stayed `rgb(36,36,35)` =
+`--cream-3` and colour `rgb(234,231,224)` = `--ink` across the change. But the class hook is
+gone from the DOM, and on an interactive chip it would take the focus ring with it. Not worked
+around by hand-writing `ds-atom-chip` in the consumer — that reaches into design-system
+internals and breaks silently if the atom class is ever renamed.
+
+### Instruments left in `.playground/`
+
+| Script | What it does |
+|---|---|
+| `audit22.mjs` | The six-class landing audit: state A's height against `svh`, the departure, R-6 doc-width, all six tiles painted and non-degenerate, computed snap on all three participants, the `scroll-margin-top` reachability probe, title size, prompt hit box. `RM=reduce` runs the whole thing under a reduced-motion preference |
+| `control22.mjs` | The leak check, the snap-off control, and the two negative controls with SHA-256 before/after |
+| `navprobe22.mjs` | The chrome-above-state-A measurement and the nav-stickiness reading, per class |
+| `snap22.mjs` | Geometry + text snapshot of a route at six classes — how the `HomeAct2` extraction was proved visually neutral |
+| `classprobe22.mjs` | The `className` measurement above, on `/work` and `/work-recolour` |
+
+The `HomeAct2` extraction was proved rather than asserted: `snap22.mjs` compared every box's
+position, size, colour, font-family, font-size, display and text content on `/home-act2` at all
+six classes before and after the move — **2 592 boxes, 432 lines, byte-identical diff.** Astro
+rehashes `data-astro-cid-*` when a rule changes file, so comparing the HTML itself would have
+reported a difference that is not a visual one.
+
+### Build state at the end of this plan
+
+| | |
+|---|---|
+| `npx astro build` | **93 pages** — 92 plus `/home` |
+| `check-no-js.sh` | **0** — 67 static routes at zero framework JS, 26 island routes verified to hydrate. `/home` is one of the 67 |
+| `check-theme-exhaustive` · `check-font-names` · `check-contrast` · `check-css-size` · `check-states` · `check-coverage` · `check-no-ivory` | all **0** |
+| `check-bundle.mjs` | **1 — BY DESIGN.** Finding G-15, not breakage |
+| `audit21.mjs`, `/home` + `/home-act2` × 6 classes | **zero H-SCROLL**; `under44` is D-16-1 only, and identical on both routes |
+| `audit22.mjs` | **PASS** at 6/6, and PASS again under `RM=reduce` |
+| `control22.mjs` | **PASS** — no leak, snap non-load-bearing, both controls bite 6/6, restore SHA-256-identical |

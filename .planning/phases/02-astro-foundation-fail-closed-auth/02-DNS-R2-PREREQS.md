@@ -188,22 +188,173 @@ rewrite across 39 entries, not a 39-URL one. Recorded here so that plan sizes th
 
 ## R2 custom domain (provisioned)
 
-_Pending — filled by Task 3 after the developer provisions the domain in the Cloudflare dashboard
-(Task 2 checkpoint). Will record the hostname, the DNS record type, and the observed proxied
-status._
+Provisioned by the developer in the Cloudflare dashboard (R2 → `portfolio-photos` → Settings →
+Public access → Custom domains) during the Task 2 checkpoint.
+
+| Property | Observed value |
+| --- | --- |
+| Hostname | `images.akhilsaxena.com` |
+| Bucket | `portfolio-photos` |
+| DNS record type | `A` (two records, TTL 300) |
+| Addresses | `172.67.155.185`, `104.21.48.180` |
+| Proxied | **Yes (orange cloud)** — established by three independent signals, below |
+| Status | Active and serving on first probe; no activation wait was needed |
+
+`dig images.akhilsaxena.com +noall +answer`
+
+```
+images.akhilsaxena.com.	300	IN	A	172.67.155.185
+images.akhilsaxena.com.	300	IN	A	104.21.48.180
+```
+
+A `CNAME` query returns empty: the zone presents flattened `A` records at the Cloudflare edge,
+which is the expected shape for a proxied R2 custom domain rather than a direct bucket CNAME.
+
+### How "proxied" was established rather than assumed
+
+The orange/grey-cloud toggle is the single setting that decides whether this plan succeeded, and
+a grey-cloud record looks healthy in the dashboard while behaving exactly like `r2.dev`. Three
+independent observations confirm it is proxied:
+
+1. **Both addresses are inside Cloudflare's published proxy ranges**, checked against the live
+   `https://api.cloudflare.com/client/v4/ips` response by CIDR containment:
+   - `172.67.155.185` ∈ `172.64.0.0/13`
+   - `104.21.48.180` ∈ `104.16.0.0/13`
+2. **`cf-cache-status` is emitted at all.** The baseline origin omits the header entirely; only a
+   proxied hostname reports cache state.
+3. **A second request returns `HIT` with a non-zero `age`.** An unproxied record cannot, because
+   nothing is caching in front of it.
 
 ---
 
 ## Cache evidence (after)
 
-_Pending — filled by Task 3. Will record two verbatim header dumps from consecutive fetches
-through the custom domain, asserting `cf-cache-status: HIT` on the second, plus the SHA-256
-comparison against the r2.dev baseline above._
+Same object as the baseline: `photos/abstract/intothemist-sm.webp`, now fetched through
+`https://images.akhilsaxena.com/`.
+
+**Request 1** — `curl -sS -o /dev/null -D -`
+
+```
+HTTP/2 200
+date: Tue, 18 Aug 2026 11:15:44 GMT
+content-type: image/webp
+content-length: 3204
+accept-ranges: bytes
+etag: "0d1c6930a303789079a2834031e731b7"
+last-modified: Sun, 29 Mar 2026 11:22:33 GMT
+server: cloudflare
+cache-control: max-age=14400
+cf-cache-status: MISS
+cf-ray: a2d08097cdfdfd06-SIN
+alt-svc: h3=":443"; ma=86400
+```
+
+**Request 2** — immediately following, same command
+
+```
+HTTP/2 200
+date: Tue, 18 Aug 2026 11:15:53 GMT
+content-type: image/webp
+content-length: 3204
+accept-ranges: bytes
+etag: "0d1c6930a303789079a2834031e731b7"
+last-modified: Sun, 29 Mar 2026 11:22:33 GMT
+server: cloudflare
+age: 9
+cache-control: max-age=14400
+cf-cache-status: HIT
+cf-ray: a2d080d4eee4aa0f-SIN
+alt-svc: h3=":443"; ma=86400
+```
+
+`MISS` then `HIT` is the exact cold-then-warm sequence the plan required. No retry and no polling
+were needed — the domain was already Active on the first probe, so "not yet activating" never had
+to be distinguished from "misconfigured".
+
+### Before/after comparison
+
+| Observation | `pub-*.r2.dev` (before) | `images.akhilsaxena.com` (after) |
+| --- | --- | --- |
+| Protocol | HTTP/1.1 | **HTTP/2** (with `alt-svc` advertising HTTP/3) |
+| `cf-cache-status` req 1 | **absent** | `MISS` |
+| `cf-cache-status` req 2 | **absent** | **`HIT`** |
+| `age` | absent | `9` on the cached hit |
+| `cache-control` | absent | `max-age=14400` (4 hours) |
+| `content-length` | 3204 | 3204 (unchanged) |
+| `etag` | `0d1c6930a303789079a2834031e731b7` | identical |
+| Cache/WAF/Bot Management | none (documented dev-only origin) | Cloudflare edge cache + WAF |
+
+The upgrade to HTTP/2 and the arrival of a real `cache-control` directive are incidental to the
+requirement but both matter for the Lighthouse 95+ budget on the 39-photo gallery.
+
+### Byte-for-byte bucket check (T-02-05)
+
+Confirms the custom domain fronts the *same* bucket and did not expose a different one. All three
+bodies are identical:
+
+```
+24543e2811a80e5b98c5fad3952dde8f059d7b5db40627543d3a656be17e1fe3  after-customdomain.webp
+24543e2811a80e5b98c5fad3952dde8f059d7b5db40627543d3a656be17e1fe3  after-r2dev.webp
+24543e2811a80e5b98c5fad3952dde8f059d7b5db40627543d3a656be17e1fe3  baseline-r2dev.webp   (Task 1)
+```
+
+Identical SHA-256 across the pre-change baseline, the current `r2.dev` origin, and the new custom
+domain. No additional bucket was exposed.
 
 ---
 
 ## Handoff to later phases
 
-_Pending — filled by Task 3 with the two canonical lines that later plans read: the R2 public
-URL that Phase 3's CONT-04 rewrites all 156 manifest URLs to, and the non-apex Worker hostname
-that plan 02-03 writes into `wrangler.jsonc` as a `custom_domain` route._
+These two lines are the entire machine-readable output of this plan. Both are consumed by later
+plans; treat them as load-bearing strings, not prose.
+
+`R2_PUBLIC_URL = https://images.akhilsaxena.com`
+
+`WORKER_CUSTOM_DOMAIN = preview.akhilsaxena.com`
+
+### `R2_PUBLIC_URL` — consumed by Phase 3 (CONT-04)
+
+The canonical image host for the rest of the project's life. Phase 3 rewrites the **156**
+`pub-*.r2.dev` URLs across the 39 entries of `data/portfolio_images.json` to this origin, and
+`wrangler.jsonc` carries this value in `vars` from Phase 3 onward.
+
+**Explicitly not this phase's work:** the manifest rewrite and the removal of the `pub-*.r2.dev`
+public URL both belong to Phase 3's CONT-04. `data/portfolio_images.json` is unmodified by this
+plan, verified with `git diff --quiet`. The `r2.dev` public URL is deliberately left enabled —
+all 156 manifest URLs still point at it, so disabling it now would break the only image source
+the project has.
+
+### `WORKER_CUSTOM_DOMAIN` — consumed by plan 02-03
+
+The non-apex subdomain the Worker itself will answer on. **Decided, not provisioned** — nothing
+was created for it in the dashboard. Plan 02-03 writes it into `wrangler.jsonc` as a `routes`
+entry with `custom_domain: true`, and `wrangler deploy` attaches the hostname on the first deploy
+in plan 02-09. Verified free of conflicting DNS records at the time of writing, so that deploy
+will not fail on a collision.
+
+**Why a subdomain is required at all, and not `*.workers.dev`:** Cloudflare Access applications
+can only be scoped to hostnames in a zone you control. A Worker reachable only at `*.workers.dev`
+cannot have Access applied to it, which would make the production auth verification in plans
+02-09 and 02-10 impossible. This is what connects a DNS decision to the phase's fail-closed auth
+requirement.
+
+**The apex `akhilsaxena.com` is deliberately NOT attached.** Cutover owns it. Note the measured
+correction recorded under `## Apex baseline`: the apex currently holds no record at all, so
+cutover will *create* an apex record rather than repoint one — there is no delete-then-create
+window in which the apex serves an error.
+
+### Phase 4 obligation — stale cache on same-key re-upload (T-02-08)
+
+Now that images are served through a cached domain with `cache-control: max-age=14400`,
+re-uploading a photo under the same deterministic R2 key will serve **stale bytes for up to four
+hours**, and indefinitely from some edges if revalidation does not occur. No photo is re-uploaded
+in Phase 2, so the risk is not live yet. **Phase 4 owns the fix** — content-hashed object keys, or
+an explicit cache purge on write. Recorded here so it is not rediscovered as a bug report.
+
+### Phase 4 constraint — do not put private objects behind this domain
+
+`images.akhilsaxena.com` is a public, cached, unauthenticated origin for the whole
+`portfolio-photos` bucket. Any later phase that writes non-public objects — notably the `temp/`
+staging prefix used by the upload pipeline — must not rely on that prefix being unreachable
+through this hostname. Either keep staging objects in a separate bucket, or treat anything written
+to `portfolio-photos` as world-readable.

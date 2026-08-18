@@ -1387,3 +1387,326 @@ Budgets unmoved, as predicted: one-liner **97**, card **160**, `check-copy-lengt
 | `check-case-length.mjs` | **0** — 5 files scanned, **5 enforced**, all inside 500–700 |
 | `check-copy-length.mjs` | **0** — 6 files, 5 `[NEEDS AKHIL]` markers, shortest block 85 words |
 | `check-bundle.mjs` | **1 — BY DESIGN.** This is finding G-15, not breakage |
+
+---
+
+## Responsive shell
+
+Plan 00-21 put the shared public shell on `00-RESPONSIVE-CONTRACT.md`. Everything below was
+measured in real Chromium at the contract's six device classes, never read off the CSS — the
+contract's own baseline was that the public sketches carried **one** width media query, **zero**
+`pointer:` queries and **zero** `svh`, and two of this phase's earlier 44px figures were wrong
+because they came from source reading.
+
+### The gutter ladder, as shipped
+
+`.pub-shell` used `padding: 0 var(--space-12)` unconditionally — 48px a side, so **96px of a
+344px viewport, 28% of the screen, spent on padding.** Four rungs now, every value a real step
+on the 4px grid, written mobile-first so class 1 is the unstyled base:
+
+| Classes | Rung | Token | Gutter | Content at the class's narrowest |
+|---|---|---|---|---|
+| 1 · folded cover | base (no query) | `--space-4` | 16px | 344 − 32 = **312px** |
+| 2 · phone portrait | `min-width: 375px` | `--space-6` | 24px | 360 − 48 = **312px** |
+| 3–4 · foldable unfolded, tablet portrait | `min-width: 673px` | `--space-8` | 32px | 673 − 64 = **609px** |
+| 5–6 · tablet landscape, laptop | `min-width: 1024px` | `--space-12` | 48px | 1024 − 96 = **928px** |
+
+**The ≥ 1024 rung is deliberately unchanged**, and that is the point of it: classes 5 and 6 keep
+the exact gutter the approved 1440 design was signed off at, so the ladder cannot move anything
+a reviewer has already accepted. At 1024 the resulting 928px sits under Home's 1080 cap, so the
+cap stays inert and no new cap interaction appears. Confirmed by measurement — every route reads
+`doc=1440/1440` and `doc=1024/1024`.
+
+It is CSS only. §6 rule 2 forbids any layout that depends on a viewport measurement taken once,
+because unfolding a foldable moves the viewport from ~344px to ~841px **in one frame, with no
+reload**. A media query re-evaluates on resize; a `window.innerWidth` branch in state does not.
+
+### `--pub-gutter`, and the trap it exists to make unrepresentable
+
+The ladder is **one custom property**, not four values. `.pub-shell` declares `--pub-gutter` and
+steps *that*; the shell pads by it, and the two full-bleed rows cancel it and pay it back:
+
+| Rule | Before | After |
+|---|---|---|
+| `.pub-shell` padding | `0 var(--space-12)` | `0 var(--pub-gutter)` |
+| `.pub-bar` margin | `0 calc(var(--space-12) * -1)` | `0 calc(var(--pub-gutter) * -1)` |
+| `.pub-bar .ds-atom-appbar` padding | `var(--space-6) var(--space-12)` | `var(--space-6) var(--pub-gutter)` |
+| `.pub-footer` margin | `0 calc(var(--space-12) * -1)` | `0 calc(var(--pub-gutter) * -1)` |
+| `.pub-footer .ds-atom-footer` padding | `var(--space-4) var(--space-12) var(--space-10)` | `var(--space-4) var(--pub-gutter) var(--space-10)` |
+
+**Name the trap out loud, because it is circular.** The negative margins exist to pull the
+AppBar and Footer back out to the viewport edge. Step the shell's padding to 16px and leave the
+margins at −48px and the two rows overhang by 32px a side — which presents as **a horizontal
+scroll**, i.e. precisely the R-6 violation this plan was closing, reintroduced by the fix for
+it. `.pub-footer` is easy to miss: the plan's own interface note listed only `.pub-bar`, and the
+footer carries the identical rule four declarations further down. Deriving all five from one
+property is what makes the drift unrepresentable rather than merely unlikely. (T-00-59.)
+
+### `100vh` → `100svh`
+
+`body`'s `min-height` was the phase's only viewport-height declaration and it used the wrong
+unit. Plain `vh` is the **large** viewport — the height with the mobile address bar retracted —
+so at first paint on iOS Safari and Android Chrome it is taller than what the reader can see. It
+was harmless here (it only made short pages fill the screen), but it was wrong **in the one
+place in the codebase that will be copied from**, and plan 00-22 copies from it to build a
+landing whose entire job is to fit the first paint.
+
+- **`min-height`, never `height`** — content taller than the budget must overflow *visibly*
+  rather than clip invisibly. A visible overflow is a failure a screenshot catches; a clip is
+  one it hides.
+- **`dvh` is forbidden on any scroll-transition participant** (§5.1) and is stated as such in
+  the comment beside the declaration, so **plan 00-22 does not reach for it**. It tracks the
+  live viewport, so it changes *during* the scroll and moves the transition's own target
+  distance mid-gesture.
+- Desktop is unaffected: with no dynamic chrome, `svh == lvh == dvh == vh` at classes 5 and 6.
+
+### `/work`'s horizontal scroll: what it actually was
+
+Recorded before this plan: `doc=385/344` and `doc=416/390`. Re-measured here, and the ladder
+**did not close it on its own** — it moved the number the wrong way:
+
+| Reading | 344 | 390 |
+|---|---|---|
+| Before this plan (48px gutter) | `doc=385/344` — 41px over | `doc=416/390` — 26px over |
+| After the ladder alone (16/24px gutter) | `doc=396/344` — **52px over** | `doc=424/390` — 34px over |
+| After the reflow | **`doc=344/344`** | **`doc=390/390`** |
+
+**The offender was not the grid.** Found in a browser by walking every box whose right edge
+passed the viewport: a single unclassed `<span>` — the **status Badge** inside `.wk-card-top` —
+at `right=396 (w=78 left=318)` in a 344px viewport. Three columns of a 312px content width is
+90.7px per column; the Card's `lg` padding leaves roughly 43px inside, and a 44px icon plus a
+12px gap plus a 78px nowrap Badge needs 134px. `minmax(0, 1fr)` let the **card** shrink, so the
+card never overflowed — the Badge did, and escaped. Giving the page a wider content box moved
+the third column further right, which is why the ladder made the absolute number worse.
+
+Fixed by **reflow, never hide**: `.wk-grid` is one column at classes 1–2, two at 3–4, three at
+5–6 — the same three rungs the shell steps at, so page and shell never disagree about which
+class they are in. `overflow-x: hidden` was **not** used; it would have clipped the one word
+that tells a reader whether a project is Live while leaving the instrument's reading clean.
+
+### The Photos filter rail, and why the same pattern is forbidden on Home
+
+Eight category anchors. At class 1's 312px content, eight anchors at a 44px hit height wrap to
+as many as four rows. Measured: the wrapped row is **100px** at classes 3–5, and would be far
+worse once the floor applied at 312px. As a rail it is **52px**.
+
+- **Classes 3–6: unchanged.** The row wraps, `scroll-snap-type: none`, two rows at 673–1024 and
+  one at 1440 — exactly as approved.
+- **Classes 1–2: a rail.** `flex-wrap: nowrap`, `overflow-x: auto`,
+  `scroll-snap-type: x proximity` on the container and `scroll-snap-align: start` on the pills.
+  `proximity`, never `mandatory`.
+
+> **The rail is safe on Photos *because of the container*, and that is the whole reason.** §5.4's
+> nested-scroll hazard is that a horizontal rail inside a **vertical snap container** steals the
+> vertical gesture on iOS. **Photos has no vertical snap container anywhere on the route**, so
+> the hazard has nothing to bite on. **Home's two-state landing does have one** — §5.4 puts
+> `scroll-snap-type: y proximity` on `.home` — which is why Home's peek gallery stays a grid at
+> every class and **must never be turned into this rail**. Same pattern, opposite verdict.
+
+Two things about the rail were only visible in a browser:
+
+- **`min-width: 0` is load-bearing.** `.ph-filters` is a flex item of `.ph-header`, and a flex
+  item's default `min-width: auto` refuses to shrink below min-content — which, once the row is
+  `nowrap`, is the sum of all eight pills. Without it the rail does not scroll, it blows the
+  header out and reopens the horizontal scroll.
+- **`scroll-snap-type` without `scroll-snap-align` is a rail that declares snapping and does not
+  snap.** The first build shipped exactly that. A probe caught it:
+  `getComputedStyle(pill).scrollSnapAlign` read `none` while the container read `x`. Note that
+  Chromium serialises `x proximity` as **`x`** — `proximity` is the initial strictness and is
+  omitted — so `snap=x` in a probe is confirmation it is *not* `mandatory`, verified against a
+  synthetic control.
+
+### The 44px floor on the hit area, not on the drawn control
+
+A 9.5px mono pill grown into a 44px slab is a different design. So the **paint moved to a
+pseudo-element and the anchor became the hit box**, under `@media (pointer: coarse)` only:
+
+| Class | Pointer | Anchor box (hit area) | `::before` (drawn pill) |
+|---|---|---|---|
+| 344, 390, 673, 768, 1024 | coarse | **46px** | **25.5px** |
+| 1440 | fine | 25.5px | *no pseudo-element at all* |
+
+The drawn geometry is identical to the pixel — 25.5px is `calc(var(--text-2xs) + 16px)`, derived
+from the type scale rather than typed as a magic number, so the pill and its hit box cannot
+drift apart if the scale moves. Exception 6 survives intact: the active pill still fills
+`rgb(234, 231, 224)` on `rgb(22, 22, 22)`, just painted one box in. **At class 6 not one
+declaration in the block applies**, so the approved 1440 design renders exactly the CSS it was
+signed off at.
+
+Gated on `pointer: coarse` — five of six classes, the common case. **Never on width**, because a
+1024px tablet in landscape and a 1024px laptop window are the same width and want opposite
+answers. **Never on `any-pointer`**, which the contract forbids for any density or hit-area
+purpose: a tablet in a trackpad keyboard case reports a fine pointer as merely *attached* while
+touch stays primary, so it returns true and the user, still touching the screen, gets the
+sub-44px target.
+
+### Two more R-6 violations, found because the ladder reaches every route
+
+The ladder is in the shared shell, so the audit had to cover routes this plan did not open. Two
+overflows nobody had measured turned up.
+
+**`/photos/` scrolled horizontally too** — never recorded, because the only R-6 figures in this
+phase were `/work`'s. `doc=429/344` and `doc=429/390` before, `doc=397/344` and `doc=405/390`
+after the ladder alone. The offender was the **G-11 reference specimen**: `.ph-g11` is a flex
+row that did not wrap, holding a 296px 52px sample. `flex-wrap: wrap` closes it above 374px; at
+344 the 52px word is itself wider than the box's 286px inside, so the sample takes
+`min-width: 0` and `overflow-wrap: anywhere` and breaks across two lines. **Breaking the word is
+the deliberate choice**: the thing this specimen measures is the 52px glyph, and 52px is exactly
+what survives — shrinking the font to make it fit would have made the reference report a size it
+is not.
+
+**`/home-act2/` scrolled horizontally at 344**, `doc=356/344`. **It was not caused by the
+ladder, and that was measured rather than assumed** — same build, same browser, `--pub-gutter`
+overridden at runtime:
+
+```
+/home-act2/    344@ladder=356   344@48px=356     <- identical: pre-existing
+/              344@ladder=344   344@48px=344
+/work/         344@ladder=344   344@48px=344
+/photos/       344@ladder=344   344@48px=344
+```
+
+`.ha-grid`'s two columns of a 312px content width with a 56px column-gap is 128px a column, and
+`.ha-entry` spends 44px on its index plus a 16px gap, leaving 68px for a title whose min-content
+width is 96px — 28px of escape, and 328 + 28 = 356, the measured document width. One column at
+classes 1–2, two at 3–6. **Plan 00-22 rebuilds this landing: that rung is the only responsive
+rule in the file, and if the two-state landing replaces `.ha-grid` it must be re-measured at 344
+rather than assumed to have survived the rewrite.**
+
+### The audit table — nine public routes, six classes each
+
+Zero `H-SCROLL` across the whole surface. `doc == viewport` at every one of the 54 combinations.
+
+| Route | doc/viewport, all six classes | under44 at the five coarse classes | at 1440 (no floor) |
+|---|---|---|---|
+| `/` | equal | 6 | 166 |
+| `/work/` | equal | 7 | 7 |
+| `/photos/` | equal | **7** (was 15) | 15 |
+| `/home-act2/` | equal (was `356/344`) | 9 | 9 |
+| `/work/design-system/` | equal | 6 | 17 |
+| `/work/cairn/` | equal | 6 | 17 |
+| `/work/hued/` | equal | 6 | 17 |
+| `/work/momentum/` | equal | 6 | 17 |
+| `/work/timeshift/` | equal | 6 | 17 |
+
+The 1440 column is expected to be non-zero and is not a failure: class 6 is fine-pointer and the
+44px floor does not bind there (§2). `/photos/` reading 15 at 1440 and 7 at every coarse class is
+the positive evidence that the coarse block is the only thing touching the pills.
+
+**Every remaining offender is D-16-1.** Nothing else on the public surface is under the floor.
+
+| Offender | Height | Routes | Owner |
+|---|---|---|---|
+| `<a>` × 3 — AppBar brand + nav | 20px | all 9 | **design system** — deferred, Phase 1 with G-2 |
+| `<a class="ds-atom-link ds-atom-footer-link">` × 3 | 22.5px | all 9 | **design system** — deferred, Phase 1 with G-2 |
+| `a.wk-xlink` / `a.ph-xlink` / `a.ha-xlink` | 30px | `/work/`, `/photos/`, `/home-act2/` | **layout** — page-owned |
+| `a.ha-all` × 2 | 14px, 28px | `/home-act2/` | **layout** — page-owned |
+
+**The design-system six stay, on purpose.** `AppBar`'s brand link and `Footer`'s link list paint
+their own geometry inside the component, so a consumer clearing the floor reaches past the
+component to restate it — the same shape as `F-15-7` and the `G-2` control-geometry family, and
+exactly the local workaround PROJECT.md's Core Value forbids. A clean screenshot bought by a
+local override would be evidence of a fix that does not exist. (T-00-61, accepted.)
+
+**One D-16-1 figure has changed and `deferred-items.md`'s number is now stale.** It records the
+AppBar brand link as *"20px (40px at 344)"*. It is **20px at 344 as well** now: the 40px was the
+brand link wrapping to two lines inside a 248px content box, and 312px fits it on one. The
+ladder did not fix it — it removed an accidental second line that had been masking how far below
+the floor the link really is.
+
+**The third row is layout-owned, not design-system-owned, and D-16-1 already implies it** ("two
+of the three"). The crosslink shape recurs on **three** routes, not the one D-16-1 recorded, and
+`/home-act2/` adds two more page-owned anchors. Unlike the six above, these need no design-system
+change. Left untouched here because plan 00-21's scope names them as not-fixed, and recorded so
+whoever closes D-16-1 knows the layout half is unblocked.
+
+### R-6: nothing is dropped at 344
+
+Counted in a rendered browser at 344 **and** 1440 and compared, filtering to boxes that are
+actually visible — a `display: none` is invisible to a grep of the source.
+
+| Route | Subject | 344 | 1440 |
+|---|---|---|---|
+| `/work/` | employment rows · project cards · status badges · tech chips · project titles · legend rows · sections | 3 · 5 · 5 · 14 · 5 · 2 · 2 | identical |
+| `/photos/` | filter categories · photo tiles · masonry · header | **8** · 39 · 1 · 1 | identical |
+| `/home-act2/` | work entries · sections · strip links | 5 · 2 · 1 | identical |
+| `/` | sections · links | 4 · 166 | identical |
+
+All eight Photos categories and all five Work projects exist on a folded cover screen.
+
+### The negative control
+
+`photos.astro` before: `sha256 073d6561606c801d5bd1a9f73a396bd48530b8a5d75fc694c14465b732fd6d8c`
+
+The `@media (pointer: coarse)` hit-area block — 43 lines, 1039 bytes — was cut by brace
+matching, the site rebuilt, and `audit15.mjs /photos/` re-run. Asserted on **the audit's reported
+counts**, never on `grep -c`, which counts lines rather than matches and nearly produced a false
+result for plan 16's control 4.
+
+| Class | With the block | Without | Δ |
+|---|---|---|---|
+| 344 folded | 7 | 15 | **+8** |
+| 390 phone | 7 | 15 | **+8** |
+| 673 foldable-unfolded | 7 | 15 | **+8** |
+| 768 tablet-portrait | 7 | 15 | **+8** |
+| 1024 tablet-landscape | 7 | 15 | **+8** |
+| 1440 laptop (fine, no floor) | 15 | 15 | 0 |
+
+**The control bites** — exactly +8 on all five coarse classes, the eight filter anchors, and
+**zero** change at class 6, which independently confirms the block is the only thing touching
+the pills and that the fine-pointer design is untouched.
+
+`photos.astro` after: `sha256 073d6561606c801d5bd1a9f73a396bd48530b8a5d75fc694c14465b732fd6d8c` —
+**byte-identical**, and the restored counts equal the pre-control counts on all six classes.
+
+### A design-system finding this audit turned up: `Card` and `Chip` drop `class`
+
+Not a responsive issue, found while building the R-6 counter, and recorded here rather than as a
+new `00-FINDINGS.md` row — that register states its own fixed denominator of sixteen and that a
+plan finding something outside them records it in its own write-up.
+
+`<Card class="wk-card">` renders `class="ds-atom-card"`. The `class` prop is **silently dropped**
+— no type error, no console warning, the page builds and looks plausible.
+`document.querySelectorAll(".wk-card").length` is **0**. Same for `<Chip class="wk-chip">`.
+
+The consequence is that **Ivory→Charcoal exception 3 has never applied on `/work`'s project
+cards.** `work.astro` believes it overrode the card border to `--wire`; measured, the painted
+border is `rgb(51, 51, 47)` — that is `--rule`, at the 1.43:1 the exception exists to escape —
+and not `--wire`'s `rgb(114, 114, 104)`. `.wk-card`'s `display: flex; flex-direction: column`
+never applied either; the card computes `display: block`. The rules are present and correctly
+scoped in the built CSS (`.wk-card[data-astro-cid-r3bc3sjw]{…border-color:var(--wire)!important}`)
+— they simply have nothing to match.
+
+`Badge` is a third variant of the same gap: it renders an **unclassed `<span>` with inline
+styles**, so it cannot be reached or restyled from a page at all — the same shape as the
+recorded finding that `Text` inlines its variant colour and beats any stylesheet.
+
+Not worked around. Restyling `.ds-atom-card` from the consumer is precisely what `work.astro`'s
+own header forbids ("nothing below restyles a design-system class") and what the Core Value
+forbids. This is the site doing its job: **a real product built on the library is what exposes
+the gap.**
+
+### Instruments left in `.playground/`
+
+`audit15.mjs` de-duplicates its printed offender lines on `tag + class`, so `/work`'s seven
+offenders printed as three and all three AppBar anchors hid behind one line. Its `under44=`
+**count** is raw and correct; only the listing under-reports. Added alongside it:
+
+| Script | What it does |
+|---|---|
+| `audit21.mjs` | The audit with de-duplication **off**, plus it names the overflowing box and skips boxes contained by a scroll container (a pill inside the rail is not an overflow — the first run flagged its own fix) |
+| `probe21.mjs` | Pill hit box vs. drawn `::before`, rail wrap/snap/scrollability, G-11 box, per class |
+| `control21.mjs` | The negative control: hash, cut by brace matching, rebuild, count, restore, re-hash |
+| `r6count21.mjs` | Visible-element counts at 344 vs 1440 |
+| `ab21.mjs` | Runtime `--pub-gutter` override — the ladder A/B that proved `/home-act2/` pre-existing |
+| `cardprobe21.mjs` | The `class`-forwarding measurement above |
+
+### Build state at the end of this plan
+
+| | |
+|---|---|
+| `npx astro build` | **92 pages** — unchanged |
+| `check-no-js.sh` | **0** — 66 static routes at zero framework JS, 26 island routes verified to hydrate |
+| `check-theme-exhaustive` · `check-font-names` · `check-contrast` · `check-css-size` · `check-states` · `check-coverage` · `check-no-ivory` | all **0** |
+| `check-bundle.mjs` | **1 — BY DESIGN.** Finding G-15, not breakage |
+| `audit21.mjs`, 9 routes × 6 classes | **zero H-SCROLL**; remaining `under44` is D-16-1 only |

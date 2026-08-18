@@ -142,8 +142,8 @@ are doc-only.
 
 **Wave 13** *(doc-only, safe to parallelise)*
 
-- [ ] 00-18-PLAN.md — Compress four case drafts to 500-700 words and normalise the `## Decisions` heading
-- [ ] 00-19-PLAN.md — The four new photo fields, `description`'s render location, and the 39-row alt-text content brief
+- [x] 00-18-PLAN.md — Compress four case drafts to 500-700 words and normalise the `## Decisions` heading
+- [x] 00-19-PLAN.md — The four new photo fields, `description`'s render location, and the 39-row alt-text content brief
 
 **Wave 14** *(blocked on 00-18 — main tree)*
 
@@ -394,7 +394,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 16/17 | In Progress|  |
+| 0. Design & Ideation | 18/25 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

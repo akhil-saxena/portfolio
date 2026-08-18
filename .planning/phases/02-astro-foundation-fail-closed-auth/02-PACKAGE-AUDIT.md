@@ -55,6 +55,16 @@ slopcheck install -e npm astro @astrojs/cloudflare @astrojs/react react react-do
 
 Result: **15 OK, 1 SUS, 0 SLOP** over 16 packages.
 
+A 17th package, `@vitest/coverage-v8`, was added to the set **at the Task 2 gate by developer
+decision** and audited by the same method afterwards:
+
+```bash
+slopcheck install -e npm @vitest/coverage-v8
+```
+
+Result: **1 OK, 0 SUS, 0 SLOP**. Final released set: **17 packages, 16 OK and 1 SUS
+(`vitest`, developer-confirmed), 0 SLOP.**
+
 Per-package fields (`version`, `repository.url`, `time.created`, `scripts`, `maintainers`) came
 from `npm view`; weekly download counts came from
 `https://api.npmjs.org/downloads/point/last-week/<pkg>` for the window
@@ -76,8 +86,9 @@ from `npm view`; weekly download counts came from
 | `@biomejs/biome` | dev | `^2.5.9` → 2.5.9 | npm | 2023-08-17 | 8.93M/wk | github.com/biomejs/biome | No | [OK] | Approved |
 | `prettier` | dev | `^3.9.6` → 3.9.6 | npm | 2017-01-10 | 111.1M/wk | github.com/prettier/prettier | No | [OK] | Approved |
 | `prettier-plugin-astro` | dev | `^0.14.1` → 0.14.1 | npm | 2021-09-22 | 715K/wk | github.com/withastro/prettier-plugin-astro | No | [OK] | Approved |
-| `vitest` | dev | `^4.1.10` → 4.1.10 | npm | 2021-12-03 | 77.6M/wk | github.com/vitest-dev/vitest | No | [SUS] | Needs human verification |
+| `vitest` | dev | `4.1.10` (exact — see finding 5b) | npm | 2021-12-03 | 77.6M/wk | github.com/vitest-dev/vitest | No | [SUS] | Approved by developer at the Task 2 gate (see §Gate decision) |
 | `@cloudflare/vitest-pool-workers` | dev | `^0.21.3` → 0.21.3 | npm | 2024-03-14 | 2.09M/wk | github.com/cloudflare/workers-sdk | No | [OK] | Approved |
+| `@vitest/coverage-v8` | dev | `4.1.10` (exact) | npm | 2023-06-06 | 29.7M/wk | github.com/vitest-dev/vitest | No | [OK] | Approved (added at the Task 2 gate by developer decision) |
 
 Every pin above was confirmed to resolve with `npm view '<pkg>@<range>' version`. All 16 resolve.
 
@@ -149,6 +160,33 @@ The plan anticipated a community plugin author. The registry says otherwise: rep
 `github.com/withastro/prettier-plugin-astro`, maintainer `fredkschott` (Astro co-founder).
 Stronger provenance than assumed — recorded as a correction, not a concern.
 
+### 5b. `@vitest/coverage-v8` peers `vitest` at an **exact** version — pin both, no caret
+
+This is the one finding that changes an instruction for 02-03, so it is called out rather than
+buried. `npm view @vitest/coverage-v8 peerDependencies --json` returns:
+
+```json
+{ "vitest": "4.1.10", "@vitest/browser": "4.1.10" }
+```
+
+Two things follow:
+
+- **`vitest` is a required peer at an exact version, not a range.** `@vitest/coverage-v8@4.1.10`
+  is satisfied only by `vitest@4.1.10` precisely. A `^4.1.10` spec on `vitest` resolves to 4.1.10
+  today, but the moment 4.1.11 publishes, a fresh `npm install` on a clean checkout could resolve
+  the two to different versions and produce a hard peer error. 02-03's own done-criteria is "no
+  peer warnings", and it forbids `.npmrc`/`legacy-peer-deps`, so there is nothing to absorb that
+  break. **Both packages are therefore pinned to the exact string `4.1.10`** — which is also
+  exactly the version audited and approved, so this narrows the spec rather than widening it.
+- **`@vitest/browser` is an optional peer** (`peerDependenciesMeta` → `{"@vitest/browser":
+  {"optional": true}}`), so it does **not** need to be installed and does **not** become an
+  unaudited 18th package. Confirmed explicitly, because a required browser peer here would have
+  dragged Playwright-adjacent tooling into Phase 2 through the back door.
+
+Provenance is the same as `vitest` itself: repository `github.com/vitest-dev/vitest`, and the
+maintainer list is identical (`ariperkkio`, `antfu`, `hiogawa`, `oreanno`, `yyx990803`). It
+declares no `postinstall`. 29.7M downloads/week, first published 2023-06-06.
+
 ### 6. Two pins moved since `.planning/research/STACK.md` was written
 
 | Package | STACK.md | Registry now | Action |
@@ -175,7 +213,7 @@ none is dropped. A later reader should not read this as an omission:
 | `ultrahtml` | Phases 3–5 | HTML sanitization is needed when résumé/bullet HTML is rendered, which is not Phase 2. |
 | `sharp`, `exifr`, `@aws-sdk/client-s3` | Phases 3–5 | GitHub Actions photo pipeline only. Never bundled into the Worker; `sharp` cannot run in `workerd` at all. |
 | `@testing-library/react`, `@testing-library/jest-dom`, `jsdom`, `@playwright/test` | Phases 3–5 | Component and E2E testing arrives with the components and pages. Phase 2's tests are Workers-pool tests via `@cloudflare/vitest-pool-workers`. |
-| `@vitest/coverage-v8` | Not in Phase 2's approved set | Present in STACK.md's dev list but **not** installed by 02-03, and 02-05 (which adds the `test` scripts) does not install it either. If coverage reporting is later wanted it must come back through this gate rather than being added inline. |
+| ~~`@vitest/coverage-v8`~~ | **No longer deferred** | Originally omitted from Phase 2 (in STACK.md's dev list, but installed by neither 02-03 nor 02-05). Raised at the Task 2 gate, audited, and **added to the approved set by developer decision** so coverage reporting is available from the first test run. It is row 17 of the table above. |
 
 Two packages are on a permanent do-not-install list rather than deferred:
 
@@ -183,6 +221,42 @@ Two packages are on a permanent do-not-install list rather than deferred:
   with the generated declarations.
 - `zod` as a separate install — `astro` bundles `zod ^4.3.6`; a second copy causes type-identity
   mismatches with `defineCollection`. Use `astro/zod`.
+
+---
+
+## Gate decision — developer sign-off
+
+The Task 2 human gate was answered by the developer on 2026-08-18. It was **not** auto-advanced:
+`workflow.auto_advance` does not apply to a supply-chain legitimacy checkpoint, and the checkpoint
+carried `gate="blocking-human"`.
+
+**Verdict: approved**, with one addition routed back through this gate.
+
+```
+RELEASED-SET: 16 planned + @vitest/coverage-v8@4.1.10 added at gate by user decision = 17 packages
+```
+
+**What 02-03's executor must do differently from its own written task list:**
+
+1. Add **`@vitest/coverage-v8`** to `devDependencies`, pinned to the exact string **`4.1.10`** —
+   the version audited here. 02-03's Task 1 enumerates 10 dev dependencies; the correct count is
+   now **11**. This is an approved addition, not an unaudited install, so it does not void this
+   gate.
+2. Pin **`vitest`** to the exact string **`4.1.10`** as well, not `^4.1.10`. `@vitest/coverage-v8`
+   peers `vitest` at an exact version (finding 5b); a caret on either one can drift the pair apart
+   and break the "no peer warnings" done-criteria on a clean install.
+3. Do **not** add `@vitest/browser`. It is an optional peer of `@vitest/coverage-v8` and is not in
+   the released set.
+4. Everything else in 02-03's list is unchanged, and the banned-package list still stands.
+
+**Risks the developer accepted explicitly at the gate:**
+
+| Accepted | Detail |
+|----------|--------|
+| The two transitive install scripts | `esbuild` and `workerd` each declare `postinstall: node install.js` and **will** execute on `npm install`, locally and in CI. Both are first-party to their vendors and expected for this stack (finding 3). |
+| The TypeScript pin | `typescript` stays at `~6.0.2` (→ 6.0.3) rather than the 7.0.2 latest, because `@astrojs/check@0.9.10` peers `^5 \|\| ^6` (finding 2). |
+| `vitest`'s `[SUS]` verdict | Confirmed against the live registry page as a false positive of slopcheck's edit-distance heuristic against `vite` (finding 1). Released rather than force-installed. |
+| The four typosquat-exposed scoped/hyphenated names | `@astrojs/check`, `@cloudflare/vitest-pool-workers`, `prettier-plugin-astro`, `@biomejs/biome` — publisher confirmed on the registry page, not on this table. |
 
 ---
 
@@ -210,7 +284,12 @@ Two things this exercise caught, both fixed:
    the keyword now appears nowhere in this file. For the same reason the mutation table above
    spells the verdict in lower case: a literal in a table cell here would arm the guard against
    this document's own commentary.
-2. **The per-package row check is file-scoped, not row-scoped.** It greps for the backticked
+2. **A negative control can go stale silently.** After the gate edits rewrote the `vitest` row's
+   Disposition cell, the slop-injection control stopped matching anything and therefore "passed"
+   — reporting a healthy guard while actually testing nothing. It now asserts that its own
+   mutation landed before drawing any conclusion. Any negative control that does not verify it
+   changed the input is indistinguishable from a control that always passes.
+3. **The per-package row check is file-scoped, not row-scoped.** It greps for the backticked
    package name anywhere in the document. Because most package names are also mentioned in the
    findings and reductions sections, deleting a name from the *table* alone would not fail the
    check. This is a known limit of the verify, recorded here rather than silently relied upon:
@@ -222,23 +301,32 @@ Two things this exercise caught, both fixed:
 ## Audit ↔ install-set correspondence
 
 02-03 is the **only** plan in Phase 2 that runs `npm install` (verified by grep across all ten
-Phase 2 plans). Its Task 1 enumerates 6 runtime and 10 dev dependencies. Those 16 names are exactly
-the 16 rows above — one audit row per installed package, with no row left over and no install
-lacking a row.
+Phase 2 plans). Its Task 1 as written enumerates 6 runtime and 10 dev dependencies; the gate added
+an 11th dev dependency (`@vitest/coverage-v8`), so the installed set is **6 runtime + 11 dev = 17**.
+Those 17 names are exactly the 17 rows above — one audit row per installed package, with no row
+left over and no install lacking a row.
+
+If a future plan wants a package with no row here, the correct move is to come back through this
+gate, as `@vitest/coverage-v8` did. An install without a row fails 02-03's own dependency check.
 
 ---
 
-**Packages removed due to slopcheck [SLOP] verdict:** none — zero packages returned that verdict.
+**Packages removed due to slopcheck [SLOP] verdict:** none — zero of the 17 packages returned that
+verdict.
 
 **Packages flagged as suspicious [SUS]:** `vitest` (edit-distance heuristic against `vite`; see
-finding 1). Escalated to the human gate rather than force-installed.
+finding 1). Escalated to the human gate rather than force-installed, and released there.
 
 **Packages requiring the Task 2 human gate:** `vitest` (the only non-`[OK]` verdict, mandatory
 confirmation), plus the four names the plan singles out as most exposed to typosquatting because
 they are scoped or hyphenated and must be confirmed against the live registry page rather than
 against this table — `@astrojs/check` (expect withastro), `@cloudflare/vitest-pool-workers`
 (expect cloudflare), `prettier-plugin-astro` (expect withastro / fredkschott), `@biomejs/biome`
-(expect biomejs). Five rows total.
+(expect biomejs). Five rows total. All five were confirmed by the developer; see §Gate decision.
+
+**Final released set: 17 packages** — 6 runtime, 11 dev. Every row carries a non-empty
+disposition, and no row is unapproved.
 
 **Install state at the time of writing:** nothing installed. `package.json`, `package-lock.json`
-and `node_modules/` do not exist at the repo root.
+and `node_modules/` do not exist at the repo root. Plan 02-03 is now released to create the
+manifest and install exactly the 17 packages above, at the versions pinned above.

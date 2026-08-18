@@ -901,3 +901,156 @@ and gates on `= "16"`. Counted against the shipped file rather than the doc, it 
 **fifteen** — `G-1` through `G-15`, with `grep -c '^| \*\*G-'` returning 15. The gate is
 arithmetically wrong and was **not** satisfied by adding a row. Fifteen is the correct fixed
 denominator for any future check.
+
+---
+
+## The four new photo fields, as SKETCHED — plan 00-24
+
+Schema decisions 6 and 7 specified these fields. Plan 00-24 built them into
+`/admin/photos` and fixed the public defect the specification exposed. What follows is what
+the sketch resolved that the specification could not, measured in a browser rather than read
+off the source.
+
+### Rendered treatment, and the id scheme
+
+All four sit in a `CONTENT` group between the Category select and the `EXIF` group, in this
+order, in **both** pinned detail panels. Alt text is **first** — above Place and Description —
+because it is the only required one and it is unfilled on all 39: the field the operator must
+fill should not be the third thing they scroll past.
+
+| Field | Composition | Control id | Notes |
+|-------|-------------|-----------|-------|
+| Alt text | `Field` + `TextInput` | `f-<photo-id>-alt` | Label reads **"Alt text (required)"**; `required` + `aria-required="true"` on the input; placeholder *"Describe what is in the frame"* |
+| Place | `Field` + `TextInput` | `f-<photo-id>-place` | Hint names it manual and says there is nothing to derive it from |
+| Description | `Field` + `Textarea` | `f-<photo-id>-description` | `rows={3}`; hint says lightbox-only |
+| Tags | `Field` + `Chip` set + `TextInput`, `group` | `f-<photo-id>-tags` | Same treatment as `Skills` and `Project — Tech Stack`; add-on-Enter, inert in the sketch |
+
+Ids follow the house scheme `f-<record-id>-<field>` and are unique across the page. `wiring` is
+the hand-built `FieldWiring` object, because `Field` wants the output of the `useField` hook and
+an Astro page cannot call one — plan 13's finding, unchanged.
+
+`Tags` takes `group`, which makes `Field` emit `<fieldset>` + `<legend>` rather than
+`<label for>`. That is correct and not a workaround: the control is a set of chips **plus** an
+input, so there is no single labelable element for a `<label for>` to point at. Verified in the
+browser — two visible `<legend>Tags</legend>`, not two orphaned labels.
+
+**A fourth composition limit, in the same family as the three already recorded.** `FieldProps`
+is `{ label, hint, errorMessage, wiring, group, children, className }` — there is **no
+`required` flag**. A required field therefore has no component-level affordance: requiredness is
+encoded in the label STRING (`"Alt text (required)"`) and repeated in the hint, which means every
+screen in the product will invent its own marker and they will not match. Recorded as a finding
+for Phase 1, not worked around locally. The native `required` attribute passes through
+`TextInput` to the `<input>`, so the *semantics* are right; it is only the visible marker that
+has no home.
+
+### The omission rule, extended to the new fields
+
+An absent `place` or `description` renders **empty and editable** in the admin and **nothing at
+all** on the public surface. Never an em dash — a `—` beside `f/11` reads as a data bug rather
+than an absence. Both treatments are on screen at once because the two pinned panels differ:
+`architecture-redbuilding` carries fixture-only values, `product-peppers` carries none. Measured:
+zero inputs on the route render `—` as a value.
+
+### The missing-alt banner — a design decision, not a placeholder
+
+`alt` is null on all 39, so **the missing-alt state is the screen's first-run state**, not an
+edge case. An editor that shows 39 blank optional-looking fields is an editor that still has 39
+blank fields in a year, so the count goes on screen above the filter row — the debt is a property
+of the library, not of whichever photo happens to be selected.
+
+- **What it says.** Title: *"39 of 39 photos have no alt text."* Body: alt is required before a
+  photo can be published, the public gallery ships no JavaScript so alt is the entire non-visual
+  experience of the image, **"Saving still works: fill them in as you go"**, and the outstanding
+  rows are tracked in `00-PHOTO-CONTENT.md`.
+- **What it claims is still possible.** Saving. D-18 is lenient: the message is about
+  *publishing*, and a reviewer looking at a screenshot has no other way to learn that, so the
+  body text says it out loud. `tone="warning"`, not `"error"`.
+- **Why it derives its count.** `fx.photos.filter((p) => !p.alt).length`, never the literal 39.
+  A hardcoded 39 keeps claiming 39 forever, and a content-debt banner becomes untrustworthy the
+  first time someone fills one in and the number does not move.
+- **Why `AlertBanner` and not a dialog.** `Modal`, `ConfirmDialog` and `Sheet` each mount through
+  `DSPortal` and server-render to **0 B**. On a statically-rendered sketch a dialog looks designed
+  in source and is absent from the artefact. `AlertBanner` and `FormErrorSummary` are the two that
+  actually render. Verified in the browser: zero portal nodes in the DOM.
+
+This is the screen Phase 7 has to build for a library that starts with 39 unfilled alt texts.
+
+### The alt-equals-title defect — found and fixed
+
+**`.playground/src/pages/photos.astro:182` emitted `alt={t.title}` on every tile**, so all 39
+public images announced their *name* where their *description* belongs — "Into The Mist". That is
+precisely the failure `alt` exists as a separate field to prevent, and the public gallery ships
+zero framework JS, so there is no hover, tooltip or later interaction that could ever supply the
+real thing. The line now reads the photo's own `alt` field.
+
+**Fixed at the same time: the same defect is still live on two other surfaces.** See
+`deferred-items.md` D-24-1 — `home.astro`'s six peek photos, and the two admin islands. Not
+fixed here, because they are other plans' files.
+
+### The `ALT PENDING` placeholder rule — SKETCH ONLY
+
+Where `alt` is unwritten the tile emits `[ALT PENDING — see 00-PHOTO-CONTENT.md]`. Three reasons
+that is right for a sketch:
+
+1. `alt=""` declares an image **decorative**. These are photographs on a photography gallery;
+   declaring all 39 decorative is a worse lie than the title was.
+2. The title is the lie the fix exists to remove — putting it back on the "missing" branch
+   reintroduces exactly the defect.
+3. A visible placeholder appears in the **built HTML**, so a reviewer walking the artefact sees
+   outstanding content work rather than a page that looks finished.
+
+**PHASE 5 MUST NOT CARRY THE STRING INTO PRODUCTION.** All three reasons invert once the site is
+live: a placeholder that survives into the shipped site is worse than the defect it replaced,
+because it *looks deliberate*. On the real site the 39 rows are a shipping blocker, not a marker.
+The prohibition is the inheritance here; the string is not.
+
+### The drift gate — a mechanism, not a promise
+
+Two files hold the same 39 facts and drift the moment one is edited alone. Filling a row in the
+brief without filling the data leaves the page still claiming the work is outstanding; filling
+the data without the brief leaves the brief asking for work already done. Neither shows up in a
+build. So:
+
+> **the number of `ALT PENDING` placeholders in the built HTML must equal the number of unfilled
+> `[AKHIL-ALT]` ROWS in `00-PHOTO-CONTENT.md`, and inequality is a build failure.**
+
+Two counting rules are part of the gate, not incidental to it — **Phase 5 must reimplement both**:
+
+- **Count table ROWS in the brief, not occurrences of the marker.** The brief contains **forty**
+  `[AKHIL-ALT]`: 39 table cells plus one prose mention on the line that explains what the two
+  markers mean. A raw occurrence count over-reports by exactly one and fails on a correct page.
+- **Count placeholders inside `alt` ATTRIBUTES, not anywhere in the document.** The page also
+  *names* the marker in its visible note about the outstanding work. A document-wide match counts
+  that prose as a fortieth image.
+
+Both are the same lesson: **count the structure, not the string** — and both are the same family
+as `grep -c` counting lines when you meant matches. The gate also asserts directly that no `alt`
+attribute equals its own tile's caption, which is the defect itself rather than a proxy for it.
+
+Proven by a negative control: filling one brief row without touching the data fails the gate with
+`DRIFT pending=39 brief=38`, and the restore is SHA-256-identical.
+
+### `description` — lightbox-only, and IN the served HTML
+
+Schema decision 7 has two halves and both are implemented. The description is emitted into the
+DOM inside the tile and hidden with `display: none`; revealing it is the lightbox's job.
+
+- **Why it is in the HTML at all.** `Lightbox` is a hook-using, hydrated island, so a caption it
+  builds on open is unreachable to a crawler and to anyone without JS — on a page whose whole
+  premise is zero framework JS. Injected-at-runtime was the failure mode decision 7 was written
+  against.
+- **Why `display: none` and not a visually-hidden clip.** A clipped-but-exposed node would make
+  every tile announce its description as part of the link name *in the grid*, which is not the
+  design. It is the lightbox's caption, parked in the served HTML.
+- **Why it is not a grid caption.** Decision 7 took that option, against, with its reasoning: a
+  description under every tile turns a gallery into a catalogue.
+- **G-14, visible by its absence.** The lightbox is the single hydrating public component in the
+  whole roadmap, is already scoped as DS-07 for missing backdrop-click close, `srcset`, swipe and
+  slide announcements, and is deliberately not built in this sketch. The slot is reserved; the
+  route still measures zero framework JS and zero `<astro-island>` nodes.
+
+### D-15-1, closed
+
+`.adm-group-link` reaches the 44px floor at all five coarse classes, in the dashboard's existing
+`@media (pointer: coarse)` block. Measurements and the reasoning for `align-items: flex-end` over
+padding or an `::after` overlay are in `deferred-items.md`.

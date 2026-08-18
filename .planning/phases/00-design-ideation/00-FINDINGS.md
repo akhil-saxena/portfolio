@@ -312,3 +312,43 @@ not be "fixed" into a hard gate until the threshold is settled.
 roughly **3.5×** over this line. Moving the line anywhere defensible leaves G-15 failing, so
 the deferral costs nothing and blocks nothing. The byte count is the finding; the comparison
 is not.
+
+---
+
+## Screenshot evidence — where each gap can be seen after the playground is gone
+
+Written by plan **00-17 task 1**, which captured the record. `.playground/` is gitignored on
+purpose (RESEARCH OQ-2, adopted as `00-UI-SPEC.md` Confirm-or-Override item 13) and D-02's
+mandatory exit task deletes it, so **nothing in it is recoverable from git history**. A finding
+that cites a running sketch stops resolving the moment that task runs. A finding that cites a
+committed PNG does not.
+
+This section adds **no register row**. The register is fifteen `G-` rows, G-1 through G-15, and
+stays fifteen. This is an index from a gap to the image that shows it, so a reader who was not
+here can open the evidence rather than take the wording on trust.
+
+Every path below is relative to this directory. All admin files are `-light-` and all public
+files are `-dark-`: capturing an admin artefact in dark mode would hide the light-palette
+contrast failures the sketches exist to expose (`00-SCREENSHOT-CONTRACT.md` §4).
+
+| Gap | Screenshot | What the image shows |
+|-----|-----------|----------------------|
+| **G-1** | `screenshots/00-S-home-populated-light-1440.png` | `FocalPointSketch` running where the design system ships nothing — D-23's drag-a-marker control on a real 3:2 frame with live `object-position`, hand-built because no component exists. |
+| **G-1** | `screenshots/00-R-crop-picker-populated-light-390.png` · `screenshots/00-R-crop-picker-populated-light-344.png` | D-09's **designed refusal** at both phone classes — the reason G-1 is desktop-only rather than merely missing. The rest of Home stays editable behind it. |
+| **G-3** | `screenshots/00-S-resume-populated-light-1440.png` | `RichTextBullets` running on the 11-bullet Brevo entry. `RichText` has no `marks` / `extensions` prop, so ⌘I / ⌘U / ⌘K stay live under a bold-only toolbar — D-21 cannot be expressed. |
+| **G-4** | `screenshots/00-S-resume-populated-light-1440.png` | The same island, carrying the recorded italic run. `outputFormat` offers no segment shape, so a serializer would **silently drop** that run — which is why G-4 is data loss and not a styling miss. |
+| **G-5** | `screenshots/00-T-ready-badge-populated-light-1440.png` | D-13's three states at badge size, and the reason none of them can be a `StatusPill`: `pending` renders as a **near-invisible pill** at a 1.07:1 fill delta, while `upcoming` and `done` come from two unrelated hue families. |
+| **G-5** | `screenshots/00-T-dirty-badge-populated-light-1440.png` | The same three-state model on the dashboard's own surface — D-13's third required place, on the screen rather than in the badge triple. |
+| **G-5** | `screenshots/00-S-photos-populated-light-1440.png` | G-5 on a **second** surface, which is what makes it a pattern rather than an anecdote: D-15's pipeline state is also a `Badge`, because `StatusPill`'s stage union is a job-application pipeline. |
+| **G-6** | `screenshots/00-O-publish-invalid-populated-light-1440.png` | D-18's strict half naming three specific failures — with every deep link rendered as a **separate element beside** `FormErrorSummary`, because its `errors: string[]` has no element that could take an anchor. |
+| **G-7** | `screenshots/00-O-conflict-diff-populated-light-1440.png` | D-16's per-file conflict screen: the largest single surface in the admin, with **zero** design-system coverage. This full-page capture is the measurement G-7's proposed `files[]` prop shape was derived from. |
+| **G-8** | `screenshots/00-O-pipeline-strip-populated-light-1440.png` | The pipeline strip sharing the topbar's row with the publish action, because `AppShell`'s four slots are `sidebar / topbar / main / footer` and there is **no `banner`**. The strip has no landmark of its own — visible in the image, and the argument for G-8's optional slot. |
+| **G-13** | `screenshots/00-P-photo-reorder-populated-light-390.png` · `screenshots/00-P-photo-reorder-populated-light-344.png` | `Sortable` reordering at touch scale, at both phone classes. The keyboard path **works** — every reorder in the sketch was performed by keyboard alone — so what the image evidences is a sound movement with unsound speech: the announcer reads raw record ids and never a position. |
+| **G-13** | `screenshots/00-S-photos-populated-light-1440.png` | `PhotoLayoutBoard` with G-13 **left intact** rather than patched around, so Phase 1 inherits the announcer passthrough as a design-system fix instead of a local workaround. |
+
+**G-2, G-9 through G-12, G-14 and G-15 are not in this table, and that is not an omission.**
+Their evidence is a **measurement**, not a picture: G-15 is a gzip byte count from
+`check-bundle.mjs`, G-2 is control geometry in pixels from `audit21.mjs`, and a screenshot
+would be a weaker record of either than the number already written into its register row. The
+eight gaps above are the eight that a sketch demonstrates, which is the set plan 00-17 task 1
+names.

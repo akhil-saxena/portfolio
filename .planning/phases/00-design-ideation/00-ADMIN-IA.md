@@ -125,10 +125,13 @@ the gap ID is named.
 | Add Photo to Gallery | `none` (home tab) | `/admin/home` | `Modal` + `Card` grid picker |
 | Replace with | `homeGallery` | `/admin/home` | `Modal` + `Card` grid picker |
 | Photo — Title | `photo` | `/admin/photos` | `Field` + `TextInput` |
+| Photo — Alt text | `photo` | `/admin/photos` | `Field` + `TextInput`, hint copy: *"Describe what is in the frame. Not a copy of the title, and do not open with 'Image of'."* — **required**; see schema decision 6 |
 | Photo — Category | `photo` | `/admin/photos` | `Field` + `Select`, sourced from the canonical category records (D-25) |
-| Photo — Tags | `photo` | `/admin/photos` | **dropped** — see below |
+| Photo — Place | `photo` | `/admin/photos` | `Field` + `TextInput` — **manual free text, never derived**; see schema decision 6 |
+| Photo — Description | `photo` | `/admin/photos` | `Field` + `Textarea` — renders in the lightbox only; see schema decision 7 |
+| Photo — Tags | `photo` | `/admin/photos` | `Chip` set with an add-on-Enter input — **revived**, see below |
 | Photo — Order | `photo` | `/admin/photos` | `Sortable` / `SortableItem` + `onReorder`; **G-13** |
-| Photo — Position | `homeGallery` | `/admin/home` | focal-point crop picker; **G-1** |
+| Photo — Position | `homeGallery`, `photo` | `/admin/home`, `/admin/photos` | focal-point crop picker; **G-1** — now per-photo across all 39, not six peek slots; see schema decision 6 |
 | Camera | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
 | Lens | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
 | Aperture | `photo` (EXIF) | `/admin/photos` | `Field` + `TextInput` |
@@ -161,10 +164,24 @@ session.** The project title field renders as `Title`, not `Name`; the CTA link 
 as `Link`, not `Link URL`. Both are recorded so the port does not chase a label that was never
 on screen.
 
-**`Photo — Tags` is dropped on purpose, not lost.** PROJECT.md lists it under Out of Scope and
-the manifest confirms why: **0 of 39 photos carry a tag**. It is named here so the drop is a
+**`Photo — Tags` was dropped on evidence, and is revived by direction.** The evidence has not
+changed and is not being retracted: PROJECT.md listed the field under Out of Scope, and the
+manifest still confirms why — **0 of 39 photos carry a tag** (re-counted against
+`data/portfolio_images.json` this session, not read from this document). That drop was a
 decision with evidence attached rather than a field that quietly failed to appear in a
-wireframe.
+wireframe, and the record should keep showing it that way.
+
+**What changed is direction, not the measurement.** The user asked for tags back, so the field
+returns as a `Chip` set with an add-on-Enter input — the same treatment `Project — Tech Stack`
+and `Skills` already carry, so the admin gains no new interaction idiom for it. The reasoning
+that produced the drop was sound on the evidence available; the input that overrides it is the
+owner of the content saying he wants to tag photographs.
+
+**The 39 empty arrays are now a content task, not an argument for dropping the field.** An
+empty array on every record was read as "nobody uses this"; with the field revived it reads as
+"nobody has filled this in yet", and it is tracked as exactly that in
+`00-PHOTO-CONTENT.md` alongside the alt text. `tags` stays **optional** per photo — unlike
+`alt` — so an untagged photo is a complete record, not an incomplete one.
 
 ### The EXIF sub-form — six fields, and an omission rule
 
@@ -186,7 +203,7 @@ rule has to be written down or the public page will grow a row of em dashes.
 
 ## Schema decisions this IA forces
 
-Five schema questions become unavoidable once the seven routes exist. Each is **resolved in
+Seven schema questions become unavoidable once the seven routes exist. Each is **resolved in
 writing below with a chosen shape** — none is left as a Phase 3 or Phase 7 discovery, because
 "we will find out when we get there" is the failure mode this section exists to prevent.
 
@@ -195,6 +212,8 @@ writing below with a chosen shape** — none is left as a Phase 3 or Phase 7 dis
 3. A per-category photo order field (D-22)
 4. Canonical category records (D-25)
 5. The résumé date-shape drift — `startMonth`/`startYear`/… versus a single `period` string
+6. The four new photo fields — `place`, `description`, `alt`, `focalPoint` — and the revived `tags`
+7. Where `description` renders on the public site
 
 ### 1. `projects` moves out of `resume.json` into `projects.json` (D-24)
 
@@ -299,6 +318,192 @@ per education entry** against the recovered count. The formatter's acceptance te
 reproduction of the four strings on disk today — `Jul 2023 – Present`, `Nov 2022 – Jun 2023`,
 `Dec 2021 – Nov 2022`, `Jul 2018 – Jun 2022` — with the en dash and the three-letter month, so
 the public page does not visibly change on migration.
+
+### 6. The four new photo fields, and the revived `tags`
+
+**The record as it ships today**, re-read out of `data/portfolio_images.json` this session
+rather than from any document: **39 records**, each carrying
+`id, title, category, tags, date, exif{camera, lens, aperture, shutter, iso, focalLength},
+urls, order, dimensions`. Four of the fields below do not exist on a single record —
+`alt`, `place`, `description` and `focalPoint` are each present on **0 of 39** — and `tags`
+exists on all 39 and is empty on all 39.
+
+**Chosen shape.** The photo record gains four fields and revives one.
+
+| Field | Type | Required | Rule |
+|-------|------|----------|------|
+| `alt` | `string` | **required for every published photo** | Describes the frame. Separate from `title`. |
+| `place` | `string` | optional | **Manual free text. Never derived.** |
+| `description` | `string` | optional | Prose about the photograph. Renders in the lightbox only — decision 7. |
+| `focalPoint` | `string` | optional, defaults `"50% 50%"` | Same `"50% 25%"` shape Home's peek positions already use. |
+| `tags` | `string[]` | optional | Revived. Empty on all 39 today. |
+
+---
+
+**`place` — manual, and the emptiness is a privacy decision that already happened.**
+
+The image pipeline strips location deliberately. `scripts/process-images.js` on the
+`legacy/nextjs-portfolio` branch calls `exifr.parse` inside `extractExif()` with
+`pick: ["Make", "Model", "LensModel", "FNumber", "ExposureTime", "ISO", "FocalLength"]` and
+**`gps: false`** beside it. GPS is not absent from the source files; it is read out and thrown
+away on purpose, and the seven fields that survive are the seven the EXIF sub-form edits.
+
+So `place` is typed by a human or it is empty. **Deriving it would publish the precise
+coordinates of personal photographs** — including the ones taken where the photographer lives,
+and the ones with people in them. That is a different act from publishing "Lisbon, Portugal",
+which is what a human types when a human decides the location is worth saying. Free text is not
+a lesser version of coordinates here; it is the field working correctly, because the
+photographer chooses the granularity per photo.
+
+**A future phase must not read an empty `place` as an invitation to derive one.** "Location is
+missing, and we have EXIF, so let us backfill it from GPS" is a reasonable-sounding sentence
+that reverses a privacy decision, and it is exactly the sentence this paragraph exists to stop.
+If GPS ever needs to be read, that is a new decision made deliberately with the owner — not a
+data-quality cleanup.
+
+---
+
+**`description` — optional prose, and it inherits the EXIF omission rule.**
+
+An empty `description` renders **nothing** — never an em dash, never an empty paragraph
+element holding open vertical space. This is the same rule the EXIF sub-form already carries
+above, and it applies for the same reason: a `—` where prose should be reads as a data bug
+rather than as an absence. Where it renders is decision 7.
+
+---
+
+**`alt` — required, and it is not `title`.**
+
+*"Into The Mist"* **names** a photograph. It does not **describe** one. A screen-reader user
+given `alt="Into The Mist"` receives a title they cannot resolve into an image, which is worse
+than useless because it looks like the field was filled.
+
+**Why this is non-negotiable rather than a nice-to-have here specifically:** the public gallery
+ships **zero framework JS** across its static routes. There is no hover, no tooltip, no
+progressive disclosure and no interaction of any kind that could supply a description later —
+because there is no JS to implement one. `alt` is delivered on the `<img>` element itself and
+**is the entire non-visual experience of 39 images**. It is not the fallback; it is the whole
+channel.
+
+**Three rules a value must satisfy:**
+
+1. **It describes what is in the frame** — the subject, and enough of the setting to place it.
+2. **It is not a copy of the title.** Case- and whitespace-insensitive equality is the failure
+   a hurried fill produces, and the gate rejects it by name.
+3. **It does not open with "Image of" / "Photo of" / "Picture of".** A screen reader announces
+   the role before the text; the prefix is redundant speech, repeated 39 times on one page.
+
+**`description` is not a substitute for `alt`.** A photo with a rich description and no alt is
+still inaccessible, because the description lives in the lightbox and the grid is where the 39
+images are. The two fields are not tiers of the same content — they answer different questions
+for different readers.
+
+---
+
+**`focalPoint` — one shape for one concept.**
+
+`data/home_config.json` already stores exactly this: `peekPositions` is a map from photo id to
+a string, and its single populated entry today is
+`"architecture-hawamahaldaytime": "50% 25%"` against a `peekIds` array of **six** photos. The
+new field uses **that same string shape**, so a CSS `object-position` value stays a CSS
+`object-position` value everywhere in the product rather than forking into a `{x, y}` object on
+one screen and a string on another.
+
+Default `"50% 50%"` — centre — so an unset focal point is indistinguishable from today's
+behaviour and no migration is needed to preserve it.
+
+**Whether `focalPoint` supersedes `peekPositions` or coexists with it is Phase 3's call**, and
+it is genuinely a fork: a per-photo focal point is the photographer's judgement about the
+photograph, while a peek position is a judgement about one slot in one layout. They may want to
+be different values. This is named as an open migration question rather than resolved here,
+because resolving it needs the Home layout to exist.
+
+**G-1 escalates because of this field, and it is not fixed here.** The missing
+`FocalPointPicker` was scoped against Home's **six** peek slots; `focalPoint` on the photo
+record makes it load-bearing for the **main gallery admin across all 39**. Plan 14 measured the
+hand-built cost at **269 non-comment lines** (`FocalPointSketch.tsx`, 419 lines total). The
+escalation is recorded in this plan's SUMMARY; **G-1's tiers and its row in `00-FINDINGS.md`
+are unchanged**, and no local workaround is proposed — a design-system gap is a finding.
+
+---
+
+**Ordering is untouched by this decision, and D-22's rule still governs `/admin/photos`.**
+
+None of the five fields above is an ordering field, and adding them to `/admin/photos` changes
+nothing about decision 3: the grid's reorder affordance remains **modal on the active filter**,
+writing the **global `order` integer when "All" is selected** and the **per-category order
+field when a category filter is active**. The screen must still say which of the two a drag
+just wrote. Adding four editable fields to the same screen makes that label more necessary, not
+less — a busier panel is exactly where an operator stops noticing which mode a reorder landed
+in and concludes the reorder was lost.
+
+---
+
+**These fields are specified here and populated in the sketch fixture ONLY.**
+
+Phase 0 writes no production code. **`data/portfolio_images.json` is not edited by this plan**,
+and the acceptance gate on the task that wrote this section is
+`git diff --quiet -- data/portfolio_images.json`. Phase 3's schema module owns the real
+migration.
+
+**The reason is not ceremony.** Writing the four fields onto all 39 records as empty strings
+would produce a manifest that *looks* migrated — 39 records carrying `alt: ""` read as "the
+migration ran and the content is pending", when in fact no migration has been designed, no
+validation exists, and `alt` is supposed to be **required**. A record with a required field
+present-and-empty is a worse artifact than a record without the field, because the absence is
+what makes Phase 3 write the migration deliberately. The pending human content lives in
+`00-PHOTO-CONTENT.md`, which is a brief, not a data file.
+
+### 7. Where `description` renders on the public site — lightbox only
+
+**This question is closed, not deferred.** The build phase inherits a position.
+
+**Chosen behaviour.** `description` renders in the **lightbox only**. **`title` is the only
+text in the grid.** And one binding requirement on top of that placement:
+
+> **The description MUST be present in the served HTML, inside the figure, not injected by
+> JavaScript at runtime.** The lightbox *reveals* it visually; it does not *create* it.
+
+**Why that addition is load-bearing rather than an implementation detail.** `Lightbox` is a
+hook-using, hydrated React island. A caption that only exists once that island hydrates is
+unreachable to crawlers and to any visitor without JS — on a page whose entire design premise
+is shipping **zero framework JS** across its static routes. Putting the text in the DOM at
+build time and letting CSS and the lightbox control its *visibility* costs nothing and keeps
+the page's content readable by everything that reads pages. A `<figcaption>` that is visually
+hidden in the grid and revealed in the lightbox satisfies both halves.
+
+**Why lightbox and not the grid:**
+
+- **The masonry grid's rhythm is the design.** `00-PUBLIC-DESIGN-NOTES.md` resolution 5 gives
+  photographs an edge on charcoal specifically so the frame carries the image. Thirty-nine
+  captions insert a text column into what is composed as a photographic surface.
+- **The height cost lands on the narrowest class, on the longest page.** At class 1 the content
+  width is **312px** (§3: 344 − 32). A caption under every tile roughly doubles tile height
+  there — on the Photos page, which carries all 39 images and is the longest page on the site.
+- **The user has twice asked for less scroll** — *"I don't need long cases. Even short ones are
+  very long"* and *"one page per case, not a long scroll"*. Doubling the height of the longest
+  page cuts directly against a preference stated twice, and the fact that it was stated about
+  case studies rather than the gallery does not make it a different preference.
+- **The lightbox already hosts EXIF and already has room for prose.** `description` joins an
+  existing text region instead of creating a new one, which is why this placement costs no
+  layout work.
+- **Hover-reveal is not the clean third option it appears to be.** Of the six device classes in
+  `00-RESPONSIVE-CONTRACT.md` §1, **four are coarse-pointer** (1 folded cover, 2 phone
+  portrait, 3 foldable unfolded, 4 tablet portrait), class 5 is **ambiguous**, and only class 6
+  is **fine**. Hover is a reliable affordance on **one of six classes**. Any hover design needs
+  a touch answer anyway — so it is not a way to avoid choosing, it is the same choice with an
+  extra state to specify.
+
+**The accessibility path does not depend on this choice, and that is what makes it safe to
+choose.** `alt` is delivered on the `<img>` element and is present in the grid regardless of
+what `description` does. Choosing lightbox-only moves *prose*, not *access*. **Stated
+explicitly so it cannot be misread later: `description` is not a substitute for `alt`, and a
+photo with a good description and no alt is still inaccessible.**
+
+**Override condition.** If the grid should carry captions after all, this is **a layout
+decision, not a copy one**: the peek and masonry height budgets in
+`00-RESPONSIVE-CONTRACT.md` §5.3 recompute, and the Photos page's scroll length changes
+materially at every class. Whoever reopens it reopens §5.3 with it.
 
 ---
 

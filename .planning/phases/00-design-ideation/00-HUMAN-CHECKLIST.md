@@ -82,6 +82,24 @@ final, so these verdicts stick.
       fixed on `/photos`; wants the same treatment in Phase 5.
       description a screen reader ever gets on a zero-JS gallery.
 
+## C6-C8 · From the screenshot capture
+
+- [ ] **C6 · Spot-check the 88 committed PNGs** in `screenshots/` — exact match to the
+      contract arithmetic (29+12+18+12+12+3+1+1). All 88 verified unique by sha256; smallest
+      13 KB, largest 6.6 MB, none blank. Zero admin artefacts in dark.
+- [ ] **C7 · `X-home`'s two states.** 12 files, 6 classes x 2. At 1440 they are 629,727 B and
+      93,329 B — genuinely different. State B opens exactly on "The work" heading, confirming
+      the 131px chrome arithmetic empirically. Worth one look.
+- [ ] **C8 · Approve the playground deletion (00-17 task 3) — NOT YET RUN.** It stays parked
+      until you approve. See the blocker note below before you do.
+
+> **Blocker resolved, one text fix left.** 00-17 task 3 asserts "the four measurement scripts
+> still exist under `.planning/phases/00-design-ideation/`". They were **never committed** —
+> zero git history, playground-only — and the criterion would have *appeared to pass* against
+> three unrelated copy scripts. All ten are now rescued and committed under
+> `scripts/playground-measurements/`. **00-17's criterion text still names the wrong location
+> and should be pointed at the new path before task 3 runs.**
+
 ## E. Design-system handover (sibling repo — Phase 1 fixes these)
 
 Not verification; a queue. Tick when handed over or filed.

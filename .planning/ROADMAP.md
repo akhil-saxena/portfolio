@@ -72,7 +72,7 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
   4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
   5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
 
-**Plans**: 17 plans across 12 waves
+**Plans**: 25 plans across 19 waves (8 gap-closure plans added for the public/admin rework)
 
 Plans:
 **Wave 1**
@@ -127,6 +127,47 @@ Plans:
 **Wave 12** *(blocked on Wave 11 completion)*
 
 - [ ] 00-17-PLAN.md — Screenshot the artefact record, six review passes, then delete .playground/ per D-02 *(checkpoint)*
+
+---
+
+**Gap closure — the public and admin rework.** Off-plan, by direct user direction: one page per
+case at `/work/{id}`, a two-state Home landing, the six-class responsive contract, and photo
+positioning in the real public layout with a focal point per photo. Not from a verifier; there
+is no VERIFICATION.md. **00-11 and 00-17 stay OPEN and are re-run against the reworked
+artefacts, not replaced.**
+
+Every `.playground/`-touching plan runs on the MAIN working tree, sequentially — the directory
+is gitignored by the D-02 fence and does not propagate into a worktree. Only waves 13 and 19
+are doc-only.
+
+**Wave 13** *(doc-only, safe to parallelise)*
+
+- [ ] 00-18-PLAN.md — Compress four case drafts to 500-700 words and normalise the `## Decisions` heading
+- [ ] 00-19-PLAN.md — The four new photo fields, `description`'s render location, and the 39-row alt-text content brief
+
+**Wave 14** *(blocked on 00-18 — main tree)*
+
+- [ ] 00-20-PLAN.md — One tier, one route per case: `/work/{id}` x 5, the either-spelling loader, `case.css` 900 to 1024
+
+**Wave 15** *(blocked on Wave 14 — main tree)*
+
+- [ ] 00-21-PLAN.md — The responsive public shell: gutter ladder, `100svh`, `/work`'s horizontal scroll, the Photos filter rail
+
+**Wave 16** *(blocked on Wave 15 — main tree)*
+
+- [ ] 00-22-PLAN.md — Home's two-state landing: `X-home` state A and state B at six device classes
+
+**Wave 17** *(blocked on Waves 13 and 16 — main tree)*
+
+- [ ] 00-23-PLAN.md — `/admin/photos` reorder in the real public masonry, with a focal point on all 39
+
+**Wave 18** *(blocked on Wave 17 — main tree)*
+
+- [ ] 00-24-PLAN.md — Place, description, alt text and tags; the `alt={t.title}` fix; D-15-1 closed
+
+**Wave 19** *(blocked on Wave 18 — doc-only)*
+
+- [ ] 00-25-PLAN.md — The six-class screenshot contract, plan 00-17's four stale literals, and the re-review brief
 
 **UI hint**: yes
 

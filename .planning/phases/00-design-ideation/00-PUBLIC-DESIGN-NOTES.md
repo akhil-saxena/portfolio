@@ -2054,3 +2054,184 @@ reported a difference that is not a visual one.
 | `audit21.mjs`, `/home` + `/home-act2` × 6 classes | **zero H-SCROLL**; `under44` is D-16-1 only, and identical on both routes |
 | `audit22.mjs` | **PASS** at 6/6, and PASS again under `RM=reduce` |
 | `control22.mjs` | **PASS** — no leak, snap non-load-bearing, both controls bite 6/6, restore SHA-256-identical |
+
+---
+
+## Re-review brief
+
+**For the human reviewer at plan `00-11-PLAN.md`. Written by plan 00-25.**
+
+**What this is, and what it is not.** Plan 00-11 is one of the phase's two open human checkpoints
+and it was written in wave 6, against artefacts that have since been rebuilt underneath it.
+`00-RESPONSIVE-CONTRACT.md` §11 says so in as many words: *"No verdict on plan 00-11's three
+by-eye judgements. They are unanswered, they require a human eye, and the artefacts they judge are
+about to change. Plan 00-11 remains OPEN and must re-run against the reworked sketches."*
+
+This section is a **brief for that re-run, not a replacement of it.** It changes nothing in
+`00-11-PLAN.md`, which is unmodified. It does **not** answer 00-11's three by-eye judgements —
+the 44px-versus-52px Playfair header, the 22px `--ochre-d-strong` cross-link, and the 1080px Brevo
+band cap. Those are the reviewer's to give, and they were deliberately deferred precisely because
+the artefacts under them moved. Their answers still belong in `## Review outcome`, which 00-11's
+own task 3 writes.
+
+The one thing to know before opening 00-11: **a reviewer following its route list today will look
+for `/case/long` and `/case/short`, and neither exists.**
+
+### 1. Route map, before and after
+
+| Route in 00-11's list | Status now | Note |
+|---|---|---|
+| `/work-recolour` | **survives** | X-work-recolour, unchanged in structure |
+| `/work` | **survives, changed** | Responsive shell landed here; see §3 |
+| `/photos` | **survives, changed** | Responsive shell; filter row behaviour differs by class |
+| `/home-act2` | **survives** | Still the OQ-1 resolution, and now also rendered inside `/home`'s state B through one shared component |
+| `/` | **survives** | The contact sheet |
+| `/case/long` | **GONE** | Retired by plan 00-20 |
+| `/case/short` | **GONE** | Retired by plan 00-20 |
+
+**New since 00-11 was written:**
+
+| Route | Artefact | Built by |
+|---|---|---|
+| `/home` | `X-home` — the two-state landing | plan 00-22 |
+| `/work/design-system/` | `X-case-design-system` — 597 words | plans 00-18 + 00-20 |
+| `/work/cairn/` | `X-case-cairn` — 692 words | plans 00-18 + 00-20 |
+| `/work/hued/` | `X-case-hued` — 619 words | plans 00-18 + 00-20 |
+| `/work/momentum/` | `X-case-momentum` — 682 words | plans 00-18 + 00-20 |
+| `/work/timeshift/` | `X-case-timeshift` — 647 words | plans 00-18 + 00-20 |
+
+`/work` and `/work/{id}` coexist with no routing collision. `src/pages/case/` no longer exists.
+
+### 2. What each of 00-11's tasks now reviews
+
+**Task 1** — the charcoal resolution of Work, Photos and Home Act 2. Its eight steps still apply
+and its three by-eye judgements are still the three it names. Two changes to what you will be
+looking at: `/work`'s cards now carry Ivory→Charcoal **exception 3** for the first time (§3), and
+both routes now respond across six device classes rather than two, so each judgement can be taken
+at more than one width if the width turns out to matter.
+
+**Task 2** — written as *"the two case-study templates against real drafted copy"*. **It is now
+one template against five compressed studies.** D-39's stacked two-tier scheme is superseded:
+there is **one tier**, five studies at **500–700 words** (597 · 692 · 619 · 682 · 647), and one
+route per case at `/work/{id}`.
+
+The judgement task 2 asks for is unchanged — *does this read as deliberate rather than as lorem,
+and does the 68ch measure hold with real prose in it.* What changed is the artefact, and one of
+task 2's eight steps no longer has a subject: **step 6, "does the short form read as a deliberate
+tier, or as a truncated long form"**, cannot be answered because there is no short form. The tier
+question is closed by construction; the measure question is not, and is now asked of five
+documents instead of two.
+
+Task 2's step 5 still holds and is worth keeping: the design-system study still closes by pointing
+at the page you are reading it on.
+
+### 3. What is newly in front of the eye
+
+Each with the plan that built it and where to look.
+
+**The Home two-state landing — plan 00-22, at `/home`.** State A is
+`min-height: calc(100svh - var(--hm-above))`, **not** `100svh`. The chrome above it measures a
+constant **131px** at all six classes, measured rather than assumed; a bare `100svh` would leave a
+band of photographs on screen after one viewport of scroll while the CSS looked correct. The
+transition is a plain document scroll, `scroll-snap` is a `proximity` enhancement inside
+`prefers-reduced-motion: no-preference` and is never load-bearing. **Both states are the artefact
+— judging state A alone judges half a design.**
+
+**The compressed case studies — plans 00-18 and 00-20, at `/work/{id}`.** Compression was ~60% on
+the former long tier and ~20% on the former short tier, which is why the **shortest** study today
+is `design-system` at 597 words — a former *long* study. Two of Cairn's decisions changed on the
+user's ruling: **multi-tenancy restored, the contrast decision cut.** The middle heading is
+normalised to `## Decisions` (plural) across all five.
+
+**The real-layout photo board — plan 00-23, at `/admin/photos`.** The order view is now the
+**real public masonry**, drawn at the public surface's spacing rather than the admin chrome's
+density-scaled tokens, with an **editable focal point on all 39 photos**. `SortableReorder.tsx` is
+gone; `PhotoLayoutBoard.tsx` replaced it. `FocalPointSketch.tsx` is reused byte-identical, not
+forked.
+
+**The responsive shell — plan 00-21, across the public routes.** Gutter ladder **16 / 24 / 32 /
+48**, `svh` rather than `vh`, and `/work`'s horizontal overflow at **344 and 390 closed**. This is
+also where **Ivory→Charcoal exception 3 lands on `/work`'s cards for the first time**: four
+`class=` → `className=` fixes, and the card border moved `rgb(51,51,47)` → `rgb(114,114,104)`. If
+the cards read differently from how they read in wave 6, that is why.
+
+**The four photo fields, plus a revived fifth.** **Source note: this paragraph is written from
+`00-19-SUMMARY.md`, the schema *specification*, because `00-24-SUMMARY.md` — the *implementation*
+— did not exist when this brief was written.** 00-19 is complete and authoritative about *what*
+changes; it is not evidence of what shipped. **Before the review runs, check `00-24-SUMMARY.md`
+for deviations from the spec below.**
+
+| Field | Type | Required | Rule as specified |
+|---|---|---|---|
+| `alt` | `string` | **required** | Describes the frame. Separate from `title`. Machine-enforced. |
+| `place` | `string` | optional | **Manual. Never derived** — EXIF GPS is stripped, so an empty `place` is a privacy decision that already happened. |
+| `description` | `string` | optional | Lightbox only, **and present in the served HTML** — not injected by JS. |
+| `focalPoint` | `string` | optional, default `"50% 50%"` | Reuses `home_config.peekPositions`' `"50% 25%"` string shape. |
+| `tags` | `string[]` | optional | Revived by the owner of the content. Empty on all 39 today. |
+
+**No alt text was invented** — all 39 cells carry `[AKHIL-ALT]` and nothing else, and none of the
+five fields was written into `data/portfolio_images.json`. That is deliberate: Phase 3 owns the
+migration, and a required field present-and-empty is a worse artefact than an absent one. The 39
+alt texts are tracked human content and a **Phase 5 shipping blocker**, not a Phase 0 one.
+
+**One correction worth carrying into the review:** the component count is **79**, corrected from
+80 in `one-liners.md`. The design system's README is **retired as an authority** — it matches
+neither shipped source; the catalog says 79 and `src/` has 81 directories.
+
+### 4. What is deliberately still broken — do not report these as findings
+
+A reviewer who does not know this list spends the review re-finding it. Every item below is known,
+written down, and already has an owner.
+
+| Item | What you will see | Owner |
+|---|---|---|
+| **D-16-1** | `AppBar`'s brand link and `Footer`'s link list sit **under the 44px floor on every public route**. They paint their own geometry **inside the design system**, so no app-side CSS can fix them without violating Core Value. | **Phase 1**, with **G-2**'s control-geometry token layer |
+| **`/photos/` at the coarse classes** | `/photos/` **fails the 44px floor at five of the six classes**: wordmark **20px**, `.ph-xlink` **30px**, footer links **22.5px**. Not closed by this rework and **design-system-owned**. | **Phase 1** |
+| **G-13** | On the photo board, the drag announcer **speaks record slugs and no position** — "moved `abstract-intothemist`" rather than "moved to position 4 of 39". `Sortable` exposes no announcer passthrough. | **Phase 1** owns the passthrough |
+| **G-15** | `check-bundle.mjs` **still exits 1**. That is the finding, not breakage. Every other check exits 0. | filed, tiered |
+
+**One stale figure, corrected.** D-16-1's write-up quotes the AppBar brand link at 40px. At class
+1 it is **20px at 344**, not 40px. Use 20px.
+
+**And on the register's size:** `00-FINDINGS.md` carries **fifteen** `G-` rows, G-1 through G-15.
+If a document you open during the review says sixteen, it is wrong — the figure was propagated by
+mistake through this phase. **Do not add a row to make a count agree**; the register states its own
+fixed-denominator rule, and a plan that finds something outside it records the finding in its own
+SUMMARY instead.
+
+### 5. Still confirm-or-override — silence here is a decision, not an omission
+
+`00-RESPONSIVE-CONTRACT.md` §10 states seven derivations that **proceed unless overridden.** Three
+of them were **acted on** by this rework, and acting on an item is not the same as confirming it —
+the code exists either way, and only an explicit answer closes the item.
+
+| # | Item | Stated position | What overriding costs now |
+|---|---|---|---|
+| **R-1** | Case-study target length | **500–700 words**, one tier | Any number; the compression pass takes it. This is the only item that changes the copy — and the copy has now been compressed once, so a new number is a second pass over five documents. |
+| **R-2** | *"Only work + résumé visible"* (§5.7) | Read as **what fills the view after the transition**, not as a promise that both sections fit one viewport. It cannot hold at five projects plus a résumé section at **any** class. | **Home's content has to shrink** — fewer projects on Home, or the résumé section reduced to a link. **That is a content decision, and no plan in this phase is authorised to take it.** This is the one to answer deliberately. |
+| **R-3** | Case route shape | **`/work/{id}`** using D-38 ids | `/case/{id}`, or anything else. Nothing else in the contract depends on the choice, and five routes move. |
+
+The other four §10 items — R-4 (canonical heights), R-5 (the gutter ladder), R-6 (reflow never
+hide), R-7 (`scroll-snap` at all) — are unchanged by this rework and are not re-opened here.
+
+### 6. The screenshot record you will be walking at plan 00-17
+
+Plan 00-17 is the phase's **other** open checkpoint, and its review passes are walked over a
+screenshot record. That record is now defined by **`00-SCREENSHOT-CONTRACT.md`**, and it is **six
+device classes, not two**: 344 · 390 · 768 · 841 · 1024 · 1440.
+
+Roughly **88 files**, against an asserted floor of **80**. The contract's §2 explains every
+asymmetry — why the 29 admin desktop artefacts stay at 1440 only, why the 6 phone artefacts get
+390 **and** 344, and why two case studies are captured at all six classes while three are captured
+once. `841 × 768` is the single most demanding capture in the set: class 3 is the only class whose
+aspect band contains **1.0**, and the only one that can cross it without a navigation.
+
+Plan 00-17 has been amended to match that contract — four viewport and count literals, and the
+prose that quoted them. **Nothing about its six review passes, its human checkpoint or its
+`.playground` deletion fence changed, and it remains OPEN.**
+
+*Recorded by plan 00-25. Sources: `00-RESPONSIVE-CONTRACT.md` §9, §10 and §11; `00-11-PLAN.md`
+(read only, unmodified); `00-17-PLAN.md`; `00-18-SUMMARY.md`, `00-19-SUMMARY.md`,
+`00-20-SUMMARY.md`, `00-21-SUMMARY.md`, `00-22-SUMMARY.md`, `00-23-SUMMARY.md`;
+`00-SCREENSHOT-CONTRACT.md`. The photo-field table is from `00-19-SUMMARY.md` — the specification
+— because `00-24-SUMMARY.md` did not yet exist; see the source note in §3.*

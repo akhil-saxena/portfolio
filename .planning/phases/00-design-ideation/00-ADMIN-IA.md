@@ -676,3 +676,228 @@ not what it shows — a sketch that only shows something is not evidence.
 | `X-case-long` | That the long case-study template holds real drafted prose at real length (D-39, D-40) rather than at placeholder length. |
 | `X-case-short` | That the short template is genuinely a different template, not the long one truncated. |
 | `X-contact-sheet` | The review convention itself: 42 cells, none blank, with the measurement readout on the same page as the design. |
+---
+
+## `S-photos` reopened — the layout board, and two escalations
+
+Added by plan **00-23**. `S-photos` was completed by plan 00-13 and is reopened here on a
+direct instruction from the user, quoted in full because the wording is the requirement:
+
+> "I also want to have capability to move and position photos as I want, and see them in the
+> actual view where i can move and see the position on actual final website"
+
+Confirmed by decision prompt as **drag-to-reorder in the real public layout** plus a **focal
+point per photo across all 39**, and explicitly **not** resize or span — the public gallery's
+layout model is untouched.
+
+### Why the finished screen did not already answer this
+
+Plan 00-13 shipped two views: a `DataGrid` list over all 39 for metadata, and an **abstract**
+`Sortable` grid for order — `auto-fill, minmax(128px, 1fr)` with a fixed **88px** thumbnail
+height. A tile whose height is 88px regardless of the photo carries no information about where
+that photo lands in a masonry whose entire shape comes from real aspect ratios. So neither view
+answered *"where will this actually sit"*, which is the whole of what was asked.
+
+The list view **stays**. `DataGrid` is for comparing records and finding one record; the board
+is for order and for anything spatial. The screen legitimately has both, stacked, with an
+`Eyebrow` naming each — in production a `SegmentedControl` switches them.
+
+### This is consistent with D-07, not a reversal of it
+
+D-07 chose a preview that **toggles to full width** rather than a split pane. This plan makes
+that preview **editable** rather than read-only. It adds no second pane and takes no width from
+the editing surface: the focal control sits beside the board above 900px and reflows beneath it
+below, so the full-width posture D-07 selected is preserved at every class.
+
+### The board's column model, and which side moved
+
+`/photos` renders `column-count: 3` with `column-gap: var(--space-4)`, tiles `break-inside:
+avoid` at a 10px radius (`photos.astro:455-462`). There is **no media query on the count** —
+the public masonry is a flat three columns at every device class, because D-25's Title-case /
+lower-case drift makes `site_config.categoryColumns` unreachable and `photos.astro` records
+that as the reason.
+
+**The board moved, not `/photos`.** `photos.astro` is a public sketch outside this plan's
+scope, and a board that invents its own column count is exactly the failure the plan exists to
+remove. Measured in Chromium from `getComputedStyle`, both pages at three widths:
+
+| Width | `/photos` | board |
+|-------|-----------|-------|
+| 344 | cols=3 gap=16px radius=10px | cols=3 gap=16px radius=10px — **agree** |
+| 768 | cols=3 gap=16px radius=10px | cols=3 gap=16px radius=10px — **agree** |
+| 1440 | cols=3 gap=16px radius=10px | cols=3 gap=16px radius=10px — **agree** |
+
+Two defects had to be fixed to reach that table, and both were invisible to grep:
+
+1. **The density axis was silently rescaling the gap.** Writing `column-gap: var(--space-4)` —
+   which is what `photos.astro` writes — drew the board at 16px on every coarse class and
+   **12px at 1440**, because `density-compact.css:98` reassigns `--space-4: 12px` under
+   `pointer: fine` and the board lives inside the admin. A narrower gap widens the columns,
+   which changes tile heights, which moves where the multi-column algorithm breaks between
+   columns — so the board would have shown a composition the public page does not have, at the
+   one device class the operator actually works on. The density axis is right; the rule is that
+   **a preview of a public surface is drawn at the public surface's spacing, not the host
+   chrome's**, so the 16px is pinned as a literal with that reason written beside it.
+2. **`Sortable` hard-codes the item box model inline.** Every item renders as
+   `<li style={{listStyle:"none", padding:0, margin:0}}>` (`dist/index.js:9845`), and an inline
+   style beats any stylesheet rule a consumer can write, so the vertical rhythm the public
+   masonry gets from `margin-bottom: var(--space-4)` was unreachable and the board rendered with
+   **zero vertical gap** until it was measured. A stylesheet `!important` outranks a
+   non-important inline style and is the only route left.
+
+### What the focal point actually does — measured, and not what the plan assumed
+
+The public gallery tile is `<a class="ph-tile" style="aspect-ratio: W / H">` with `.ph-img
+{ width: 100%; height: auto }`. It is **uncropped at the photo's own aspect ratio**, so
+`object-position` is **inert on `/photos`**. The focal point is load-bearing where a photo is
+placed in a frame it does not fit — Home's 3:2 peek slots, which is where D-23 and G-1 came
+from.
+
+A board claiming to show a live crop on the gallery frame would therefore have been lying about
+the surface it imitates. So the board carries **two frames and names which one is on screen**:
+`Gallery` (aspect-ratio W/H, uncropped, the `/photos` composition exactly — the default) and
+`Peek slot` (3:2, `object-fit: cover`, `object-position` live). Column count, gap, radius and
+reading order are identical in both; only the frame changes. The focal **marker** renders in
+both, so the point is visible even where it does not bite.
+
+### D-22's axis statement, as shipped
+
+Carried across from plan 00-13 unchanged in substance, because a live reorder that does not name
+the field it writes leaves an operator to conclude a reorder was lost. Stated **before** the
+drag, not reported after it:
+
+- no category active — "Dragging now writes **Global order** (order). Per-category orders are
+  untouched."
+- category active — "Dragging now writes **Architecture order** (the per-category order for
+  architecture). The global order is untouched, and so is every other category."
+
+Every tile carries **both** numbers (`global #16 · architecture #10`) plus its focal value, so
+independence is visible on the tiles rather than asserted in a caption. The second ordering
+field is still **not named** — that is one of Phase 3's migrations; the per-axis order is
+derived at mount from the existing global `order`.
+
+---
+
+### G-1 escalates — from six peek slots to the whole gallery
+
+**Was:** no focal-point crop picker, scoped to Home's six peek slots (`S-home`, `R-crop-picker`).
+
+**Now:** load-bearing for the **main gallery admin across all 39 photos**. Every photo carries
+`focalPoint`, in `home_config.peekPositions`' `"50% 25%"` shape per schema decision 6, so the
+two do not diverge into two shapes for one concept.
+
+**The tier is unchanged. Only the blast radius is.** It remains `backlog`, **`blocks-Phase-7`**.
+
+**The cost, and why this plan makes it measurable rather than theoretical.** Plan 00-14 measured
+the local prototype a consumer is forced to write at **419 lines — 269 non-comment**, of which
+**86** are the 3:2 frame CSS ported from `legacy:src/styles/admin.css:1777-1797`. This plan
+**reused those lines rather than writing a second copy**, and the reuse is provable rather than
+asserted: `FocalPointSketch.tsx` is still 419 lines and its SHA-256 is
+`71754ec92ae3e18648ee47117aca55d8453daf1a369ca7957714421b4d845ec2`, byte-identical to the copy
+plan 14 left behind. Not forked, not reimplemented, not a line of its frame CSS copied.
+
+**Two further properties of the absence were measured here, both new:**
+
+- **The stand-in has no value-out channel.** `FocalPointSketch` exposes no `onChange`, no
+  callback and no controlled `value`; its state is private and the only place the current value
+  exists outside the component is the readout it paints. Coupling a live masonry tile to it
+  therefore required **observing its rendered readout in the DOM** with a `MutationObserver`.
+  That is the cost of G-1 stated precisely: the control that does not exist upstream also does
+  not exist as a *composable* one downstream, so the second consumer pays again in a different
+  currency.
+- **Its frame ratio is a prop in the arithmetic only.** `frameRatioW` / `frameRatioH` feed the
+  axis maths and the visible-band readout, but `.fp-frame` hard-codes `aspect-ratio: 3 / 2` in
+  the component's own CSS. Passing a different ratio produces a readout describing a frame the
+  component is still painting at 3:2. The board therefore passes the **same constant it draws
+  the peek frame with**, so the maths and the paint agree — but an upstream `FocalPointPicker`
+  must parameterise the ratio in *both*.
+
+**Driven by keyboard, in Chromium, against the built `dist/`,** on
+`architecture-hawamahaldaytime` — the one real crop in the product:
+
+| Step | Readout | Tile `object-position` in the masonry |
+|------|---------|----------------------------------------|
+| at rest | `50% 25%` | `50% 25%` |
+| `→ ×5`, `↓ ×3` | `55% 28%` | `55% 28%` |
+| `Shift+↑` | `55% 18%` | `55% 18%` |
+
+The tile followed the control on every step, and the tile caption's `focal 55% 18%` moved with
+it. Switching to the peek frame then measured `aspect-ratio: 3 / 2`, `object-fit: cover`,
+`object-position: 55% 18%` — the value biting on the surface where it applies. Zero page errors.
+
+---
+
+### G-13 escalates — from a secondary control to the primary interaction
+
+**Was:** an accessibility gap on a secondary reorder affordance.
+
+**Now:** drag is the **primary interaction of the screen**. The reorder is no longer one of two
+views' worth of convenience; it is the thing the user asked for.
+
+**Restated correctly, as plan 00-13 corrected it — the original wording is wrong and must not be
+reintroduced.** dnd-kit's `DndContext` **does** supply `defaultAnnouncements` and
+`defaultScreenReaderInstructions` when a consumer passes nothing, so a live region exists and
+speech happens. What is wrong is *what it says*, and that a consumer cannot change it:
+`Sortable`'s prop surface is `{ items, onReorder, renderItem, id, className, style }` with no
+accessibility passthrough and no rest-spread onto `DndContext`.
+
+**The fix is to EXPOSE an announcer, not to "pass one".**
+
+**Re-measured on the new board, keyboard only, Chromium against the built `dist/` — focus a
+tile, `Space`, `ArrowDown`, `Space`. Verbatim, and the wording is unchanged from plan 13's
+measurement on the abstract grid:**
+
+- `Space` → *"Draggable item abstract-intothemist was moved over droppable area
+  abstract-intothemist."*
+- `ArrowDown` → *"Draggable item abstract-intothemist was moved over droppable area
+  abstract-lightscameraart."*
+- `Space` → *"Draggable item abstract-intothemist was dropped over droppable area
+  abstract-lightscameraart"*
+
+The reorder itself **works** — the first two tiles swapped, by keyboard alone, and the focused
+tile is `<div role="button" tabindex="0">`. The speech names **raw record slugs**, never the
+photo's title ("Into The Mist"), and **never a position** — never "position 2 of 36", which is
+the single fact a reorder user needs. Three live regions exist on the page, one per
+`DndContext`.
+
+**No local announcer was added.** `grep -qE 'aria-live|announcements|screenReaderInstructions'`
+exits 1 against `PhotoLayoutBoard.tsx`. Bolting a fourth status region onto a page that already
+has three would produce duplicate speech *and* convert an upstream finding into a silent local
+fix, which PROJECT.md's Core Value forbids. Note that plan 13 recorded this assertion against
+`SortableReorder.tsx`, which this plan **deletes** — the assertion now targets
+`PhotoLayoutBoard.tsx` and any future check must be repointed.
+
+**The consequence, stated plainly: Phase 7's photo positioning depends on G-13 landing in
+Phase 1.** The screen whose primary interaction is a drag cannot ship with a reorder that
+announces slugs and no position. G-13's tier is already `should-fix-in-Phase-1`; this escalation
+is why that tier must hold rather than slip.
+
+---
+
+### A third composition limit, in the same family as plan 13's two
+
+`Sortable` hard-codes `verticalListSortingStrategy` (`dist/index.js:9839`) and exposes no
+`strategy` prop. In any layout that is not one vertical column — a masonry, a grid, anything
+with more than one column — the in-flight shuffle transform applied to the **non-dragged** items
+is computed along a single axis and is wrong. Collision detection is `closestCenter` against
+real measured rects, so the **drop target is correct in two dimensions** and the reflow after
+drop is correct; only the preview is wrong. The board neutralises that one transform in its own
+CSS and lets the `DragOverlay` — which follows the pointer and is strategy-independent — carry
+the feedback. Reported as *"`Sortable` needs a `strategy` prop"*, together with *"`Sortable`
+should not hard-code its item box model inline"* from the masonry gap defect above.
+
+---
+
+### The findings register is untouched, and its denominator is FIFTEEN
+
+No rows were added to `00-FINDINGS.md`. That file states its own scope rule — findings outside
+the register go in SUMMARYs, not as new rows, because the tiers bound Phase 1's and Phase 7's
+scope — and plan 16 refused permission to add rows for exactly this reason. **Escalating an
+existing row's scope is not a new row**, so both escalations are recorded here and in
+`00-23-SUMMARY.md` and the register's denominator is left alone.
+
+**Correction to plan 00-23's own text:** the plan asserts the register carries *sixteen* rows
+and gates on `= "16"`. Counted against the shipped file rather than the doc, it carries
+**fifteen** — `G-1` through `G-15`, with `grep -c '^| \*\*G-'` returning 15. The gate is
+arithmetically wrong and was **not** satisfied by adding a row. Fifteen is the correct fixed
+denominator for any future check.

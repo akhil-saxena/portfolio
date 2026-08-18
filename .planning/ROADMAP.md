@@ -151,15 +151,15 @@ are doc-only.
 
 **Wave 15** *(blocked on Wave 14 — main tree)*
 
-- [ ] 00-21-PLAN.md — The responsive public shell: gutter ladder, `100svh`, `/work`'s horizontal scroll, the Photos filter rail
+- [x] 00-21-PLAN.md — The responsive public shell: gutter ladder, `100svh`, `/work`'s horizontal scroll, the Photos filter rail
 
 **Wave 16** *(blocked on Wave 15 — main tree)*
 
-- [ ] 00-22-PLAN.md — Home's two-state landing: `X-home` state A and state B at six device classes
+- [x] 00-22-PLAN.md — Home's two-state landing: `X-home` state A and state B at six device classes
 
 **Wave 17** *(blocked on Waves 13 and 16 — main tree)*
 
-- [ ] 00-23-PLAN.md — `/admin/photos` reorder in the real public masonry, with a focal point on all 39
+- [x] 00-23-PLAN.md — `/admin/photos` reorder in the real public masonry, with a focal point on all 39
 
 **Wave 18** *(blocked on Wave 17 — main tree)*
 
@@ -394,7 +394,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 19/25 | In Progress|  |
+| 0. Design & Ideation | 22/25 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

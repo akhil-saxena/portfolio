@@ -1133,3 +1133,257 @@ and `00-COPY/case-design-system-COMPRESSED.md` (the accepted reference shape, no
 word count is the output of `scripts/check-case-length.mjs` run this session. Every project fact
 re-verified against shipped code this session, never a README — see the SUMMARY for the four
 stale-README figures that check caught.*
+
+---
+
+## Case routing
+
+*Phase 0 · plan 00-20. Supersedes D-39 and the two stacked tier routes.*
+
+### The five routes, and the two that are gone
+
+| Artefact | Route | Words (R-1) | Register | Inline figures | Middle heading |
+|---|---|---|---|---|---|
+| `X-case-design-system` | `/work/design-system/` | 597 | 3 entries | 2 | `## Decisions` |
+| `X-case-cairn` | `/work/cairn/` | 692 | 3 entries | 1 | `## Decisions` |
+| `X-case-hued` | `/work/hued/` | 619 | none | 1 | `## Decisions` |
+| `X-case-momentum` | `/work/momentum/` | 682 | none | 1 | `## Decisions` |
+| `X-case-timeshift` | `/work/timeshift/` | 647 | none | 1 | `## Decisions` |
+
+**Retired:** `X-case-long` (`/case/long`, two studies on one scroll) and `X-case-short`
+(`/case/short`, three). `src/pages/case/` no longer exists. Those ids are NOT renamed — they
+named a design that was superseded, and the citations of them elsewhere in this file and in
+`00-10-SUMMARY.md` remain true about what they were.
+
+**Why `/work/{id}` and not `/case/{id}`.** R-3. A case study is evidence *under* Work, so
+nesting it there makes the Work page the index of its own children rather than a page linking
+sideways into an unrelated top-level section. `/work` and `/work/{id}` coexist without
+collision — `src/pages/work.astro` was left where it is and did not need moving to
+`work/index.astro`.
+
+**§7 reads the direction as ROUTING, not length.** The user's words were "one page per case,
+not like scroll to 10 cases in single page scrolling down". A case may still scroll internally;
+what it may not do is share a scroll with four others.
+
+### Registry
+
+`CANONICAL_IDS` goes 42 → 45: two tier ids out, five study ids in. Checked before changing it —
+every use of that array is either a membership test (`coverage.mjs`, twice) or a printed total
+(`check-coverage.mjs:166`); nothing derives a shape from its length. The 42-that-was-also-the-cell-count
+coincidence the file warned about is now broken, and the cell count did not move: still 42.
+
+The five ids and the five routes are now reconciled *mechanically*. `CASE_STUDIES` lives in
+`artefacts.mjs` beside `CANONICAL_IDS`, and an import-time assertion throws if a study has no
+`X-case-*` id or an `X-case-*` id has no study. `CANONICAL_IDS` stays transcribed rather than
+derived — deriving it would make it agree with itself by construction and stop it being a
+transcription of anything — so the two are written twice and checked once.
+
+*Recorded because it cost a build:* Astro **hoists** `export function getStaticPaths` above the
+rest of a route's frontmatter, so a `const` declared there is in the temporal dead zone when it
+runs. The route's first draft held the id array locally and failed with `STUDIES is not defined`,
+pointing at Astro's own `route-cache.js` — nowhere near the mistake. Importing the array
+sidesteps the hoist.
+
+### The heading gate, proven twice
+
+The trap is one slot with two spellings: `## Decisions` (plural) or `## Decision` (singular).
+Plan 00-18 normalised all five drafts to the plural, which removed the drift **and, in the same
+move, removed every exercise of the singular branch**. So the branch is load-bearing and
+unexercised at once. That is why there are two controls and why the second one matters more than
+it looks.
+
+Both were run against the real `astro build`, mutating with **Node**, not `sed`. This is macOS:
+BSD sed, and `sed -i '' '0,/re/s//X/'` is a **silent no-op** here — it accepts the syntax,
+changes nothing, and exits 0. A control that mutated that way and then asserted a PASS would
+certify a control that never ran. Both assertions are on the build's **exit code and printed
+message**, never on `grep -c` of the edited string (`grep -c` counts LINES, not matches — plan
+16 control 4 nearly reported a false result that way).
+
+Both used `00-COPY/case-timeshift.md`, SHA-256
+`1c1599b7176d210c5a7fca6d2e3a77204e430ed0c3026d441d8a6e1505010ff1`.
+
+**Control 1 — NEGATIVE. `## Decisions` → `## Findings`.**
+
+| | |
+|---|---|
+| `astro build` exit | **1** |
+| Message | `copy.mjs: …/case-timeshift.md must carry ONE of the headings "## Decisions" or "## Decision", and carries neither.` |
+| Headings it printed as found | `## Problem \| ## Findings \| ## Outcome \| ## Assets` |
+| SHA-256 before / after | `1c1599b7…` / `1c1599b7…` — **identical** |
+
+**Control 2 — POSITIVE, and it is the one guarding the unexercised branch.
+`## Decisions` → `## Decision`.**
+
+| | |
+|---|---|
+| `astro build` exit | **0** — 92 pages built |
+| Singular heading rendered | `>Decision<` ×1, `>Decisions<` ×0 |
+| Middle section still has prose | yes — "confidence level" present in the built HTML |
+| Figure still attached to it | yes — the inline caption rendered under the resolved section |
+| Header readout | `## Decision · no register entries` |
+| SHA-256 before / after | `1c1599b7…` / `1c1599b7…` — **identical** |
+
+Control 2 also exercises a second either-branch one layer up. The route's asset plan writes
+`section: MIDDLE`, a sentinel resolved at render to whichever spelling the draft used. Hard-coding
+`"Decisions"` there would work today and would silently drop the figure from any draft spelling
+it singular — the figure list is a *filter*, so a section name matching nothing yields no figure
+and no error. That is the same class of silent drop the loader exists to prevent, and only a
+positive control can catch it.
+
+### Browser audit — five routes, six device classes
+
+`node audit15.mjs /work/design-system/ /work/cairn/ /work/hued/ /work/momentum/ /work/timeshift/`
+
+Run in Chromium against the built `dist/`, not by grep — two of this phase's recorded 44px
+measurements were wrong because a 1px visually-hidden input masks the label that is the real
+hit area, and a grep cannot tell a CSS rule from prose describing one.
+
+**44px offenders, per route, per class (identical on all five routes):**
+
+| Class | Pointer | Before | After | Remaining owner |
+|---|---|---|---|---|
+| 344 folded | coarse | 17 | **6** | D-16-1 only |
+| 390 phone | coarse | 17 | **6** | D-16-1 only |
+| 673 foldable-unfolded | coarse | 17 | **6** | D-16-1 only |
+| 768 tablet-portrait | coarse | 17 | **6** | D-16-1 only |
+| 1024 tablet-landscape | coarse | 17 | **6** | D-16-1 only |
+| 1440 laptop | **fine** | 17 | 17 | floor does not apply |
+
+`audit15.mjs` de-duplicates its printed offenders on `tag + class`, which reported 17 boxes as
+3 lines and hid every unclassed `<a>` behind the AppBar brand link. Re-measured with the same
+geometry but no de-duplication, the 17 attribute as:
+
+| Count/class | Owner | Disposition |
+|---|---|---|
+| 5 | `.case-index a` — the chrome's corpus index | **fixed** — `case.css` |
+| 5 | `.case-index-end a` — the end-of-page index | **fixed** — `case.css` |
+| 1 | `.case-toggle input` — the review toggle | **fixed** — `case.css` |
+| 3 | `.ds-atom-appbar a` — brand, Work, Photographs | **D-16-1 — deferred, not patched** |
+| 3 | `.ds-atom-footer-link` — GitHub, LinkedIn, Email | **D-16-1 — deferred, not patched** |
+
+**The 36 deferred boxes (6 per class × 6 classes) are a decision, not an oversight.** `AppBar`
+and `Footer` paint their own geometry inside `@akhil-saxena/design-system`. Reaching past a
+component to restate its geometry from the consuming app is exactly the local workaround
+PROJECT.md's Core Value forbids: a design-system gap is a **finding**, never a patch at the call
+site. Recorded as D-16-1, owned by Phase 1 with G-2.
+
+The fix for the three that *are* ours is keyed on `(pointer: coarse)` and never on width — a
+1440 touch laptop needs the floor and a 390px desktop window does not — and it lands on the hit
+area rather than the paint: the anchors keep their type, colour and rule, with the rule moving
+from `border-bottom` (which would detach and sit at the bottom of a 44px box) to a
+`text-decoration` underline that hugs the text wherever the box ends.
+
+**R-6 reflow, 344 against 1440.** Two routes failed and three did not: `/work/hued/` rendered
+**373px of document into a 344px viewport** and `/work/momentum/` **387px**. The cause was not
+layout. It was one code span each — `app/src/main/java/app/hued/processing/ColorAggregator.kt`
+and its Momentum equivalent — inside a `[source: …]` marker. A file path has no spaces, so the
+default `overflow-wrap: normal` treats it as one unbreakable word, and an unbreakable word wider
+than the column widens the **column**. `overflow-wrap: anywhere` on `.case-code` only, so
+ordinary prose is never broken mid-syllable. After: **doc width == viewport width on all five
+routes at 344**, and no other class changed.
+
+### `900px` → `1024px`
+
+`case.css` carries the only width media query in the whole playground, which makes the number it
+states worth more than the behaviour it produces.
+
+900 was correct **by accident**. Per §4 it lands in the dead zone between class 3's ceiling
+(884) and class 5's floor (1024), so no viewport in the six classes sits between them and the
+rendered behaviour is identical either way. What changes is what the number *means*: 900 is a
+round number that happens to work and can only ever be re-guessed; 1024 is a class boundary and
+can be checked against the contract. The reason is in a comment at the rule, because a bare
+number change is indistinguishable from a typo.
+
+### The band is now enforced in two places, and they agree exactly
+
+`check-case-length.mjs` enforces R-1's 500–700 from the command line, on **all five** slugs — the
+`design-system` exclusion plan 00-18 recorded as a schedule has been deleted, on schedule, along
+with the superseded 1,943-word draft it existed for. `loadStudy` enforces the same band **inside
+the build**, so it runs whether or not anybody remembers to run the script.
+
+Two gates for one contract is a liability unless they measure the same thing, and at first they
+did not: the loader read **3 words low** on cairn (689 vs 692) and design-system (594 vs 597),
+and agreed exactly on the three studies with no register. The delta was one word per numbered
+`###` — the loader parses `### 3. Multi-tenancy…` into an ordinal and a title, so the ordinal
+never reached the count. Three words is nothing until a draft sits within three of a band edge,
+and then it is a build that fails against a gate that passes. Reconciled at the parser rather
+than argued about: **597 · 692 · 619 · 682 · 647 from both.**
+
+### What the corpus looks like after this plan
+
+Five case files, no `-COMPRESSED` in any filename, all five owned and enforced. The band gate
+gained a corpus-membership rule in both directions, because the failure it catches is not
+hypothetical: for one whole plan the corpus held **six** case files — a 1,943-word
+`case-design-system.md` and its 597-word replacement — and because neither slug was in `OWNED`,
+the gate printed `OVER band` on its own stdout and **exited 0**. An unrecognised slug is now a
+failure rather than a report.
+
+Retiring that draft also removed the corpus's last **wrap-class marker failure**: it carried 6
+occurrences of `What it would have cost:` with only 4 line-anchored, so a line-oriented grep
+reported its pair as broken. Corpus-wide now: **9 total / 9 line-anchored** for both marker
+phrases, in all five files.
+
+### Cairn's register was changed on a user override
+
+Cairn now carries **multi-tenancy** as decision 3 and no longer carries the pa11y contrast
+decision. The count stayed at three.
+
+Plan 00-18's compression rule was *keep the decisions whose rejected alternative cost a named
+incident, cut the ones whose alternative cost only an argument*, and multi-tenancy failed it —
+"one forgotten predicate is a cross-tenant leak" is a named failure **mode**, not an incident
+that occurred. The user overrode that for this one entry: it is Cairn's only security decision,
+and Cairn holds personal job-search data, so a register with no security entry misrepresents the
+product.
+
+**Cut to make room: the contrast decision**, and the reason is coherence rather than quality.
+`## Problem` ends on one question — *how do you make a refusal load-bearing?* Decisions 1 and 3
+now answer it with the same mechanism at different stakes (both guards run inside the same
+`lint:all`), and decision 2 answers it by carrying a removal through to the security code that
+defended it. The contrast entry argues measurement over deference to an upstream: a good
+argument, and a different study's. **Nothing is lost from the corpus** — the design-system study
+carries the same `--ink-4` defect as its own decision 1, in the stronger form, because there the
+bug was invisible in review *by construction* (light mode set `--ink-4` and `--ink-3` to the
+identical value, so it existed in one theme only).
+
+Consequence on the asset plan: cairn drops to a hero plus **one** inline, inside D-41's
+"one or two". The cut decision was the only remaining one that was photographable — the other
+two are a removal and a query layer, both invisible by construction. That leaves the single
+template with two figure counts to be laid out against instead of one, which is worth more as
+evidence than a third reserved rectangle.
+
+**A second Ghost Watch residue, found while re-verifying rather than by looking for it.**
+`scripts/lint-scoped.sh`'s allowlist still exempts `src/server/scheduled.ts`, described in its
+own header as the nightly source-live-ping cron. That file does not exist, and neither do the
+`last_pinged_at` / `last_ping_status` columns the exemption says it writes. The multi-tenancy
+guard therefore carries a standing hole for a deleted file — harmless while nothing occupies the
+path, and exactly the kind of exemption that stops being harmless the day something is written
+there. This is the *second* residue of the same removal; `ghost_flagged` in the
+`timeline_events.kind` enum was the first. Worth resolving before Phase 6 quotes the removal as
+total.
+
+### `one-liners.md`: 80 → 79, and the README retired as an authority
+
+The user ruled the design-system component count is **79**, matching
+`../design-system/src/OverviewPage.tsx` — the shipped catalog, whose ten categories sum to 79 and
+which computes that total itself as `TOTAL`. Applied in both places the figure ships: the
+one-liner and the Work card.
+
+`README.md` is retired as the source for it. It says **80** and matches neither shipped
+artefact: the catalog lists **79**, the ten category directories under `src/` hold **81**. Three
+numbers, and the README's is the count of nothing. The difference was measured rather than
+inferred — `Field` and `IconButton` are the two directories present on disk and absent from the
+catalog, so their omission is deliberate rather than missed.
+
+Budgets unmoved, as predicted: one-liner **97**, card **160**, `check-copy-length.mjs` exit 0.
+
+### Build state at the end of this plan
+
+| | |
+|---|---|
+| `npx astro build` | **92 pages** (89 before: −2 tier routes, +5 case routes) |
+| `check-no-js.sh` | **0** — 66 static routes at zero framework JS, 26 island routes verified to hydrate |
+| `check-coverage.mjs` | **0** — 42/42 cells, no blanks, every ref canonical |
+| `check-states` · `check-no-ivory` · `check-theme-exhaustive` · `check-font-names` · `check-contrast` · `check-css-size` | all **0** |
+| `check-case-length.mjs` | **0** — 5 files scanned, **5 enforced**, all inside 500–700 |
+| `check-copy-length.mjs` | **0** — 6 files, 5 `[NEEDS AKHIL]` markers, shortest block 85 words |
+| `check-bundle.mjs` | **1 — BY DESIGN.** This is finding G-15, not breakage |

@@ -954,3 +954,174 @@ register"; `00-09-SUMMARY.md`, `00-10-SUMMARY.md`, `00-11-PLAN.md`, `00-17-PLAN.
 nine resolutions, §OQ-1 and §Case-study templates above. The whole-file word counts are the
 user's; the four-required-sections counts are plan 00-10's build-time measurement. No contrast
 ratio in this section is new — every one is carried from plan 04's `check-contrast.mjs`.*
+
+---
+
+## Case-study compression
+
+*Appended by plan 00-18 · DSGN-02, DSGN-06 · R-1.*
+
+The user's instruction was "I don't need long cases. Even short ones are very long."
+`00-RESPONSIVE-CONTRACT.md` §7 supersedes D-39 — one tier, not two — and R-1 sets the target at
+**500–700 words over the four required sections**. This section records what the collapse cost
+each study, so that a Phase 6 executor reading a study with three decisions instead of six knows
+it was a choice and not an omission.
+
+### Before and after
+
+Measured by the committed gate `scripts/check-case-length.mjs`, which strips HTML comments **and
+`[source: ...]` markers** before counting. Markers are stripped so a compression pass cannot
+reach the band by keeping citations and cutting sentences; the consequence is that these numbers
+run below plan 00-10's for the same files, and **this** is the measure R-1 is now enforced
+against. Every number below is what the script printed, not a figure carried from another
+document.
+
+| Study | Before | After | Cut | Sections after (Problem · Decisions · Outcome · Assets) |
+|---|---|---|---|---|
+| cairn | 1,713 | **680** | −60% | 150 · 305 · 152 · 73 |
+| momentum | 798 | **682** | −15% | 173 · 274 · 135 · 100 |
+| timeshift | 682 | **647** | −5% | 140 · 278 · 118 · 111 |
+| hued | 682 | **619** | −9% | 156 · 268 · 117 · 78 |
+| design-system | 1,633 | **597** | −63% | 122 · 243 · 164 · 68 |
+
+**The design-system row is measured, not owned.** It was compressed off-plan by a parallel
+reference run recorded in `00-COMPRESSION-NOTE.md`, whose output
+`00-COPY/case-design-system-COMPRESSED.md` is the accepted shape the other four were written
+against. Plan 00-18 left both `case-design-system.md` and `case-design-system-COMPRESSED.md`
+byte-identical (`git diff --quiet`, exit 0 on both) and excludes the slug from the gate's `OWNED`
+array. That exclusion is a scheduling artefact, not a carve-out: plan 00-20's build-time loader
+assertion covers all five, at which point the slug moves into `OWNED` and the exclusion goes.
+
+Note the un-compressed `case-design-system.md` still measures 1,633 and is reported OVER band by
+the gate. That is expected — it is the superseded source, kept on disk for comparison.
+
+### What each study lost
+
+**Cairn (1,713 → 680), the deep cut.** Three of six register entries dropped **whole**, by name:
+*3. Cut the Settings page rather than keep the two toggles that justified it* (Cohort Blur, Rest
+Day); *4. Multi-tenancy is structural and lint-enforced*; and *5. The free tier is a hard ship
+gate* (`scryptSync` over JS bcrypt/argon2, the 10 ms Workers envelope). The three kept are the
+three whose rejected alternative costs a **named incident** rather than an argument — the rule
+the reference draft set. Also cut: the ~150-word provenance lead (now an HTML comment carrying
+the same rule and the same three code-vs-planning-doc conflicts), the six-bullet `## Assets` list
+(now one sentence), and the cross-repo coda under decision 3.
+
+Two of those are worth arguing with. **Decision 4 was the security one** — its cost, "one
+forgotten predicate is a cross-tenant leak", is a named *failure mode* but not an incident that
+happened, which is why the rule cut it; if Phase 6 wants a security decision on this page, that
+is the entry to restore. And the **coda** — the design system later aliasing `--ink-4` away for
+its own measured dark-mode failure at 1.96:1, making two independent contrast failures on one
+token in two repositories — was retained as an HTML comment inside the file rather than deleted,
+because it is the corpus's only two-repo finding. It was dropped from prose as the third example
+of a point decision 3 already carries with a measured incident, and because the design-system
+study meets that defect from its own side.
+
+**Momentum (798 → 682), the lightest structural change.** Nothing was dropped from the decision:
+the engine-layer decision is intact, still the one verifiable in shipped code (five files under
+`engine/`, zero `android.*`/`androidx.*` imports). Lost: the D-39 / plan-10 two-template lead,
+the third `## Problem` paragraph enumerating streak, checkpoints and heatmap (reduced to one
+clause), and about a third of `## Assets`. The `docs/MIGRATION_PLAN.md` sourcing refusal (T-00-07
+— unreleased migration-plan internals must not cross into public prose) survives as an HTML
+comment and is unchanged.
+
+**TimeShift (682 → 647), the lightest touch.** Lost the third worked example in `## Problem`
+(`The ceremony begins at 7:00 PM CET on March 20th`, the least self-explanatory of three) and the
+"short form per D-39" lead. The six-priority confidence ladder, the `resolveTimezoneLegacy` cost
+and the 179-test count are intact.
+
+**hued (682 → 619).** Lost the D-39 lead and the `## Assets` inventory of the six finished
+screenshots and three share-card renders. The CIELAB clustering decision and its greedy,
+single-pass cost are intact.
+
+### What every study gained: the explicit pair
+
+CASE-01's defining requirement is a decision section naming the alternative rejected **and its
+cost**. All four drafts already carried that reasoning — but only Cairn carried it in the marker
+phrasing the reference draft uses. hued, Momentum and TimeShift argued the alternative inside
+running prose, where it is neither greppable nor, at render time, visually distinct from the
+paragraph around it. Each now carries one `**The option not taken:**` /
+`**What it would have cost:**` pair; Cairn carries three.
+
+**Both phrases start a line in every owned file, and that is verified rather than assumed** — by
+comparing a line-anchored count against a total-occurrence count, which is the only way to catch
+a wrapped marker. Across the four: 6 line-leading == 6 total, for each phrase.
+
+The check earns its keep immediately. `case-design-system.md`, which plan 00-18 does not own, has
+**6** total occurrences of `What it would have cost:` but only **4** that start a line — lines 64
+and 106 carry the marker mid-line, after other prose. A line-oriented grep reports that file's
+pair as 6/4 and therefore broken. Recorded here for whoever next opens that file; deliberately
+not fixed by this plan.
+
+### The heading ruling, both halves
+
+**The corpus is normalised to `## Decisions` (plural)**, and plan 00-20's loader will **accept
+either spelling and throw on neither**. Both halves are load-bearing:
+
+- Normalising alone leaves a loader that breaks the next time somebody types the singular by hand.
+- An either-accepting loader alone leaves a corpus that reads inconsistently.
+
+Plural, because the flagship carries three decisions and the singular would be actively false on
+it; and because plural reads correctly over a section containing one item, whereas singular does
+not read correctly over three. Three files changed: `case-hued.md`, `case-momentum.md`,
+`case-timeshift.md`. `case-cairn.md` and both design-system files already used the plural.
+
+**The failure this guards is silent** — a template that finds no middle heading drops the whole
+section and still returns a page. The negative control below shows the second half of that
+danger: with the heading removed, the orphaned decision prose is absorbed upward into
+`## Problem`, which grows from 140 to 418 words, while the file's **total stays 647 — inside the
+band**. A length check alone would have passed the broken file. That is why the gate treats the
+middle heading as a required slot and errors when neither spelling is present, rather than
+counting whatever headings it happens to find.
+
+### `tier:` is now inert
+
+`tier: short` / `tier: long` remain in all five frontmatters and mean nothing. Left in place
+deliberately: deleting the key here while the parallel run leaves it on `case-design-system.md`
+would split the corpus into two frontmatter shapes for no gain. Plan 00-20 stops reading it.
+**Phase 6 should strip it as a deliberate act, not treat it as live metadata.**
+
+One frontmatter key was *added*: `badge: Live` on `case-cairn.md`, the only study that carried no
+badge, sourced from the value already recorded for cairn in `00-COPY/one-liners.md`. All five
+studies now carry identical frontmatter keys, which is what a single template wants. If badges
+are not meant to live in case-study frontmatter, they come out of all five together.
+
+### D-39 is superseded
+
+D-39 (two tiers, long and short) is superseded by `00-RESPONSIVE-CONTRACT.md` §7 — one tier, one
+template, one route per case. Plan 00-10's two-template artefacts **`X-case-long` and
+`X-case-short` are retired by plan 00-20**. **Everything else plan 00-10 built survives**,
+including the four-section sequence, the D-40 placeholder floor, and the blockquote-versus-bare
+`[NEEDS AKHIL]` rendering rule (a marker inside a blockquote owns only the blockquote; a bare
+marker owns everything to the end of its section).
+
+All five `[NEEDS AKHIL]` blocks survive the compression and stay above the D-40 40-word floor —
+`check-copy-length.mjs` passes unchanged at 7 files, 6 markers, shortest block **85 words**. The
+blocks are contracts to be filled by interview, not prose to be trimmed to hit a target.
+
+### Negative control
+
+Asserted on the script's **exit code and message** — behaviour — not on a substring count in the
+file. `grep -c` counts LINES, not matches, and this phase already had a control nearly report a
+false result that way (plan 00-16, control 4).
+
+| Step | Result |
+|---|---|
+| Target | `00-COPY/case-timeshift.md` |
+| SHA-256 before | `1c1599b7176d210c5a7fca6d2e3a77204e430ed0c3026d441d8a6e1505010ff1` |
+| Mutation | line 28, the `## Decisions` heading, deleted |
+| Gate exit | **1** |
+| Message | `MISSING-SECTION: … — no "## Decisions" or "## Decision" heading.` · `accepted spelling(s): ## Decisions \| ## Decision` · `headings found: ## Problem \| ## Outcome \| ## Assets` |
+| Also observed | verdict `ERROR (required section missing — count is partial)`; `## Problem` absorbed the orphaned prose at 418 words |
+| Restore | `git checkout --` on that path only |
+| SHA-256 after | `1c1599b7176d210c5a7fca6d2e3a77204e430ed0c3026d441d8a6e1505010ff1` — **identical** |
+| `git status --porcelain` | empty for that path |
+| Gate after restore | **0** |
+
+---
+
+*Phase 0 · plan 00-18. Sources: `00-RESPONSIVE-CONTRACT.md` §7 and R-1; `00-COMPRESSION-NOTE.md`
+and `00-COPY/case-design-system-COMPRESSED.md` (the accepted reference shape, not owned here);
+`00-CONTEXT.md` D-39/D-40/D-41/D-42/D-43; `00-06-SUMMARY.md` and `00-10-SUMMARY.md`. Every
+word count is the output of `scripts/check-case-length.mjs` run this session. Every project fact
+re-verified against shipped code this session, never a README — see the SUMMARY for the four
+stale-README figures that check caught.*

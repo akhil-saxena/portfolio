@@ -163,11 +163,11 @@ are doc-only.
 
 **Wave 18** *(blocked on Wave 17 — main tree)*
 
-- [ ] 00-24-PLAN.md — Place, description, alt text and tags; the `alt={t.title}` fix; D-15-1 closed
+- [x] 00-24-PLAN.md — Place, description, alt text and tags; the `alt={t.title}` fix; D-15-1 closed
 
 **Wave 19** *(blocked on Wave 18 — doc-only)*
 
-- [ ] 00-25-PLAN.md — The six-class screenshot contract, plan 00-17's four stale literals, and the re-review brief
+- [x] 00-25-PLAN.md — The six-class screenshot contract, plan 00-17's four stale literals, and the re-review brief
 
 **UI hint**: yes
 
@@ -394,7 +394,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 22/25 | In Progress|  |
+| 0. Design & Ideation | 24/25 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

@@ -1,0 +1,60 @@
+// Cloudflare Workers with Static Assets. Not Pages — @astrojs/cloudflare removed Pages
+// support in v13 and no flag restores it.
+//
+// Every key below was validated against node_modules/wrangler/config-schema.json (the
+// installed schema, not the docs) rather than copied from a tutorial.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Required, not optional: @cloudflare/vite-plugin reads it during `astro dev`, and
+  // `wrangler deploy` derives the Worker's identity from it.
+  "name": "akhilsaxena-portfolio",
+
+  // The old "dist/_worker.js/index.js" value is dead. Astro's *deploy* guide still
+  // shows it; the *adapter* guide documents the change and is authoritative.
+  "main": "@astrojs/cloudflare/entrypoints/server",
+
+  "compatibility_date": "2026-08-18",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "observability": { "enabled": true },
+
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Needs a dist/404.html to serve, which src/pages/404.astro provides.
+    "not_found_handling": "404-page",
+
+    // AUTH-03, and one half of the composed fail-open hazard this phase exists to
+    // close. Static Assets serve a matching file BEFORE the Worker runs, so any path
+    // that happens to have a static file at it is never seen by auth code at all.
+    //
+    // /admin is written as two explicit entries rather than one "/admin*" wildcard:
+    // Cloudflare's docs only demonstrate the "/segment" and "/segment/*" shapes, and an
+    // unmatched pattern fails OPEN silently. That is the one failure mode not worth
+    // guessing at. /_actions/* is here because Astro Actions POST to /_actions/<name>
+    // and it is the prefix most easily forgotten.
+    "run_worker_first": ["/admin", "/admin/*", "/api/*", "/_actions/*"]
+  },
+
+  // The non-apex hostname decided in plan 02-02 (see 02-DNS-R2-PREREQS.md ->
+  // WORKER_CUSTOM_DOMAIN). custom_domain: true makes `wrangler deploy` create and
+  // attach the hostname itself — no dashboard step, no redeploy dance. Without it the
+  // Worker is reachable only on *.workers.dev, where Cloudflare Access cannot be
+  // applied, and the production auth verification in plans 02-09/02-10 would have
+  // nothing to run against.
+  //
+  // The apex akhilsaxena.com is deliberately NOT attached here. Cutover owns it.
+  "routes": [{ "pattern": "preview.akhilsaxena.com", "custom_domain": true }],
+
+  // Bucket name carried from the legacy config (git show
+  // legacy/nextjs-portfolio:wrangler.toml).
+  "r2_buckets": [{ "binding": "PORTFOLIO_BUCKET", "bucket_name": "portfolio-photos" }]
+
+  // Deliberately absent:
+  //   - analytics_engine_datasets / PHOTO_ANALYTICS. Dropping it is what keeps the
+  //     public pages fully static; photo analytics is out of scope per PROJECT.md.
+  //   - a "vars" block. R2_PUBLIC_URL must point at the R2 custom domain provisioned
+  //     in 02-02, and Phase 3's CONT-04 adds it alongside the manifest rewrite. A
+  //     placeholder now would plant a pub-*.r2.dev reference for Phase 3 to hunt down.
+}

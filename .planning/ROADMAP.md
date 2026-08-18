@@ -147,7 +147,7 @@ are doc-only.
 
 **Wave 14** *(blocked on 00-18 — main tree)*
 
-- [ ] 00-20-PLAN.md — One tier, one route per case: `/work/{id}` x 5, the either-spelling loader, `case.css` 900 to 1024
+- [x] 00-20-PLAN.md — One tier, one route per case: `/work/{id}` x 5, the either-spelling loader, `case.css` 900 to 1024
 
 **Wave 15** *(blocked on Wave 14 — main tree)*
 
@@ -394,7 +394,7 @@ and 6.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 0. Design & Ideation | 18/25 | In Progress|  |
+| 0. Design & Ideation | 19/25 | In Progress|  |
 | 1. Design System — Charcoal Theme | 0/TBD | Not started | - |
 | 2. Astro Foundation & Fail-Closed Auth | 0/TBD | Not started | - |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |

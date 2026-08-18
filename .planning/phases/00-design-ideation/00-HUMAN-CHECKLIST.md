@@ -19,6 +19,63 @@ unhosted cell), and all five case studies inside the 500–700 band.
 
 ---
 
+## Where to look — the exact map
+
+**Start the sketches:**
+```bash
+cd .playground && npx astro dev     # → http://localhost:4321/
+```
+
+**`/` is the contact sheet — your index.** Every artefact ID in this checklist (`S-` `E-` `T-`
+`O-` `P-` `R-` `X-`) is linked from it, each with a one-liner saying what it *proves* (not
+shows). If an item names an ID, find it there rather than guessing a URL. The coverage table
+on the same page is item B1.
+
+**Viewports.** Use the browser devtools device toolbar and set these exact sizes:
+
+| Class | Set devtools to | Used for |
+|---|---|---|
+| Folded foldable | **344** × 748 | narrowest checks (C3, anything "at 344") |
+| Phone | **390** × 844 | P- and R- artefacts |
+| Foldable unfolded | **841 × 768** | the near-square case (canonical, NOT 673) |
+| Tablet portrait | **768** × 1024 | |
+| Tablet landscape | **1024** × 768 | density flip vs laptop at same width |
+| Laptop | **1440** × 900 | A1–A3, all S-/E-/T-/O- artefacts |
+
+**Modes.** Admin (`/admin/**`) is charcoal **light** — never judge it in dark. Public routes
+(`/`, `/work*`, `/photos`, `/home`) are charcoal **dark**.
+
+**No dev server? Use the committed record:** `screenshots/` in this directory holds all 88
+PNGs, named `00-{class}-{id}-{state}-{mode}-{viewport}.png` — e.g.
+`00-S-photos-populated-light-1440.png`. Item C6 is a spot-check of these; C7's pair is
+`00-X-home-a-*` vs `00-X-home-b-*`.
+
+**Direct routes for the big items:**
+
+| Item | Exact place |
+|---|---|
+| A1 | `/work-recolour` at 1440 — the two headers render side by side, labelled |
+| A2 | `/work` at 1440, scroll to the foot — the italic serif cross-link |
+| A3 | `/work` at 1440 — the employment band, watch title vs metric alignment |
+| B2 hardest case | `/admin/site` — the screen the legacy admin never had |
+| B3 pair | `/admin/photos/empty/` vs `/admin/photos/filtered-empty/` |
+| B4 treatments | `/admin/dirty/`, `/admin/error/`, `/admin/loading/` (dashboard hosts) |
+| B5 | `/admin/conflict-diff/` |
+| B6 | `/admin/phone/dashboard`, `/phone/text-edit`, `/phone/photo-reorder`, `/phone/publish` at 390 and 344 |
+| C1 | `/work/design-system`, `/work/cairn`, `/work/hued`, `/work/momentum`, `/work/timeshift` |
+| C3 | `/home` — scroll exactly one viewport; photos must be fully gone. Repeat at 344 and 841×768 |
+| C4–C5 | `/admin/photos` — drag a tile, use the focal-point control, read the order-field caption |
+| D2–D3 | edit `00-PHOTO-CONTENT.md` (39 `[AKHIL-ALT]` rows) |
+
+**What the rework changed since you last looked:** the re-review brief appended by plan 00-25
+at the end of `00-PUBLIC-DESIGN-NOTES.md` walks it in review order.
+
+**Recording verdicts.** Edit THIS file — tick boxes, write verdicts inline, add rows under
+*Your additions*. It's committed, so your marks persist in git and downstream plans read them.
+Evidence for every §E claim is in the plan SUMMARYs beside this file (file:line where cited).
+
+---
+
 ## A. The three judgements 00-11 is blocked on
 
 These were deferred once already because the artefacts changed underneath them. They are now

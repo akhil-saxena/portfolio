@@ -1,0 +1,112 @@
+/* D-33 CSS MANIFEST — the ADMIN surface set.
+
+   Imported by the admin sketches, one line each:
+     import "../styles/manifest-admin.css";
+
+   Read manifest.css's header first: the reasoning about single-file ordering,
+   the hand-maintained list, the accepted failure mode and the extensionless
+   specifier trap all apply here unchanged and are not repeated.
+
+   WHY THIS IS A SECOND FILE RATHER THAN AN IMPORT OF THE PUBLIC ONE. The admin
+   is a superset, so this file could have pulled in the public manifest and
+   added to it. It deliberately does not. Chaining one manifest through another
+   puts the whole public set at a different nesting depth from the admin-only
+   sheets, which is exactly the kind of ordering subtlety the single-file rule
+   exists to eliminate - and it would make the measured byte split between the
+   two surfaces harder to read rather than easier. The cost is that the shared
+   lines appear twice and have to be kept in step by hand. That cost is
+   accepted; the duplication is visible, which is the property that matters.
+
+   THE FAILURE MODE, RESTATED BECAUSE IT BITES HARDER HERE. A component whose
+   sheet is missing renders VISIBLY UNSTYLED. The admin has far more distinct
+   controls than any public surface, so this list is longer and more likely to
+   fall behind - and that is precisely why the loud failure was chosen over a
+   quiet one. An unstyled field is obvious on first render; a form that silently
+   posts the wrong value is not.
+
+   ORDER IS LOAD-BEARING AND IS:
+     1. the design system's token layer
+     2. fonts-charcoal.css                (faces only - D-29)
+     3. theme-charcoal.css                (tokens only - D-29)
+     4. base
+     5. the public component set (the admin renders these too)
+     6. the admin-only component set
+
+   THE ADMIN DEFAULTS TO LIGHT (D-08) and the public defaults to dark
+   (DSGN-03), but that is a data-brand/class decision made on the html element,
+   not a manifest decision. Both blocks of the theme ship in both manifests -
+   they are one stylesheet and splitting them by mode would break the
+   exhaustiveness invariant outright.
+
+   EDITING THIS FILE: same grep constraints as manifest.css, and its header
+   explains why each one is shaped the way it is. Zero specifiers carrying the
+   extension after the per-component directory, zero mentions of the whole
+   primitives stylesheet by filename, one inclusion at-rule per line, and no
+   mention of that at-rule's name anywhere in a comment. */
+
+/* 1-3. Token layer, faces, theme. */
+@import "@akhil-saxena/design-system/tokens.css";
+@import "./fonts-charcoal.css";
+@import "./theme-charcoal.css";
+
+/* 4. Resets and element defaults. */
+@import "@akhil-saxena/design-system/css/base";
+
+/* 5. The public component set - kept byte-for-byte in the same order as
+      manifest.css so the two can be diffed. Thirteen sheets. */
+@import "@akhil-saxena/design-system/css/text";
+@import "@akhil-saxena/design-system/css/heading";
+@import "@akhil-saxena/design-system/css/eyebrow";
+@import "@akhil-saxena/design-system/css/link";
+@import "@akhil-saxena/design-system/css/divider";
+@import "@akhil-saxena/design-system/css/card";
+@import "@akhil-saxena/design-system/css/chip";
+@import "@akhil-saxena/design-system/css/button";
+@import "@akhil-saxena/design-system/css/appbar";
+@import "@akhil-saxena/design-system/css/footer";
+@import "@akhil-saxena/design-system/css/timeline";
+@import "@akhil-saxena/design-system/css/lightbox";
+@import "@akhil-saxena/design-system/css/statuspill";
+
+/* 6. The admin-only set: shell and data surfaces, the form-control catalog the
+      legacy PropertiesPanel's thirteen selection variants map onto, the
+      overlay surfaces, and the status/feedback surfaces. Twenty-six sheets.
+
+      TWO OF THESE ARE HERE BECAUSE DataGrid's CSS IS NOT SELF-CONTAINED, which
+      plan 13 found by measuring rather than by reading. DataGrid renders a
+      Pagination in its footer UNCONDITIONALLY - there is no prop to hide it,
+      so even a single-page grid gets one - and Pagination renders IconButtons.
+      Neither sheet is named by datagrid.css, neither is mentioned anywhere in
+      the package, and importing `css/datagrid` alone yields a grid whose pager
+      is unstyled: measured at 21px tall against the responsive contract's 44px
+      floor, on every coarse-pointer class. The loud-failure property this
+      manifest was built around worked exactly as its header promises - the
+      thing rendered visibly wrong - but only because a real table was finally
+      on screen. Recorded as a finding: a compound component should either ship
+      one sheet or declare its dependencies. */
+@import "@akhil-saxena/design-system/css/appshell";
+@import "@akhil-saxena/design-system/css/datagrid";
+@import "@akhil-saxena/design-system/css/table";
+@import "@akhil-saxena/design-system/css/pagination";
+@import "@akhil-saxena/design-system/css/iconbutton";
+@import "@akhil-saxena/design-system/css/tabs";
+@import "@akhil-saxena/design-system/css/wizard";
+@import "@akhil-saxena/design-system/css/field";
+@import "@akhil-saxena/design-system/css/formvalidation";
+@import "@akhil-saxena/design-system/css/textinput";
+@import "@akhil-saxena/design-system/css/textarea";
+@import "@akhil-saxena/design-system/css/select";
+@import "@akhil-saxena/design-system/css/checkbox";
+@import "@akhil-saxena/design-system/css/radio";
+@import "@akhil-saxena/design-system/css/toggle";
+@import "@akhil-saxena/design-system/css/numberstepper";
+@import "@akhil-saxena/design-system/css/inlineedit";
+@import "@akhil-saxena/design-system/css/richtext";
+@import "@akhil-saxena/design-system/css/sortable";
+@import "@akhil-saxena/design-system/css/sheet";
+@import "@akhil-saxena/design-system/css/modal";
+@import "@akhil-saxena/design-system/css/alertbanner";
+@import "@akhil-saxena/design-system/css/emptystate";
+@import "@akhil-saxena/design-system/css/skeleton";
+@import "@akhil-saxena/design-system/css/progressbar";
+@import "@akhil-saxena/design-system/css/relativetime";

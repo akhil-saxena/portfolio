@@ -1,0 +1,511 @@
+/* density-compact.css — the `data-density="compact"` PROTOTYPE.
+   ===========================================================================
+   OWNER: DS-11 (Phase 06.1), via finding G-2. This file is deleted with
+   `.playground/` in plan 17 and has no path to production — no adapter, no CI,
+   no root package.json. It is the local prototype RESEARCH.md OQ-5 recommended
+   and D-32 permits, not the workaround D-32 forbids.
+
+   THIS FILE IS EVIDENCE-GATHERING, NOT A FIX. Its deliverable is the diff:
+   "compact required N declarations, of which M could not be expressed as a
+   `--space-*` change." Every hard-coded declaration below carries a comment
+   naming the SPECIFIC reason a spacing token could not carry it. Those comments
+   are what Phase 06.1 consumes. The running tally is at the foot of the file.
+
+   THE CASCADE IMPORTANCE FLAG IS ABSENT THROUGHOUT, AND THAT IS A DELIBERATE
+   REFUSAL RATHER THAN A STYLE PREFERENCE. An important author declaration
+   outranks a normal inline `style` declaration in the cascade, so flagging these
+   rules important would in fact reach Button's inline padding and "make compact
+   work" — and thereby erase the one piece of evidence this file exists to
+   produce. The gap is the deliverable, so the flag stays out.
+   (This file asserts its own absence: the acceptance criteria grep for the flag
+   and require a count of zero, which is why it is described rather than spelled.)
+
+   ── THE DENSITY GATE: `pointer: fine`, NOT A WIDTH BREAKPOINT ──────────────
+   00-UI-SPEC.md §Density invariant 2 states the rule as a breakpoint rule
+   ("compact MUST NOT apply below the phone breakpoint") and explicitly defers
+   the mechanism to Phase 06.1. 00-RESPONSIVE-CONTRACT.md §2 promotes the
+   mechanism to a Phase 0 requirement, because with six device classes a width
+   rule is provably wrong rather than merely unproven:
+
+     - a 1024px-wide LAPTOP WINDOW is a fine pointer, and compact's 30px control
+       is correct there;
+     - a 1024px-wide TABLET IN LANDSCAPE is a coarse pointer, and 30px is 14px
+       BELOW the 44px touch floor.
+
+   Same width. Opposite correct answer. So width cannot decide density.
+   A `min-width: 768px` guard — which is what plan 00-12 was written against —
+   would ship a 30px control to every tablet in portrait (class 4 is 768-834 and
+   coarse), which is the exact regression the invariant exists to prevent.
+
+   `any-pointer: fine` IS FORBIDDEN by the contract and is not used here. It
+   returns TRUE for a tablet with a keyboard case attached — a device whose
+   primary input is still touch and whose user still touches the screen. That is
+   the one device where the two queries disagree, and it is the device the wrong
+   query gets wrong.
+
+   UI-SPEC's three-row viewport/mode table survives unchanged under this rule:
+   1440 is a fine pointer so admin desktop stays compact, and 390 is a coarse
+   pointer so admin phone stays comfortable. The pointer rule makes those two
+   rows a CORRECT SPECIAL CASE rather than contradicting them.
+
+   ── WHAT IS NOT IN THIS FILE, AND WHY THAT IS THE FINDING ─────────────────
+   THE 208px SIDEBAR. UI-SPEC's compact target is 208px against a measured
+   default of 240px, and this file declares NOTHING for it. `AppShell` sets
+   `--ds-sidebar-w` as an INLINE STYLE on its own root
+   (`style={{"--ds-sidebar-w": collapsed ? "48px" : `${sidebarWidth}px`}}`), so
+   no stylesheet reaches it at any specificity. The only route is the
+   `sidebarWidth` prop — a single number fixed when the element is constructed.
+   A prop that is a constant cannot participate in a media-query-driven axis, so
+   the sidebar width is the one compact target that is unreachable from CSS
+   *by construction* rather than merely untokenised. It is passed as
+   `sidebarWidth={208}` in Admin.astro, which is therefore wrong at coarse
+   pointer and cannot be made right without JavaScript. G-2 evidence, and it is
+   also why `--ds-sidebar-w` sitting on D-31's MUST-NOT-redefine list for a
+   brand theme is correct: 208 is a DENSITY concern, not a charcoal one.
+
+   ── AN ARITHMETIC LINE THAT NEEDS NO CODE ─────────────────────────────────
+   Two of UI-SPEC's five compact geometry numbers cannot be NAMED by the
+   spacing scale even in principle:
+     - 30px (control height) is not a multiple of 4, so no `--space-*` step
+       equals it — the scale steps 28 (`--space-7`) then 32 (`--space-8`).
+     - 208px (sidebar) is on the 4px grid but far beyond the scale's ceiling of
+       64px (`--space-16`).
+   24px, 32px and 36px do have steps (`--space-6/8/9`). So DS-11's "redefine
+   spacing tokens" cannot express two fifths of its own target set regardless of
+   how much of the design system is tokenised. That is an argument for the
+   separate control-geometry layer G-2 proposes (`--control-h`, `--control-px`,
+   `--row-h`, `--field-gap`), not for extending `--space-*`.
+   =========================================================================== */
+
+/* ═══ COMPACT — fine pointer only ═══════════════════════════════════════════ */
+@media (pointer: fine) {
+	/* ── A. WHAT DS-11 AS WRITTEN ACTUALLY BUYS ─────────────────────────────
+	   DS-11 says density works by "redefining spacing tokens". Three such
+	   reassignments follow, and they are the entire yield. They are scoped to
+	   `.adm-main` rather than to `:root` on purpose: DS-11 has NO SCOPE STORY,
+	   and a `:root`-level reassignment of `--space-4` would also move the
+	   responsive gutter ladder, every layout maximum and the public surfaces'
+	   rhythm — an axis that silently rewrites the spacing scale for the whole
+	   document is not a density axis. Recording the scope requirement here so
+	   Phase 06.1 inherits it rather than discovering it.
+
+	   Note that the design system's `.ds-atom-field` already ships
+	   `gap: var(--space-1)` (4px), which IS UI-SPEC's compact target for the
+	   label-to-control gap. UI-SPEC records `comfortable` there as 8px; the
+	   measured value is 4px. So compact has nothing to do at that one place,
+	   and the delta is a correction to UI-SPEC rather than a declaration. */
+	[data-density="compact"] .adm-main {
+		--space-4: 12px; /* 16 -> 12: field-to-field vertical gap */
+		--space-6: 16px; /* 24 -> 16: form group-to-group gap */
+		--space-8: 24px; /* 32 -> 24: section break */
+	}
+
+	/* ── B. WHAT IT CANNOT BUY: CONTROL GEOMETRY ────────────────────────────
+	   Measured in ../design-system/src/primitives.css at v1.11.4: 0 of 95
+	   height/min-height declarations use a spacing token, 13.5% of padding
+	   does and 10.8% of gaps do. Every declaration in this section is
+	   therefore a raw length, and each carries the reason. */
+
+	/* B1. Text field and select, 36 -> 30 high, 10 -> 8 horizontal padding.
+	   REASON A TOKEN CANNOT CARRY IT: `height: 36px` in textinput.css and
+	   select.css is a raw length, and there is no height token anywhere in the
+	   design system to reassign — this is the 0-of-95 figure in one line. The
+	   30px target is additionally not on the 4px grid, so even inventing a
+	   `--space-*` step could not name it.
+	   REASON THE PADDING CANNOT COME FROM A TOKEN: the declaration is
+	   `padding: 0 10px`, a raw length. 8px happens to equal `--space-2`, but
+	   reassigning `--space-2` changes nothing here because the token is not
+	   referenced at this site. A token can only be varied where it is already
+	   used, which is the asymmetry DS-11 does not account for. */
+	[data-density="compact"] .ds-atom-input,
+	[data-density="compact"] .ds-atom-input-wrap,
+	[data-density="compact"] .ds-atom-select {
+		height: 30px;
+		padding: 0 8px;
+	}
+
+	/* B2. Select at its `sm` step, 28 -> 24.
+	   Reachable ONLY because Select emits `data-size` into the DOM. Its
+	   sibling Button does not — see B3. Two controls that must line up at the
+	   same height, one selectable by size from CSS and one not. */
+	[data-density="compact"] .ds-atom-select[data-size="sm"] {
+		height: 24px;
+		padding: 0 6px;
+	}
+
+	/* B3. Button — THE SHARPEST SINGLE PIECE OF G-2 EVIDENCE, and it is three
+	   independent blocks on one component rather than one.
+
+	   (i) `padding: "7px 14px"` is an INLINE STYLE OBJECT in
+	       ../design-system/src/inputs/Button/index.tsx, with a source comment
+	       stating 7 and 14 sit off the 4px grid deliberately because snapping
+	       them would change button height. An inline declaration outranks every
+	       stylesheet rule at every specificity, so compact's 8px control
+	       padding is UNREACHABLE by any cascade-based density axis. The only
+	       thing that would reach it is the cascade importance flag, which this
+	       file refuses on the grounds stated in the header.
+
+	   (ii) Button renders `data-variant` but NOT `data-size`. So CSS cannot
+	        select a Button by size at all, and the single `height` below hits
+	        xs, sm, md and lg together — flattening the size scale rather than
+	        varying it. UI-SPEC's compact targets are per-size (30 md / 24 sm /
+	        36 lg) and cannot be expressed.
+
+	   (iii) `lg` sets `height: var(--space-11)` (44px) INLINE, so the one size
+	         that does declare a height declares it out of reach. Its 36px
+	         compact target is unreachable for the same reason as (i).
+
+	   The `height` below is therefore a deliberately PARTIAL override, kept so
+	   the prototype is visibly compact, and the residue — 14px horizontal
+	   padding at every size, one height for four sizes — is the finding. */
+	[data-density="compact"] .ds-atom-btn {
+		height: 30px;
+	}
+
+	/* B4. Table row, 44 -> 32.
+	   REASON A TOKEN CANNOT CARRY IT: there is no height declaration on
+	   `.ds-atom-table-row` to override. The design system expresses row height
+	   as cell padding plus line-height, so there is no single site a `--row-h`
+	   token could have replaced — the prototype has to INTRODUCE a declaration
+	   the design system does not have. That is a different and worse shape of
+	   gap than an untokenised value, because an upstream `--row-h` has to be
+	   adopted by a rule that does not exist yet. */
+	[data-density="compact"] .ds-atom-table-row {
+		height: 32px;
+	}
+
+	/* B5. Table cell and header cell padding. Measured `8px 12px` on both, so
+	   the horizontal figure is ALREADY at compact's 12px target and only the
+	   vertical needs to move; UI-SPEC's "16 -> 12" refers to DataGrid, not
+	   Table. Raw lengths again, so no token reassignment reaches them. */
+	[data-density="compact"] .ds-atom-table-cell,
+	[data-density="compact"] .ds-atom-table-headercell {
+		padding: 4px 12px;
+	}
+
+	/* B6. Table header height, 40 -> 30. Same shape as B4: expressed as
+	   padding plus line-height, no declaration to override, one to introduce. */
+	[data-density="compact"] .ds-atom-table-header {
+		height: 30px;
+	}
+
+	/* B7. DataGrid bulk bar and footer. `8px 16px` and `10px 16px`, both raw
+	   lengths in datagrid.css. 6px is off the 4px grid, so half of each target
+	   pair is unnameable by the spacing scale even after the reassignment in
+	   section A. */
+	[data-density="compact"] .ds-atom-datagrid-bulkbar {
+		padding: 6px 12px;
+	}
+	[data-density="compact"] .ds-atom-datagrid-footer {
+		padding: 6px 12px;
+	}
+
+	/* B8. Card padding, 20px 22px -> 12px 16px.
+	   REASON A TOKEN CANNOT CARRY IT: `variant="glass"` ships
+	   `padding: 20px 22px` as raw lengths. Card DOES expose a tokenised
+	   padding axis — `[data-padding="sm|md|lg|xl"]` resolves to
+	   `--space-3/4/6/8` — but every step is SQUARE, and compact's target is
+	   the asymmetric 12px 16px. So the one place the design system did
+	   tokenise its padding still cannot express the target, because the axis
+	   is one-dimensional and the requirement is two. */
+	[data-density="compact"] .ds-atom-card {
+		padding: 12px 16px;
+	}
+
+	/* B9. Sidebar nav item, 36 -> 30, and this row is MINE — `.adm-nav-link`
+	   is app layout CSS in this playground, not a design-system class. It is
+	   here to make the point that the gap is not merely "the design system is
+	   untokenised": 30px is off the 4px grid, so even a brand-new component
+	   written today against the spacing scale cannot express compact's control
+	   height from `--space-*`. The scale is the wrong instrument, which is
+	   exactly what G-2's proposed `--control-h` layer is for. */
+	[data-density="compact"] .adm-nav-link {
+		min-height: 30px;
+	}
+}
+
+/* ═══ THE 44px FLOOR — coarse pointer, the COMMON case ══════════════════════
+   Five of the six device classes in 00-RESPONSIVE-CONTRACT.md §1 are
+   coarse-pointer, so the floor binds more often than compact does. It is a
+   floor on the HIT AREA, not on the drawn control (§2), which is why it is
+   expressed as `min-height` rather than `height`.
+
+   `.ds-atom-btn` has NO inline height at xs/sm/md, so `min-height` does reach
+   it — the one direction of the density axis that Button's inline styles do not
+   block. Its horizontal padding is still 14px and still unreachable, so the
+   floor is met vertically and cannot be met horizontally: a coarse-pointer
+   Button is 44px tall and as narrow as its label. Recorded rather than papered
+   over.
+
+   `lg` already carries an inline 44px height, so it satisfies the floor by
+   accident of a value chosen for OAuth-button alignment rather than for touch.
+   That is worth naming: the design system meets the touch floor at exactly one
+   size, for an unrelated reason, and offers no way to ask for it. */
+@media (pointer: coarse) {
+	.ds-atom-btn,
+	.ds-atom-input,
+	.ds-atom-input-wrap,
+	.ds-atom-select,
+	.adm-nav-link {
+		min-height: 44px;
+	}
+	.ds-atom-table-row {
+		height: 44px;
+	}
+}
+
+/* ═══ THE TALLY — the deliverable ═══════════════════════════════════════════
+   COUNTED, NOT ESTIMATED. Every figure below was produced by parsing this file
+   (comments stripped, braces matched) rather than by reading it, because an
+   uncounted number in an evidence file is the liability this phase keeps
+   finding in its own inputs.
+
+   COMPACT REQUIRED 15 DECLARATIONS ACROSS 11 RULES.
+      3  are `--space-*` reassignments  (section A)          — 20%
+     12  could NOT be expressed as a `--space-*` change      — 80%
+
+   The 12 break down as:
+      8  override an existing RAW LENGTH in design-system CSS, at a site where
+         no spacing token is referenced — so there is nothing to reassign.
+         (B1 x2, B2 x2, B5, B7 x2, B8)
+      3  INTRODUCE a declaration the design system DOES NOT HAVE AT ALL, which
+         is a worse shape of gap than an untokenised value: an upstream
+         `--control-h` / `--row-h` has to be adopted by a rule that does not
+         exist yet. (B3 Button height, B4 table-row height, B6 header height)
+      1  is on a class of this playground's own, included because 30px is off
+         the 4px grid — so even a component written today against the spacing
+         scale cannot express compact's control height from it. (B9)
+
+   THE 44px FLOOR ADDS 2 MORE DECLARATIONS ACROSS 2 RULES, neither expressible
+   as a token change for the same reason.
+
+   AND ONE TARGET REQUIRED ZERO DECLARATIONS BECAUSE IT IS UNREACHABLE:
+   the 208px sidebar, pinned by an inline custom property and settable only
+   through a constant prop.
+
+   THE RESIDUE — what remains wrong after all 15 declarations:
+     - Button's `padding: 7px 14px` is still 14px horizontal at every size.
+       Inline, unreachable, off the 4px grid by design.
+     - Button's `lg` still carries an inline `height: var(--space-11)` (44px)
+       rather than compact's 36px, for the same reason.
+     - B3's single `height` hits xs, sm, md and lg together, because Button
+       emits no `data-size` attribute — so the size SCALE is flattened rather
+       than varied. Its sibling Select does emit `data-size` (B2), which is why
+       two controls that must line up at the same height are reachable to
+       different degrees.
+
+   The 12-of-15 figure is the direct counterpart of the 0%-of-95-heights
+   measurement in UI-SPEC §Density. DS-11 as written — "density works by
+   redefining spacing tokens" — delivers the 3.
+   =========================================================================== */
+
+/* ═══ PLAN 13 CORRECTION — TWO OF THE FIFTEEN WERE INERT ════════════════════
+   Plan 07 wrote B4 and the coarse-pointer table-row rule and counted them.
+   Plan 13 was the first plan to put a real table on screen — 39 rows, which is
+   where a wrong row height stops being a rounding error — and MEASURED them in
+   Chromium rather than reading them. Both were dead on arrival.
+
+   MEASURED on /admin/photos/ at 1440 fine, 1024 coarse and 344 coarse
+   (all three classes gave the same answer):
+
+       .ds-atom-table-row   height  40px      compact target 32px
+                                              coarse floor   44px
+       .ds-atom-table-headercell    40px      coarse floor   44px
+
+   THE CAUSE IS SPECIFICITY, AND IT IS ARITHMETIC RATHER THAN OPINION.
+   table.css ships
+
+       .ds-atom-table[data-density="comfortable"] .ds-atom-table-row  (0,3,0)
+
+   and DataGrid pins `density="comfortable"` on its own Table.Root
+   (dist/index.js:8492) with NO prop to change it and no inheritance from the
+   document. B4's `[data-density="compact"] .ds-atom-table-row` is (0,2,0) and
+   the coarse floor's `.ds-atom-table-row` is (0,1,0). Both lose to (0,3,0) at
+   every source order, so neither ever applied to anything.
+
+   WHY THIS IS NOT AN ORDINARY MISS. B5 (cell padding) DID land, because
+   `.ds-atom-table-cell` carries no density-qualified rival. So the row's
+   padding moved and the row's HEIGHT did not, and the visible result is a
+   compact-looking table whose rows are still comfortable-height. Nothing in the
+   nine gates could see it: the build passes, the contrast check reads the theme
+   file, and a screenshot of one table looks plausible. It took 39 rows and a
+   measurement.
+
+   WHAT THE RULES BELOW ACTUALLY BUY, MEASURED AFTER ADDING THEM. The coarse
+   floor lands exactly: 44px at both 344 and 1024, and an audit of every
+   focusable box on the page at those two widths returns NOTHING under 44px.
+   The compact target does NOT land, and the reason is a second, independent
+   defect that only became visible once the first was out of the way:
+
+       declaration 32px  ->  measured 35px painted / 34px computed
+       declaration  8px  ->  measured 35px painted / 34px computed
+
+   `height` on a `<tr>` is a MINIMUM, not a setter, so once the comfortable 40px
+   floor is gone the row is content-driven and the declaration does nothing at
+   all below the content height. Removing pieces of the row isolates where the
+   content height comes from:
+
+       as built .................................. 35px
+       DataGrid's selection cell hidden .......... 28px   (-7px)
+       and the pipeline Badge hidden ............. 26px   (-2px)
+
+   SO COMPACT'S 32px ROW IS UNREACHABLE, AND THE THING MAKING IT UNREACHABLE IS
+   A COLUMN NOBODY ASKED FOR. DataGrid renders `Table.SelectAllCell` and a
+   `Table.SelectCell` per row unconditionally; `onSelectionChange` is optional
+   but the COLUMN is not, and there is no `selectable` prop. Its checkbox label
+   is 22px inside a cell whose padding compact has already cut to 4px, and that
+   is 7 of the 9px by which the row overshoots. Without it the row would be
+   28px, comfortably inside the target.
+
+   THE UPSTREAM FIX IS NOT A HIGHER SELECTOR. It is three things, all G-2 /
+   DS-11 in Phase 06.1: (a) `DataGrid` exposing the `density` prop its own
+   Table.Root already accepts, (b) Table's density modes reading a `--row-h`
+   custom property so a document-level density axis can participate at all, and
+   (c) DataGrid making its selection column optional, because a row height
+   target cannot be met while an unrequested control sets the floor. The four
+   rules below prototype (a) and (b) only; (c) cannot be prototyped from CSS
+   without hiding a control, which would be a workaround rather than evidence.
+
+   They are here rather than merely reported because the 44px floor is a
+   responsive-contract requirement rather than a nicety, and shipping a sketch
+   that quietly missed it at 344px would put a wrong number in front of a
+   reviewer. They die with this directory.
+
+   THE CORRECTED TALLY: compact required 17 declarations across 13 rules, of
+   which 14 could not be expressed as a `--space-*` change. The two added here
+   are a FOURTH and worse shape of gap than the three the tally names: they
+   RESTATE a declaration the design system already has, purely to outrank it,
+   and one of the two does not reach its target even after winning. */
+
+@media (pointer: fine) {
+	[data-density="compact"] .ds-atom-table[data-density] .ds-atom-table-row {
+		height: 32px;
+	}
+	[data-density="compact"] .ds-atom-table[data-density] .ds-atom-table-headercell {
+		height: 30px;
+	}
+}
+
+@media (pointer: coarse) {
+	[data-density] .ds-atom-table[data-density] .ds-atom-table-row,
+	[data-density] .ds-atom-table[data-density] .ds-atom-table-headercell {
+		height: 44px;
+	}
+
+	/* ── THE PAGER, WHICH NOBODY ASKED FOR AND WHICH NOTHING CAN REMOVE ────
+	   DataGrid renders a `Pagination` in its footer UNCONDITIONALLY. There is
+	   no prop to hide it, so a 39-row single-page grid still gets one. Measured
+	   on /admin/photos/ at 344, 768 and 1024, all coarse pointer:
+
+	       .ds-atom-pagination-btn   28px      floor 44px
+	       .ds-atom-iconbtn          24px      floor 44px
+
+	   Both are raw lengths in pagination.css:29 and iconbutton.css:35, so CSS
+	   does reach them, which is why the floor can be carried here at all. What
+	   CSS cannot fix is the size scale behind them: IconButton's THREE sizes are
+	   24 / 32 / 40px, so its LARGEST size is still 4px under the floor and there
+	   is no value of `size` that satisfies a coarse pointer. A design system
+	   whose icon button cannot meet the touch floor at any size has a scale
+	   problem rather than a value problem, and that is the finding. G-2's
+	   proposed `--control-h` layer is where it belongs.
+
+	   `min-height` rather than `height`, because these two are inside a flex
+	   footer and pinning the height would clip the glyph. */
+	.ds-atom-datagrid-footer .ds-atom-pagination-btn,
+	.ds-atom-datagrid-footer .ds-atom-iconbtn {
+		min-height: 44px;
+		min-width: 44px;
+	}
+
+	/* ══ PLAN 15 CORRECTION — THE CHECKBOX IS ITS OWN TARGET ═══════════════
+	   The block above already names the number: "its checkbox label is 22px".
+	   It was read there as the ROW's content floor — the 7px by which a compact
+	   row overshoots — and the row was then given `height: 44px`, after which
+	   the row measured clean and the audit reported no offender. THE LABEL IS
+	   NOT THE ROW. Clicking a 44px row does not select anything; clicking the
+	   22px label does, so the label is an independent target and it was half
+	   the floor on every coarse-pointer class.
+
+	   IT WAS MISSED BECAUSE THE INPUT MASKS IT. `Checkbox` renders
+	   `<input class="ds-atom-checkbox-input ds-visually-hidden">` clipped to
+	   1px with the painted box and the hit area on the wrapping
+	   `<label class="ds-atom-checkbox-label">`. An audit that walks focusable
+	   elements measures the INPUT, gets 1px, and either reports a failure
+	   nobody can act on or excludes visually-hidden elements and reports
+	   nothing at all. Both readings hide the real question. Plan 15's audit
+	   swaps the input's box for its label's and asks it.
+
+	   MEASURED IN CHROMIUM ON THE BUILT dist/, BEFORE THIS RULE:
+	       /admin/photos/           40 labels at 22px   (DataGrid, 39 rows + all)
+	       /admin/resume/            4 labels at 22px   (the Present checkboxes)
+	       /admin/projects/          4 labels at 22px   (the F-13-2 evidence grid)
+	   at 344, 390, 673, 768 and 1024, all coarse pointer. Zero at 1440 fine,
+	   where the floor does not apply.
+
+	   THIS IS A DESIGN-SYSTEM GAP, NOT A LAYOUT ONE. checkbox.css sets no
+	   height on the label at all — the 22px is content, an 18px box plus its
+	   line box — so there is no declaration to outrank and nothing about the
+	   component expresses a touch target. Every consumer on a touch device
+	   therefore ships a 22px checkbox unless they reach past the component,
+	   which is what the rule below does. The upstream fix belongs with G-2's
+	   `--control-h` layer: a checkbox's hit area is control geometry.
+
+	   `min-height` and `min-width` rather than `height`, because the label is a
+	   flex row carrying the box AND its text — pinning the height would clip a
+	   two-line label, and pinning the width would stretch a labelled checkbox
+	   across its cell. The floor sits on the HIT AREA; the painted 18px box is
+	   untouched. */
+	.ds-atom-checkbox-label {
+		min-height: 44px;
+		min-width: 44px;
+	}
+
+	/* ══ PLAN 15 — TWO MORE CONTROLS THAT HAVE NEVER BEEN ON A SKETCH ══════
+	   /admin/site is the first screen in the phase to compose `InlineEdit` and
+	   `NumberStepper`, which is why these appear now rather than in plan 13.
+	   Measured in Chromium on the built dist/ at 344, 390, 673, 768 and 1024,
+	   all coarse pointer, before these rules:
+
+	       .ds-atom-inlineedit        25px      floor 44px    (7 instances)
+	       .ds-atom-stepper-btn       24px      floor 44px    (16 instances)
+	       .ds-atom-stepper-input     30px      floor 44px    (8 instances)
+
+	   ── InlineEdit ────────────────────────────────────────────────────────
+	   Its idle state is `<span class="ds-atom-inlineedit" role="button"
+	   tabindex="0">`, so it is a REAL keyboard and pointer target that PAINTS
+	   AS TEXT. inlineedit.css sets no height on it; 25px is the line box. A
+	   control whose whole interaction model is "click the text" is exactly the
+	   one that cannot afford to be the size of the text on a touch device.
+
+	   ── NumberStepper ─────────────────────────────────────────────────────
+	   Its two buttons are `IconButton size="sm"`, hardcoded, and there is no
+	   prop for the size. This is F-13-4's finding reaching a second component:
+	   IconButton's three sizes are 24 / 32 / 40px, so its LARGEST is 4px under
+	   the floor and no value of `size` would have helped even if the prop
+	   existed. The input between them is 30px from stepper geometry.
+
+	   ── WHY THESE ARE HERE AND NOT IN THE PAGE'S OWN STYLE BLOCK ──────────
+	   Astro's scoped styles stamp `data-astro-cid-*` onto elements in the
+	   ASTRO TEMPLATE and pass it as a PROP to a framework component. A
+	   component that spreads rest props onto its root (Link, Text, Badge)
+	   receives it; one with a fixed prop list (InlineEdit, NumberStepper,
+	   Select) never does, so a scoped rule cannot reach inside it. Plan 13
+	   recorded this as an ISLAND rule — "a page carrying an island needs
+	   is:global" — and it is broader than that: hydration is irrelevant, what
+	   matters is that a framework component renders its own DOM. Control
+	   geometry belongs in this file anyway, which is where the row, the pager
+	   and the checkbox floors already live, and this file is imported globally.
+
+	   `min-height`/`min-width` rather than `height`, so a two-line label or a
+	   three-digit value is never clipped. */
+	.ds-atom-inlineedit {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+	}
+	.ds-atom-stepper-btn,
+	.ds-atom-stepper-input {
+		min-height: 44px;
+		min-width: 44px;
+	}
+}

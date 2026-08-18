@@ -21,10 +21,11 @@ Budgets are enforced by `../scripts/check-copy-length.mjs`.
 
 ## design-system
 
-- one-liner: Accessible React primitives with semantic tokens — 80 components, and this page is built on them.
-- card: A React component library where one token change lands across every screen at once. 80 components in 10 categories, and this site is built entirely out of them.
+- one-liner: Accessible React primitives with semantic tokens — 79 components, and this page is built on them.
+- card: A React component library where one token change lands across every screen at once. 79 components in 10 categories, and this site is built entirely out of them.
 - badge: Live
-- source: `../design-system/README.md` — "80 components across 10 categories" and the deployed Storybook at design-system-ed1.pages.dev. Badge Live because `../design-system/package.json` is at 1.11.4 and `CHANGELOG.md`'s newest entry is that same release, so work is still landing. Deliberately NOT sourced from `../design-system/.planning/PROJECT.md`, which is stale on product name, count and theming mechanism. Closes by pointing at the page the reader is on, per UI-SPEC rule 5 and D-38. (one-liner 97 · card 160)
+- source: `../design-system/src/OverviewPage.tsx` — the shipped catalog, parsed this session: 10 categories summing to **79** components (Inputs 23 · Overlays 10 · Data Display 11 · Feedback 7 · Interaction 7 · Surfaces 2 · Layout 4 · Display 6 · Patterns 3 · Foundation 6), and the file computes that same total itself as `TOTAL`. Storybook is deployed at design-system-ed1.pages.dev. Badge Live because `../design-system/package.json` is at 1.11.4 and `CHANGELOG.md`'s newest entry is that same release, so work is still landing. Deliberately NOT sourced from `../design-system/.planning/PROJECT.md`, which is stale on product name, count and theming mechanism. Closes by pointing at the page the reader is on, per UI-SPEC rule 5 and D-38. (one-liner 97 · card 160)
+- source-note: **`README.md` was the citation here and has been retired as an authority for this figure**, per the user's ruling. It claims "80 components" and matches neither shipped artefact: the catalog lists **79**, while the ten category directories under `src/` hold **81** (Inputs is 23 in the catalog and 25 on disk). Three numbers, and the README's is the only one that is not the count of anything. The exact difference was measured this session, not inferred: the two directories present on disk and absent from the catalog are `Field` and `IconButton` — so the copy quotes the catalog, and those two are omitted deliberately rather than missed. `README.md` remains fine for prose about the library; it is not evidence for its size.
 
 ## cairn
 

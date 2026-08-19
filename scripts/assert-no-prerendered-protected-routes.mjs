@@ -230,14 +230,36 @@ const PRERENDER_FALSE =
   /(^|[\s;}])export\s+const\s+prerender\s*(:\s*[A-Za-z_$][\w$]*\s*)?=\s*false\b/m;
 
 /**
- * Deliberately looser, and run only against the RAW text to choose a diagnosis — never to
- * decide pass or fail. Its whole job is to tell "the author wrote this and it is inert" apart
- * from "the author never wrote it", so that the failure message names the actual mistake. It
- * must stay looser than the strict form above: a JSX comment (`{/* ... *\/}`) leaves no
- * statement terminator, and an author who has just commented out the line deserves to be told
+ * Deliberately looser, and used ONLY to choose which diagnosis to print — never to decide pass
+ * or fail. It must stay looser than the strict form above: a JSX comment (`{/* ... *\/}`) leaves
+ * no statement terminator, and an author who has just commented the line out deserves to be told
  * that rather than told the line is missing.
  */
 const PRERENDER_FALSE_ANYWHERE = /export\s+const\s+prerender\s*(:[^=]*)?=\s*false\b/;
+
+/**
+ * Recover exactly the text that comment-stripping removed, byte-aligned.
+ *
+ * stripJsComments preserves length and newlines, so a position where the stripped text holds a
+ * space and the source does not is a position that was inside a comment. Reassembling those
+ * positions gives a comments-only view of the file, which is what makes the difference between
+ * "you commented the declaration out" and "the words appear in a string somewhere" reportable.
+ *
+ * This exists because the first real use of this gate got it wrong. The Control 1 fixture's own
+ * header comment described the mistake it was demonstrating, in words — and the diagnosis, which
+ * was then testing the raw text, matched that comment and reported the file as having a
+ * commented-out declaration when it had none at all. Same shape as the two vacuous greps plan
+ * 02-07 found: a check that reads a file's prose and believes it is reading its code. The verdict
+ * was never affected (pass/fail is decided on stripped source only), but a wrong message sends
+ * someone hunting for a line that was never written.
+ */
+function commentsOnly(source, stripped) {
+  let out = '';
+  for (let i = 0; i < source.length; i++) {
+    out += stripped[i] === ' ' && source[i] !== ' ' ? source[i] : ' ';
+  }
+  return out;
+}
 
 // ------------------------------------------------------------------------------------------
 // Source side
@@ -349,16 +371,21 @@ function checkSourceFile(abs, display, routePath, ext) {
 
   if (PRERENDER_FALSE.test(stripped)) return;
 
-  const survivesRaw = PRERENDER_FALSE_ANYWHERE.test(raw);
-  failures.push({
-    file: display,
-    route: routePath,
-    reason: survivesRaw
-      ? 'the text `export const prerender = false` IS present but is not a live declaration — it ' +
-        'survives only inside a comment, a string or a regex literal. It opts nothing out: the ' +
-        'route is prerendered exactly as if the line had never been written.'
-      : 'no uncommented `export const prerender = false`, so Astro prerenders this route.',
-  });
+  let reason;
+  if (PRERENDER_FALSE_ANYWHERE.test(commentsOnly(js, stripped))) {
+    reason =
+      'the declaration is COMMENTED OUT. A commented-out `export const prerender = false` opts ' +
+      'nothing out — the route is prerendered exactly as if the line had never been written. ' +
+      'Uncomment it.';
+  } else if (PRERENDER_FALSE_ANYWHERE.test(raw)) {
+    reason =
+      'the words `export const prerender = false` appear in this file but not as a module-scope ' +
+      'declaration — they are inside a string, a regex literal, an HTML comment or the template ' +
+      'body. None of those opt the route out of prerendering.';
+  } else {
+    reason = 'no `export const prerender = false` at all, so Astro prerenders this route.';
+  }
+  failures.push({ file: display, route: routePath, reason });
 }
 
 // ------------------------------------------------------------------------------------------

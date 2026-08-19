@@ -330,3 +330,64 @@ disposition, and no row is unapproved.
 **Install state at the time of writing:** nothing installed. `package.json`, `package-lock.json`
 and `node_modules/` do not exist at the repo root. Plan 02-03 is now released to create the
 manifest and install exactly the 17 packages above, at the versions pinned above.
+
+---
+
+## Addendum — packages added after the 02-03 install set (plan 02-06)
+
+The 17-row table above is the **02-03 install set** and its counts are left intact. This addendum
+records every package installed into the tracked repo root *after* that gate, by the same method:
+`slopcheck install -e npm <pkg>` run from a scratch directory outside the repo with a no-op `npm`
+shim first on `PATH` (so registry checks execute for real and the install passthrough is recorded
+and discarded), plus an independent `npm view` cross-check of every field. Weekly download counts
+come from `https://api.npmjs.org/downloads/point/last-week/<pkg>` for the same window as the
+original audit, **2026-08-09 → 2026-08-15**, so the numbers are comparable to the rows above.
+
+Audited 2026-08-19 during plan 02-06.
+
+| Package | Kind | Pinned version | Registry | First published | Weekly downloads | Source repo | Declares postinstall | slopcheck verdict | Disposition |
+|---------|------|----------------|----------|-----------------|-----------------:|-------------|----------------------|-------------------|-------------|
+| `@types/node` | dev (direct) | `^22.20.1` → 22.20.1 | npm | 2016-05-17 | 351.5M/wk | github.com/DefinitelyTyped/DefinitelyTyped | No | [OK] | Approved |
+| `undici-types` | dev (transitive, via `@types/node`) | 6.21.0 (resolved) | npm | 2023-09-19 | 208.3M/wk | github.com/nodejs/undici | No | [OK] | Approved |
+
+Recorded passthroughs:
+
+```
+[shim] SUPPRESSED install passthrough: npm install @types/node
+[shim] SUPPRESSED install passthrough: npm install undici-types
+```
+
+Result: **2 OK, 0 SUS, 0 [S-L-O-P — spelled out so this line cannot satisfy the verdict grep]**
+over 2 packages. Installed direct set is now **18** (6 runtime + 12 dev); the lockfile gained
+exactly two `node_modules/` entries, both listed above.
+
+### Why the transitive row exists when the table above has none
+
+The 17-row table audits direct dependencies only, and finding 3 there handles transitives
+separately by asking a narrower question (does anything declare an install script?). This install
+added exactly one transitive package, so auditing it costs nothing and closes the gap for the one
+case where it was cheap. `undici-types` is the type-only split of `nodejs/undici` — the HTTP client
+in Node core — and `@types/node` has depended on it since Node 18's fetch types landed.
+
+### Why `@types/node` at all, and why `^22` rather than `^26`
+
+`@types/node`'s major tracks the **Node major it describes**, not npm's `latest`. `latest` is
+26.2.0, which types APIs this project's runtime does not have: `.nvmrc` and `engines.node` both
+pin **22.x** (`>=22.12.0`; local is 22.22.3). Installing `^26` would typecheck against a larger
+API surface than the runtime provides — the failure mode is silent and only appears in production.
+So the pin is `^22.20.1`, the newest 22.x line.
+
+It was added because `tsconfig.json` carried a single-file exclusion — `test/setup/preview-server.ts`
+— that plan 02-05 introduced to keep `astro check` (and therefore `npm run build`) green without
+installing anything, and documented as *"THE REAL FIX is adding @types/node"*. Plan 02-06 is the
+first plan after 02-05 that owns `package.json`, so it landed the real fix and deleted the
+exclusion. `npm run typecheck` reports **0 errors over 24 files** afterwards — one file more than
+before, which is the excluded file coming back under the checker.
+
+### Threat-register note
+
+Plan 02-06's `<threat_model>` states `T-02-SC | npm/pip/cargo installs | mitigate | This plan
+installs nothing.` That is no longer true, and the deviation is recorded in 02-06-SUMMARY.md
+rather than quietly absorbed. The mitigation the register asks for — audit before install — was
+performed, which is what this addendum is; the install was not skipped on a technicality that
+would have left the tsconfig exclusion in place for the rest of the project.

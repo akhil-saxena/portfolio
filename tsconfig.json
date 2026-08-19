@@ -8,25 +8,16 @@
     "jsxImportSource": "react"
   },
   "include": [".astro/types.d.ts", "**/*", "worker-configuration.d.ts"],
-  // The single-file exclusion is plan 02-05 repairing a gate it broke, NOT a preference.
-  // test/setup/preview-server.ts is the first Node-side source file in the repository, and
-  // the dependency set has no @types/node (absent from node_modules/@types entirely), so
-  // every `node:child_process` / `node:fs` / `node:path` / `node:url` / `node:module`
-  // import fails to resolve and `astro check` reports 12 errors — which breaks
-  // `npm run build`, since the build script chains `astro check`.
+  // Nothing under `test/` is excluded, and that is the point. Plan 02-05 had to exclude
+  // exactly one file here — `test/setup/preview-server.ts`, the first Node-side source in
+  // the repository — because `@types/node` was absent, so every `node:child_process` /
+  // `node:fs` / `node:path` / `node:url` / `node:module` import failed to resolve and
+  // `astro check` reported 12 errors, which breaks `npm run build` (the build script chains
+  // `astro check`). 02-05 could not install the fix: its threat register said it installs
+  // nothing, and a lockfile change would have collided with its wave.
   //
-  // The exclusion is deliberately ONE FILE rather than the whole `test` tree: everything
-  // in test/harness/ still typechecks, which matters because plan 02-07 writes the auth
-  // tests there. THE REAL FIX is adding @types/node as a devDependency; plan 02-05 could
-  // not, because its threat register (T-02-SC) states it installs nothing and a lockfile
-  // change would collide with the wave. Whoever adds it should delete this exclusion and
-  // confirm `npm run typecheck` still reports 0 errors.
-  "exclude": [
-    "dist",
-    "node_modules",
-    ".playground",
-    ".wrangler",
-    "design_handoff_portfolio",
-    "test/setup/preview-server.ts"
-  ]
+  // Plan 02-06 added `@types/node` (audited in 02-PACKAGE-AUDIT.md) and deleted the
+  // exclusion. Do not reintroduce a `test/**` exclusion to silence a type error — an
+  // excluded file is a file the build no longer checks, and the auth suite lives there.
+  "exclude": ["dist", "node_modules", ".playground", ".wrangler", "design_handoff_portfolio"]
 }

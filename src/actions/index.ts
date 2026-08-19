@@ -1,32 +1,40 @@
 import { ActionError, defineAction } from 'astro:actions';
+import { requireAccess } from '@/lib/access';
 
-/**
- * The shape `ping` will return once auth exists. Declared here so the eventual contract
- * is visible, but deliberately unreachable today — the handler throws before it.
- */
+/** What `ping` returns to a caller who proved who they are. */
 type PingResult = { pong: true };
 
 /**
- * One trivial action, whose only job is to make the `/_actions/*` prefix real so it can
- * be tested. `run_worker_first` lists `/_actions/*` and requirement AUTH-01 names it, and
- * it is the prefix most easily forgotten precisely because no page has to declare it —
- * Astro injects `/_actions/[...path]` itself.
+ * One trivial action, whose only job is to make the `/_actions/*` prefix real so it can be
+ * tested. `run_worker_first` lists `/_actions/*`, `src/middleware.ts` carries the same
+ * pattern, and requirement AUTH-01 names it — it is the prefix most easily forgotten
+ * precisely because no page has to declare it; Astro injects `/_actions/[...path]` itself.
+ *
+ * Two things make the in-handler check below load-bearing rather than decorative:
+ *
+ *   1. Plan 02-04 measured that Astro's `security.checkOrigin` does **not** cover this
+ *      prefix for JSON bodies. `astro/dist/core/app/origin-check.js` only treats
+ *      form-like content types as forbidden cross-origin, so `application/json` returns
+ *      `false` regardless of the `Origin` header — verified with a curl carrying no
+ *      Origin at all. The Access JWT check therefore carries this prefix ALONE.
+ *      (threat_flag: csrf-not-covered)
+ *   2. Actions are also invocable in-process from server code, which is a path the
+ *      middleware never sees.
+ *
+ * `UNAUTHORIZED` maps to HTTP 401 (`codeToStatusMap` in
+ * `astro/dist/actions/runtime/client.js`) and the injected RPC route returns that status
+ * verbatim, so this and `requireAccess`'s own 401 agree. The message says nothing about
+ * the team domain, the AUD or why verification failed. (threat T-02-36)
  */
 export const server = {
   ping: defineAction({
-    handler: (): PingResult => {
-      // TODO(02-07): replace with `return { pong: true };` behind requireAccess(), and
-      // switch the refusal below to UNAUTHORIZED (401) for callers without a valid
-      // Cf-Access-Jwt-Assertion header.
-      //
-      // SERVICE_UNAVAILABLE maps to 503 (astro/dist/actions/runtime/client.js
-      // codeToStatusMap), and the injected RPC route returns that status verbatim. 503
-      // rather than 401 keeps 02-07's auth test genuinely red; it is still a refusal, so
-      // no unauthenticated caller ever receives a 2xx from this prefix. (threat T-02-15)
-      throw new ActionError({
-        code: 'SERVICE_UNAVAILABLE',
-        message: 'Admin authentication is not yet wired (plan 02-07).',
-      });
+    handler: async (_input, context): Promise<PingResult> => {
+      const denied = await requireAccess(context.request);
+      if (denied) {
+        throw new ActionError({ code: 'UNAUTHORIZED', message: 'Unauthorized' });
+      }
+
+      return { pong: true };
     },
   }),
 };

@@ -15,22 +15,54 @@ export const prerender = false;
 // on a prerendered page, not even temporarily. (FND-02, threat T-02-14)
 //
 // Protection is prefix-shaped rather than per-file: run_worker_first in wrangler.jsonc
-// covers "/admin" and "/admin/*", so the five D-05 sub-routes arriving in Phase 7
-// (/admin/home, /admin/photos, /admin/resume, /admin/projects, /admin/site) are covered
-// by construction instead of by each author remembering a guard. (threat T-02-18)
+// covers "/admin" and "/admin/*", and src/middleware.ts carries the same four patterns,
+// so the five D-05 admin sub-routes arriving in Phase 7 (/admin/home, /admin/photos,
+// /admin/resume, /admin/projects, /admin/site) are covered by construction instead of by
+// each author remembering a guard. (threat T-02-18)
 
-// TODO(02-07): plan 02-07 replaces this unconditional 503 with middleware calling
-// requireAccess() — a 401 when the signed Cloudflare Access JWT is absent or invalid,
-// and the real admin shell once it verifies. Phase 7 owns what goes behind the door;
-// this is a guarded doorway with nothing behind it yet, so no admin UI, no design-system
-// import and nothing from .playground/ appears here.
-//
-// 503 and not 401, deliberately: 02-07 needs a genuinely failing test asserting 401, and
-// a stub that already answered 401 would satisfy it with no auth code behind it. 503 is
-// still a refusal — this route returns no success status to an unauthenticated caller at
-// any point. (threat T-02-15)
-return new Response(
-  'Admin authentication is not yet wired. This surface refuses every request until plan 02-07 lands Cloudflare Access JWT verification.\n',
-  { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } },
-);
+import { requireAccess } from '@/lib/access';
+
+// Defence in depth, not the primary guard. src/middleware.ts already refuses /admin for
+// every request without a verified Cloudflare Access JWT; this call is what still refuses
+// it if the middleware's prefix list is ever edited. Plan 02-07's Control C measures that
+// the two are genuinely independent rather than one masking the other.
+const denied = await requireAccess(Astro.request);
+if (denied) return denied;
+
+// Phase 7 owns the admin. This is a doorway that now has a lock and nothing behind it:
+// no design-system import, nothing from .playground/, no admin UI. What replaced the
+// 503 stub is the lock, not the room.
 ---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin — akhilsaxena.com</title>
+  </head>
+  <body>
+    <main>
+      <h1>Admin</h1>
+      <p>
+        Cloudflare Access verification passed. The editor itself arrives in Phase 7 — this page
+        exists so the door can be locked before there is anything behind it.
+      </p>
+    </main>
+  </body>
+</html>
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  main {
+    max-inline-size: 68ch;
+    margin-inline: auto;
+    padding: 2rem 1rem;
+  }
+</style>

@@ -111,8 +111,23 @@ jobs:
       #
       # The two credentials are scoped to this single step. Not the job, not the workflow:
       # no other step, and no action invoked by another step, can read them.
+      # Both credentials are stripped of whitespace before use. A value pasted into
+      # GitHub's secret field very often carries a trailing newline, and wrangler rejects
+      # it verbatim rather than trimming: this project's first deploy died on
+      # `Invalid account ID "***\n"` AFTER the enforcing dependency gate, the build, both
+      # route-gate runs and all 29 tests had already passed — about as late and as
+      # confusing a place to discover a stray byte as exists in this pipeline.
+      #
+      # Stripping cannot mask a real value. Cloudflare account IDs and API tokens are
+      # alphanumeric with hyphens and underscores, and wrangler's own error states that
+      # constraint, so whitespace is never part of a well-formed credential. Neither value
+      # is ever echoed; they move from the env block into shell variables and no further.
       - name: Build, test and publish
-        run: npm run deploy
+        run: |
+          CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')"
+          CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          npm run deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

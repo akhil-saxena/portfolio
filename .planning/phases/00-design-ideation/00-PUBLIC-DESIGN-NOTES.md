@@ -2235,3 +2235,78 @@ prose that quoted them. **Nothing about its six review passes, its human checkpo
 `00-20-SUMMARY.md`, `00-21-SUMMARY.md`, `00-22-SUMMARY.md`, `00-23-SUMMARY.md`;
 `00-SCREENSHOT-CONTRACT.md`. The photo-field table is from `00-19-SUMMARY.md` — the specification
 — because `00-24-SUMMARY.md` did not yet exist; see the source note in §3.*
+
+---
+
+## Review outcome
+
+Recorded 2026-08-19 from Akhil's answers to the three judgements UI-SPEC flagged as
+confirm-or-override. **These proceed unless overridden, so silence would have been assent** — all
+three now have an explicit answer on the record, which is what survives the playground's deletion.
+
+### J1 · 44px vs 52px page header — **44px CONFIRMED**
+
+The 44px Playfair primary stands; the 52px G-11 reference is **not** adopted for the Work and Photos
+headers. Playfair's larger x-height and heavier stems mean it already carries the weight the handoff
+got from Newsreader at a larger size, so matching the handoff's number would have overshot its
+intent.
+
+**The 52px step still ships**, and that is not a contradiction. Plan 01-12 added
+`--text-4xl-plus: 52px` to the shared type scale in `tokens.css` because G-11 was filed as a
+*design-system* gap under D-31 — sizing is design-system-owned, so a brand needing a missing step
+files it upstream as a step available to every brand. The step exists; this page does not use it.
+Phase 5 renders these headers at **`--text-4xl` (44px)**.
+
+### J2 · the 22px italic serif cross-link — **OVERRIDDEN, and not by the offered fallback**
+
+Verdict: *"too big and heavy, can keep smaller font too."* Both axes rejected — the size **and** the
+colour weight.
+
+**Neither offered option was taken.** The plan framed the choice as keeping 22px in
+`--ochre-d-strong`, or raising to **24px** in `--ochre-d` "to resolve the WCAG large-text ambiguity
+by arithmetic instead of by judgement." Measuring the tokens shows **there was no ambiguity to
+resolve**:
+
+| Mode | Token | Value | On page | Ratio | AA-small (4.5:1) |
+|---|---|---|---|---:|---|
+| light | `--ochre-d-strong` | `#6B4417` | `#F4F1EA` | 7.55 | PASS |
+| light | `--ochre-d` | `#8C591F` | `#F4F1EA` | 5.22 | PASS |
+| dark | `--ochre-d-strong` | `#D4A66D` | `#161616` | 8.16 | PASS |
+| dark | `--ochre-d` | `#C6883A` | `#161616` | 6.02 | PASS |
+
+**Every combination clears the stricter small-text bar in both modes.** The 24px fallback existed to
+buy the 3:1 large-text allowance, and that allowance was never needed. So size is a pure design
+decision here, unconstrained by contrast — and the direction Akhil chose is *down*, which the
+arithmetic permits.
+
+**Resolved treatment for Phase 5:** `--text-lg` (**17px**) in **`--ochre-d`**, italic serif.
+
+- **17px** is the next existing step down from 22px (`--text-xl`); 15px (`--text-md`) sits too close
+  to body copy at 13px base. No new scale step is introduced — unlike G-11, this needs none.
+- **`--ochre-d` rather than `--ochre-d-strong`** answers "heavy": it is the lighter of the two accent
+  text steps, at 5.22:1 light / 6.02:1 dark. Still AA-small with margin.
+- Recorded as a decision rather than applied to the sketch, because the sketch is deleted at 00-17
+  and **Phase 5 is the consumer**.
+
+**Implementation warning for Phase 5 — this exact link will lose its colour silently if built
+naively.** Three consecutive Phase 1 plans hit this. `Link`'s default variant is `inline`, which sets
+`color` as an **inline style** and cannot be recoloured from a stylesheet at all; only the
+stylesheet-only `default` and `quiet` variants are composable. And
+`.ds-atom-link[data-variant="default"]` is **(0,2,0)**, so an app-level rule at (0,1,0) or (0,1,1)
+loses on specificity — while every unit test passes, because jsdom implements no CSS specificity.
+01-11 shipped a grey link inside a red error box this way. **Verify the computed colour in a real
+browser.**
+
+### J3 · the 1080px Brevo band cap — **CONFIRMED**
+
+Verdict: *"it's fine."* The employment band capped at 1080px reads as one row per line rather than a
+serif title and a mono metric floating apart, and the two bands read as two different kinds of
+evidence. Phase 5 keeps the cap.
+
+### Still open on 00-11
+
+The three flagged judgements are answered; the surrounding review passes are not yet. Outstanding:
+the project-card `--wire` treatment on `/work-recolour`, `/photos` at 1440 and 390 (tile ring and the
+LIGHT-filled active pill), the five-project `/home-act2` grid, and the five `/work/{id}` case pages
+(68ch measure, `[NEEDS AKHIL]` block lengths, `[source:]` claims). The tier-split question from the
+plan's Task 2 is **void** — that redirection removed the long/short tiering.

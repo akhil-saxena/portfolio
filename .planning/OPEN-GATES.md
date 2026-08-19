@@ -6,8 +6,8 @@ can substitute — each is blocked on a judgement or an action only you can perf
 | # | Gate | Time | Reversible? | Blocks |
 |---|---|---|---|---|
 | 1 | ~~`access-off` — Cloudflare Access window~~ | — | — | **DONE 2026-08-19. Phase 2 closed.** |
-| 2 | [00-11](#gate-2--00-11-three-by-eye-judgements) — three by-eye judgements | ~30 min | Yes | Phase 5's header/link/band decisions |
-| 3 | [00-17](#gate-3--00-17-six-review-passes-then-deletion) — six review passes | ~45 min | **No — authorises a deletion** | Phase 0 completion |
+| 2 | [00-11](#gate-2--00-11-three-by-eye-judgements) — review passes | ~20 min left | Yes | Phase 0 completion |
+| 3 | [00-17](#gate-3--00-17-six-review-passes-then-deletion) — six review passes | ~45 min | Yes, since 2026-08-19 — see below | Phase 0 completion |
 
 **Two remain: gate 2 then gate 3.** Gate 3 is last because it ends in an irreversible delete,
 and you want gate 2 settled first.
@@ -128,7 +128,19 @@ it** — which CLAUDE.md requires, because a guard would mask a real failure.
 
 ---
 
-## Gate 2 · 00-11 (three by-eye judgements)
+## Gate 2 · 00-11 (review passes) — three judgements ✅ answered
+
+> **J1, J2 and J3 are settled (2026-08-19)** and recorded in
+> [`phases/00-design-ideation/00-PUBLIC-DESIGN-NOTES.md`](phases/00-design-ideation/00-PUBLIC-DESIGN-NOTES.md)
+> §Review outcome: **J1 44px** confirmed · **J2 overridden** to `--text-lg` (17px) in `--ochre-d`,
+> taking neither offered option because the contrast measurement showed the WCAG ambiguity the 24px
+> fallback existed to resolve was never real · **J3 confirmed**.
+>
+> **What is left:** the surrounding review passes — the `--wire` project cards on `/work-recolour`,
+> `/photos` at 1440 and 390, the five-project `/home-act2` grid, and the five `/work/{id}` case pages
+> (68ch measure, `[NEEDS AKHIL]` lengths, `[source:]` claims). The plan's tier-split question is
+> **void**.
+
 
 ### Why a script can't do this
 
@@ -237,8 +249,18 @@ upstream finding.
 00-17 ends by **deleting `.playground/`** and asserting it's gone — so the throwaway sketches
 cannot silently become the Phase 2 foundation.
 
-**That deletion is irreversible.** `.playground/` is **gitignored and has zero git history** —
-I checked with `git log --all --diff-filter=A` and found nothing. Nothing in it is recoverable.
+**That deletion is no longer irreversible — you changed this on 2026-08-19.** The sketches are
+preserved on the **`playground/phase-0-sketches`** branch (pushed to origin): 113 source files,
+`node_modules` excluded, plus the 480 KB design-system tarball so the branch is reproducible at the
+version that was actually reviewed. Main tracks zero playground files and `.gitignore:38` still
+fences the directory, so it cannot drift into the rebuild.
+
+It *was* irreversible until then: `.playground/` was gitignored with **zero git history** —
+`git log --all --diff-filter=A` found nothing — so this gate would have destroyed the only copy of
+every reviewed artefact, on one machine.
+
+To get it back after deletion: `git checkout playground/phase-0-sketches -- .playground` (then
+`npm install` inside it).
 
 Two things were nearly lost to this and are now rescued into the phase directory:
 
@@ -248,9 +270,10 @@ Two things were nearly lost to this and are now rescued into the phase directory
 - [`phases/00-design-ideation/theme-prototype/`](phases/00-design-ideation/theme-prototype/)
   — the 5 charcoal CSS files, same near-miss.
 
-**The 88 PNGs in [`phases/00-design-ideation/screenshots/`](phases/00-design-ideation/screenshots/)
-are all that survives of the visual work.** Anything you want to look at again after this gate
-must already be in there.
+The 88 PNGs in [`phases/00-design-ideation/screenshots/`](phases/00-design-ideation/screenshots/)
+remain the *committed-to-main* record — they are what Phase 5 and Phase 6 read without checking out
+another branch. The sketches themselves are now recoverable from the branch above, so a clipped
+screenshot is an annoyance rather than a permanent loss.
 
 ### The six passes — one question each
 

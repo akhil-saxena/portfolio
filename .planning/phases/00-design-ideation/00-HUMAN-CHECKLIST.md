@@ -169,8 +169,11 @@ Not verification; a queue. Tick when handed over or filed.
 - [ ] **E1 ·** `--amber*` never redeclared under charcoal → `tone="accent"`, `Card variant="amber"`,
       `Divider accent="amber"`, `Link` hover, `Timeline` dot all render `#fbbf24`. **~11:1 on
       dark, so no contrast test catches it.**
-- [ ] **E2 ·** `AppShell.collapsed` is an **output, not an input** — `cloneElement` overwrites any
+- [x] **E2 ·** `AppShell.collapsed` is an **output, not an input** — `cloneElement` overwrites any
       consumer value; `--ds-sidebar-w` is inline, so UI-SPEC's 208px target is unreachable.
+      **CLOSED by 01-13** — collapse is now an input, and `--ds-sidebar-w` paints a measured
+      **208px** from a consumer media query at 841×768. The hardcoded 767px breakpoint is gone; it
+      measurably bisected your device class 3 (sidebar 0px at 673/766/767, 240px at 768/884).
 - [ ] **E3 ·** `Card` inlines `display: block` → a consumer's `display: flex` never applies.
 - [ ] **E4 ·** `Chip` **clobbers** a consumer `className` where `Card` **concatenates** —
       inconsistent API; an interactive chip loses its focus ring.
@@ -225,6 +228,19 @@ Not verification; a queue. Tick when handed over or filed.
       lower in the file than `.ds-atom-footer-link`'s own `padding: 5px 0`, so the footer rule has
       been **dead on `main` for the `<a>` form**. Fixed in 01-12. Worth knowing that the DS can
       regress geometry with every test green.
+
+- [ ] **E20 ·** The **sidebar collapse animation is inert** — measured, not guessed: `transition:
+      width` on a grid-track-sized element does nothing (width samples
+      `[48,48,48,48,48,48,48,48]`). Animating it needs `grid-template-columns` on the *parent*,
+      which is Phase 06.1's. So collapse works, but it snaps rather than slides.
+- [ ] **E21 ·** `AppShell`'s **document scrolls, not `.ds-atom-appshell-main`.** `min-height: 100vh`
+      leaves the `1fr` row indefinite so `overflow: auto` never engages — the shell runs 2064.73px
+      past a 900px viewport with `main.scrollTop` stuck at 0. Left alone deliberately: changing the
+      scroll model is architectural. Matters if you expect an independently scrolling admin pane.
+- [ ] **E22 ·** A `grid-row: 3` bug painted the **footer on top of main** the moment a row was
+      inserted — `footerTop` 92 vs `mainBottom` 2064.73, **with all 40 unit tests green**. Fixed by
+      switching to named `grid-area`. Recorded because it is the clearest example of why the visual
+      baselines matter more than the unit suite in this repo.
 
 ## F. Known-open, already recorded — do NOT re-report
 

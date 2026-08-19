@@ -19,6 +19,11 @@ unhosted cell), and all five case studies inside the 500–700 band.
 
 ---
 
+> **Doing a gate for the first time?** [`../../OPEN-GATES.md`](../../OPEN-GATES.md) is the
+> step-by-step walkthrough for the three gates currently waiting on you — `access-off` (02-10),
+> the three by-eye judgements (00-11) and the six review passes (00-17). It explains *why* each
+> exists and what happens when you reply. **That doc is the procedure; this one is the record.**
+
 ## Where to look — the exact map
 
 **Start the sketches:**

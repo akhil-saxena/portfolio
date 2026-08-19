@@ -274,6 +274,128 @@ response bodies, and the bodies are clean.
 
 ## Unauthenticated probes — Access disabled (Criterion 2)
 
+**These responses came from the Worker's own code.** The Cloudflare Access application covering
+`preview.akhilsaxena.com` was disabled for the duration, so nothing intercepted at the edge — the
+401s below are `requireAccess()` refusing, not Access redirecting.
+
+- **Window open:** `2026-08-19T09:37:41Z`
+- **Window closed:** `2026-08-19T09:37:42Z`
+- **Probing duration:** 1 second
+
+A pre-check ran first and is the reason this section can be trusted: `GET /admin` returned **401**,
+not a 3xx to a `cloudflareaccess.com` host. That distinction is the whole point of the split — the
+same verify was executed earlier **with Access still enabled** and correctly refused to record
+anything, reporting *"Access is still intercepting (got 302) — the window is not open, so a 401
+could not be attributed to the Worker's code."* So a window that never opened cannot be written up
+as a passing code-gate proof.
+
+### Result
+
+| Request shape | Status | Body size | Discloses config? |
+|---|---:|---:|---|
+| `GET /admin` | **401** | 24 B | no |
+| `GET /api/health` | **401** | 24 B | no |
+| `POST /_actions/ping` | **401** | 24 B | no |
+| `GET /admin` + garbage `Cf-Access-Jwt-Assertion` | **401** | 24 B | no |
+| `GET /admin?debug=1` + garbage `Cf-Access-Jwt-Assertion` | **401** | 24 B | no |
+
+Exactly **401** in all five cases — not merely non-2xx. A 403 or 3xx would have meant something
+other than this application's code answered; a 500 would have meant the path threw rather than
+denied. Each body was checked **individually** (not once after a loop, which would only ever inspect
+the last iteration) for `cookie`, `cloudflareaccess`, the team domain, the AUD, and for
+`/api/health` the `"r2"` key. All five are clean and identical in size.
+
+**Why this is the assertion the phase exists to make.** The legacy application's in-code gate fell
+back to a cookie-presence check whenever its Access configuration was missing, which means a correct
+implementation and a broken one are indistinguishable while the edge layer is enabled. Every probe
+recorded under *"Unauthenticated probes — edge layer"* above was answered by Cloudflare, not by this
+code. These five are the only observations in the project of the Worker's own gate refusing a
+request, and they satisfy the fail-closed constraint: a missing or unverifiable token denies rather
+than degrades.
+
+### Verbatim transcript
+
+### GET /admin — no header
+```http
+HTTP/2 401 
+date: Wed, 19 Aug 2026 09:37:41 GMT
+content-type: application/json
+content-length: 24
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=9LkRKyH%2F7OxFzqlm4FJcF9ylT2ttXfzJiGUuG7NgVysXVHELpE1KrT3cIC7QVbs6xxjquxOiRrd3MEyJKPBq53xaxQR61bb6yNMdgs99HCOdhuGkd%2BBMEY6psQmitTMFifviEMuBLYTD04J6nczectMOs5hd4Q%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a2d82e593e904068-SIN
+alt-svc: h3=":443"; ma=86400
+
+--- body (24 bytes) ---
+{"error":"Unauthorized"}
+```
+
+### GET /api/health — no header
+```http
+HTTP/2 401 
+date: Wed, 19 Aug 2026 09:37:41 GMT
+content-type: application/json
+content-length: 24
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=XDg0Yzd3fnl%2Bv152WKsy7%2BnTcl8JxvtW841jxEAkyoacG5fuCGTAewnSAL%2FVhrevXxMTRvoi5%2FV4NOPV98Kh7qrywNS%2BjydCc6wdwZTMYke9rEFGk%2BIJEpsJ1nzx4AW3Fvma%2FSsQydpHewa7oG5i5c3TasQqLQ%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a2d82e5be96bfdbf-SIN
+alt-svc: h3=":443"; ma=86400
+
+--- body (24 bytes) ---
+{"error":"Unauthorized"}
+```
+
+### POST /_actions/ping — no header
+```http
+HTTP/2 401 
+date: Wed, 19 Aug 2026 09:37:42 GMT
+content-type: application/json
+content-length: 24
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=5MbWhg0Jqa%2FY5QNy%2BcvENZZgkjngesiumpZsBh%2BAZjSHixNltiSST2HS%2BoaNsX2M49OzrxpIhp%2Fcg6U%2ByRbSmwXkhMwL4i6UlqwDuMgY4w6GSzfUR%2FR%2BsBzq5q4mW8uzGXUmFg%2FzT%2ByrcGViG1U3ZxEAV3Ytaw%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a2d82e5e59f5db73-SIN
+alt-svc: h3=":443"; ma=86400
+
+--- body (24 bytes) ---
+{"error":"Unauthorized"}
+```
+
+### GET /admin — garbage Cf-Access-Jwt-Assertion
+```http
+HTTP/2 401 
+date: Wed, 19 Aug 2026 09:37:42 GMT
+content-type: application/json
+content-length: 24
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=kx3x5y4uYg1D%2F%2FGDiJgndRVyvJSt%2B1Dcd60r%2FHAh%2F%2FvHnQFBO1%2FHIvgGP9rWFJP8G4HGd1GkpH7Mwmv8dGgvYg4oufjh2kVIJU8MacvXE90eROpF4ygJdQKc4viK%2F0q5E6nAy5SNs%2BHM8tie4UW9s8yC0rAJeg%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a2d82e604c484490-SIN
+alt-svc: h3=":443"; ma=86400
+
+--- body (24 bytes) ---
+{"error":"Unauthorized"}
+```
+
+### GET /admin?debug=1 — garbage Cf-Access-Jwt-Assertion
+```http
+HTTP/2 401 
+date: Wed, 19 Aug 2026 09:37:42 GMT
+content-type: application/json
+content-length: 24
+report-to: {"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=BIR57sP6Vtt%2BUN%2FiAHbFE3cFu3t3WhFkbtWw%2BMjlHYlyslfhdRgMjgNci%2FP5rZYWk4quhEUXX%2BzwxpYaeXhYVm4GKvjffr0UUKKxKum%2FdAG5Uicfdp1KmPirXROjKr%2Bc0mxSVf48manHxDkSr4L6oS44tnR0Dg%3D%3D"}]}
+nel: {"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}
+server: cloudflare
+cf-ray: a2d82e62ed8cfcf7-SIN
+alt-svc: h3=":443"; ma=86400
+
+--- body (24 bytes) ---
+{"error":"Unauthorized"}
+```
+
+
 ## Authenticated confirmation (Criteria 2 and 4)
 
 ---

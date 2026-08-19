@@ -1,0 +1,111 @@
+name: CI
+
+# FND-06. This is the gate Criterion 1 means by "gated by CI": the deploy workflow
+# triggers on this workflow's success and on nothing else, so a red run here is not a
+# warning about a deploy that happened anyway — it is the absence of a deploy.
+#
+# THERE IS NO SECRET IN THIS FILE, ON PURPOSE, AND IT IS ASSERTED RATHER THAN TRUSTED.
+# The build needs the two Cloudflare Access values to be SET, not to be correct.
+# astro:env declares them as server secrets, and server secrets are read at runtime
+# from the Cloudflare environment. So this job seeds the fake values from the committed
+# example files, and the real ones exist only as Worker secrets (wrangler secret put).
+# Pull request builds therefore have nothing in scope to leak, which is the point in a
+# public repository: a workflow that runs repository-controlled scripts on a fork's
+# branch cannot disclose a credential it was never given.
+#
+# If you are here to wire the real values in: read the assertion step first. It is what
+# turns "the placeholders are safe" from an assumption into a checked fact.
+
+on:
+  push:
+  pull_request:
+
+# Least privilege. Nothing in this job writes to the repository, so it cannot, and a
+# compromised third-party action cannot either.
+permissions:
+  contents: read
+
+# A superseded push should stop rather than finish. Deploys are deliberately the
+# opposite; see the concurrency block in the deploy workflow.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: lint, typecheck, build, test
+    runs-on: ubuntu-latest
+    steps:
+      # Third-party actions are pinned to a full commit SHA, never to a tag. A tag is a
+      # mutable pointer that whoever controls the action's repository can move, and
+      # every one of these runs inside a job on every push. The version in the trailing
+      # comment is documentation; the SHA is the contract.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The Node version is read from .nvmrc so there is exactly one answer to what it
+      # is. The legacy repository pinned it separately inside each workflow, drifted to
+      # 20 in one and 22 in the other, and that is precisely the kind of difference that
+      # produces a green pipeline and a broken deploy.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      # Seeds .env and .dev.vars from their committed .example files. This is required,
+      # not a convenience. Exporting the two Access values into the environment does NOT
+      # satisfy astro:env's build-time validation — measured five ways in plan 02-06 from
+      # a wiped artifact. The failure is raised inside the prerender sandbox that
+      # @astrojs/cloudflare runs, and that sandbox reads its values from an on-disk file
+      # the adapter copies next to the server entry. The process environment never
+      # reaches it. A job that only sets these as step-level env: fails the build.
+      #
+      # The seeded values are the fake ones from the committed examples, on the RFC 2606
+      # reserved .invalid TLD, which can never resolve. That is deliberate: no build and
+      # no test can accidentally reach a real Access endpoint.
+      - name: Seed the placeholder Access values
+        run: npm run bootstrap:local
+
+      # Cheapest first. A formatting mistake should not have to wait behind a build.
+      - name: Lint and formatting
+        run: npm run check
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Ends in the AUTH-03 prerender gate, which is chained inside the script itself
+      # rather than added here, so a developer building locally gets the same gate.
+      - name: Build
+        run: npm run build
+
+      # The step that makes building without real secrets safe rather than merely
+      # convenient. If either committed placeholder is found in the artifact then
+      # astro:env is inlining server secrets at build time, production would ship the
+      # fake value instead of reading the real one, and the reasoning in this file's
+      # header is false. The values are passed as arguments so this step states what it
+      # looks for in executable position; the script cross-checks them against the
+      # committed example files and fails if the two have drifted apart, because a gate
+      # searching for a string nobody uses is a gate that passes and checks nothing.
+      - name: Assert no placeholder value was inlined into the artifact
+        run: >-
+          node scripts/assert-no-inlined-secrets.mjs
+          'placeholder.cloudflareaccess.invalid'
+          '0000000000000000000000000000000000000000000000000000000000000000'
+
+      # Both Vitest projects: the workerd pool suite, and the HTTP suite that runs
+      # against a real preview server. That suite's global setup rebuilds the artifact,
+      # which is why the ship path re-runs the route gate after it.
+      - name: Test
+        run: npm test
+
+      # Advisory on purpose, and the advisory form belongs only here. A file: dependency
+      # spec is the sanctioned way to consume an unpublished design-system tarball during
+      # Phase 5 development, so everyday CI reports one without failing on it. The
+      # enforcing form runs on the ship path, inside the deploy script, where shipping a
+      # dependency that resolves to somebody's laptop is the actual hazard.
+      - name: Dependency spec report
+        run: npm run gate:deps:advisory

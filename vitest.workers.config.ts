@@ -33,6 +33,12 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   plugins: [
     cloudflareTest({
+      // Overrides the bare-specifier `main` in wrangler.jsonc, which the pool would
+      // otherwise path.resolve() into a nonexistent file and fail every test at load.
+      // See the long note in test/setup/pool-main-stub.ts — the pool merges with
+      // `options.main ??= main`, so an explicit value here wins and the wrangler one is
+      // only the fallback. The stub is intentionally not the real Astro Worker.
+      main: './test/setup/pool-main-stub.ts',
       wrangler: {
         // Not ad-hoc Miniflare options, deliberately (threat T-02-20). Pointing the pool
         // at the shipped `wrangler.jsonc` is what makes it inherit the real

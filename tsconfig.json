@@ -8,5 +8,25 @@
     "jsxImportSource": "react"
   },
   "include": [".astro/types.d.ts", "**/*", "worker-configuration.d.ts"],
-  "exclude": ["dist", "node_modules", ".playground", ".wrangler", "design_handoff_portfolio"]
+  // The single-file exclusion is plan 02-05 repairing a gate it broke, NOT a preference.
+  // test/setup/preview-server.ts is the first Node-side source file in the repository, and
+  // the dependency set has no @types/node (absent from node_modules/@types entirely), so
+  // every `node:child_process` / `node:fs` / `node:path` / `node:url` / `node:module`
+  // import fails to resolve and `astro check` reports 12 errors — which breaks
+  // `npm run build`, since the build script chains `astro check`.
+  //
+  // The exclusion is deliberately ONE FILE rather than the whole `test` tree: everything
+  // in test/harness/ still typechecks, which matters because plan 02-07 writes the auth
+  // tests there. THE REAL FIX is adding @types/node as a devDependency; plan 02-05 could
+  // not, because its threat register (T-02-SC) states it installs nothing and a lockfile
+  // change would collide with the wave. Whoever adds it should delete this exclusion and
+  // confirm `npm run typecheck` still reports 0 errors.
+  "exclude": [
+    "dist",
+    "node_modules",
+    ".playground",
+    ".wrangler",
+    "design_handoff_portfolio",
+    "test/setup/preview-server.ts"
+  ]
 }

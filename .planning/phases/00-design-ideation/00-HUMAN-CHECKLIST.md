@@ -186,10 +186,16 @@ Not verification; a queue. Tick when handed over or filed.
       **5.32:1** on charcoal light (clears AA).
 - [ ] **E12 ·** No `FocalPointPicker` (G-1) — now load-bearing for all 39 photos, hand-built cost
       measured at **269 non-comment lines**.
-- [ ] **E13 ·** `AppBar` exposes no height property; `AppBar`/`Footer` paint their own geometry
+- [x] **E13 ·** `AppBar` exposes no height property; `AppBar`/`Footer` paint their own geometry
       below the 44px floor (D-16-1).
-- [ ] **E14 ·** README claims **80 components**; the catalog says **79**, `src/` has **81** dirs.
+      **CLOSED by 01-12** — `--ds-appbar-h: 47px` on `.ds-atom-appbar` driving `min-height`, and
+      two `@media (pointer: coarse)` blocks lifting 16–22.5px targets to 44px. Fine-pointer
+      rendering byte-identical, so **the desktop design did not move a pixel**.
+- [x] **E14 ·** README claims **80 components**; the catalog says **79**, `src/` has **81** dirs.
       The README matches neither.
+      **CLOSED by 01-12** — all three reconciled on **79**, with `Field` and `IconButton` named in
+      an `EXCLUDED_FROM_CATALOG` list with written reasons, asserted in CI. Adding a component
+      without cataloguing it now fails by name.
 - [x] **E15 ·** `FieldProps` has no `required` flag — requiredness lives in the label string, so
       every screen invents its own marker.
       **CLOSED by 01-11** — asterisk from a real empty `aria-hidden` span, *not* a label `::after`:
@@ -203,6 +209,17 @@ Not verification; a queue. Tick when handed over or filed.
 - [ ] **E17 ·** A **warning-tone `Field` still sets `aria-invalid="true"`** — `useField` never sees
       the tone, so a warning announces as an error. Not closed by 01-11; needs the tone threaded
       into the hook.
+
+- [ ] **E18 ·** The AppBar is **not** a constant height — it measures 47 / 51 / 53 / 61px across the
+      viewport classes and **wraps to 63px at 344px wide**. Phase 0 recorded it as constant at all
+      six classes; that was wrong. `--ds-appbar-h` is therefore a documented *floor*
+      (`min-height`), not an exact height. Making it exact needs a definite row height, which is
+      Phase 06.1's density axis.
+- [ ] **E19 ·** Footer links had **already silently regressed to 16px** — worse than the 22.5px
+      Phase 0 measured — because a commit on `main` (2026-08-15) added `.ds-atom-link { padding: 0 }`
+      lower in the file than `.ds-atom-footer-link`'s own `padding: 5px 0`, so the footer rule has
+      been **dead on `main` for the `<a>` form**. Fixed in 01-12. Worth knowing that the DS can
+      regress geometry with every test green.
 
 ## F. Known-open, already recorded — do NOT re-report
 

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: 02-10 awaiting the user's Access-off window; 00-11 and 00-17 are open human gates
+stopped_at: Phase 2 COMPLETE (10/10). Phase 1 executing. 00-11 and 00-17 are open human gates.
 last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-19 -- 01-12 complete (AppBar height, 44px touch floor, component count)
+last_activity: 2026-08-19 -- Phase 2 closed: five 401s proven with the edge layer removed
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 56
-  completed_plans: 45
-  percent: 80
+  completed_plans: 46
+  percent: 82
 ---
 
 # Project State
@@ -31,7 +31,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 |---|---|---|
 | 00 design-ideation | 23 / 25 | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
 | 01 charcoal theme | 12 / 21 | 01-13 next. Sibling `charcoal-theme` at 30 commits, tracked-clean. 01-20 (capture review) and 01-21 (`npm publish` v2.0.0) are human gates at the end. **01-12 left two new stories without visual baselines — 01-20 must record them.** |
-| 02 astro foundation | 9 / 10 | 02-10 parked at its first checkpoint awaiting the user's Access-off window. `preview.akhilsaxena.com` is LIVE and independently verified. |
+| 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
 
 Progress: [████████░░] 80% of planned plans (phases 3–9 not yet planned)
 
@@ -49,7 +49,7 @@ Progress: [████████░░] 80% of planned plans (phases 3–9 no
 |-------|-----------|-------|
 | 00 | 23 / 25 | 2 human gates open |
 | 01 | 12 / 21 | cross-repo, sibling branch |
-| 02 | 9 / 10 | 1 checkpoint open |
+| 02 | 10 / 10 | **complete** |
 
 **Recent Trend:**
 

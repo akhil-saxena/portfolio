@@ -5,13 +5,12 @@ can substitute — each is blocked on a judgement or an action only you can perf
 
 | # | Gate | Time | Reversible? | Blocks |
 |---|---|---|---|---|
-| 1 | [`access-off`](#gate-1--access-off-plan-02-10) — Cloudflare Access window | **~5 min**, time-sensitive in the middle | Yes | Closing Phase 2 |
+| 1 | ~~`access-off` — Cloudflare Access window~~ | — | — | **DONE 2026-08-19. Phase 2 closed.** |
 | 2 | [00-11](#gate-2--00-11-three-by-eye-judgements) — three by-eye judgements | ~30 min | Yes | Phase 5's header/link/band decisions |
 | 3 | [00-17](#gate-3--00-17-six-review-passes-then-deletion) — six review passes | ~45 min | **No — authorises a deletion** | Phase 0 completion |
 
-**Do them in that order.** Gate 1 is short and its middle section is genuinely time-sensitive.
-Gate 3 is last because it ends in an irreversible delete, and you want the other two settled
-first.
+**Two remain: gate 2 then gate 3.** Gate 3 is last because it ends in an irreversible delete,
+and you want gate 2 settled first.
 
 **None of these block Phase 1.** The charcoal theme work continues while these sit open, so
 there is no cost to taking them at your own pace.
@@ -24,7 +23,14 @@ map, which this document deliberately does not duplicate.
 
 ---
 
-## Gate 1 · `access-off` (plan 02-10)
+## Gate 1 · `access-off` (plan 02-10) — ✅ DONE
+
+> **Closed 2026-08-19.** All five request shapes returned exactly **401** from the Worker's own code
+> with Access disabled for one second, and the authenticated path confirmed `/admin` rendering plus
+> `/api/health` returning `{"status":"ok","r2":"reachable"}`. Evidence in
+> [`phases/02-astro-foundation-fail-closed-auth/02-DEPLOY-VERIFICATION.md`](phases/02-astro-foundation-fail-closed-auth/02-DEPLOY-VERIFICATION.md).
+> Phase 2 is complete. **The section below is kept for the record only — nothing to do.**
+
 
 ### Why this exists at all
 

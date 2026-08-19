@@ -181,15 +181,28 @@ Not verification; a queue. Tick when handed over or filed.
 - [ ] **E10 ·** `RichText`: `toolbar={null}` **does not suppress the toolbar**
       (`??` falls through only on null/undefined); ⌘K never bound though `autolink` is hardcoded;
       it downloads a **six-language grammar set (12,718 B gzip)** to edit a prose bullet.
-- [ ] **E11 ·** `FieldError` has no severity → D-18's two severities render identically.
+- [x] **E11 ·** `FieldError` has no severity → D-18's two severities render identically.
+      **CLOSED by 01-11** — warning tone is `--amber-d` → `--ochre-d` → `#8c591f`, browser-measured
+      **5.32:1** on charcoal light (clears AA).
 - [ ] **E12 ·** No `FocalPointPicker` (G-1) — now load-bearing for all 39 photos, hand-built cost
       measured at **269 non-comment lines**.
 - [ ] **E13 ·** `AppBar` exposes no height property; `AppBar`/`Footer` paint their own geometry
       below the 44px floor (D-16-1).
 - [ ] **E14 ·** README claims **80 components**; the catalog says **79**, `src/` has **81** dirs.
       The README matches neither.
-- [ ] **E15 ·** `FieldProps` has no `required` flag — requiredness lives in the label string, so
+- [x] **E15 ·** `FieldProps` has no `required` flag — requiredness lives in the label string, so
       every screen invents its own marker.
+      **CLOSED by 01-11** — asterisk from a real empty `aria-hidden` span, *not* a label `::after`:
+      CSS-generated content cannot be aria-hidden and Chrome does include it in the accessible
+      name, so the obvious implementation would have double-announced "required".
+
+- [ ] **E16 ·** `.ds-atom-field-error` is **declared twice in `primitives.css` and the first block is
+      dead** (browser-proven by 01-11). Left alone deliberately: `--red` clears AA at 4.67:1, and
+      changing it would move 15 control baselines immediately before the 01-20 capture. Worth a
+      look when you review the DS, not a bug on the site.
+- [ ] **E17 ·** A **warning-tone `Field` still sets `aria-invalid="true"`** — `useField` never sees
+      the tone, so a warning announces as an error. Not closed by 01-11; needs the tone threaded
+      into the hook.
 
 ## F. Known-open, already recorded — do NOT re-report
 

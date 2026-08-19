@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 0 UI-SPEC approved (targeted AAA adopted)
-last_updated: "2026-08-17T05:53:59.227Z"
-last_activity: 2026-08-17 -- Phase 00 execution started
+stopped_at: 02-10 awaiting the user's Access-off window; 00-11 and 00-17 are open human gates
+last_updated: "2026-08-19T00:00:00.000Z"
+last_activity: 2026-08-19 -- 01-11 complete (field contract); 01-12 dispatched
 progress:
   total_phases: 10
   completed_phases: 0
-  total_plans: 17
-  completed_plans: 0
-  percent: 0
+  total_plans: 56
+  completed_plans: 43
+  percent: 77
 ---
 
 # Project State
@@ -21,35 +21,41 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** The site must be the proof that the design system works — where bespoke and design-system conflict, the design system wins and the gap becomes an upstream finding.
-**Current focus:** Phase 00 — design-ideation
+**Current focus:** Phase 1 (charcoal theme, cross-repo) ∥ Phase 2 (Astro foundation) — the declared load-bearing parallelism
 
 ## Current Position
 
-Phase: 00 (design-ideation) — EXECUTING
-Plan: 1 of 17
-Status: Executing Phase 00
-Last activity: 2026-08-17 -- Phase 00 execution started
+Phases 0, 1 and 2 are all in flight concurrently.
 
-Progress: [░░░░░░░░░░] 0%
+| Phase | Plans | Status |
+|---|---|---|
+| 00 design-ideation | 23 / 25 | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
+| 01 charcoal theme | 11 / 21 | 01-12 executing. Sibling `charcoal-theme` at 25 commits, tracked-clean. 01-20 (capture review) and 01-21 (`npm publish` v2.0.0) are human gates at the end. |
+| 02 astro foundation | 9 / 10 | 02-10 parked at its first checkpoint awaiting the user's Access-off window. `preview.akhilsaxena.com` is LIVE and independently verified. |
+
+Progress: [███████▓░░] 77% of planned plans (phases 3–9 not yet planned)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0.0 hours
+- Total plans completed: 43
+- Notable: G-15/DS-09 fixed — an `import { Chip }` island fell from 570,555 B / 176,922 B gzip / 99
+  modules to **1,620 B / 785 B gzip / 2 modules**.
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
+| Phase | Plans done | Notes |
+|-------|-----------|-------|
+| 00 | 23 / 25 | 2 human gates open |
+| 01 | 11 / 21 | cross-repo, sibling branch |
+| 02 | 9 / 10 | 1 checkpoint open |
 
 **Recent Trend:**
 
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: 02-08, 02-09, 01-09, 01-10, 01-11
+- Recurring defect class: a CSS rule written at (0,1,1) losing silently to an existing (0,2,0) rule
+  declared lower in `primitives.css`. Hit 01-10 and 01-11 consecutively; pre-flighted for 01-12.
 
 *Updated after each plan completion*
 

@@ -1,0 +1,657 @@
+---
+// X-home — the two-state landing (DSGN-03 / DSGN-04, 00-RESPONSIVE-CONTRACT §5).
+//
+// WHAT WAS ASKED FOR, VERBATIM:
+//   "just the homepage landing shows the photos section and prompts user to
+//    scroll. as scrolled, the photo section moves fully up and only work+resume
+//    sections are visible in the view"
+// and, from the same message, the constraint that bounds every decision here:
+//   "the sections for photos, work, resume as they exist on home right now stay
+//    as is."
+// Nothing is removed. No route collapses. No section is cut to make a budget.
+//
+// THE MECHANISM IS A PLAIN DOCUMENT SCROLL — not a scroll-driven animation, not
+// a JS-pinned section. State A is one viewport tall, state B follows it in DOM
+// order, and the prompt is a real anchor. That alone delivers every clause of
+// the sentence, and it does so for four reasons the contract sets out:
+//   1. it is the MINIMUM that satisfies the requirement — nothing in the
+//      sentence asks for an animation;
+//   2. it ships ZERO framework JS, which PUB-14 requires of four of five public
+//      routes and check-no-js.sh gates;
+//   3. it cannot trap a keyboard user, because there is nothing to trap;
+//   4. it is ASPECT-RATIO-INDEPENDENT. The mechanism references exactly two
+//      things — a viewport-height unit and DOM order — and neither is a function
+//      of aspect ratio. That is the whole answer to the near-square foldable
+//      (§5.2): the design is robust at aspect ~1.1 because it was specified in
+//      viewport-height units and document order rather than in aspect ratio.
+//      Any implementation reaching for `aspect-ratio` or a vw-derived height
+//      forfeits that, which is why §1 forbids aspect-ratio branching.
+//
+// R-2, STATED WHERE THE NEXT READER WILL LOOK FOR IT. "Photos moves fully up" is
+// the exact, enforceable half of the sentence and it is measured at all six
+// classes. "Only work + resume are visible" describes what FILLS the view at the
+// end of the transition — it is NOT a promise that both sections fit inside one
+// viewport. With five projects (D-38) plus a resume section that is unachievable
+// at every one of the six classes including 1440x900, and honouring the strict
+// reading would mean cutting projects or the resume section from Home, which the
+// user explicitly ruled out in the same message. State B continues below the
+// fold at all six classes; that is the resolution, not a defect. (§5.7)
+
+import { Eyebrow, Heading, Link, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+import HomeAct2 from "../components/HomeAct2.astro";
+import home from "../data/home_config.json";
+import manifest from "../data/portfolio_images.json";
+import resume from "../data/resume.json";
+
+// Accent colour. Ivory->Charcoal: the design system's `--amber*` family is never
+// redeclared under charcoal, so `tone="accent"` and Link's default `inline`
+// variant both render DS yellow (#fbbf24) on this page rather than the charcoal
+// ochre. Recorded upstream finding; the local move is the legacy `color` prop,
+// which is what home-act2.astro already does.
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+
+const photos: Array<{
+	id: string;
+	title: string;
+	urls: Record<string, string>;
+	dimensions?: { width: number; height: number };
+}> = Array.isArray(manifest) ? manifest : ((manifest as any).photos ?? (manifest as any).images);
+
+// R-6 — REFLOW, NEVER HIDE. All six peekIds render at all six classes. Dropping
+// to four on a narrow screen means two of the six photographs Akhil chose do not
+// exist on that class, and a portfolio has no summary edition to fall back to.
+// Column count and tile aspect are the variables below; tile COUNT is not.
+//
+// Resolved eagerly and loudly rather than with `?.` — a peekId that falls out of
+// the manifest must name itself here, not render five tiles and look deliberate.
+// This is the same failure shape X-home-act2 guards against for its five
+// projects, and the same remedy.
+const DEFAULT_FOCAL = "50% 50%";
+const peek = home.peekIds.map((id) => {
+	const p = photos.find((x) => x.id === id);
+	if (!p) {
+		throw new Error(
+			`X-home: home_config.peekIds names "${id}", which is not in ` +
+				`portfolio_images.json. All six peek photographs render at all six device ` +
+				`classes (R-6) — this cannot degrade to five.`,
+		);
+	}
+	return {
+		id,
+		title: p.title,
+		small: p.urls.small,
+		medium: p.urls.medium,
+		thumb: p.urls.thumb,
+		width: p.dimensions?.width,
+		height: p.dimensions?.height,
+		// ONE STORED FOCAL POINT, AND IT IS THE SAME SHAPE AS THE PER-PHOTO FIELD.
+		// home_config.peekPositions holds exactly one entry
+		// (architecture-hawamahaldaytime -> "50% 25%") and the other five default
+		// to centre. The string is a CSS `object-position` value, which is
+		// deliberately the same shape plan 00-19's schema decision 6 gives the
+		// per-photo `focalPoint` field — so the two do not diverge into two
+		// representations of one concept before Phase 3 has to migrate them.
+		focal: (home.peekPositions as Record<string, string>)[id] ?? DEFAULT_FOCAL,
+	};
+});
+
+if (peek.length !== 6) {
+	throw new Error(`X-home: expected six peekIds, got ${peek.length}. See R-6 above.`);
+}
+
+// State B's second half. Small on purpose: its job is to be the second half of
+// state B and to make §5.7's claim checkable, not to design /resume — that is
+// Phase 5's route and this plan does not touch it.
+// resume.json holds no prose summary field — it is experience / projects /
+// skills / education, and nothing else. So the section states the shape of the
+// record rather than paraphrasing it: inventing a summary sentence here would
+// put copy on Home that exists in no fixture and that Phase 5 would then have to
+// find an owner for.
+const resumeCta = home.ctas.find((c) => c.link === "/resume") ?? home.ctas[home.ctas.length - 1];
+const currentRole = resume.experience[0];
+const roleCount = resume.experience.length;
+const projectCount = resume.projects.length;
+const skillHeads = resume.skills.map((s) => s.category).join(" · ");
+---
+
+<Public title="X-home — the two-state landing" active="home" maxWidth={1080}>
+	<!--
+	  STATE A. One viewport of photographs, with a prompt that is a real link.
+
+	  The accessible name is an aria-label rather than a visible heading: §5.6
+	  rule 6 requires each of the three sections to be a landmark with a name so
+	  a screen-reader user gets the same navigation affordance the sighted user
+	  gets from the prompt, and at class 3's narrow end every pixel of vertical
+	  budget is spoken for. A label costs none.
+	-->
+	<section id="photos" class="hm-a" aria-label="Photographs">
+		<div class="hm-name">
+			<Heading
+				level={1}
+				size="4xl"
+				weight="bold"
+				className="hm-title"
+				style={{ fontSize: "var(--hm-title)", lineHeight: "var(--lh-tight)" }}
+			>
+				{home.title}
+			</Heading>
+			<p class="hm-sub">{home.subtitle}</p>
+			<p class="hm-tag">{home.intro}</p>
+		</div>
+
+		<ul class="hm-peek" role="list">
+			{
+				peek.map((p) => (
+					<li class="hm-tile">
+						<img
+							class="hm-img"
+							src={p.medium}
+							srcset={`${p.small} 800w, ${p.medium} 1200w`}
+							sizes="(max-width: 672px) 50vw, 33vw"
+							width={p.width}
+							height={p.height}
+							alt={p.title}
+							loading="eager"
+							decoding="async"
+							style={{ objectPosition: p.focal, backgroundImage: `url(${p.thumb})` }}
+						/>
+					</li>
+				))
+			}
+		</ul>
+
+		<!--
+		  THE SCROLL PROMPT IS A REAL ANCHOR TO A REAL TARGET (§5.6 rule 2). Not a
+		  decorative chevron, not a div with a click handler, not a button calling
+		  scrollIntoView. A keyboard user reaches state B with one Tab and one
+		  Enter; it functions as a skip link; it works with zero JS; and it appears
+		  in the accessibility tree as a named link to a named target.
+		-->
+		<Link href="#work" color={OCHRE_D_STRONG} className="hm-prompt">
+			<span class="hm-prompt-label">Scroll for the work</span>
+			<span class="hm-prompt-arrow">&#8595;</span>
+		</Link>
+	</section>
+
+	<!--
+	  STATE B. A plain wrapper, no landmark and no accessible name of its own —
+	  the two sections inside it keep theirs, and adding a third region would put
+	  a box in the rotor that names a framing the reader never encounters.
+	-->
+	<div class="hm-b">
+		<!--
+		  FIRST HALF — the work band. The single Act-2 composition, rendered from
+		  the one component /home-act2 also renders, so the approved OQ-1 design
+		  cannot exist twice in the screenshot record and disagree with itself the
+		  first time either copy is touched.
+		-->
+		<HomeAct2 sectionId="work" headingId="hm-work-h" />
+
+		<!--
+		  SECOND HALF — the resume section. Real, named, and small.
+		-->
+		<section id="resume" class="hm-resume" aria-labelledby="hm-resume-h">
+			<div class="hm-resume-head">
+				<Heading level={2} size="3xl" weight="bold" id="hm-resume-h">The résumé</Heading>
+				<Eyebrow size="sm" color={OCHRE_D_STRONG}>{`${projectCount} PROJECTS`}</Eyebrow>
+			</div>
+			<p class="hm-resume-now">
+				{currentRole.role} at {currentRole.company}, {currentRole.period}.
+			</p>
+			<Text size="md" tone="muted" maxWidth={640}>
+				{`${roleCount} roles and ${projectCount} projects. ${skillHeads}.`}
+			</Text>
+			<a class="hm-cta" href={resumeCta.link}>{resumeCta.text}</a>
+		</section>
+	</div>
+
+	<Fragment slot="crosslink">
+		<a class="hm-xlink" href="/photos" style={{ color: OCHRE_D_STRONG }}>
+			all thirty-nine photographs →
+		</a>
+	</Fragment>
+</Public>
+
+<style>
+	/* App LAYOUT css only. Nothing below restyles a design-system class, and no
+	   colour below is anything but a charcoal token. */
+
+	/* ═══ THE UNIT, AND THE THREE THAT ARE FORBIDDEN ═══════════════════════════
+	   Settled by plan 00-21 in Public.astro's `body` rule and copied from there
+	   rather than re-derived. Restated here because this is the file where the
+	   choice actually bites.
+
+	   THE THREE FORBIDDEN UNITS ARE NAMED IN FULL BELOW, EACH ON A LINE THAT
+	   OPENS ITS OWN COMMENT. That is not a style tic. The acceptance gate for
+	   this file is `grep -v '^[[:space:]]*[/*]' | grep -cE ...`, which drops a
+	   line that OPENS a comment but keeps every continuation line inside it — so
+	   a paragraph explaining why a unit was rejected reads to the instrument as
+	   a declaration using it. Plan 00-21 hit this from the same direction and
+	   the remedy is the same: keep the explanation, move the token onto a line
+	   the filter can see is prose. Weakening the explanation to satisfy the
+	   instrument would be the wrong repair. */
+
+	/* `100vh` and `100lvh` resolve to the LARGE viewport — the height with the */
+	/* mobile address bar RETRACTED. At first paint on iOS Safari and Android */
+	/* Chrome the bar is VISIBLE, so that unit is taller than what the user can
+	   see, and the ONE element whose entire job is to be seen at first paint —
+	   the scroll prompt — is pushed below the fold. A two-state full-viewport
+	   landing is precisely the design that unit breaks. */
+
+	/* `100dvh` is FORBIDDEN on any scroll-transition participant, and this */
+	/* section is exactly such a participant. It tracks the live viewport, so it
+	   changes DURING the scroll and moves the transition's own target distance
+	   mid-gesture — jitter on its own, and a fight with the snap point below.
+
+	   `svh` is the smallest the viewport gets, so state A fits at first paint
+	   under every chrome state. Desktop is unaffected: with no dynamic browser
+	   chrome all four units are equal at classes 5 and 6, measured 900/900 at
+	   1440x900 and 768/768 at 1024x768.
+
+	   `min-height`, NEVER `height`. Content taller than the budget must overflow
+	   VISIBLY and push the prompt down, rather than being clipped invisibly. A
+	   visible overflow is a failure a screenshot catches; a clip is one it hides.
+	   ═══════════════════════════════════════════════════════════════════════ */
+
+	/* HOW MUCH OF THE VIEWPORT STATE A DOES NOT GET, AND WHY IT IS A NUMBER.
+	   State A is not the first thing on the page — the public shell puts the
+	   AppBar row and .pub-main's top padding above it. If the section were a
+	   full 100svh tall its BOTTOM would sit one viewport PLUS that chrome below
+	   the top of the document, and one viewport of scroll would leave a band of
+	   photographs still on screen. The requirement is that one viewport of
+	   scroll clears state A COMPLETELY, so the chrome comes out of the budget —
+	   which is also exactly how §5.2's own arithmetic counts it (its class-3
+	   table spends "Nav 56" INSIDE the 712px it is budgeting).
+
+	   MEASURED, not derived, at all six classes with navprobe22.mjs:
+	     .pub-bar height  87px at 344, 390, 673, 768, 1024 and 1440 — CONSTANT,
+	                      the AppBar does not wrap even at 344.
+	     .pub-main pad-top 44px  = --space-11.
+	     first section top 131px at all six classes.
+
+	   87px IS A HARD-CODED MEASUREMENT AND THAT IS A DESIGN-SYSTEM GAP, NOT A
+	   SHORTCUT. AppBar paints its own geometry and exposes no custom property
+	   carrying its height, so a consumer building a full-viewport landing
+	   underneath it has nowhere to read the number from. Recorded in
+	   00-PUBLIC-DESIGN-NOTES.md. It is not left to rot: the departure assertion
+	   in audit22.mjs measures state A's bottom edge against the viewport at all
+	   six classes, so if AppBar's height ever moves, the gate goes red rather
+	   than the landing going quietly wrong. */
+	/* THE PAGE'S THREE MEASUREMENTS LIVE ON THE DOCUMENT ELEMENT, NOT ON STATE A,
+	   AND THAT IS NOT TIDINESS — IT IS THE ONLY PLACE THEY REACH FROM.
+
+	   Astro scopes a page's styles with the PAGE's cid, and a component renders
+	   with its OWN. The work band is components/HomeAct2.astro, so it emits
+	   `data-astro-cid-53zdqmy2` while every rule written in this file compiles
+	   to `data-astro-cid-vbfttlze` — and a bare `#work { }` here silently
+	   matches nothing. It was written that way first and the audit caught it:
+	   `getComputedStyle(work).scrollSnapAlign` read `none` while the source said
+	   `start`. That is plan 00-21's rail defect exactly, in a new costume, and
+	   the grep gates pass the broken version in both cases. Custom properties
+	   defined here INHERIT into the component; the `:global` selectors below
+	   REACH it. Both are scoped by `:has(.hm-a)` rather than left bare, so
+	   nothing escapes onto another route no matter how the bundler chunks CSS. */
+	:global(html:has(.hm-a)) {
+		--hm-nav: 87px;
+		--hm-above: calc(var(--hm-nav) + var(--space-11));
+		--hm-sticky-nav: 0px;
+	}
+
+	.hm-a {
+		min-height: calc(100svh - var(--hm-above));
+		box-sizing: border-box;
+
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-8);
+		padding-bottom: var(--space-8);
+
+		/* --hm-title carries the name treatment's size so the DS Heading can read
+		   it through its `style` prop. Heading's TOKEN size scale stops at 4xl
+		   (44px) and the handoff's name treatment is the 60px step, so the size
+		   has to come in as a value; routing it through one custom property keeps
+		   the per-class steps below in the stylesheet with everything else rather
+		   than scattered across three inline styles. */
+		--hm-title: var(--text-4xl);
+	}
+
+	@media (min-width: 673px) {
+		.hm-a {
+			--hm-title: var(--text-5xl);
+		}
+	}
+
+	.hm-name {
+		display: grid;
+		gap: var(--space-2);
+		justify-items: center;
+		text-align: center;
+	}
+
+	.hm-sub {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		line-height: var(--lh-snug);
+		color: var(--ink-3);
+		margin: 0;
+	}
+
+	.hm-tag {
+		font-family: var(--display);
+		font-size: var(--text-lg);
+		line-height: var(--lh-snug);
+		color: var(--ink-2);
+		margin: 0;
+	}
+
+	/* ═══ THE PEEK GALLERY IS A GRID AT EVERY CLASS, NEVER A HORIZONTAL RAIL ═══
+	   A rail fits any height budget, which is exactly what makes it tempting
+	   here. It is forbidden on Home, and the reason is the CONTAINER: a rail
+	   nests a horizontal scroller inside the vertical snap container this page
+	   declares at the bottom of this stylesheet, and on iOS a horizontal rail
+	   readily steals the vertical gesture the whole landing depends on.
+
+	   The Photos filter row IS a rail at classes 1-2 (plan 00-21, §2) precisely
+	   BECAUSE /photos has no vertical snap container. Same pattern, opposite
+	   verdict, and the reason is the container — not the width, not the taste.
+	   That file is one directory away and looks reusable; it is not reusable
+	   here. ═══════════════════════════════════════════════════════════════════ */
+
+	/* STATE A IS A HEIGHT BUDGET (§5.3), AND THE NAIVE REFLOW INSTINCT IS
+	   BACKWARDS. "Narrower viewport -> fewer columns" applied to a six-tile grid
+	   makes it TALLER: fewer columns means more rows. So the column count steps
+	   on the settled width rungs, and the tile ASPECT steps on a HEIGHT rung,
+	   because the thing being solved is a height.
+
+	   The height rung is NOT an aspect-ratio branch (§1 forbids those, and the
+	   mechanism above stays aspect-independent because of it). It is a query on
+	   the one axis the budget is denominated in, which is what §5.3 asks for in
+	   as many words: "column count is a function of available height as much as
+	   of available width".
+
+	   16px gaps are --space-4, the same value X-home-act2 snapped the handoff's
+	   off-grid 14px to, so the two peek grids agree. */
+	.hm-peek {
+		--hm-tile: 16 / 9;
+
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--space-4);
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		width: 100%;
+	}
+
+	/* classes 3-6 — three columns. Two columns of a 609px content width would be
+	   three rows of 296px-wide tiles: 623px of gallery against the ~255px class
+	   3's narrow end has left, which is not close. */
+	@media (min-width: 673px) {
+		.hm-peek {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	/* THE HEIGHT RUNG. Below it the viewport cannot pay for 3:2 and the tiles go
+	   16:9; at or above it 3:2 fits and the photographs keep more of themselves.
+	   800px is where the arithmetic crosses, not a round number picked for
+	   looking like one: at 1024x768 three 3:2 tiles are 301x201, so two rows plus
+	   the gap are 418px, and 418 + the ~246px of name, prompt and padding is
+	   664px against the 637px that 768 - 131 leaves. It does not fit. At 900 it
+	   does. The rung sits between the two, and the departure assertion measures
+	   both. */
+	@media (min-height: 800px) {
+		.hm-peek {
+			--hm-tile: 3 / 2;
+		}
+	}
+
+	.hm-tile {
+		aspect-ratio: var(--hm-tile);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+		/* Exception 5, carried from /photos: an inset one-pixel ring in DARK ONLY.
+		   This gallery skews dark — architecture at night, "Into The Mist", the
+		   wildlife set — and a dark-toned photograph bleeds into #161616 without
+		   it. On a near-white field the page already draws the boundary. */
+		position: relative;
+	}
+
+	:global(html.dark) .hm-tile {
+		box-shadow: inset 0 0 0 1px var(--rule);
+	}
+
+	.hm-img {
+		width: 100%;
+		height: 100%;
+		display: block;
+		object-fit: cover;
+		/* object-position comes in per tile from home_config.peekPositions. */
+		background-size: cover;
+		background-position: center;
+	}
+
+	/* THE PROMPT SITS AT THE BOTTOM OF THE BUDGET. `margin-top: auto` inside the
+	   flex column pins it to the bottom edge of the one-viewport box, which is
+	   where a scroll prompt has to be, and — because the box is min-height —
+	   content that overruns pushes it DOWN and off the fold visibly instead of
+	   clipping it. That is the failure mode being chosen deliberately. */
+	.hm-prompt {
+		margin-top: auto;
+		align-self: center;
+
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+
+		font-family: var(--font-body);
+		font-size: var(--text-sm);
+		font-weight: 600;
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+	}
+
+	.hm-prompt-arrow {
+		font-size: var(--text-md);
+		line-height: 1;
+	}
+
+	/* THE 44px FLOOR GOES ON THE HIT AREA, NOT THE PAINT, and it is gated on
+	   pointer type rather than on width (§2) — a 1024px tablet is a coarse
+	   pointer and a 1024px laptop is not, so width cannot answer this. The
+	   padding grows the anchor's box; the words inside it do not move. */
+	@media (pointer: coarse) {
+		.hm-prompt {
+			min-height: 44px;
+			padding: 0 var(--space-3);
+		}
+	}
+
+	/* ═══ STATE B ══════════════════════════════════════════════════════════════
+	   The work band is X-home-act2's own component and carries its own styles.
+	   What belongs here is the anchor target's landing offset and the resume
+	   section. */
+
+	/* SCROLL-MARGIN-TOP IS A PER-CLASS NUMBER, AND ON THIS SHELL IT MEASURES
+	   ZERO AT ALL SIX CLASSES. §5.6 rule 3 requires the anchor target to clear a
+	   sticky nav, "and if the public nav is not sticky at a given class, the
+	   value is 0 there". Measured with navprobe22.mjs: .pub-bar and the AppBar
+	   inside it both compute `position: static` at 344, 390, 673, 768, 1024 and
+	   1440 — the nav scrolls away with the page, so the work heading lands at the
+	   viewport top with nothing over it and any positive value here would open a
+	   gap instead of closing one.
+
+	   It is declared as a property rather than left out because the value is a
+	   function of the shell, not of this page: the moment PUB-09 or Phase 5 makes
+	   the nav sticky, this is the one line that has to change, and a rung that
+	   already exists is a much smaller change than a rule that does not.
+
+	   It also has to be right for a second reason — scroll-margin shifts a SNAP
+	   position as well as an anchor landing, so a wrong value here would move the
+	   snap point declared below by the same amount. */
+	:global(html:has(.hm-a) #work),
+	:global(html:has(.hm-a) #resume) {
+		scroll-margin-top: var(--hm-sticky-nav);
+	}
+
+	/* STATE B IS AT LEAST ONE VIEWPORT TALL, AND THIS RULE COMES STRAIGHT OUT OF
+	   THE USER'S OWN SENTENCE rather than out of the test that caught it.
+
+	   "as scrolled ... only work+resume sections are visible in the view". For
+	   the work band and the resume section to be what FILLS the view once state
+	   A has gone, they have to be able to fill it. Where they are shorter than a
+	   viewport the reader lands on work, resume, the crosslink, the footer and a
+	   band of nothing — which is not what was asked for.
+
+	   IT WAS A REAL FAILURE AT EXACTLY ONE CLASS, AND ONLY A BROWSER FOUND IT.
+	   Measured before this rule existed: at 768x1024 the whole of state B —
+	   work, resume, crosslink and footer together — came to 1012px against a
+	   1024px viewport. Twelve pixels short. The consequence is not cosmetic: the
+	   document was 2036px tall, so its maximum scroll offset was 1012px, and a
+	   page that cannot scroll a full viewport cannot complete the departure. The
+	   audit read `scrollY=1012, photosBottom=12, NOT DEPARTED`. Tablet portrait
+	   is the only class in the matrix tall enough in absolute pixels to run out
+	   of document before it runs out of viewport; the other five clear it by
+	   between 71px and 563px.
+
+	   `svh` for the same reason state A uses it, and for one more: state A and
+	   state B are the two halves of one transition, and denominating them in
+	   different units would make the transition's target distance depend on
+	   which half you measured. */
+	.hm-b {
+		min-height: 100svh;
+	}
+
+	/* ═══ SNAP IS AN ENHANCEMENT OVER THE PLAIN SCROLL, NEVER THE MECHANISM ════
+	   §5.4 adopts exactly one form, and every clause of it is load-bearing.
+
+	   `proximity`, and the contract FORBIDS the strict alternative. State B is
+	   two sections and is taller than the viewport at every class, and under the
+	   strict value the browser can snap back past content the reader is trying
+	   to reach. `proximity` only pulls near a snap point, and there are two.
+
+	   TWO SNAP POINTS, BOTH REACHABLE: the landing and the work band at the top.
+	   Note the scroll-margin on the photos section — WITHOUT IT THE PAGE SNAPS
+	   ON LOAD. A snap area starts at the element's own box, and state A's box
+	   begins 131px down the document, below the AppBar row. That would put a
+	   snap position at 131 rather than at 0, close enough to the initial scroll
+	   offset for proximity to pull it, and the page would scroll itself by 131px
+	   at first paint and hide the nav — precisely the "large involuntary
+	   viewport translation" this whole block is written to avoid. Outsetting the
+	   snap area by the chrome above it puts snap point one at 0, where the
+	   landing actually is. Snap point two needs no outset because the work band
+	   starts exactly one viewport down and the nav is not sticky.
+
+	   IT IS VERIFIED IN A BROWSER, NOT BY A GREP. Plan 00-21 shipped a rail that
+	   declared `scroll-snap-type` and did not snap — the align property was
+	   missing on the children and a source grep passed the broken version.
+	   audit22.mjs reads getComputedStyle on all three participants.
+
+	   AND IT IS PROVEN NON-LOAD-BEARING. Every state reachable with snap is
+	   reachable without it: control22.mjs disables this block at runtime and
+	   re-runs the departure at all six classes. If it were removed entirely the
+	   design would still meet the user's sentence, because the plain document
+	   scroll above already does. That is the test a snap enhancement has to pass
+	   before it ships. ══════════════════════════════════════════════════════ */
+
+	/* ═══ REDUCED MOTION, FOUR RULES ══════════════════════════════════════════
+	   1. THE SNAP DECLARATION LIVES INSIDE THE QUERY. This is the non-obvious
+	      one and it is deliberate: snap converts a small user gesture into a
+	      large involuntary viewport translation, which is the exact class of
+	      motion the preference exists to suppress. Under a reduced-motion
+	      preference this page is a plain document scroll and nothing moves that
+	      the user did not directly move.
+	   2. SMOOTH SCROLLING IS OPT-IN, NEVER OPT-OUT. Written the other way round
+	      the default is animated and the accessible path is the exception, which
+	      is the wrong default for a prompt whose target is one viewport away.
+	   3. ANY SCROLL-DRIVEN ANIMATION ON THE DEPARTING PHOTOS BLOCK WOULD BE
+	      DISABLED ENTIRELY under the preference, not slowed. There is none to
+	      disable — the block simply scrolls — and that is the design, not an
+	      omission.
+	   4. USER-INITIATED SCROLLING IS EXEMPT and is not suppressed anywhere here.
+	      The preference governs motion the page generates, not motion the user
+	      performs. ═══════════════════════════════════════════════════════════ */
+
+	/* SCOPED WITH `:has()` RATHER THAN A BARE `html` RULE. `scroll-snap-type` has
+	   to sit on the scrollport, which is the document element, and this page's
+	   stylesheet has no other way to reach it. A global `html { }` from a page
+	   would be correct only for as long as the bundler keeps this stylesheet on
+	   this page alone, which is a build-tool behaviour rather than a guarantee —
+	   and a stray snap container on /photos or a case study would be a real bug
+	   found much later. Matching on state A's own class makes the scoping a
+	   property of the markup instead. Where `:has()` is unsupported the page
+	   loses the enhancement and keeps the mechanism, which is exactly the
+	   degradation the contract asks a snap enhancement to have. */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(html:has(.hm-a)) {
+			scroll-snap-type: y proximity;
+			scroll-behavior: smooth;
+		}
+
+		.hm-a {
+			scroll-snap-align: start;
+			scroll-margin-top: var(--hm-above);
+		}
+
+		:global(html:has(.hm-a) #work) {
+			scroll-snap-align: start;
+		}
+	}
+
+	.hm-resume {
+		display: grid;
+		gap: var(--space-4);
+		justify-items: start;
+		margin-top: var(--space-14);
+		padding-top: var(--space-10);
+		border-top: 1px solid var(--rule);
+	}
+
+	.hm-resume-head {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-4);
+		flex-wrap: wrap;
+	}
+
+	.hm-resume-now {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-lg);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+		margin: 0;
+		max-width: 680px;
+	}
+
+	.hm-cta {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		font-weight: 500;
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		border-bottom: 1px solid var(--wire);
+		padding-bottom: 2px;
+	}
+	.hm-cta:hover {
+		color: var(--ink);
+	}
+
+	@media (pointer: coarse) {
+		.hm-cta {
+			min-height: 44px;
+		}
+	}
+
+	.hm-xlink {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		text-decoration: none;
+	}
+</style>

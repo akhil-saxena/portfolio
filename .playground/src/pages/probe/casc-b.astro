@@ -1,0 +1,37 @@
+---
+// Cascade probe — VARIANT B (MEASURE-3, D-02 claim 3).
+//
+// Import shape: `theme-charcoal.css` FIRST, the design system's `tokens.css`
+// SECOND, both in this frontmatter. Emitted order: charcoal, then tokens —
+// the exact reverse of variant A, produced by swapping two adjacent lines.
+//
+// This is the ordering that historically LOSES. With charcoal emitted first,
+// the design system's `:root.dark, .dark` block comes later in the cascade,
+// so any charcoal token that is NOT restated in the (0,3,0) dark block ties
+// `:root.dark` at (0,2,0) and loses on source order — charcoal drops out of
+// dark mode entirely. Research measured exactly that: `--cream` came back as
+// the design system's `#181818` here while variant A left the charcoal LIGHT
+// value applied in dark mode. Two different wrong answers from one omission.
+//
+// With plan 04's exhaustiveness invariant held (37/37 tokens restated), there
+// is no tie left to lose: every charcoal token resolves at (0,3,0) and this
+// variant must now agree with the other three. If it does not, the defect is
+// in `theme-charcoal.css`, never in the probe.
+//
+// See casc-a.astro for the full note on why the matrix is constructed.
+
+import "../../styles/theme-charcoal.css";
+import "@akhil-saxena/design-system/tokens.css";
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/casc-b — theme then tokens, both in .astro</title>
+	</head>
+	<body>
+		<h1>casc-b</h1>
+		<p>theme-charcoal.css then tokens.css, both imported from .astro frontmatter.</p>
+	</body>
+</html>

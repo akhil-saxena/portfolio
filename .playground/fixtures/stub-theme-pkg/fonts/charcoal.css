@@ -1,0 +1,22 @@
+/* stub-theme-pkg — fonts/charcoal.css
+
+   A near-empty stand-in for what D-35 says the design system will publish at
+   @akhil-saxena/design-system/fonts/charcoal.css: the charcoal FACE layer,
+   @font-face rules only, zero custom properties.
+
+   That this is a second, separate subpath is the D-29 decision made visible in
+   the packaging. A consumer who wants charcoal's colours but supplies its own
+   font delivery imports the themes subpath and not this one. The measured case
+   for the split: the design system's tokens.css currently inlines 73 face
+   rules and a 2.36 MB asset tree, none of it Playfair, DM Sans or IBM Plex,
+   while charcoal's own face layer is 8 rules and 200 KB.
+
+   The single declaration below exists so the file is not zero-length - see
+   themes/charcoal.css for why that matters. It names no real family and
+   fetches nothing: `local()` with a name no system ships resolves to nothing,
+   which keeps the fixture free of a network request and of a font file. */
+
+@font-face {
+	font-family: "Stub Face Resolved";
+	src: local("Stub Face Resolved");
+}

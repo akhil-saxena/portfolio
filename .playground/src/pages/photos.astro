@@ -1,0 +1,654 @@
+---
+// X-photos — all 39 photographs on charcoal dark, with anchor filters and zero
+// framework JavaScript.
+//
+// THE FILTER ROW IS THE POINT OF THIS ARTEFACT, and it is G-9's evidence. The
+// design system's filter component is a WAI-ARIA radiogroup with state-driven
+// onChange selection: it has no navigable anchor semantics at all, and it uses
+// hooks, so rendering it here would force hydration. PUB-04 needs prerendered
+// /photos/[category] routes that are crawlable, Back-button-capable and free —
+// which is a nav/link-list pattern, not a radiogroup. The roles, the keyboard
+// model and the selected-state semantics all differ, so an `as="nav"` prop on
+// the same component cannot serve both cleanly. The fix filed upstream is a
+// small sibling that shares the CSS for visual parity and renders real anchors
+// with aria-current. Below is what that sibling has to produce.
+//
+// Do not name that radiogroup component anywhere in this file, in code OR in a
+// comment: an acceptance grep asserts its absence and cannot tell a rendered
+// component from prose about one. Describe it, as above.
+//
+// G-10 is here too and is ACCEPTED rather than filed as a gap: there is no
+// masonry component in the design system, the column mechanics below are plain
+// layout CSS, and QUAL-03 permits layout CSS. The 10px radius, the 16px gaps,
+// break-inside avoidance and the 0.6s scale hover all port from the handoff
+// unchanged.
+//
+// G-14 is visible by its absence: the lightbox is the single hydrating public
+// island in the whole roadmap and it is NOT sketched here, because it is missing
+// backdrop-click close, srcset, swipe and slide announcements, and is already
+// scoped as DS-07. Tiles below are anchors to the full-size image rather than
+// lightbox triggers, so the page keeps its zero-JS budget while the component is
+// still upstream.
+
+import { Eyebrow, Heading, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+import photos from "../data/portfolio_images.json";
+import siteConfig from "../data/site_config.json";
+
+const OCHRE_D = "var(--ochre-d)";
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+
+// Counts are computed from the real 39, never typed. Seven categories.
+const counts = photos.reduce<Record<string, number>>((acc, p) => {
+	acc[p.category] = (acc[p.category] ?? 0) + 1;
+	return acc;
+}, {});
+
+// The filter routes are written out one per line rather than mapped, because
+// they ARE the design artefact: PUB-04 prerenders one route per category, so the
+// route set is a thing a reviewer should be able to read off the page. The guard
+// below keeps the hand-written list honest against the data.
+const ALL_TOTAL = photos.length;
+const routeKeys = ["abstract", "architecture", "nature", "portraits", "street", "wildlife", "product"];
+const dataKeys = Object.keys(counts).sort();
+const missing = dataKeys.filter((k) => !routeKeys.includes(k));
+const extra = routeKeys.filter((k) => !dataKeys.includes(k));
+if (missing.length || extra.length) {
+	throw new Error(
+		`X-photos: the filter route list has drifted from the data. ` +
+			`In the data but not routed: [${missing.join(", ")}]. ` +
+			`Routed but absent from the data: [${extra.join(", ")}].`,
+	);
+}
+
+// D-25's CASE DRIFT, EXPOSED RATHER THAN FIXED. site_config.json keys
+// categoryColumns in Title case ("Architecture") while every one of the 39
+// photos carries the category in lower case ("architecture"), so a direct lookup
+// returns undefined for all seven. This sketch does NOT correct it — it is D-25's
+// finding and Phase 3's data migration, and quietly normalising it in a sketch
+// would hide the exact defect the sketch exists to surface.
+const rawLookupHits = routeKeys.filter(
+	(k) => (siteConfig.categoryColumns as Record<string, number>)[k] !== undefined,
+).length;
+
+// ═══ THE ALT DEFECT THIS FILE SHIPPED, AND WHY THE FIX IS A PLACEHOLDER ═════
+// Until plan 00-24 the <img> below carried the photo's TITLE in its alt
+// attribute on all 39 tiles, so every image announced its name where its
+// description belongs — "Into The Mist" — which is precisely the failure `alt`
+// exists as a SEPARATE FIELD to prevent (00-19 schema decision 6). This page
+// ships zero framework JavaScript by design, so there is no hover, tooltip or
+// later interaction that could ever supply the real thing: alt IS the entire
+// non-visual experience of 39 photographs, not a fallback for one.
+//
+// `alt` is null on all 39 today. The 39 rows are open as tracked human content
+// in 00-PHOTO-CONTENT.md and NOT ONE has been written here, because an agent
+// that invents 39 plausible descriptions of photographs it has never seen
+// produces 39 confident lies about the photographer's own work, and each one
+// reaches a screen-reader user as fact.
+//
+// So the missing branch renders a VISIBLE PLACEHOLDER. Three reasons that is
+// right for a SKETCH and wrong for the shipped site:
+//
+//   1. alt="" declares an image DECORATIVE. These are photographs and this is a
+//      photography gallery; declaring all 39 decorative is a worse lie than the
+//      title was.
+//   2. The title is the lie this change exists to remove. Putting it back on the
+//      "missing" branch reintroduces exactly the defect.
+//   3. A visible placeholder appears in the BUILT HTML, so a reviewer walking
+//      the artefact sees outstanding content work rather than a page that looks
+//      finished. A silent fallback would hide the 39 rows.
+//
+// PHASE 5 MUST NOT CARRY THIS STRING INTO PRODUCTION. A placeholder that
+// survives into the shipped site is worse than the defect it replaced, because
+// it looks deliberate. The prohibition is recorded in 00-ADMIN-IA.md, and
+// check-alt-drift.mjs equates the number of placeholders in the built HTML with
+// the number of unfilled rows in the brief so the two cannot drift apart.
+const ALT_PENDING = "[ALT PENDING — see 00-PHOTO-CONTENT.md]";
+
+// ═══ description IS IN THE SERVED HTML AND HIDDEN, NOT INJECTED ════════════
+// 00-19 schema decision 7 resolved `description` as LIGHTBOX-ONLY **and**
+// required it to be present in the served HTML rather than created at runtime.
+// Both halves matter: `Lightbox` is a hook-using, hydrated island, so a caption
+// it builds on open is unreachable to a crawler and to anyone without JS — on a
+// page whose whole premise is shipping zero framework JS. So the description is
+// emitted into the DOM inside the tile and hidden by CSS; the lightbox reveals
+// it visually. It is NOT rendered as a grid caption, which is the decision
+// schema decision 7 took, against, with its reasoning: a description under every
+// tile turns a gallery into a catalogue.
+//
+// The lightbox itself is G-14, VISIBLE HERE BY ITS ABSENCE — it is the single
+// hydrating public component in the whole roadmap, is already scoped as DS-07
+// for missing backdrop-click close, srcset, swipe and slide announcements, and
+// is deliberately not built in this sketch. The tiles are anchors to the
+// full-size image, so the slot is reserved and the zero-JS budget holds.
+const tiles = photos.map((p, i) => ({
+	id: p.id,
+	title: p.title,
+	category: p.category,
+	// Read off the record rather than defaulted to the title. `?? null` on
+	// purpose: an absent field and an empty string both mean "not written yet",
+	// and both must reach the placeholder branch below.
+	alt: (p as { alt?: string | null }).alt || null,
+	description: (p as { description?: string | null }).description || null,
+	// Real dimensions on every one of the 39, so aspect-ratio prevents CLS with
+	// no image service and no measurement pass.
+	width: p.dimensions.width,
+	height: p.dimensions.height,
+	small: p.urls.small,
+	medium: p.urls.medium,
+	large: p.urls.large,
+	// Real base64 LQIP, already in the data — 21.6 KB for all 39.
+	thumb: p.urls.thumb,
+	eager: i < 4,
+}));
+
+// Counted, never typed, and printed into the page below so the artefact states
+// its own content debt.
+const missingAlt = tiles.filter((t) => !t.alt).length;
+const withDescription = tiles.filter((t) => t.description).length;
+---
+
+<Public title="X-photos — 39 photographs, charcoal dark" active="photos" maxWidth={1280}>
+	<!-- header: italic serif, plus the G-11 reference -->
+	<header class="ph-header">
+		<div class="ph-title-block">
+			{/*
+			  --text-4xl is 44px; the handoff authored 52px and the shared scale runs
+			  44 then 60 with nothing between (G-11, filed upstream as a new step for
+			  every brand). Exception 7 says this particular header is the one to look
+			  at hardest: Playfair Display has a larger x-height and heavier stems than
+			  Newsreader at the same pixel size, so the italic "Photographs" reads
+			  heavier and larger after the family swap, on top of the 44px snap. Both
+			  are rendered; decide by eye, do not blind-swap the family and keep the
+			  number.
+
+			  This is also one of exactly two italic roles charcoal has, and the face
+			  layer ships no italic axis — so what you are looking at is a
+			  browser-synthesised oblique, not Playfair's drawn italic. On an
+			  editorial serif at 44px that is visible. Flagged, not resolved here.
+			*/}
+			<Heading
+				level={1}
+				size="4xl"
+				weight="regular"
+				style={{ fontStyle: "italic", lineHeight: "var(--lh-snug)" }}
+			>
+				Photographs
+			</Heading>
+			<div class="ph-g11">
+				<Eyebrow size="xs" tone="muted">G-11 REFERENCE — 52PX, NOT SHIPPED</Eyebrow>
+				<span class="ph-g11-sample">Photographs</span>
+			</div>
+		</div>
+
+		<!--
+		  EXCEPTION 6 — the active pill flips, because its meaning is not "dark".
+		  On ivory the active pill is filled with the palette's primary ink and
+		  labelled in the page cream. Read literally that is "dark fill"; read
+		  semantically it is "maximum contrast against the field", and on charcoal
+		  that becomes filled LIGHT: --ink background with --page-bg text, 14.65:1.
+		  Mapping the literal colours gives a near-black pill on a near-black page
+		  — invisible.
+
+		  Inactive pills keep an outline and that outline is --wire, not --rule. A
+		  filter pill is an interactive control whose border is its only boundary,
+		  so WCAG 1.4.11's 3:1 governs; --rule is 1.43:1 and would be illegal here
+		  even though it is perfectly fine as the hairline between two rows.
+
+		  Pill labels are 9.5px — the smallest accent text on the site — so where
+		  they are accented at all they take --ochre-d-strong. The accent-reserved
+		  list includes the active pill in LIGHT MODE ONLY; in dark it is the ink
+		  ramp, per the flip above, which is why nothing in this row is ochre-filled.
+
+		  Eight anchors with real href attributes and aria-current on the active
+		  one. No state, no selection callback, no JavaScript.
+		-->
+		<nav class="ph-filters" aria-label="Filter photographs by category">
+			<a class="ph-pill" data-active="true" aria-current="page" href="/photos">ALL · {ALL_TOTAL}</a>
+			<a class="ph-pill" href="/photos/architecture">ARCHITECTURE · {counts.architecture}</a>
+			<a class="ph-pill" href="/photos/nature">NATURE · {counts.nature}</a>
+			<a class="ph-pill" href="/photos/wildlife">WILDLIFE · {counts.wildlife}</a>
+			<a class="ph-pill" href="/photos/abstract">ABSTRACT · {counts.abstract}</a>
+			<a class="ph-pill" href="/photos/street">STREET · {counts.street}</a>
+			<a class="ph-pill" href="/photos/portraits">PORTRAITS · {counts.portraits}</a>
+			<a class="ph-pill" href="/photos/product">PRODUCT · {counts.product}</a>
+		</nav>
+	</header>
+
+	<!--
+	  EXCEPTION 5 — photographs need an edge they did not need on ivory.
+	  On a near-white field every photo has an implicit boundary. On #161616 a
+	  dark-toned photograph simply bleeds into the page, and this gallery skews
+	  dark: architecture at night, "Into The Mist", the wildlife set. So each tile
+	  takes an inset one-pixel --rule ring in DARK ONLY — none in light, where the
+	  field already does the job.
+
+	  Second consequence, and it is a Phase 5 build note that originates here: the
+	  blur-up placeholder sits on the charcoal page colour rather than white.
+	  Every one of the 39 carries a base64 placeholder in urls.thumb; a
+	  white-backed placeholder flashes hard on #161616 before the image lands.
+	-->
+	<div class="ph-masonry">
+		{
+			tiles.map((t) => (
+				<a class="ph-tile" href={t.large} style={{ aspectRatio: `${t.width} / ${t.height}` }}>
+					<img
+						class="ph-img"
+						src={t.medium}
+						srcset={`${t.small} 800w, ${t.medium} 1200w`}
+						sizes="(max-width: 480px) 100vw, (max-width: 900px) 50vw, 33vw"
+						width={t.width}
+						height={t.height}
+						alt={t.alt ?? ALT_PENDING}
+						loading={t.eager ? "eager" : "lazy"}
+						decoding="async"
+						style={{ backgroundImage: `url(${t.thumb})` }}
+					/>
+					<span class="ph-caption">{t.title}</span>
+					{/* The lightbox slot, reserved. In the DOM, hidden in the grid,
+					    revealed by the lightbox — see the schema-decision-7 note in the
+					    frontmatter. Omitted ENTIRELY when there is no description, per
+					    the omission rule: the public surface renders nothing at all
+					    rather than an empty element or an em dash. */}
+					{t.description && (
+						<span class="ph-desc" data-lightbox-caption>{t.description}</span>
+					)}
+				</a>
+			))
+		}
+	</div>
+
+	<div class="ph-counter">
+		<Text size="xs" mono tone="muted">
+			{ALL_TOTAL} PHOTOGRAPHS — ALL OF THEM
+		</Text>
+		<Text size="sm" tone="muted" maxWidth={640}>
+			The handoff shows “SHOWING 8 OF 39” and asks for real pagination. Measured:
+			all 39 at the <code>small</code> variant total 0.9 MB, so there is nothing
+			to paginate. The counter states the whole set instead of implying a
+			truncation that does not exist.
+		</Text>
+	</div>
+
+	<!-- The alt debt, stated on the artefact rather than only in a planning file.
+	     Counts derived from the data, so the sentence cannot outlive the facts. -->
+	<aside class="ph-drift">
+		<Eyebrow size="sm" color={OCHRE_D_STRONG}>ALT TEXT — {missingAlt} OF {ALL_TOTAL} OUTSTANDING</Eyebrow>
+		<Text size="sm" tone="muted" maxWidth={720}>
+			This page used to put each photograph's <strong>title</strong> in its
+			<code>alt</code> attribute, so all {ALL_TOTAL} announced their name where a
+			description belongs. The title is now the visible caption only, and the
+			<code>alt</code> attribute carries the photo's own <code>alt</code> field —
+			which is unwritten on {missingAlt} of {ALL_TOTAL}, so those render a visible
+			<code>[ALT PENDING]</code> marker. Not the title, which is the lie being
+			removed, and not <code>alt=""</code>, which would declare {ALL_TOTAL}
+			photographs decorative. <strong>The marker is a sketch device and must not
+			ship</strong>; the {missingAlt} real strings are tracked in
+			<code>00-PHOTO-CONTENT.md</code> and a build gate holds the two counts equal.
+		</Text>
+		<Text size="sm" tone="muted" maxWidth={720}>
+			<code>description</code> is lightbox-only and is present in the served HTML
+			rather than injected on open — {withDescription} of {ALL_TOTAL} carry one
+			today, hidden in the grid and revealed by the lightbox. That component is
+			G-14 and is absent here on purpose, which is what keeps this route at zero
+			framework JavaScript.
+		</Text>
+	</aside>
+
+	<!-- D-25's drift, surfaced -->
+	<aside class="ph-drift">
+		<Eyebrow size="sm" color={OCHRE_D_STRONG}>D-25 — NOT FIXED HERE, ON PURPOSE</Eyebrow>
+		<Text size="sm" tone="muted" maxWidth={720}>
+			<code>site_config.json</code> keys <code>categoryColumns</code> in Title case
+			while all 39 photos carry lower-case categories, so a direct lookup resolves
+			<strong>{rawLookupHits} of {routeKeys.length}</strong> categories. This sketch
+			does not normalise it: it is D-25's finding and Phase 3's data migration, and
+			quietly papering over it in a sketch would hide the defect the sketch exists
+			to surface. The column counts that drift is meant to drive are therefore
+			unreachable, which is why this masonry is a flat three columns.
+		</Text>
+	</aside>
+
+	<Fragment slot="crosslink">
+		<a class="ph-xlink" href="/work" style={{ color: OCHRE_D_STRONG }}>
+			← see the work
+		</a>
+	</Fragment>
+</Public>
+
+<style>
+	/* App LAYOUT css. G-10, accepted: no masonry component exists and QUAL-03
+	   permits layout CSS. Every colour below is a charcoal token. */
+
+	.ph-header {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: var(--space-8);
+		flex-wrap: wrap;
+		padding-bottom: var(--space-10);
+	}
+
+	.ph-title-block {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-6);
+		flex-wrap: wrap;
+	}
+
+	/* THIS BOX WAS /photos' HORIZONTAL SCROLL, and only a browser could say so.
+	   Measured, not read off the CSS: `right=397` in a 344px viewport and
+	   `right=405` in a 390px one — a 381px-wide row holding a 296px 52px
+	   specimen that could not wrap because this flex row did not wrap.
+
+	   `flex-wrap: wrap` is the whole fix above 374px and it is INERT wherever the
+	   row already fits, so the approved 1440 design does not move. Below 375 the
+	   52px word itself is wider than the box's 286px inside, so the SAMPLE is
+	   allowed to break — `min-width: 0` because a flex item's default
+	   `min-width: auto` refuses to shrink below min-content, and
+	   `overflow-wrap: anywhere` because "Photographs" is one unbreakable word.
+
+	   Breaking the word is deliberate and it is the R-6 answer here: the thing
+	   this specimen MEASURES is the 52px glyph, and 52px is exactly what
+	   survives. Shrinking the font to make it fit would have made the reference
+	   report a size it is not, which is worse than an ugly line break. */
+	.ph-g11 {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
+		flex-wrap: wrap;
+		padding: var(--space-1) var(--space-3);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+
+	.ph-g11-sample {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: 52px;
+		line-height: var(--lh-snug);
+		color: var(--ink-3);
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+
+	/* ── the filter row (exception 6) ──────────────────────────────────── */
+
+	/* THE EIGHT FILTERS: A SNAP RAIL AT CLASSES 1–2, A WRAP AT 3–6 (§2).
+	   Eight anchors at the 44px hit floor wrap to as many as FOUR rows inside
+	   class 1's 312px content — 176px of a ~800px viewport spent on a filter
+	   row, which is not acceptable on a cover screen. So below 673 the row stops
+	   wrapping and scrolls itself.
+
+	   WHY A HORIZONTAL RAIL IS SAFE *HERE* AND WOULD NOT BE ON HOME. §5.4's
+	   nested-scroll hazard is that a horizontal rail sitting inside a VERTICAL
+	   SNAP CONTAINER steals the vertical gesture on iOS — the reader swipes up
+	   to scroll the page and the rail eats it. Photos has no vertical snap
+	   container anywhere on the route, so the hazard has nothing to bite on.
+	   Home's two-state landing DOES have one (§5.4 puts `scroll-snap-type: y
+	   proximity` on `.home`), which is why Home's peek gallery stays a grid at
+	   every class and must never be turned into this. Same pattern, opposite
+	   verdict, and the CONTAINER is the whole reason — copy the rail to Home and
+	   the verdict flips with it.
+
+	   `proximity`, never `mandatory`: mandatory can snap back past content the
+	   reader is trying to reach.
+
+	   `min-width: 0` is load-bearing, not tidiness. `.ph-filters` is a flex item
+	   of `.ph-header`, and a flex item's default `min-width: auto` refuses to go
+	   below its min-content width — which, once the row is `nowrap`, is the sum
+	   of all eight pills. Without it the rail does not scroll, it blows the
+	   header out and reopens the exact horizontal scroll this plan closed.
+
+	   `padding-block` so the focus ring survives: `overflow-x: auto` computes
+	   `overflow-y` to `auto` as well, which would clip the pill's 2px
+	   `outline-offset` ring against the rail's own edge. */
+	.ph-filters {
+		display: flex;
+		gap: var(--space-2);
+
+		/* classes 1–2 — the rail */
+		flex: 1 1 100%;
+		min-width: 0;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scroll-snap-type: x proximity;
+		padding-block: 3px;
+	}
+
+	/* classes 3–6 — UNCHANGED BEHAVIOUR: the row wraps, exactly as approved. */
+	@media (min-width: 673px) {
+		.ph-filters {
+			flex: 0 1 auto;
+			flex-wrap: wrap;
+			overflow-x: visible;
+			scroll-snap-type: none;
+			padding-block: 0;
+		}
+	}
+
+	.ph-pill {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		font-weight: 500;
+		letter-spacing: var(--ls-wide);
+		line-height: 1;
+		border-radius: 999px;
+		padding: 7px 15px;
+		text-decoration: none;
+		/* --wire, not --rule: the border is this control's only boundary. */
+		border: 1px solid var(--wire);
+		color: var(--ink-3);
+		background: transparent;
+		transition: color 0.15s ease, border-color 0.15s ease;
+
+		/* THE RAIL'S SNAP POINTS. `scroll-snap-type` on the container without
+		   `scroll-snap-align` on the children is a rail that declares snapping and
+		   does not snap — the first build of this rule shipped exactly that, and a
+		   browser probe caught it because `getComputedStyle(pill).scrollSnapAlign`
+		   read `none` while the container read `x proximity`. Left here at every
+		   class rather than scoped: above 672 the container's snap-type is `none`,
+		   so an alignment with no snap container to align to is inert. */
+		scroll-snap-align: start;
+		flex: none;
+	}
+	.ph-pill:hover {
+		color: var(--ink);
+		border-color: var(--ink-3);
+	}
+	/* Filled LIGHT, not filled dark — the semantic is maximum contrast against
+	   the field, and on charcoal the field is the dark one. */
+	.ph-pill[data-active="true"] {
+		background: var(--ink);
+		border-color: var(--ink);
+		color: var(--page-bg);
+	}
+	.ph-pill:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+
+	/* THE 44px FLOOR IS A FLOOR ON THE HIT AREA, NOT ON THE DRAWN CONTROL (§2).
+	   A 9.5px mono pill grown into a 44px slab is a different design and it
+	   would destroy the editorial identity, so the paint moves to a pseudo and
+	   the ANCHOR becomes the hit box. Drawn geometry is unchanged to the pixel:
+	   `::before` reproduces the 25.5px pill — 9.5px of mono at line-height 1
+	   plus 7px of padding and 1px of border on each side — hard-derived from
+	   `--text-2xs` rather than typed as a magic number, so the pill and its hit
+	   box cannot drift if the type scale moves.
+
+	   `isolation: isolate` + `z-index: -1` puts the painted pill behind the
+	   label inside the anchor's OWN stacking context. A positioned `::before`
+	   with no z-index paints ABOVE inline content and would cover the text.
+
+	   GATED ON `pointer: coarse`, WHICH IS FIVE OF THE SIX CLASSES — the common
+	   case, not the exception. It is deliberately NOT gated on width: a 1024px
+	   tablet in landscape and a 1024px laptop window are the same width and want
+	   opposite answers, so width alone cannot decide this.
+
+	   At class 6 (fine pointer) not one declaration below applies, so the
+	   approved 1440 design renders exactly the CSS it was signed off at — no
+	   pseudo-element, no overlay, nothing. */
+	/* `any-pointer: fine` is FORBIDDEN by the contract for any density or
+	   hit-area purpose, and this block is one of the places that would have been
+	   tempting: a tablet in a trackpad keyboard case reports a fine pointer as
+	   merely ATTACHED while touch stays PRIMARY, so that query returns true and
+	   the user — who is still touching the screen — gets the sub-44px target.
+	   The primary-pointer query is the one that answers the right question.
+
+	   NOTE FOR ANYONE ADDING AN ACCEPTANCE GREP HERE: the gate for this rule
+	   strips lines that OPEN a comment, so the forbidden token has to be named
+	   on a line like this one or a grep cannot tell prose from a rule. */
+	@media (pointer: coarse) {
+		.ph-pill {
+			position: relative;
+			isolation: isolate;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-height: 44px;
+			padding-block: 0;
+
+			/* the anchor paints NOTHING; ::before does */
+			border-color: transparent;
+			background: transparent;
+		}
+
+		.ph-pill::before {
+			content: "";
+			position: absolute;
+			z-index: -1;
+			inset-inline: 0;
+			top: 50%;
+			transform: translateY(-50%);
+			/* 9.5px line box + 7px padding x2 + 1px border x2 = 25.5px */
+			height: calc(var(--text-2xs) + 16px);
+			border: 1px solid var(--wire);
+			border-radius: 999px;
+			transition: border-color 0.15s ease, background-color 0.15s ease;
+		}
+
+		.ph-pill:hover::before {
+			border-color: var(--ink-3);
+		}
+
+		/* Exception 6 survives intact — filled LIGHT, just painted one box in. */
+		.ph-pill[data-active="true"] {
+			border-color: transparent;
+			background: transparent;
+		}
+		.ph-pill[data-active="true"]::before {
+			background: var(--ink);
+			border-color: var(--ink);
+		}
+	}
+
+	/* ── the masonry (G-10) ────────────────────────────────────────────── */
+
+	.ph-masonry {
+		column-count: 3;
+		column-gap: var(--space-4);
+	}
+
+	.ph-tile {
+		display: block;
+		position: relative;
+		break-inside: avoid;
+		margin-bottom: var(--space-4);
+		border-radius: 10px;
+		overflow: hidden;
+		/* The LQIP sits on the page colour, never white — a white-backed
+		   placeholder flashes hard on #161616. */
+		background-color: var(--page-bg);
+		text-decoration: none;
+	}
+
+	/* EXCEPTION 5 — inset ring in DARK ONLY. Scoped to html.dark deliberately:
+	   on a near-white field every photo already has an implicit boundary and the
+	   ring would be visual noise. */
+	:global(html.dark) .ph-tile {
+		box-shadow: inset 0 0 0 1px var(--rule);
+	}
+
+	.ph-img {
+		width: 100%;
+		height: auto;
+		display: block;
+		/* The base64 placeholder is set inline per tile; these two make it behave
+		   like a cover-fitted backdrop until the real file paints over it. */
+		background-size: cover;
+		background-position: center;
+		transition: transform 0.6s ease;
+	}
+	.ph-tile:hover .ph-img {
+		transform: scale(1.03);
+	}
+
+	.ph-caption {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		padding: var(--space-6) var(--space-3) var(--space-2);
+		font-family: var(--font-body);
+		font-size: var(--text-sm);
+		color: var(--ink);
+		background: linear-gradient(to top, rgba(22, 22, 22, 0.78), rgba(22, 22, 22, 0));
+		opacity: 0;
+		transition: opacity 0.25s ease;
+	}
+	.ph-tile:hover .ph-caption,
+	.ph-tile:focus-visible .ph-caption {
+		opacity: 1;
+	}
+
+	/* THE LIGHTBOX SLOT. `display: none` and not a visually-hidden clip: the
+	   description is not a screen-reader-only caption to be read out beside the
+	   tile, it is the LIGHTBOX's caption, sitting in the served HTML so a crawler
+	   and a no-JS reader can reach it without the island having to create it.
+	   Reveal is the lightbox's job (G-14 / DS-07, not built here). If it were
+	   clipped-but-exposed instead, every tile would announce its description as
+	   part of the link name in the grid, which is not the design. */
+	.ph-desc {
+		display: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.ph-img,
+		.ph-caption {
+			transition: none;
+		}
+		.ph-tile:hover .ph-img {
+			transform: none;
+		}
+	}
+
+	.ph-counter {
+		display: grid;
+		gap: var(--space-2);
+		justify-items: center;
+		text-align: center;
+		padding: var(--space-6) 0 var(--space-8);
+	}
+
+	.ph-drift {
+		display: grid;
+		gap: var(--space-2);
+		padding: var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+
+	.ph-xlink {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		text-decoration: none;
+	}
+
+	code {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+</style>

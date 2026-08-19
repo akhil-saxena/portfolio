@@ -1,0 +1,619 @@
+---
+// ═══ S-dashboard — the pending dashboard, plus five of its states ═══════════
+//
+// SIX ARTEFACTS FROM ONE FILE: S-dashboard (populated), E-dashboard (empty),
+// T-loading-shell (loading), T-success-published (success), and T-dirty-badge +
+// T-ready-badge (dirty, rendered side by side). `error` and `conflict` declare
+// `coverage: "inherits"` and point at treatments plans 15 and 16 sketch on their
+// own most demanding hosts — this screen shows the pointer, not an invented
+// dashboard-local treatment.
+//
+// ═══ WHAT THIS SCREEN REPLACES, AND THE TWO DEFECTS IT DOES NOT REPRODUCE ═══
+// The legacy admin had NO permanent home for pending state. Change lived inside
+// `DeployButton.tsx`'s modal, computed on the fly, and vanished when the modal
+// closed. D-06 makes it a screen — and the state this screen is in most of the
+// time is "nothing pending", which is why its empty state is a first-class
+// design rather than a blank panel.
+//
+// Two defects in the thing it replaces, cited so the port cannot inherit them:
+//
+//   1. PENDING WAS `JSON.stringify(current) !== JSON.stringify(initial)` PER
+//      FILE (DeployButton.tsx:54-73). That is a string comparison, not a
+//      structural diff, so reordering a key or reformatting a float reports a
+//      change that is not one — and the screen above would then list a pending
+//      item nobody edited. D-10's server-side draft row is the fix: pending is
+//      a stored fact, not a comparison recomputed in the browser.
+//
+//   2. IT POSTED `baseSha: "latest"` (DeployButton.tsx:86), which bypassed the
+//      optimistic-concurrency check `/api/deploy` already implemented — so a
+//      deploy could clobber whatever the photo pipeline had just committed. The
+//      root cause is not "remember to pass a real SHA": HEAD comparison is too
+//      STRICT, because the pipeline commits constantly and would 409 unrelated
+//      edits, so someone hit that and disabled the guard. D-10 stores the blob
+//      SHA the draft was based on, per file, which is why the `conflict` state
+//      below is per-file rather than per-deploy.
+//
+// The legacy behaviour is CITED. Its UI is not reproduced.
+//
+// ═══ D-13 CANNOT USE StatusPill, AND THAT IS G-5 ════════════════════════════
+// StatusPill.stage is the closed union
+// "wishlist" | "applied" | "screening" | "interviewing" | "offer" | "closed" —
+// a job-application pipeline, hardcoded. It cannot express draft / ready /
+// published (D-13) or the photo-pipeline states (D-15), and CONTEXT.md's
+// Reusable Assets list is wrong to say it covers D-15. So every status mark on
+// this screen is a `Badge`, and the substitution is recorded rather than worked
+// around. No StatusPill element appears anywhere in this file.
+//
+// ═══ NO HYDRATION DIRECTIVE ═════════════════════════════════════════════════
+// Every component on this page is hook-free except AppShell and RelativeTime,
+// both of which render correctly under SSR at their initial value.
+//
+// The acceptance criterion for this file counts occurrences of the directive
+// prefix and requires ZERO, so the prefix is deliberately not spelled anywhere
+// above — not even in prose. That is not pedantry: greps cannot tell a rule from
+// a comment describing one, and every plan in this phase so far has lost time to
+// exactly that. check-no-js.sh is the assertion with teeth, because it reads the
+// emitted HTML rather than the source.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM, NOT `?state=`, AND THAT IS A MEASURED
+//     CORRECTION TO THIS PLAN AND TO UI-SPEC ═══════════════════════════════════
+// The plan and UI-SPEC's worked example both specify
+// `Astro.url.searchParams.get("state") ?? "populated"`, on the stated premise
+// that `astro build` evaluates search params at build time where they are empty
+// while `astro dev` "serves each request through the page component with a real
+// Astro.url". THE SECOND HALF IS FALSE, and check-states.mjs caught it on its
+// first run — all seven URLs returned byte-identical HTML.
+//
+// Read out of the installed Astro 7.2.2 rather than inferred:
+//   node_modules/astro/dist/core/request.js:20   `if (isPrerendered) url.search = "";`
+//   node_modules/astro/dist/vite-plugin-app/app.js:178
+//                                               `isPrerendered: matchedRoute.routeData.prerender`
+// Under `output: 'static'` every route is prerendered, so the DEV SERVER strips
+// the query string too. `Astro.url.searchParams` is unconditionally empty here,
+// and the only escapes are `export const prerender = false` (which requires an
+// adapter, forbidden by the D-02 fence) or an adapter (same).
+//
+// So the axis is a REST PARAM on this one file: `/admin/` is populated and
+// `/admin/<state>/` is each of the six. That keeps the property the plan's
+// prohibition was actually protecting — ONE FILE PER SCREEN, so the coverage
+// generator still finds exactly one SCREEN/STATES module per route and adding a
+// state stays one array entry. What it gives up is that `dist/` now carries
+// seven pages for this screen instead of one; what it buys is that the states
+// are reachable in the BUILD as well as in dev, so plan 16 reviews and plan 17
+// screenshots real URLs rather than a mechanism that only ever worked in prose.
+//
+// THE IDIOM FOR PLANS 13 TO 16: one file per screen, at
+// `src/pages/admin/<screen>/[...state].astro`, exporting `getStaticPaths`,
+// `SCREEN` and `STATES`. Astro ranks a static segment above a rest param, so a
+// sibling screen route cannot be swallowed by this one — and in a static build
+// nothing is emitted that `getStaticPaths` does not return, so there is no
+// collision to rank in the first place.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Heading,
+	ProgressBar,
+	Skeleton,
+	Text,
+} from "@akhil-saxena/design-system";
+import Admin from "../../layouts/Admin.astro";
+import { CANONICAL_STATES } from "../../lib/artefacts.mjs";
+import fixtures from "../../fixtures/dashboard.json";
+
+// The SCREEN / STATES contract from UI-SPEC §"Machine-generating the matrix".
+// The contact sheet reads both through import.meta.glob, so a screen cannot
+// exist without appearing in the index and cannot declare a state the registry
+// does not know about.
+export const SCREEN = {
+	id: "dashboard",
+	route: "/admin",
+	entity: "D1 draft rows (D-10)",
+	layouts: ["desktop", "phone"],
+	// `proves` EXTENDS UI-SPEC's SCREEN shape (id, route, entity, layouts) by one
+	// additive field, and the extension is what makes the contact sheet's index
+	// glob-driven rather than hand-maintained. UI-SPEC's rule for an index line is
+	// that it states what the artefact PROVES, not what it shows — so the line has
+	// to live with the screen, or adding a screen means editing the contact sheet
+	// and the "never retrofitted" property is lost on the first addition.
+	proves:
+		"That pending changes grouped by ENTITY are legible at a glance, so pending state has a permanent home instead of living inside a modal (D-06) — and that its empty state, which is the state this screen is in most of the time, reads as finished rather than broken. It replaces the legacy DeployButton without reproducing either of its two defects: pending is not a JSON.stringify comparison recomputed in the browser, and conflict is per-file rather than a baseSha the client sets to \"latest\". Six artefacts render from this one file.",
+};
+
+// One file, seven routes. `state: undefined` on a rest param produces the base
+// path, so the populated state is `/admin/` and `dist/admin/index.html` still
+// exists — which is what the plan's artefact contract and its acceptance
+// criterion both name.
+export function getStaticPaths() {
+	return [{ params: { state: undefined } }, ...CANONICAL_STATES.map((s) => ({ params: { state: s } }))];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-dashboard" },
+	{ state: "empty", coverage: "designed", ref: "E-dashboard" },
+	{ state: "loading", coverage: "designed", ref: "T-loading-shell" },
+	// Deliberately `inherits`. The publish-block summary is a cross-cutting
+	// surface with its own most demanding host, and G-6 (FormErrorSummary takes
+	// errors: string[] with no anchor, so D-18's deep-link is impossible as
+	// shipped) is the reason it needs a dedicated artefact rather than a panel
+	// bolted onto this screen.
+	{ state: "error", coverage: "inherits", ref: "T-error-publish" },
+	{ state: "dirty", coverage: "designed", ref: "T-dirty-badge" },
+	// Deliberately `inherits`. D-16's per-file diff is "the most substantial
+	// single screen in the admin" and has ZERO design-system coverage (G-7).
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	{ state: "success", coverage: "designed", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Removing it is the negative control for
+// check-states.mjs: every route then renders the populated payload, all seven
+// bodies become identical, and the gate fails naming the collapse.
+const state = Astro.params.state ?? "populated";
+const fx = fixtures[state];
+if (!fx) {
+	// Fail loud rather than falling back to `populated`. A silent fallback is the
+	// exact shape of the bug this screen's gate exists to catch: the route would
+	// answer 200, render a plausible page, and be screenshotted under a state
+	// name it is not in.
+	throw new Error(
+		`admin/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined` plus CANONICAL_STATES, and src/fixtures/dashboard.json must carry a key " +
+			"for each. A state declared in STATES with no fixture is a fake artefact.",
+	);
+}
+
+const lastPublished = new Date(
+	Date.now() - (fx.lastPublishedDaysAgo ?? 0) * 24 * 60 * 60 * 1000,
+).toISOString();
+
+// UI-SPEC's contract table, verbatim. Held as constants so the exact strings are
+// greppable in one place and cannot drift as the markup around them changes.
+const EMPTY_TITLE = "Nothing pending.";
+const EMPTY_DESC =
+	"Everything on the site matches what's published. Last published 3 days ago.";
+const SUCCESS_TITLE = "Published.";
+const SUCCESS_DESC =
+	'4 files committed. The site rebuilds in about a minute; this page will say "deployed" when it actually is.';
+
+// The per-screen CTA, verbatim from the contract table. Distinct from the global
+// `Publish changes`: this one promotes one screen from draft to ready.
+const READY_CTA = "Mark as ready";
+
+const TONE = { draft: "pending", ready: "upcoming", published: "done" };
+const STATE_LABEL = { draft: "Draft", ready: "Ready", published: "Published" };
+
+const changeCount = (fx.groups ?? []).reduce((n, g) => n + g.changes.length, 0);
+const reviewStates = ["populated", ...CANONICAL_STATES];
+---
+
+<Admin
+	title="S-dashboard — pending changes"
+	active="dashboard"
+	route="/admin"
+	navStates={fx.nav}
+	pipeline={fx.pipeline}
+	lastPublished={lastPublished}
+>
+	{/* ── E-dashboard ────────────────────────────────────────────────────────
+	    D-06 says this screen's empty state matters, because it is the state the
+	    screen is in most of the time. So it is a designed screen: EmptyState
+	    with a title that reads as FINISHED rather than broken, and a
+	    description that says what "nothing pending" actually means plus when
+	    the last publish was. No CTA — there is nothing to do, and offering one
+	    would make a finished state look like an unfinished one.
+
+	    The description carries the contract's literal "Last published 3 days
+	    ago". RelativeTime, used in the topbar for the same fact, formats a
+	    three-day-old date as "3d ago" and has no verbosity prop, so the
+	    contract's phrasing is unreachable through the component. Both spellings
+	    are on this page at once, on purpose, so the delta is visible in one
+	    glance rather than in two documents. */}
+	{state === "empty" && (
+		<div class="adm-panel" data-artefact="E-dashboard">
+			<EmptyState title={EMPTY_TITLE} description={EMPTY_DESC} />
+		</div>
+	)}
+
+	{/* ── T-loading-shell ───────────────────────────────────────────────────
+	    The claim is that THE SHELL PAINTS BEFORE DATA ARRIVES, so navigation
+	    never blanks the window. That claim is only visible if the sidebar,
+	    topbar and publish action are all present while the list is not — which
+	    is why the dashboard is this treatment's most demanding host: it is the
+	    route with the most chrome and the least of its own content.
+
+	    T-loading-list is a DIFFERENT artefact (a list skeleton that reserves the
+	    right height so nothing jumps) and belongs to the screens that own
+	    lists. The three skeleton groups here reserve the height of three entity
+	    cards, which is the shell-scale half of the same job. */}
+	{state === "loading" && (
+		<div class="adm-panel" data-artefact="T-loading-shell">
+			<Eyebrow size="sm" tone="muted">PENDING</Eyebrow>
+			<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+			<Text size="sm" tone="muted">{fx.sub}</Text>
+			<ProgressBar loading label="Reading drafts" />
+			<div class="adm-skel">
+				{Array.from({ length: fx.skeletonGroups ?? 3 }).map(() => (
+					<Card surface="subtle" padding="md" radius="lg">
+						<div class="adm-skel-row">
+							<Skeleton width={140} />
+							<Skeleton shape="pill" width={72} />
+						</div>
+						<Skeleton width="80%" />
+						<Skeleton width="55%" />
+					</Card>
+				))}
+			</div>
+		</div>
+	)}
+
+	{/* ── T-success-published ───────────────────────────────────────────────
+	    D-12 makes publish ASYNCHRONOUS for photos: the commit lands immediately,
+	    the photo pipeline finishes on its own schedule, and the site rebuild is
+	    a third clock. So the copy refuses to claim "deployed" before it is true
+	    — it states what actually happened (4 files committed), gives an honest
+	    estimate for the part it can estimate, and names the condition under
+	    which the page will make the stronger claim. That refusal is the artefact.
+	    The pipeline strip is still running above, which is the second half of
+	    the same point: "committed" is not "processed". */}
+	{state === "success" && (
+		<div class="adm-panel" data-artefact="T-success-published">
+			<AlertBanner
+				open
+				tone="success"
+				title={SUCCESS_TITLE}
+				description={SUCCESS_DESC}
+				dismissible={false}
+			/>
+			<Text size="sm" tone="muted">
+				Nothing is pending now. The next change you make on any screen shows up here.
+			</Text>
+		</div>
+	)}
+
+	{/* ── error and conflict: the pointer, not a treatment ──────────────────
+	    Both states are declared `inherits` in STATES above, and the plan for
+	    this screen is explicit that a dashboard-local treatment must not be
+	    invented for either. What is rendered instead is the coverage decision
+	    itself — the contract copy, the artefact that owns the state, and the
+	    finding that makes it need its own host. A reviewer walking pass 1 of the
+	    contact sheet can therefore check the `inherits` cell against the screen
+	    without opening a second document. */}
+	{(state === "error" || state === "conflict") && (
+		<div class="adm-inherit" data-artefact={state === "error" ? "T-error-publish" : "O-conflict-diff"}>
+			<Eyebrow size="sm" tone="muted">
+				{state === "error" ? "INHERITS T-error-publish" : "INHERITS O-conflict-diff"}
+			</Eyebrow>
+			<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+			<Text size="sm" tone="muted">{fx.sub}</Text>
+			<Text size="sm" tone="muted">
+				{state === "error"
+					? "The treatment is sketched on its own host, not here. FormErrorSummary takes errors as plain strings with no anchor, so D-18's deep-link from each failure to the screen that owns it is impossible as shipped — that is G-6, and it is why this state needs a designed surface rather than a list."
+					: "The treatment is sketched on its own host, not here. D-16's per-file diff is the most substantial single screen in the admin and the design system has no diff or side-by-side component at all — that is G-7. Note that the conflict is per FILE: the other screens stay pending and are not abandoned."}
+			</Text>
+		</div>
+	)}
+
+	{/* ── S-dashboard, and T-dirty-badge / T-ready-badge ────────────────────
+	    Pending items grouped by ENTITY rather than by file or by time, because
+	    the operator's question is "what have I changed to Photos", not "which
+	    JSON differs". Each group carries its own D-13 badge, its file name (so
+	    the publish list and the commit agree), the changes themselves at real
+	    length, and a route into the screen that owns it. */}
+	{(state === "populated" || state === "dirty" || state === "error" || state === "conflict") &&
+		(fx.groups ?? []).length > 0 && (
+		<div class="adm-panel" data-artefact={state === "dirty" ? "T-dirty-badge" : "S-dashboard"}>
+			{(state === "populated" || state === "dirty") && (
+				<>
+					<Eyebrow size="sm" tone="muted">PENDING</Eyebrow>
+					<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+					<Text size="sm" tone="muted">{fx.sub}</Text>
+				</>
+			)}
+
+			<ul class="adm-groups">
+				{(fx.groups ?? []).map((g) => (
+					<li>
+						<Card surface="subtle" padding="md" radius="lg">
+							<div class="adm-group-head">
+								<div class="adm-group-name">
+									<a class="adm-group-link" href={g.route}>{g.entity}</a>
+									<code class="adm-group-file">{g.file}</code>
+								</div>
+								<div class="adm-group-marks">
+									{g.conflicted && (
+										<Badge tone="error" dot>Conflicted</Badge>
+									)}
+									<Badge tone={TONE[g.state]} dot>{STATE_LABEL[g.state]}</Badge>
+								</div>
+							</div>
+							<ul class="adm-changes">
+								{g.changes.map((c) => (
+									<li><Text size="sm" tone="secondary">{c}</Text></li>
+								))}
+							</ul>
+							<div class="adm-group-foot">
+								<Button variant="secondary">
+									{g.state === "draft" ? READY_CTA : "Discard changes"}
+								</Button>
+							</div>
+						</Card>
+					</li>
+				))}
+			</ul>
+
+			<Divider />
+
+			{/* The global CTA, verbatim. It appears BOTH here and in the topbar,
+			    which is an open review question rather than an oversight: the
+			    topbar copy exists so publish is reachable from all seven routes
+			    (D-06), and this one exists because the dashboard IS the publish
+			    screen and its action belongs at the foot of the list it acts on.
+			    Flagged for plan 16's overlay pass. */}
+			<div class="adm-actions">
+				<Text size="sm" tone="muted">
+					{changeCount} change{changeCount === 1 ? "" : "s"} across{" "}
+					{(fx.groups ?? []).length} screen{(fx.groups ?? []).length === 1 ? "" : "s"}.
+				</Text>
+				<Button variant="primary">Publish changes</Button>
+			</div>
+
+			{/* T-dirty-badge and T-ready-badge, side by side.
+			    D-13 requires the three-state model to be legible in three
+			    places: the screen, the sidebar badge and the dashboard. Two of
+			    those three are on this route — the group badges above and the
+			    triple below — and the third arrives on every route through the
+			    shell's sidebar, which reads the same fixture this screen does.
+
+			    G-5's evidence: none of these three can be a StatusPill, whose
+			    `stage` union is a job-application pipeline. They are Badge
+			    tones, and the tones they land on come from three unrelated hue
+			    families — `pending` is a near-white pill at a 1.07:1 fill delta
+			    against the charcoal-light page (so the pill is invisible and only
+			    its text and dot read), `upcoming` is design-system blue and
+			    `done` is design-system purple, neither of which charcoal
+			    declares. Every one of those values is an inline style object in
+			    Badge, so no stylesheet reaches any of it. Rendered as specified,
+			    recorded as a finding, not corrected here. */}
+			{state === "dirty" && (
+				<div class="adm-badges" data-artefact="T-ready-badge">
+					<Eyebrow size="sm" tone="muted">D-13 — THE THREE STATES AT BADGE SIZE</Eyebrow>
+					<div class="adm-badge-row">
+						<span class="adm-badge-cell">
+							<Badge tone="pending" dot>Draft</Badge>
+							<Text size="sm" tone="muted">Edited, not finished. Saving always works.</Text>
+						</span>
+						<span class="adm-badge-cell">
+							<Badge tone="upcoming" dot>Ready</Badge>
+							<Text size="sm" tone="muted">Finished, waiting for the next publish.</Text>
+						</span>
+						<span class="adm-badge-cell">
+							<Badge tone="done" dot>Published</Badge>
+							<Text size="sm" tone="muted">Matches the live site.</Text>
+						</span>
+					</div>
+				</div>
+			)}
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ──────────────────────────────
+	    The state switcher exists so a reviewer can walk the seven states of one
+	    route without editing a URL by hand. It renders state NAMES only and no
+	    state's marker copy, deliberately: check-states.mjs asserts each state's
+	    marker string appears on that state's page and on no other, and a legend
+	    listing every state's copy would make that assertion pass vacuously.
+
+	    These are real prerendered routes, so the switcher works with zero
+	    JavaScript, survives the Back button, and points at the same URLs plan 17
+	    screenshots. See the header for why it is not `?state=`. */}
+	<aside class="adm-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME — NOT PART OF THE DESIGN</Eyebrow>
+		<p class="adm-review-line">
+			{reviewStates.map((s) => (
+				<a
+					class="adm-review-link"
+					href={s === "populated" ? "/admin/" : `/admin/${s}/`}
+					data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+		</p>
+	</aside>
+</Admin>
+
+<style>
+	/* App layout CSS only. Charcoal tokens throughout. */
+
+	.adm-panel,
+	.adm-inherit {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.adm-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.adm-groups,
+	.adm-changes {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.adm-groups {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.adm-group-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+	}
+
+	.adm-group-name {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: var(--space-2);
+	}
+
+	.adm-group-link {
+		font-family: var(--display);
+		font-size: var(--text-lg);
+		font-weight: 700;
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+	}
+	.adm-group-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.adm-group-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+
+	.adm-group-file,
+	.adm-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	.adm-group-marks {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+
+	.adm-changes {
+		display: grid;
+		gap: var(--space-1);
+		padding: var(--space-2) 0 var(--space-3);
+	}
+	.adm-changes > li {
+		padding-left: var(--space-3);
+		border-left: 1px solid var(--rule);
+	}
+
+	.adm-group-foot,
+	.adm-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	.adm-actions {
+		justify-content: space-between;
+	}
+
+	.adm-skel {
+		display: grid;
+		gap: var(--space-3);
+	}
+	.adm-skel-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+		padding-bottom: var(--space-2);
+	}
+
+	.adm-badges {
+		display: grid;
+		gap: var(--space-2);
+		padding-top: var(--space-4);
+	}
+	.adm-badge-row {
+		display: grid;
+		/* Three columns at class 5 and above; one below, so the three states
+		   stack rather than crush. 44px hit areas are not in play here — these
+		   are labels, not controls. */
+		gap: var(--space-4);
+	}
+	@media (min-width: 1024px) {
+		.adm-badge-row {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+	.adm-badge-cell {
+		display: grid;
+		gap: var(--space-1);
+		justify-items: start;
+	}
+
+	.adm-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.adm-review-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.adm-review-link {
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		/* The 44px floor applies to every coarse-pointer class, and these are
+		   real links. Padding carries the hit area without growing the drawn
+		   9.5px mono label — the floor is on the target, not on the paint. */
+		display: inline-flex;
+		align-items: center;
+	}
+	.adm-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+	@media (pointer: coarse) {
+		.adm-review-link {
+			min-height: 44px;
+		}
+		/* ── D-15-1, CLOSED HERE ──────────────────────────────────────────────
+		   The three group links measured 23px at 344, 390, 673, 768 and 1024 —
+		   every coarse-pointer class — and 0 offenders at 1440, where the floor
+		   does not apply. They are the primary navigation of the screen the
+		   operator is in most of the time, so a 23px target is the most-used
+		   undersized target in the admin.
+
+		   THE FLOOR IS ON THE HIT AREA, NOT ON THE PAINT. The drawn geometry is
+		   an 17px display-face label with a 1px --wire hairline 1px below its
+		   glyph run, and it stays exactly that: `align-items: flex-end` pins the
+		   text line box to the BOTTOM of the box, so the border-bottom remains
+		   directly under the text and the extra height is added ABOVE, where
+		   there is nothing drawn. Measured before and after: the gap from the
+		   bottom of the glyph run to the border edge is 1px in both cases.
+
+		   Padding-block would have worked for the box but pushed the hairline
+		   away from the word it underlines, and an ::after overlay would not have
+		   worked at all — the audit measures the ANCHOR's box, so a pseudo-element
+		   hit area would have left the element still reporting 23px while the
+		   real target grew. Reaching the floor and reporting it have to be the
+		   same measurement.
+
+		   Keyed on `pointer: coarse`, never on width and never on the ANY-prefixed
+		   pointer query — spelled out rather than quoted, because an acceptance
+		   grep asserts that query's absence and cannot tell a live media condition
+		   from prose about one. A mouse plugged into a tablet must not inherit touch
+		   geometry, and a width query would give a phone-sized desktop window touch
+		   targets. */
+		.adm-group-link {
+			display: inline-flex;
+			align-items: flex-end;
+			min-height: 44px;
+		}
+	}
+</style>

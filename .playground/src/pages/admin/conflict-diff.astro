@@ -1,0 +1,502 @@
+---
+// ═══ O-conflict-diff — D-16's per-file conflict screen, and G-7's evidence ══
+//
+// UI-SPEC calls this "the most substantial single screen in the admin" and its
+// DS composition column reads, in full: **nothing**. There is no diff
+// component, no side-by-side, no per-row resolution control. That absence is
+// G-7, and this file is the measurement rather than a complaint about it —
+// every place a primitive had to be stretched is marked with a `G-7:` comment
+// so plan 16 can lift them into a requirements list rather than re-deriving
+// them under Phase 7's deadline.
+//
+// ═══ WHY THIS IS /admin/conflict-diff/ AND NOT /admin/conflict/ ════════════
+// The plan names `src/pages/admin/conflict.astro`. That path CANNOT be used:
+// the dashboard route `src/pages/admin/[...state].astro` already emits
+// `/admin/conflict/` as its own `conflict` state, so a file there would collide
+// with dist/admin/conflict/index.html and break the dashboard's state axis —
+// which check-states.mjs would then report as a rendering fault on the
+// dashboard rather than as a route collision. The URL is the artefact id
+// instead, which is also the more useful name: six other screens declare
+// `ref: "O-conflict-diff"` and this is where the ref resolves to.
+//
+// ═══ IT IS ONE SCREEN, NOT A PER-SCREEN STATE ══════════════════════════════
+// ADMIN-IA's "States and where each actually lives" rules that `conflict` lives
+// at ONE dedicated screen reached from publish, which is why every one of the
+// seven routes declares it `inherits` rather than designing its own. That is
+// also what makes per-file resolution possible at all: a per-screen conflict
+// state can only ever talk about its own file.
+//
+// ═══ WHERE THE BASELINE COMES FROM, AND WHY THIS SCREEN CAN EXIST ══════════
+// D-10 stores the blob SHA the draft was based on AT SAVE TIME in the D1 draft
+// row, so the 409 comparison has a real server-side baseline instead of
+// whatever a long-open tab happened to load. The legacy admin had no such
+// thing: `DeployButton.tsx` posted `baseSha: "latest"`, and
+// legacy:src/app/api/deploy/route.ts line 93 reads
+//
+//     if (baseSha !== "latest" && currentSha !== baseSha)
+//
+// so the string "latest" walked straight past the route's OWN conflict check.
+// The route could return a 409 and never did. That is one of the four
+// reinforcing defects in .planning/codebase/CONCERNS.md, it is why this screen
+// never existed before, and D-10 is its root-cause fix. Cited, not reproduced:
+// nothing in this sketch posts anything.
+//
+// ═══ ZERO HYDRATION ════════════════════════════════════════════════════════
+// The whole screen is static. The resolved row and the two outstanding rows are
+// rendered simultaneously rather than toggled, which is what lets a reviewer
+// compare them in one screenshot — and is the same reason plan 13 renders the
+// list and grid views stacked instead of behind a dead control.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Divider,
+	Eyebrow,
+	Heading,
+	Link,
+	Text,
+} from "@akhil-saxena/design-system";
+import Admin from "../../layouts/Admin.astro";
+import fx from "../../fixtures/conflict.json";
+
+export const ARTEFACT = {
+	id: "O-conflict-diff",
+	route: "/admin/conflict-diff",
+	proves:
+		"That one conflicted file can be resolved without abandoning an unrelated edit (D-16) — the largest single admin surface, and the one with zero design-system coverage (G-7).",
+};
+
+// UI-SPEC's contract table, verbatim, in named constants.
+const OVERWRITE_TITLE = "Overwrite the published portfolio_images.json?";
+const OVERWRITE_BODY_A = "The remote version changed after your draft started. ";
+const OVERWRITE_BODY_B = "Overwriting drops the remote change shown on the left.";
+const ACT_OVERWRITE = "Overwrite";
+const ACT_RELOAD = "Reload remote";
+
+const conflicted = fx.files.filter((f) => f.status === "conflicted");
+const clean = fx.files.filter((f) => f.status === "clean");
+const outstanding = conflicted.filter((f) => f.resolution === null);
+const resolved = conflicted.filter((f) => f.resolution !== null);
+
+const RESOLUTION_LABEL = { reload: ACT_RELOAD, overwrite: ACT_OVERWRITE };
+---
+
+<Admin
+	title="O-conflict-diff"
+	active="dashboard"
+	route="/admin"
+	navStates={{ home: "draft", photos: "draft", resume: "draft", site: "draft" }}
+>
+	<div class="cf-head" data-artefact="O-conflict-diff">
+		<Eyebrow size="sm" tone="muted">PUBLISH — CONFLICT</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">Some files changed while you were editing.</Heading>
+		<Text size="sm" tone="muted">
+			{fx.counts.conflicted} of {fx.counts.files} files conflict. {outstanding.length} still need a
+			decision, {resolved.length} is already resolved, and {clean.length} publishes untouched.
+			Each file is decided on its own; publishing waits for the ones that are outstanding and for
+			nothing else.
+		</Text>
+	</div>
+
+	{/* ── THE PROGRESS LINE ─────────────────────────────────────────────────
+	    PER FILE, NOT PER PUBLISH, is the whole decision, so the count has to be
+	    on screen before the first row: an operator who cannot see that two of
+	    three are outstanding will read a partially resolved conflict as
+	    finished. That is the repudiation risk this screen is designed against.
+
+	    G-7: THERE IS NO COMPONENT FOR THIS. A DiffView would need to own this
+	    line, because only the component knows how many of its files are
+	    resolved. Composed here from a Badge per state plus layout CSS. */}
+	<div class="cf-progress" role="status">
+		<Badge tone="warning" dot>{outstanding.length} outstanding</Badge>
+		<Badge tone="success" dot>{resolved.length} resolved</Badge>
+		<Badge tone="neutral">{clean.length} clean</Badge>
+		<Text size="sm" tone="muted">
+			Publish stays blocked while anything is outstanding, and unblocks the moment the last row
+			is decided — not when the first one is.
+		</Text>
+	</div>
+
+	{/* ── D-11, STATED WHERE IT IS DECIDED ──────────────────────────────────
+	    A draft is always pending changes LAYERED on published JSON, never an
+	    independent fork. That rule is what makes "reload remote" a real option
+	    rather than a euphemism for losing work: reloading rebases the pending
+	    change onto the newer published file, it does not throw the draft away.
+	    Said on the screen because a reviewer cannot infer it from two columns. */}
+	<AlertBanner
+		open
+		tone="info"
+		title="Your draft is layered on the published file, never a copy of it."
+		description="Reloading the remote version re-bases your pending change onto it. Nothing you typed is discarded by reloading; the only action that drops anything is Overwrite, and it says what it drops."
+	/>
+
+	{/* ══ THE CONFLICTED FILES ══════════════════════════════════════════════
+	    ONE ROW PER FILE, EACH WITH ITS OWN PAIR OF ACTIONS. A reviewer's
+	    question in UI-SPEC's pass 5 is precisely whether one file can be
+	    resolved without abandoning another, so a single global "theirs or mine"
+	    control would fail this artefact outright — and there is deliberately
+	    none anywhere on this page. */}
+	{conflicted.map((f) => {
+		const isResolved = f.resolution !== null;
+		return (
+			<Card surface="subtle" padding="md" radius="lg">
+				<section class="cf-file" data-resolved={isResolved ? "true" : "false"}>
+					<header class="cf-file-head">
+						<code class="cf-path">{f.path}</code>
+						{/* G-7: RESOLUTION STATE IS PER FILE AND HAS TO BE LEGIBLE AT A
+						    GLANCE. Composed from a Badge plus a left border plus a
+						    data attribute; a DiffView would own it as one prop, because
+						    an unresolved row that merely LOOKS like a resolved one is
+						    how a partially resolved conflict reads as finished. */}
+						{isResolved ? (
+							<Badge tone="success" dot>Resolved — {RESOLUTION_LABEL[f.resolution]}</Badge>
+						) : (
+							<Badge tone="warning" dot>Needs a decision</Badge>
+						)}
+						<code class="cf-sha">base {f.baseSha}</code>
+						<code class="cf-sha">remote {f.remoteSha}</code>
+					</header>
+
+					<div class="cf-who">
+						<Text size="sm" tone="muted">
+							Remote: {f.remoteWhat}, by {f.remoteAuthor}. Yours: {f.localWhat}.
+						</Text>
+					</div>
+
+					{/* ── THE DIFF ──────────────────────────────────────────────────
+					    G-7: THIS IS THE COMPONENT THAT DOES NOT EXIST. Two labelled
+					    columns, one row per changed field, with the field name spanning
+					    both. Built from a CSS grid and <code> elements, because there
+					    is no primitive that takes a pair of values and renders them
+					    side by side — not Table (which is row-of-cells, not
+					    pair-of-versions), not DataGrid (which stringifies every cell,
+					    F-13-2), and not Card (which has no internal structure at all).
+
+					    THE ABSENT SIDE IS OMITTED, NEVER AN EM DASH. ADMIN-IA's
+					    omission rule applies here as much as it does to EXIF: a dash
+					    where a value belongs reads as a data bug rather than as "this
+					    side did not change it". So a row changed on one side only says
+					    "unchanged here" in words. */}
+					<div class="cf-diff" role="table" aria-label={`Changes to ${f.path}`}>
+						<div class="cf-diff-head" role="row">
+							<span class="cf-col cf-col-h" role="columnheader">Remote — what is published now</span>
+							<span class="cf-col cf-col-h" role="columnheader">Yours — what is pending</span>
+						</div>
+						{f.rows.map((r) => (
+							<div class="cf-diff-row" role="row">
+								<span class="cf-field" role="rowheader">{r.field}</span>
+								<span class="cf-col" role="cell" data-side="remote">
+									{r.remote === null ? (
+										<span class="cf-unchanged">not in the published file</span>
+									) : (
+										<code class="cf-val">{r.remote}</code>
+									)}
+								</span>
+								<span class="cf-col" role="cell" data-side="local">
+									{r.local === null ? (
+										<span class="cf-unchanged">unchanged here</span>
+									) : (
+										<code class="cf-val">{r.local}</code>
+									)}
+								</span>
+								<span class="cf-note">{r.note}</span>
+							</div>
+						))}
+					</div>
+
+					{/* ── PER-FILE ACTIONS ──────────────────────────────────────────
+					    G-7: A DiffView WOULD HAVE TO OWN THESE, because the pair is
+					    meaningless away from the rows it applies to. Both are present on
+					    every conflicted file, resolved or not: a resolution that cannot
+					    be changed is a resolution an operator will be afraid to make. */}
+					<div class="cf-actions">
+						<Button variant="secondary">{ACT_RELOAD}</Button>
+						<Button variant="primary">{ACT_OVERWRITE}</Button>
+						<Text size="sm" tone="muted">
+							{isResolved
+								? "Already resolved by reloading. Choosing again replaces that decision; nothing is committed until every file is decided and Publish runs."
+								: "This file only. The other files on this screen keep whatever state they are in."}
+						</Text>
+					</div>
+
+					{/* ── OVERWRITE STATES ITS COST ─────────────────────────────────
+					    Verbatim from UI-SPEC's contract table, rendered on the file it
+					    names. Naming what is lost is the difference between a decision
+					    and a click — and the thing being lost here is another writer's
+					    change, which is exactly the failure mode the legacy
+					    `baseSha: "latest"` produced silently.
+
+					    ═══ THE MARKUP IS A LOCAL PROTOTYPE ═════════════════════════
+					    `ConfirmDialog tone="danger"` is what this should be. It cannot
+					    be used: measured with react-dom/server, ConfirmDialog(open)
+					    renders 0 B, because it mounts through DSPortal which returns
+					    null until a mount effect runs (dist/index.js:2429-2436). Modal
+					    and Sheet are identical. So every overlay in the design system
+					    server-renders to nothing, and UI-SPEC's instruction to sketch
+					    dialogs "open and static" is not satisfiable as shipped. The
+					    chrome below is the design system's own ds-atom-modal-* classes;
+					    only the mounting is local. Recorded in the SUMMARY. */}
+					{f.path.endsWith("portfolio_images.json") && (
+						<div class="cf-confirm" role="group" aria-label="Overwrite confirmation">
+							<Eyebrow size="sm" tone="muted">WHAT OVERWRITE WOULD DO, ON THIS FILE</Eyebrow>
+							<div class="ds-atom-modal cf-confirm-panel">
+								<header class="ds-atom-modal-hd">
+									<span class="ds-atom-modal-hd-title cf-danger">{OVERWRITE_TITLE}</span>
+								</header>
+								<div class="ds-atom-modal-body">
+									<div>{OVERWRITE_BODY_A}{OVERWRITE_BODY_B}</div>
+								</div>
+								<footer class="ds-atom-modal-ft">
+									<Button variant="secondary">{ACT_RELOAD}</Button>
+									<Button variant="primary">{ACT_OVERWRITE}</Button>
+								</footer>
+							</div>
+							<Text size="sm" tone="muted">
+								The remote change on the left is {f.remoteWhat}, and it is a pipeline run rather
+								than a person — which is exactly why it must not be dropped by accident. The
+								photos it added would vanish from the manifest while their processed variants
+								stayed in R2.
+							</Text>
+						</div>
+					)}
+				</section>
+			</Card>
+		);
+	})}
+
+	<Divider />
+
+	{/* ══ THE CLEAN FILES — D-16'S WHOLE POINT ══════════════════════════════
+	    "so a photo-pipeline collision on the manifest never forces abandoning
+	    an unrelated résumé edit." The résumé row is the unrelated edit, and it
+	    is on this screen precisely so a reviewer can see that it is NOT being
+	    asked about. It publishes untouched whichever way the three above are
+	    decided, and nothing on this screen offers to discard it. */}
+	<section class="cf-section">
+		<Eyebrow size="sm" tone="muted">PUBLISHING UNTOUCHED</Eyebrow>
+		{clean.map((f) => (
+			<div class="cf-clean">
+				<code class="cf-path">{f.path}</code>
+				<Badge tone="neutral">no remote change</Badge>
+				<Text size="sm" tone="muted">
+					Yours: {f.localWhat}. Nobody else touched this file, so there is nothing to decide and
+					nothing to lose. This row is the reason the conflict is per file: a global "take
+					theirs" would have taken this edit down with the manifest.
+				</Text>
+			</div>
+		))}
+	</section>
+
+	{/* ── WHERE THE BASELINE COMES FROM ─────────────────────────────────────
+	    On the screen rather than only in a comment, because a reviewer asking
+	    "how does it know?" is asking the question D-10 answers. */}
+	<section class="cf-section">
+		<Eyebrow size="sm" tone="muted">HOW THIS SCREEN KNOWS</Eyebrow>
+		<Text size="sm" tone="muted">
+			Each draft row stores the blob SHA it was based on at save time (D-10), so the comparison
+			has a real server-side baseline rather than whatever a long-open tab happened to load. The
+			legacy admin posted a literal <code class="cf-val">"latest"</code> as its baseline, and the
+			deploy route's own check read <code class="cf-val">baseSha !== "latest" &amp;&amp; currentSha
+			!== baseSha</code> — so the check could never fire and the 409 the route was written to
+			return never reached anyone. This screen exists because that baseline now exists.
+		</Text>
+	</section>
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	<aside class="cf-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="cf-review-note">
+			Six screens declare <code class="cf-val">ref: "O-conflict-diff"</code> and resolve here:
+			<Link href="/admin/conflict/">dashboard</Link>
+			<Link href="/admin/home/conflict/">home</Link>
+			<Link href="/admin/photos/conflict/">photos</Link>
+			<Link href="/admin/resume/conflict/">resume</Link>
+			<Link href="/admin/projects/conflict/">projects</Link>
+			<Link href="/admin/site/conflict/">site</Link>
+			<Link href="/admin/projects/cairn/conflict/">project-detail</Link>
+		</p>
+	</aside>
+</Admin>
+
+<style>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+	   Scoped rather than global: this route carries no island. */
+
+	.cf-head,
+	.cf-section,
+	.cf-file,
+	.cf-confirm {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.cf-section {
+		gap: var(--space-4);
+	}
+
+	.cf-progress,
+	.cf-file-head,
+	.cf-actions,
+	.cf-clean {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.cf-path,
+	.cf-sha,
+	.cf-val {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.cf-path {
+		font-size: var(--text-xs);
+		color: var(--ink-2);
+	}
+	.cf-val {
+		color: var(--ink-2);
+		word-break: break-word;
+	}
+
+	/* ── RESOLVED VERSUS OUTSTANDING, AT A GLANCE ──────────────────────────
+	   Three signals rather than one, because one is a colour and a colour
+	   alone is not a distinction: a Badge with its own words, a left border
+	   whose weight changes, and a background. The resolved file recedes; the
+	   outstanding ones keep the --wire rule charcoal declares for exactly this
+	   job at 3.44:1. */
+	.cf-file {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+	.cf-file[data-resolved="true"] {
+		border-left-color: var(--rule);
+		opacity: 0.88;
+	}
+
+	.cf-clean {
+		padding: var(--space-3);
+		border: 1px dashed var(--rule);
+		border-radius: var(--radius-md);
+	}
+
+	/* ── THE DIFF GRID — G-7's SHAPE ───────────────────────────────────────
+	   Field name on its own line, then the two versions side by side from the
+	   near-square foldable class up, stacked below it. REFLOW, NEVER HIDE:
+	   both versions of every changed field are present at 344px, one above the
+	   other, each still labelled by which side it is. Hiding one column at a
+	   narrow width would make the screen unusable for the exact decision it
+	   exists to support. */
+	.cf-diff {
+		display: grid;
+		gap: var(--space-2);
+	}
+	.cf-diff-head {
+		display: none;
+	}
+	.cf-diff-row {
+		display: grid;
+		gap: var(--space-1);
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.cf-field {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+	}
+	.cf-col {
+		min-width: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+	.cf-col[data-side="remote"]::before,
+	.cf-col[data-side="local"]::before {
+		content: attr(data-side);
+		display: block;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-4);
+	}
+	.cf-unchanged {
+		font-size: var(--text-xs);
+		color: var(--ink-4);
+	}
+	.cf-note {
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	@media (min-width: 673px) {
+		.cf-diff-head {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			gap: var(--space-3);
+			padding: 0 var(--space-3);
+		}
+		.cf-col-h {
+			font-family: var(--mono);
+			font-size: var(--text-2xs);
+			letter-spacing: var(--ls-wide);
+			text-transform: uppercase;
+			color: var(--ink-3);
+		}
+		.cf-diff-row {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			gap: var(--space-1) var(--space-3);
+		}
+		.cf-field,
+		.cf-note {
+			grid-column: 1 / -1;
+		}
+		/* The side labels are redundant once the columns are headed. */
+		.cf-col[data-side]::before {
+			content: none;
+		}
+	}
+
+	/* == The overwrite confirmation ======================================== */
+	.cf-confirm-panel {
+		max-width: 480px;
+	}
+	.cf-danger {
+		color: var(--red-ink, var(--ink));
+	}
+
+	/* == Review chrome ===================================================== */
+	.cf-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.cf-review-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	/* == THE 44px FLOOR, EVERY COARSE-POINTER CLASS ========================
+	   Last block in the file, so no base rule at the same specificity can win
+	   on source order. */
+	@media (pointer: coarse) {
+		.cf-review-note .ds-atom-link {
+			min-height: 44px;
+		}
+	}
+</style>

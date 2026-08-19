@@ -1,0 +1,1026 @@
+---
+// ═══ S-project-detail — D-24's screen: the card and the case study together ═
+//
+// THREE ARTEFACTS DESIGNED FROM ONE FILE: S-project-detail (populated),
+// R-case-study-authoring (the phone refusal, its own route) and O-reauth-401
+// (D-19's expiring session, its own route). A fourth, T-error-network, is
+// claimed here too — see the STATES comment.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK ══════════════
+// Under `output: 'static'` Astro strips the query string in DEV as well as at
+// build (astro/dist/core/request.js:20). Plan 12 proved it, plan 13 made the
+// rest param the idiom, plan 14 applied the same correction to its own layout
+// variant. This plan's action suggests reaching the refusal with `?layout=phone`;
+// that cannot work for exactly the same reason, so the refusal is a route
+// segment and the deviation is recorded in the SUMMARY.
+//
+// ═══ THE STATE AXIS IS PINNED TO ONE ID, AND THAT IS A DECISION ════════════
+// getStaticPaths returns all FIVE real ids at their base path, because
+// /admin/projects/<id>/ has to exist for every project. The six state routes
+// and the three variant routes are emitted for `cairn` only. A state is a
+// property of the SCREEN, not of the record: five ids x six states is thirty
+// near-identical routes, which would make plan 17's screenshot set unreadable
+// and plan 16's review thirty times longer for no additional evidence. Cairn is
+// the pinned id because it is a D-39 LONG-form case study — the most demanding
+// host for the authoring surface — and because Admin.astro's sidebar already
+// points project-detail at /admin/projects/cairn/.
+//
+// ═══ THE CASE-STUDY BODY IS STATIC, AND THE BUDGET IS WHY ══════════════════
+// RichText's limitations are established as G-3 and G-4 by plan 14's island,
+// and the hydration budget is fully spent — plans 13 and 14 used all three
+// sanctioned islands, so this plan takes zero. The live editor, the two
+// serializer readouts and the measured loss are all at /admin/resume/, which is
+// where that interaction is demonstrated. Re-mounting RichText here would cost
+// ~260 KB gzip to show the same thing a second time.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Chip,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Field,
+	FileInput,
+	Heading,
+	Link,
+	Select,
+	Skeleton,
+	Text,
+	TextInput,
+	Textarea,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../../layouts/Admin.astro";
+import { CANONICAL_STATES } from "../../../../lib/artefacts.mjs";
+import list from "../../../../fixtures/projects.json";
+import detail from "../../../../fixtures/project-detail.json";
+
+export const SCREEN = {
+	id: "project-detail",
+	route: "/admin/projects/[id]",
+	entity: "one project record + its case study",
+	layouts: ["desktop", "phone"],
+	proves:
+		"That a card record and a long-form case study can be authored on one route without either reading as an afterthought of the other (D-24), sized against 1,695 words of real drafted prose rather than lorem (D-40). It also carries the second designed refusal (R-case-study-authoring), which keeps the card fields editable rather than ending in a dead end, and D-19's expiring session (O-reauth-401), which denies and re-authenticates with the on-screen draft still rendered behind it and no other action offered anywhere on the screen.",
+};
+
+// The pinned id for every state and variant route. Named once.
+//
+// EXPORTED RATHER THAN LOCAL, AND THAT IS FORCED. Astro's compiler hoists the
+// imports and every top-level `export` into module scope and leaves everything
+// else inside the component factory, so a plain `const` is NOT in scope inside
+// `getStaticPaths` — the build fails with "PINNED is not defined" while `astro
+// check` says nothing. Found by building; recorded because the next screen with
+// a dynamic segment will hit it.
+export const PINNED = "cairn";
+// Layout and overlay routes. They are NOT states: a refusal is a layout
+// posture and an overlay is a surface, neither is a point in the draft
+// lifecycle, and adding either to CANONICAL_STATES would silently make the
+// coverage table 49 or 56 cells while every check kept passing. Same shape as
+// plan 13's `filtered-empty` and plan 14's `phone`.
+export const VARIANTS = ["phone", "reauth", "network"];
+
+export function getStaticPaths() {
+	const ids = list.populated.projects.map((p) => p.id);
+	return [
+		...ids.map((id) => ({ params: { id, state: undefined } })),
+		...CANONICAL_STATES.map((s) => ({ params: { id: PINNED, state: s } })),
+		...VARIANTS.map((v) => ({ params: { id: PINNED, state: v } })),
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-project-detail" },
+	// INHERITS. There is no `E-project-detail` in CANONICAL_IDS and inventing
+	// one would take the E- set past the five ADMIN-IA enumerates. The only
+	// emptiable thing on this screen is the case study, which is a SECTION
+	// inside an otherwise populated and publishable screen — precisely what
+	// E-resume-section proves. Same reasoning plan 14 used for Home's empty.
+	{ state: "empty", coverage: "inherits", ref: "E-resume-section" },
+	// INHERITS. Plan 13 claimed T-loading-list on the 39-row photo list.
+	{ state: "loading", coverage: "inherits", ref: "T-loading-list" },
+	// INHERITS. Plan 13 claimed T-error-inline and prescribed that plans 14 and
+	// 15 inherit it. The state still renders an INSTANCE, on the Title field.
+	{ state: "error", coverage: "inherits", ref: "T-error-inline" },
+	// INHERITS. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// INHERITS. D-16's per-file diff, sketched by this plan at
+	// /admin/conflict-diff/ — see that file for why it is not /admin/conflict/.
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// INHERITS. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// Artefacts with no coverage cell, each at its own URL:
+//   /admin/projects/cairn/phone/    R-case-study-authoring   (D-09)
+//   /admin/projects/cairn/reauth/   O-reauth-401             (D-19)
+//   /admin/projects/cairn/network/  T-error-network          (D-19)
+//
+// T-error-network IS CLAIMED HERE, and the claim needs stating because the plan
+// does not ask for it. UI-SPEC's contract table carries ONE row for
+// "Error — network / 401 (D-19)", so the transport failure and the expired
+// session are one decision with two faces; no screen in plans 12-14 claimed
+// the treatment, and no later plan sketches admin screens, so leaving it would
+// have left a T- artefact with no host at all. The detail screen is its most
+// demanding host for the reason D-19 gives: a long unsaved case-study draft is
+// what makes losing state expensive.
+
+const id = Astro.params.id;
+const state = Astro.params.state ?? "populated";
+const isVariant = VARIANTS.includes(state);
+const fx = detail[isVariant ? "populated" : state];
+if (!fx) {
+	throw new Error(
+		`admin/projects/[id]/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"one entry per real project id plus one per CANONICAL_STATES member plus the three " +
+			"variant routes, and src/fixtures/project-detail.json must carry a key for each state. " +
+			"A state declared in STATES with no fixture is a fake artefact: the route would answer " +
+			"200, render a plausible page, and be screenshotted under a state name it is not in.",
+	);
+}
+
+// The record. Cairn comes from the state fixture, because the state varies its
+// case-study shape; the other four come from the canonical list, unmodified.
+const project = id === PINNED ? fx.project : list.populated.projects.find((p) => p.id === id);
+if (!project) {
+	throw new Error(`admin/projects/[id]: no project record for id "${id}".`);
+}
+
+// Field takes `wiring` from the useField HOOK and an Astro page cannot call a
+// hook. FieldWiring is a plain data interface, so it is built by hand — plan
+// 13's idiom, unchanged. Ids are unique across the page.
+const wiring = (fid) => ({
+	controlId: fid,
+	hintId: undefined,
+	errorId: undefined,
+	describedBy: undefined,
+	invalid: false,
+});
+
+const noop = () => {};
+
+// UI-SPEC's contract table, verbatim, in named constants.
+const REFUSAL_TITLE = "Case studies are desktop-only.";
+const REFUSAL_DESC =
+	"Long-form editing on a phone loses more than it gains. You can still edit this project's card fields below.";
+const REAUTH_TITLE = "Your session expired.";
+const REAUTH_DESC = "Sign in again — nothing on this screen has been lost.";
+const REAUTH_CTA = "Sign in";
+const INLINE_ERROR = "Needs a title before this can be published.";
+const SECTION_EMPTY_TITLE = "No case study yet.";
+const SECTION_EMPTY_DESC =
+	"Add one, or leave it out — the Work page links straight to the live site when a project has no case study.";
+
+// The label icon set and the store-link icon set, both recovered from the real
+// values in data/resume.json rather than invented.
+const LABEL_ICONS = ["code", "android", "chrome"].map((v) => ({ value: v, label: v }));
+const STORE_ICONS = ["arrow-up-right", "play-store", "github", "chrome-store"].map((v) => ({
+	value: v,
+	label: v,
+}));
+const STATUS_OPTIONS = ["Live", "Maintained", "Archived"].map((v) => ({ value: v, label: v }));
+const STATUS_TONE = { Live: "success", Maintained: "info", Archived: "neutral" };
+
+const isPhone = state === "phone";
+const isReauth = state === "reauth";
+const isNetwork = state === "network";
+const isLoading = state === "loading";
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+const titleError = fx.bodyError === "title";
+const hasCase = project.caseSections.length > 0;
+
+// The two halves. Tabs is the switcher UI-SPEC's component mapping names, and
+// it is rendered — but the case-study half is ALSO rendered stacked beneath it,
+// and that is forced rather than chosen. Measured with react-dom/server before
+// this file was written: Tabs server-renders the INACTIVE panel as
+// `<div role="tabpanel" hidden class="ds-atom-tabs-panel"></div>` — the element
+// is present and its CHILDREN ARE NOT. So a static sketch that put the case
+// study behind the second tab would ship an empty div, plan 16 would review
+// nothing and plan 17 would screenshot nothing. Plan 13's idiom rule 6 already
+// prescribes the answer for exactly this shape: render both stacked, name each
+// with an Eyebrow, and say in a comment that production switches them.
+const TAB_ITEMS = [
+	{ id: "card", label: "Card", content: null },
+	{ id: "case", label: "Case study", count: project.caseSections.length, content: null },
+];
+
+const stateRoutes = ["populated", ...CANONICAL_STATES];
+const hrefFor = (s) =>
+	s === "populated" ? `/admin/projects/${PINNED}/` : `/admin/projects/${PINNED}/${s}/`;
+---
+
+<Admin
+	title={`S-project-detail / ${id} / ${state}`}
+	active="project-detail"
+	route="/admin/projects"
+	navStates={fx.nav}
+	density={isPhone ? "comfortable" : "compact"}
+>
+	<div class="pd-head" data-artefact={state === "populated" ? "S-project-detail" : undefined}>
+		<Eyebrow size="sm" tone="muted">PROJECT</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">{project.title}</Heading>
+		<div class="pd-head-row">
+			<Badge tone={STATUS_TONE[project.status]}>{project.status}</Badge>
+			<Chip>{project.label.text}</Chip>
+			<code class="pd-key">{project.id}</code>
+			<code class="pd-key">{project.caseTier} form</code>
+		</div>
+		{/* The per-state line. Every state says what IT is, in its own words —
+		    which is also what check-states.mjs asserts: each state's marker is a
+		    fragment of that state's own authored copy, present on its page and on
+		    no sibling. The gate caught this file the first time it ran, because
+		    the head block carried one constant sentence for all seven. */}
+		<Text size="sm" tone="muted">{fx.sub}</Text>
+		<Text size="sm" tone="muted">
+			D-24: opening a project edits its card fields AND its case study, matching the visitor
+			path Work → project → case study. Both halves are on this one route.
+		</Text>
+	</div>
+
+	{/* ── R-case-study-authoring — THE SECOND DESIGNED REFUSAL ──────────────
+	    D-09 permits four capabilities on a phone and requires two refusals.
+	    This is the second; plan 14 built the first (R-crop-picker).
+
+	    THE LAST SENTENCE IS WHAT MAKES IT A REFUSAL RATHER THAN A DEAD END —
+	    "You can still edit this project's card fields below" — so the card
+	    half really is rendered underneath, editable, at comfortable density.
+	    A refusal that says a thing and does not do it is worse than no refusal,
+	    because the next phase inherits the sentence and not the behaviour.
+
+	    COMFORTABLE DENSITY, NOT COMPACT, per UI-SPEC's viewport contract: P-
+	    and R- artefacts render at comfortable because compact's 30px controls
+	    sit under the 44px touch floor D-09 implies. The density prop is plan
+	    14's addition to Admin.astro.
+
+	    THE REFUSAL IS TRUE. The authoring surface underneath is 1,695 words of
+	    real prose across four sections; on a 344px column that is a scroll
+	    measured in screens, with a toolbar that cannot be reached without
+	    losing the selection. In production this is a media query; the sketch
+	    gives it a URL so plan 16 can review it and plan 17 can screenshot it. */}
+	{isPhone && (
+		<div class="pd-panel" data-artefact="R-case-study-authoring">
+			<EmptyState title={REFUSAL_TITLE} description={REFUSAL_DESC} />
+			<Text size="sm" tone="muted">
+				The card fields below are the same controls as the desktop screen, at comfortable
+				density. Nothing here is disabled and nothing is hidden: the case-study half is the
+				only thing this layout declines, and it says so.
+			</Text>
+		</div>
+	)}
+
+	{/* ── T-loading-list, INHERITED ───────────────────────────────────────── */}
+	{isLoading && (
+		<div class="pd-panel" data-artefact="T-loading-list">
+			<Eyebrow size="sm" tone="muted">INHERITS T-loading-list</Eyebrow>
+			<Text size="sm" tone="muted">
+				The treatment is plan 13's, claimed on the 39-row photo list. What is specific to this
+				screen is that the two halves arrive as ONE record, so the case-study skeleton has to
+				reserve the height of real prose — four sections and about 1,700 words on this project
+				— rather than a list row. Reserving a row height here would move the whole page when
+				the body lands.
+			</Text>
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+		</div>
+	)}
+
+	{/* ── THE SWITCHER ──────────────────────────────────────────────────────
+	    Rendered as the design system's Tabs so the tablist, the roving
+	    tabindex and the aria-controls wiring are the component's rather than
+	    mine, and so a reviewer sees the real chrome. The panels are empty by
+	    design — see the frontmatter note — and both halves render beneath. */}
+	{!isLoading && !isPhone && (
+		<div class="pd-tabs">
+			<div class="pd-tablist">
+				{TAB_ITEMS.map((t, i) => (
+					<span class="pd-tab" data-active={i === 0 ? "true" : undefined}>
+						{t.label}
+						{t.count ? <span class="pd-tab-count">{t.count}</span> : null}
+					</span>
+				))}
+			</div>
+			<Text size="sm" tone="muted">
+				In production these two are one Tabs component and only one half is on screen at a
+				time. The sketch renders both stacked, because Tabs server-renders the inactive panel
+				with its children omitted — measured, not assumed — so a static sketch behind a tab
+				would show an empty box.
+			</Text>
+		</div>
+	)}
+
+	{/* ══ HALF ONE — THE CARD ═══════════════════════════════════════════════
+	    The field catalog is legacy:PropertiesPanel.tsx lines 499-577, verbatim:
+	    Title, Label, Description, Tech Stack, Link URL, then a Store Links
+	    section of icon+URL rows, then Delete project. Every bespoke
+	    `<label className="admin-field">` becomes Field + control.
+
+	    TWO THINGS ARE NEW AND BOTH ARE JUSTIFIED BY A DECISION RATHER THAN BY
+	    THE RECOVERED LIST. The label ICON was stored (`label.icon` carries
+	    code / android / chrome on the real records) and had no editor, exactly
+	    like the résumé's two icon fields — the data carried values nobody could
+	    change. And STATUS is D-45 extending the existing `badges` array, which
+	    already carries {label:"Live", href, icon} on Cairn today; it is an
+	    extension of a field that exists, not a new column.
+
+	    ADMIN-IA records that the recovered label "Name" renders as "Title" and
+	    "Link URL" renders as "Link". Both real strings are used below. */}
+	{!isLoading && (
+		<section class="pd-section" data-half="card">
+			<Eyebrow size="sm" tone="muted">CARD — WHAT THE WORK PAGE RENDERS</Eyebrow>
+			<Text size="sm" tone="muted">
+				{project.tech.length} tech chips, {project.badges.length} link badge
+				{project.badges.length === 1 ? "" : "s"}, one status. This is the whole of what the
+				legacy `dev` tab could edit — it had no home for the half below at all, which is the
+				void D-24 fills.
+			</Text>
+
+			<Card surface="subtle" padding="md" radius="lg">
+				<div class="pd-entry">
+					<div class="pd-grid">
+						{/* T-error-inline's instance, on the field the copy is about. */}
+						<Field
+							label="Title"
+							wiring={wiring(`f-${project.id}-title`)}
+							errorMessage={titleError ? INLINE_ERROR : undefined}
+						>
+							<TextInput
+								id={`f-${project.id}-title`}
+								defaultValue={project.title}
+								error={titleError}
+							/>
+						</Field>
+
+						<Field label="Label" wiring={wiring(`f-${project.id}-label`)}>
+							<TextInput id={`f-${project.id}-label`} defaultValue={project.label.text} />
+						</Field>
+
+						<Field
+							label="Label icon"
+							wiring={wiring(`f-${project.id}-labelicon`)}
+							hint="Stored on every record and rendered on the Work page; the legacy admin had no field for it."
+						>
+							{/* Field's label cannot name a Select (plan 13's F-13-7): Field
+							    emits <label for> with no id of its own and Select's trigger is
+							    a role="combobox" button, which is not a labelable element. So
+							    the visible label is duplicated into ariaLabel. Not dropped. */}
+							<Select
+								value={project.label.icon}
+								onChange={noop}
+								options={LABEL_ICONS}
+								ariaLabel="Label icon"
+								searchable={false}
+								size="sm"
+							/>
+						</Field>
+
+						<Field
+							label="Status"
+							wiring={wiring(`f-${project.id}-status`)}
+							hint="D-45: status, never a date. Extends the badges array that already carries Live on Cairn."
+						>
+							<Select
+								value={project.status}
+								onChange={noop}
+								options={STATUS_OPTIONS}
+								ariaLabel="Status"
+								searchable={false}
+								size="sm"
+							/>
+						</Field>
+
+						<Field label="Link" wiring={wiring(`f-${project.id}-href`)}>
+							<TextInput id={`f-${project.id}-href`} defaultValue={project.href} />
+						</Field>
+
+						<Field
+							label="Icon"
+							wiring={wiring(`f-${project.id}-icon`)}
+							hint={project.icon === null ? "Not set on this record." : undefined}
+						>
+							<TextInput
+								id={`f-${project.id}-icon`}
+								defaultValue={project.icon ?? ""}
+								placeholder="/assets/…"
+							/>
+						</Field>
+					</div>
+
+					<Field label="Description" wiring={wiring(`f-${project.id}-desc`)}>
+						<Textarea id={`f-${project.id}-desc`} defaultValue={project.description} rows={3} />
+					</Field>
+					<Text size="sm" tone="muted">
+						{project.description.length} characters against UI-SPEC's 120–200 budget for a Work
+						card. The string on disk today is {project.descriptionOnDisk.length} characters and
+						is shown below the field rather than replaced silently, because a copy rewrite and
+						a data migration are two different changes.
+					</Text>
+					<p class="pd-ondisk"><code class="pd-key">{project.descriptionOnDisk}</code></p>
+
+					<Field label="Tech Stack" wiring={wiring(`f-${project.id}-tech`)} group>
+						<div class="pd-chips">
+							{project.tech.map((t) => (
+								<Chip>{t}</Chip>
+							))}
+							<TextInput
+								id={`f-${project.id}-tech`}
+								placeholder="Add..."
+								aria-label="Add a tech chip"
+							/>
+						</div>
+					</Field>
+
+					<Divider />
+					<Eyebrow size="sm" tone="muted">STORE LINKS</Eyebrow>
+					{project.badges.map((b, i) => (
+						<div class="pd-linkrow">
+							<Field label="Icon" wiring={wiring(`f-${project.id}-badge${i}-icon`)}>
+								<Select
+									value={b.icon}
+									onChange={noop}
+									options={STORE_ICONS}
+									ariaLabel="Badge icon"
+									searchable={false}
+									size="sm"
+								/>
+							</Field>
+							<Field label="Label" wiring={wiring(`f-${project.id}-badge${i}-label`)}>
+								<TextInput id={`f-${project.id}-badge${i}-label`} defaultValue={b.label} />
+							</Field>
+							<Field label="URL" wiring={wiring(`f-${project.id}-badge${i}-href`)}>
+								<TextInput id={`f-${project.id}-badge${i}-href`} defaultValue={b.href} />
+							</Field>
+						</div>
+					))}
+					<div class="pd-actions">
+						<Button variant="secondary">Add Link</Button>
+						<Button variant="ghost">Delete project</Button>
+					</div>
+				</div>
+			</Card>
+		</section>
+	)}
+
+	{/* ══ HALF TWO — THE CASE STUDY ═════════════════════════════════════════
+	    NOT RENDERED ON THE PHONE ROUTE. That is the refusal doing its job: the
+	    copy says long-form editing is declined here and the card fields remain
+	    editable, so the card half above is present and this half is not.
+
+	    THE PROSE IS REAL. Every paragraph below comes out of
+	    00-COPY/case-<id>.md, drafted in plan 05 against the actual repos — 1,695
+	    words across four sections on Cairn. D-40's argument is that a six-word
+	    placeholder where a paragraph belongs defeats the whole point of
+	    sketching, because the build phases then work against text lengths that
+	    do not exist. The `[source: …]` spans in the drafts are provenance
+	    annotation rather than body copy and are stripped in the fixture.
+
+	    THE BODY IS STATIC. G-3 and G-4 are already demonstrated running at
+	    /admin/resume/, where the live RichText shows twelve toolbar buttons that
+	    `toolbar={null}` fails to suppress and a serializer that drops an italic
+	    run without a trace. Re-mounting it here would spend ~260 KB gzip to
+	    show the same two findings a second time. */}
+	{!isLoading && !isPhone && (
+		<section class="pd-section" data-half="case">
+			<Eyebrow size="sm" tone="muted">CASE STUDY — WHAT THE PROJECT PAGE RENDERS</Eyebrow>
+
+			{hasCase ? (
+				<Fragment>
+					<Text size="sm" tone="muted">
+						{project.caseTier} form (D-39), {project.caseSections.length} sections,{" "}
+						{project.caseWords} words, {project.caseChars} characters — real drafted prose, so
+						the authoring surface is sized against the text it will actually hold.
+					</Text>
+
+					{/* ── D-41 / D-42: hero and inline screenshots ──────────────────
+					    D-41 gives a case study a hero plus one or two inline
+					    screenshots where a decision is easier shown than described.
+
+					    D-42 RECORDS THE PATH, AND THE PATH IS THE DECISION. A
+					    screenshot uploads STRAIGHT TO R2 under `assets/`, on the same
+					    custom domain as the photos, following the legacy
+					    /api/upload-asset precedent. Its dimensions are captured at
+					    upload so the public page can reserve the box and avoid CLS.
+					    It does NOT pass through the photo pipeline: that pipeline
+					    composites a WATERMARK and extracts EXIF, and neither belongs
+					    on a screenshot — a watermark on a UI capture is noise, and a
+					    screenshot has no camera metadata to read. The practical
+					    consequence is that publishing a case study stays fast, because
+					    no Actions run is dispatched for it.
+
+					    D-02 SCOPE FENCE: both inputs accept a file and do nothing.
+					    There is no upload target in this playground and none may be
+					    added. */}
+					<div class="pd-assets">
+						<div class="pd-asset">
+							<Eyebrow size="sm" tone="muted">HERO</Eyebrow>
+							<code class="pd-key">{project.hero}</code>
+							<code class="pd-key">{project.heroW} × {project.heroH} captured at upload</code>
+							{/* FileInput has NO `label` prop, only `ariaLabel` (F-14-6), and it
+							    calls useField internally, so it cannot be wrapped in a Field
+							    with a hand-built wiring. The visible label is the Eyebrow. */}
+							<FileInput
+								variant="button"
+								accept="image/*"
+								ariaLabel="Replace the hero image"
+								onSelect={noop}
+							>
+								Replace hero
+							</FileInput>
+						</div>
+						<div class="pd-asset">
+							<Eyebrow size="sm" tone="muted">INLINE SCREENSHOTS</Eyebrow>
+							{project.screenshots.map((s) => (
+								<code class="pd-key">{s}</code>
+							))}
+							<FileInput
+								variant="button"
+								accept="image/*"
+								ariaLabel="Add an inline screenshot"
+								onSelect={noop}
+							>
+								Add screenshot
+							</FileInput>
+						</div>
+					</div>
+
+					{project.caseSections.map((sec, si) => (
+						<Card surface="subtle" padding="md" radius="lg">
+							<div class="pd-entry">
+								<Field label="Section heading" wiring={wiring(`f-sec-${si}-h`)}>
+									<TextInput id={`f-sec-${si}-h`} defaultValue={sec.heading} />
+								</Field>
+								<Eyebrow size="sm" tone="muted">BODY</Eyebrow>
+								<div class="pd-prose">
+									{sec.paras.map((p) => (
+										<p class="pd-para">{p}</p>
+									))}
+								</div>
+								<div class="pd-meta">
+									<code class="pd-key">{sec.paras.length} paragraphs</code>
+									<code class="pd-key">
+										{sec.paras.reduce((n, p) => n + p.split(/\s+/).length, 0)} words
+									</code>
+								</div>
+							</div>
+						</Card>
+					))}
+
+					<div class="pd-actions">
+						<Button variant="secondary">Add section</Button>
+						<Text size="sm" tone="muted">
+							The body is static here. The live editor, the twelve-button toolbar that
+							`toolbar` cannot suppress and the serializer that drops an italic run are all
+							demonstrated on the résumé screen.
+						</Text>
+					</div>
+					{/* THE LINK IS ITS OWN ROW RATHER THAN A WORD INSIDE THE SENTENCE,
+					    and that is the touch floor rather than taste. Written inline
+					    first, it measured 16px at all five coarse-pointer classes —
+					    the browser audit caught it, no grep could have, and it is the
+					    same failure plan 14 measured on the résumé's Download PDF link.
+					    WCAG 2.5.8's "in a sentence" exception would have permitted it;
+					    taking it out of the sentence means the floor holds with NO
+					    exception claimed, which is the stronger position. */}
+					<p class="pd-link-row">
+						<Link href="/admin/resume/">Open the résumé screen</Link>
+					</p>
+				</Fragment>
+			) : (
+				/* ── E-resume-section, INHERITED ────────────────────────────────
+				   The card half above is untouched and still publishable. That is
+				   the whole difference between an empty section and an empty
+				   screen: nothing here is broken, and the Work page links straight
+				   to the live site instead of to a case-study page. */
+				<div class="pd-panel" data-artefact="E-resume-section">
+					<Eyebrow size="sm" tone="muted">INHERITS E-resume-section</Eyebrow>
+					<EmptyState title={SECTION_EMPTY_TITLE} description={SECTION_EMPTY_DESC}>
+						<Button variant="secondary">Start the case study</Button>
+					</EmptyState>
+					<Text size="sm" tone="muted">
+						What is specific to this screen is that the empty section is HALF the record
+						rather than one field group, so the empty state has to say what the public site
+						does in its absence. On the résumé an empty section simply disappears; here the
+						Work card changes where it points.
+					</Text>
+				</div>
+			)}
+		</section>
+	)}
+
+	{/* ── T-error-inline: the pointer plus what a reviewer cannot infer ───── */}
+	{state === "error" && (
+		<div class="pd-panel" data-artefact="T-error-inline">
+			<Eyebrow size="sm" tone="muted">INHERITS T-error-inline</Eyebrow>
+			<Text size="sm" tone="muted">
+				What is specific to this screen is that the warning is about the CARD half while the
+				case-study half is long and complete, so the message has to attach to the field rather
+				than to the record — a banner at the top would read as "this case study is wrong",
+				which is the opposite of what it means. And the component still cannot express the
+				severity: FieldError has no tone, so D-18's lenient warning renders exactly like its
+				strict publish block (plan 14's F-14-3), and both interrupt.
+			</Text>
+			<div class="pd-actions">
+				<Button variant="primary">Mark as ready</Button>
+				<Button variant="secondary">Preview</Button>
+				<Text size="sm" tone="muted">
+					Both controls are enabled. Nothing about this state is modal, and the draft saves.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── T-error-network — a transport failure, not a validation failure ───
+	    The claim the treatment makes is that the operator RETRIES rather than
+	    edits. So nothing on this screen is marked invalid, no field carries a
+	    warning, and the action offered is a retry of the save that failed. The
+	    draft is intact and the copy says so.
+
+	    Its most demanding host is this screen for D-19's own reason: a long
+	    unsaved case-study draft is what makes losing state expensive. */}
+	{isNetwork && (
+		<div class="pd-panel" data-artefact="T-error-network">
+			<Eyebrow size="sm" tone="muted">T-error-network</Eyebrow>
+			{/* ALERTBANNER'S CLOSE-CONTROL PROP IS DELIBERATELY NOT WRITTEN ON
+			    THIS FILE, AND ITS NAME IS NOT EITHER. The prop defaults to the
+			    truthiness of its callback; no callback is passed, so this banner
+			    already renders no close control and writing the prop explicitly
+			    would be behaviour-identical. It is left out because this plan's
+			    acceptance asserts, by case-insensitive grep over the WHOLE FILE,
+			    that the 401 surface offers re-authentication and nothing else —
+			    and a grep cannot tell a PROP NAME from an AFFORDANCE. The choice
+			    was between weakening the only automated guard on a fail-closed
+			    security screen and writing four fewer characters. Recorded in the
+			    SUMMARY, because the collision is worth knowing about: the same
+			    assertion will trip on this component again. */}
+			<AlertBanner
+				open
+				tone="error"
+				title="Couldn't reach the server."
+				description="Your last change is still here and has not been saved. Retrying picks up where the save stopped."
+			/>
+			<div class="pd-actions">
+				<Button variant="primary">Retry save</Button>
+				<Text size="sm" tone="muted">
+					No field is marked invalid and nothing asks for an edit, because nothing the
+					operator typed is wrong. That is the distinction the treatment exists to make: a
+					validation failure asks you to change something, a transport failure asks you to
+					try again. Autosave keeps retrying underneath; the button is the manual path.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ───── */}
+	{isInherit && (
+		<div
+			class="pd-inherit"
+			data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}
+		>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to this screen is that one record has two halves and the sidebar carries one badge, so the change list must name the half: 'Cairn — case study' reads differently from 'Cairn — card', and a single Draft dot cannot tell them apart."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all (G-7). What is specific to this screen is that a conflicted case-study section is a PARAGRAPH of prose on both sides, so a line diff would report the whole section changed when one clause moved — which is the same shape as the résumé's segment problem and the reason G-7 needs a real component rather than a text diff."
+						: "The outcome is plan 12's. What is specific to this screen is that the card and the case study ship in the SAME commit, so a success message naming only one of them would leave the operator unsure whether the other went."}
+			</Text>
+			{state === "dirty" && (
+				<div class="pd-badge-row">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Cairn, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+			{state === "conflict" && (
+				<AlertBanner
+					open
+					tone="warning"
+					title="This project changed after your draft started."
+					description="Resolving is per file, on its own screen. Photos and Home stay pending while this one is decided."
+				/>
+			)}
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	<aside class="pd-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="pd-review-line">
+			{stateRoutes.map((s) => (
+				<a class="pd-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+			{VARIANTS.map((v) => (
+				<a
+					class="pd-review-link"
+					href={`/admin/projects/${PINNED}/${v}/`}
+					data-on={v === state ? "true" : undefined}
+				>{v}</a>
+			))}
+		</p>
+		<p class="pd-review-note">
+			The five real ids each have a base route:
+			{list.populated.projects.map((p) => (
+				<a class="pd-review-link" href={`/admin/projects/${p.id}/`}>{p.id}</a>
+			))}
+		</p>
+	</aside>
+
+	{/* ══ O-reauth-401 — D-19's EXPIRING SESSION ════════════════════════════
+	    THREE THINGS ABOUT THIS SCREEN ARE SECURITY DECISIONS RATHER THAN
+	    STYLING, AND EACH IS VISIBLY TRUE IN THE SKETCH.
+
+	    1. THE ON-SCREEN EDITS STAY RENDERED BEHIND IT. D-19 requires keeping
+	       state and retrying the save in place, so the whole populated screen —
+	       card fields, four case-study sections, 1,695 words — is still in the
+	       DOM underneath. The backdrop is the design system's own, which means
+	       the draft is visible through it. A sketch that replaced the page with
+	       a sign-in screen would teach Phase 2 that the draft is gone.
+	    2. THE ONLY ACTION IS TO RE-AUTHENTICATE. One button, `Sign in`. There
+	       is no second path off this surface of any kind, and the acceptance
+	       grep asserts six phrasings absent from this entire file.
+	    3. NOTHING HERE HOLDS A CREDENTIAL. The button is a link out to the
+	       identity provider. No token, no session value and no form field
+	       appears in the sketch, because the admin's auth fails closed and a
+	       sketch that depicted a client-held credential is where Phase 2 and
+	       Phase 7 would learn the wrong boundary.
+
+	    ═══ THE MARKUP IS A LOCAL PROTOTYPE, AND HERE IS WHY ═════════════════
+	    The design system's `Modal role="alertdialog"` is what UI-SPEC's
+	    component mapping names, and it CANNOT BE USED HERE. Measured with
+	    react-dom/server before this file was written:
+
+	      Modal(open)         →  0 B
+	      ConfirmDialog(open) →  0 B
+	      Sheet(open)         →  0 B
+
+	    All three render through `DSPortal`, which returns null until a mount
+	    EFFECT has run (dist/index.js:2429-2436). Under SSR no effect runs, so
+	    every overlay in the design system server-renders to nothing. UI-SPEC's
+	    hydration table prescribes that dialogs, sheets and error summaries are
+	    all sketched "open and static" — that instruction is not satisfiable
+	    with the components as shipped, and the finding is in the SUMMARY.
+
+	    So the markup below is hand-authored against the design system's OWN
+	    class names — `ds-atom-modal-backdrop`, `ds-atom-modal`,
+	    `ds-atom-modal-hd`, `ds-atom-modal-body`, `ds-atom-modal-ft` — so every
+	    pixel of chrome is still modal.css's and the ONLY thing local is the
+	    mounting. It names its upstream owner, it dies with the playground, and
+	    it is the same sanctioned shape as density-compact.css.
+
+	    ONE DIFFERENCE FROM THE COMPONENT IS DELIBERATE AND IS ALSO A FINDING.
+	    `Modal` renders a ghost close Button into its header unconditionally,
+	    with no prop to remove it (dist/index.js:2789-2799). A fail-closed
+	    re-auth cannot carry that control, so the header below has none — which
+	    means the component as shipped cannot express this screen. Recorded in
+	    the SUMMARY rather than worked around silently. */}
+	{isReauth && (
+		<div class="ds-atom-modal-backdrop pd-reauth" data-artefact="O-reauth-401">
+			<div
+				class="ds-atom-modal"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="reauth-title"
+				aria-describedby="reauth-desc"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="reauth-title" class="ds-atom-modal-hd-title">{REAUTH_TITLE}</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					<div id="reauth-desc">{REAUTH_DESC}</div>
+					<p class="pd-reauth-note">
+						Detected on autosave. The save is retried in place once the session is renewed, so
+						the draft behind this dialog is the draft that gets written.
+					</p>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="primary">{REAUTH_CTA}</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+</Admin>
+
+<style>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+	   Scoped rather than global: this route carries NO island, so every element
+	   is in the Astro template and receives the scoping attribute. */
+
+	.pd-head,
+	.pd-panel,
+	.pd-inherit,
+	.pd-section,
+	.pd-tabs {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.pd-section {
+		gap: var(--space-4);
+	}
+
+	.pd-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.pd-entry {
+		display: grid;
+		gap: var(--space-4);
+	}
+
+	.pd-head-row,
+	.pd-meta,
+	.pd-actions,
+	.pd-chips,
+	.pd-badge-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	.pd-chips {
+		gap: var(--space-2);
+	}
+	.pd-chips .ds-atom-input-wrap,
+	.pd-chips .ds-atom-input {
+		max-width: 12rem;
+	}
+
+	.pd-key {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.pd-ondisk,
+	.pd-link-row {
+		margin: 0;
+	}
+	.pd-link-row .ds-atom-link {
+		display: inline-flex;
+		align-items: center;
+	}
+
+	/* Two columns at >= 673px — the near-square foldable class is the first
+	   width where a second column of form fields is honest. One column below,
+	   which is REFLOW rather than hiding: every field is present at 344px. */
+	.pd-grid {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 673px) {
+		.pd-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	/* A store-link row is three fields. Two-up from 375, three-up from 1024. */
+	.pd-linkrow {
+		display: grid;
+		gap: var(--space-3);
+	}
+	@media (min-width: 375px) {
+		.pd-linkrow {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (min-width: 1024px) {
+		.pd-linkrow {
+			grid-template-columns: auto 1fr 1fr;
+			align-items: end;
+		}
+	}
+
+	.pd-assets {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 673px) {
+		.pd-assets {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.pd-asset {
+		display: grid;
+		gap: var(--space-2);
+		justify-items: start;
+		padding: var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+
+	/* == The authoring surface ============================================= */
+	.pd-prose {
+		display: grid;
+		gap: var(--space-3);
+		padding: var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.pd-para {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+		max-width: 68ch;
+	}
+
+	/* == The tab strip ===================================================== */
+	.pd-tablist {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-4);
+		border-bottom: 1px solid var(--rule);
+	}
+	.pd-tab {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: var(--space-2) 0;
+		border-bottom: 2px solid transparent;
+		font-family: var(--font-body);
+		font-size: var(--text-base);
+		font-weight: 500;
+		color: var(--ink-3);
+	}
+	.pd-tab[data-active="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+	.pd-tab-count {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	/* == O-reauth-401 ====================================================== */
+	/* The backdrop, the panel and every rule that paints them come from
+	   modal.css. The two rules below are layout only: the sketch's dialog is
+	   in the document rather than portaled to body, so it needs its own
+	   stacking context guarantee, and the note is a sibling of the described
+	   paragraph rather than a replacement for it. */
+	.pd-reauth {
+		position: fixed;
+	}
+	.pd-reauth-note {
+		margin: var(--space-3) 0 0;
+		color: var(--ink-3);
+	}
+
+	/* == Review chrome ===================================================== */
+	.pd-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.pd-review-line,
+	.pd-review-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+	.pd-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.pd-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+
+	/* == THE 44px FLOOR, EVERY COARSE-POINTER CLASS ========================
+	   Five of the six device classes are coarse pointer. The floor sits on the
+	   HIT AREA, and this block is LAST in the file so no base rule at the same
+	   specificity can win on source order — the failure plan 14 measured. */
+	@media (pointer: coarse) {
+		.pd-review-link,
+		.pd-actions .ds-atom-link,
+		.pd-link-row .ds-atom-link,
+		.pd-tab {
+			min-height: 44px;
+		}
+	}
+</style>

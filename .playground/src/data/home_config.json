@@ -1,0 +1,45 @@
+{
+  "title": "Akhil Saxena",
+  "subtitle": "Interfaces & Imagery",
+  "intro": "Building for the web. Photographing everything else.",
+  "peekIds": [
+    "architecture-singapore",
+    "abstract-intothemist",
+    "nature-acrossthetrees",
+    "architecture-hawamahaldaytime",
+    "wildlife-kingfisher",
+    "architecture-eiffeljpg"
+  ],
+  "peekPositions": {
+    "architecture-hawamahaldaytime": "50% 25%"
+  },
+  "socialLinks": [
+    {
+      "icon": "github",
+      "url": "https://github.com/akhil-saxena",
+      "label": "GitHub"
+    },
+    {
+      "icon": "linkedin",
+      "url": "https://www.linkedin.com/in/akhil-saxena",
+      "label": "LinkedIn"
+    },
+    {
+      "icon": "mail",
+      "url": "mailto:saxena.akhil42@gmail.com",
+      "label": "Email"
+    }
+  ],
+  "ctas": [
+    {
+      "text": "View Portfolio →",
+      "link": "/portfolio",
+      "style": "primary"
+    },
+    {
+      "text": "View Resume",
+      "link": "/resume",
+      "style": "secondary"
+    }
+  ]
+}

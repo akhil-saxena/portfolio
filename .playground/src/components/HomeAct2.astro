@@ -1,0 +1,326 @@
+---
+// HomeAct2 — the ONE Act-2 composition, rendered by BOTH /home-act2 and /home.
+//
+// WHY THIS IS A COMPONENT AND NOT A SECOND COPY. `home-act2.astro` is plan 09's
+// OQ-1 resolution — the design-system flagship row above the handoff's approved
+// 2x2 grid at 40x56 gaps — and it is an APPROVED design. Copying its markup into
+// home.astro would put two copies of one approved composition into the
+// screenshot record, where they will disagree the first time either is touched,
+// and a reviewer looking at two screenshots has no way to tell which one is the
+// design. Extracting is a refactor with no visual change; /home-act2 renders the
+// same boxes at the same coordinates in the same colours, and that was measured
+// at all six device classes rather than asserted (snap22.mjs, plan 00-22).
+//
+// WHAT MOVED AND WHAT DID NOT. Everything below is verbatim from
+// home-act2.astro: the one-liners, the icon table, the EXPECTED_PROJECTS guard,
+// the markup and every rule in the stylesheet. Act 1's outline block, its
+// styles and the crosslink stayed behind, because they are that artefact's
+// framing rather than the composition itself.
+//
+// TWO OPTIONAL PROPS, BOTH ABSENT ON /home-act2 SO ITS OUTPUT IS UNCHANGED.
+// /home needs this section to be the scroll prompt's target and to carry an
+// accessible name (00-RESPONSIVE-CONTRACT §5.6 rules 2 and 6). Astro omits an
+// attribute whose value is undefined, so /home-act2 emits neither and its markup
+// is identical to what it emitted before the extraction.
+//
+// One-liners are plan 02's `- one-liner:` payloads, verbatim, at the 60-110
+// character budget the copywriting contract sets for this exact slot: 13px DM
+// Sans in a ~380px column, two lines. That budget is the reason the sketch uses
+// the real copy — a shorter stub would fit anything and prove nothing.
+
+import { Eyebrow, Heading } from "@akhil-saxena/design-system";
+import resume from "../data/resume.json";
+
+interface Props {
+	/** When set, this section becomes an anchor target — /home passes "work". */
+	sectionId?: string;
+	/** When set, the "The work" heading carries this id so the section can be
+	 *  named by it. /home-act2 passes neither and emits neither. */
+	headingId?: string;
+}
+
+const { sectionId, headingId } = Astro.props;
+
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+
+const oneLiners: Record<string, string> = {
+	"design-system":
+		"Accessible React primitives with semantic tokens — 80 components, and this page is built on them.",
+	cairn:
+		"A job application tracker with no streaks, no cohort comparisons and no confetti anywhere in it.",
+	hued: "Turns your camera roll into the colours you actually lived in, with no network permission.",
+	momentum:
+		"Breaks a long goal into a number for today, recomputed in a pure-Kotlin engine layer.",
+	timeshift:
+		"Right-click any time on a page and read it in your own zone, CST and IST disambiguated.",
+};
+
+const icons: Record<string, { initial: string; bg: string; ink: string; italic: boolean }> = {
+	// The handoff's own Home spec: icon bg #EAE7E0, text #161616. On charcoal
+	// those are --ink and --ink-inverse, so the spec and the token agree.
+	"design-system": { initial: "D", bg: "var(--ink)", ink: "var(--ink-inverse)", italic: false },
+	// Exception 2 — 4.56:1 with charcoal ink. The handoff's Home spec proposes
+	// #EAE7E0 on this square at 3.22:1, which is worse than the Work page's white
+	// at 3.97:1. Both fail; the ink is per-icon and it is charcoal here.
+	hued: { initial: "h", bg: "var(--ochre)", ink: "var(--ink-inverse)", italic: true },
+	momentum: { initial: "M", bg: "#3E5A48", ink: "#FFFFFF", italic: false },
+	timeshift: { initial: "T", bg: "#52585E", ink: "#FFFFFF", italic: false },
+	cairn: { initial: "C", bg: "var(--cream-3)", ink: "var(--ink)", italic: false },
+};
+
+// D-38 LOCKS FIVE, AND THE WHOLE POINT OF THIS ARTEFACT IS THE FIFTH.
+//
+// OQ-1 exists because the handoff drew four. If resume.json ever yields four
+// again, this grid renders the handoff's original 2x2 plus a flagship row and
+// looks entirely deliberate — the exact failure the sketch was scoped to
+// prevent. So the expected titles are named and checked as the lookup happens,
+// not afterwards: a non-null assertion followed by a later check dies on
+// "Cannot read properties of undefined" and names neither the project nor OQ-1.
+const EXPECTED_PROJECTS: Record<string, string> = {
+	"design-system": "Design System",
+	cairn: "Cairn",
+	hued: "hued",
+	momentum: "Momentum",
+	timeshift: "TimeShift",
+};
+
+const entry = (id: string) => {
+	const p = resume.projects.find((x) => x.id === id);
+	if (!p) {
+		throw new Error(
+			`X-home-act2: this sketch resolves OQ-1 for five projects and ` +
+				`"${EXPECTED_PROJECTS[id]}" (id "${id}") is missing from resume.json, which ` +
+				`currently holds: ${resume.projects.map((x) => x.id).join(", ")}.`,
+		);
+	}
+	if (p.title !== EXPECTED_PROJECTS[id]) {
+		throw new Error(
+			`X-home-act2: project "${id}" is titled "${p.title}" in resume.json but this ` +
+				`sketch was composed against "${EXPECTED_PROJECTS[id]}".`,
+		);
+	}
+	return { id, name: p.title, line: oneLiners[id], ...icons[id] };
+};
+
+const flagship = entry("design-system");
+const rest = ["cairn", "hued", "momentum", "timeshift"].map(entry);
+---
+
+<!-- ── ACT 2 — the sketch this artefact exists for ────────────────────── -->
+<section class="ha-act2" id={sectionId} aria-labelledby={headingId}>
+	<div class="ha-head">
+		<Heading level={2} size="3xl" weight="bold" id={headingId}>The work</Heading>
+		<a class="ha-all" href="/work">ALL WORK →</a>
+	</div>
+
+	<!--
+	  Row one: the flagship, full width. Row two and three: the handoff's 2x2,
+	  untouched. Gaps are the handoff's stated 40px by 56px, expressed as
+	  --space-10 and --space-14 — both real steps on the design system's scale,
+	  so nothing here is off-grid.
+	-->
+	<div class="ha-flagship">
+		<article class="ha-entry ha-entry-wide">
+			<span class="ha-icon" style={{ background: flagship.bg, color: flagship.ink }}>
+				{flagship.initial}
+			</span>
+			<div class="ha-entry-body">
+				<div class="ha-entry-head">
+					<h3 class="ha-name">{flagship.name}</h3>
+					<Eyebrow size="sm" color={OCHRE_D_STRONG}>FLAGSHIP</Eyebrow>
+				</div>
+				<p class="ha-line">{flagship.line}</p>
+			</div>
+		</article>
+	</div>
+
+	<div class="ha-grid">
+		{
+			rest.map((p) => (
+				<article class="ha-entry">
+					<span
+						class="ha-icon"
+						style={{
+							background: p.bg,
+							color: p.ink,
+							fontStyle: p.italic ? "italic" : "normal",
+						}}
+					>
+						{p.initial}
+					</span>
+					<div class="ha-entry-body">
+						<h3 class="ha-name">{p.name}</h3>
+						<p class="ha-line">{p.line}</p>
+					</div>
+				</article>
+			))
+		}
+	</div>
+
+	<!-- Brevo strip, as the handoff has it: hairline above, italic serif. -->
+	<div class="ha-strip">
+		<span class="ha-strip-text">
+			By day — engineering at Brevo: checkout for 2.5M+ users, a nav package
+			across 18+ micro-frontends.
+		</span>
+		<a class="ha-all" href="/resume">RÉSUMÉ →</a>
+	</div>
+</section>
+
+<style>
+	/* App LAYOUT css. The grid geometry below IS the artefact — read the gaps and
+	   the row structure. Every rule is verbatim from home-act2.astro. */
+
+	.ha-act2 {
+		padding-bottom: var(--space-12);
+	}
+
+	.ha-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-4);
+		padding-bottom: var(--space-10);
+	}
+
+	.ha-all {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		font-weight: 500;
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+		text-decoration: none;
+	}
+	.ha-all:hover {
+		color: var(--ink);
+	}
+
+	.ha-flagship {
+		padding-bottom: var(--space-10);
+	}
+
+	/* THE RESOLUTION, in two rules. Row one spans; rows two and three are the
+	   handoff's 2x2 at its stated 40px by 56px. */
+	/* THE COLUMN COUNT IS AN R-6 REFLOW, AND IT CLOSES A HORIZONTAL SCROLL THAT
+	   WAS ALREADY HERE. Measured in a browser at 344: `doc=356/344`, 12px past
+	   the viewport, with the offending boxes `h3.ha-name` ("TimeShift", 96px
+	   min-content) and its `p.ha-line`, both at `left=260 right=356`.
+
+	   IT IS NOT A REGRESSION FROM THE GUTTER LADDER, and that was measured
+	   rather than assumed — same build, same browser, `--pub-gutter` overridden
+	   at runtime: `344@ladder=356` and `344@48px=356`. Identical. The ladder
+	   neither caused it nor hid it; the route had simply never been measured,
+	   because the only recorded R-6 figures in this phase were /work's.
+
+	   The arithmetic, and it closes exactly: two columns of a 312px content
+	   width with a 56px column-gap (`--space-14`) is 128px per column, and
+	   `.ha-entry` spends 44px on its index plus a 16px gap before the body —
+	   leaving 68px for a title whose min-content width is 96px. That is 28px of
+	   escape, and 328 (the content edge at 344) + 28 = 356, the measured
+	   document width. `minmax(0, 1fr)` lets the TRACK shrink, so the track never
+	   overflowed; the h3 inside it did.
+
+	   Presence is untouched (§6 rule 1): every entry exists at 344px, one per
+	   row instead of two. Rungs are the contract's class boundaries, the same
+	   ones the shell's gutter ladder and /work's project grid step at.
+
+	   PLAN 00-22 DID REPLACE THE LANDING AROUND THIS GRID, and re-measured at
+	   344 rather than assuming the reflow survived: /home and /home-act2 both
+	   read `doc=344/344`. The rung is still the only responsive rule here. */
+	.ha-grid {
+		display: grid;
+		/* classes 1–2 (≤ 672): one column. */
+		grid-template-columns: minmax(0, 1fr);
+		row-gap: var(--space-10);
+		column-gap: var(--space-14);
+	}
+
+	/* classes 3–6 · DELIBERATELY UNCHANGED above 672 — the approved design is
+	   two columns and this rung reproduces it exactly. */
+	@media (min-width: 673px) {
+		.ha-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	.ha-entry {
+		display: grid;
+		grid-template-columns: 44px minmax(0, 1fr);
+		gap: var(--space-4);
+		align-items: start;
+	}
+
+	.ha-entry-wide {
+		padding-bottom: var(--space-10);
+		border-bottom: 1px solid var(--rule);
+	}
+
+	.ha-entry-body {
+		display: grid;
+		gap: var(--space-2);
+		/* The one-liner budget is measured against this column. At --text-base 13
+		   in ~380px the 60–110 character band lands on two lines, which is what the
+		   copywriting contract asserts and what this sketch exists to check. */
+		max-width: 380px;
+	}
+
+	.ha-entry-wide .ha-entry-body {
+		max-width: 640px;
+	}
+
+	.ha-entry-head {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-3);
+	}
+
+	.ha-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 11px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--display);
+		font-size: var(--text-xl);
+		font-weight: 700;
+	}
+
+	.ha-name {
+		font-family: var(--display);
+		font-weight: 700;
+		/* 24px in the handoff; --text-xl is 22 and the 2px snap is recorded. */
+		font-size: var(--text-xl);
+		line-height: var(--lh-snug);
+		letter-spacing: var(--ls-tight);
+		color: var(--ink);
+		margin: 0;
+	}
+
+	.ha-line {
+		font-family: var(--font-body);
+		font-size: var(--text-base);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-3);
+		margin: 0;
+	}
+
+	.ha-strip {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-6);
+		margin-top: var(--space-11);
+		padding-top: var(--space-6);
+		border-top: 1px solid var(--rule);
+	}
+
+	.ha-strip-text {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-lg);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+		max-width: 680px;
+	}
+</style>

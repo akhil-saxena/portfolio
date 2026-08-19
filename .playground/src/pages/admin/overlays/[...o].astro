@@ -1,0 +1,1062 @@
+---
+// ═══ THE PUBLISH, DISCARD AND ERROR OVERLAYS ════════════════════════════════
+//
+// SIX ARTEFACTS PLUS ONE STRIP VARIANT, ONE ROUTE EACH:
+//   /admin/overlays/publish-valid/     O-publish-valid     (D-14)
+//   /admin/overlays/publish-invalid/   O-publish-invalid   (D-18, G-6)
+//   /admin/overlays/error-publish/     T-error-publish     (D-18, inline half)
+//   /admin/overlays/error-network/     T-error-network     (D-19, cross-check)
+//   /admin/overlays/discard-screen/    O-discard-screen    (D-17)
+//   /admin/overlays/discard-all/       O-discard-all       (D-17)
+//   /admin/overlays/pipeline-failure/  O-pipeline-strip    (D-15, failure)
+// and /admin/overlays/ is the index over all seven.
+//
+// ═══ THE AXIS IS A REST PARAM, NOT `?o=` — A CORRECTION TO THIS PLAN ════════
+// The plan specifies `?o=`. That cannot work, and it is the same correction
+// plans 13, 14 and 15 each made for `?state=`: under `output: 'static'` Astro
+// strips the query string in the DEV SERVER as well as at build
+// (astro/dist/core/request.js:20 `if (isPrerendered) url.search = "";`, with
+// vite-plugin-app/app.js:178 marking every prerendered route). `Astro.url
+// .searchParams` is unconditionally empty here, so all seven overlays would
+// have rendered as one page. The overlay id is a route segment instead, which
+// is also what plan 17 needs: a real crawlable URL per screenshot.
+//
+// ═══ EVERY OVERLAY IN THE DESIGN SYSTEM SERVER-RENDERS TO NOTHING ══════════
+// Re-measured with react-dom/server against the installed 1.11.4 tarball before
+// this file was written, because this plan needs FOUR of them:
+//
+//   ConfirmDialog(open)     →     0 B
+//   TypeToConfirm(open)     →     0 B
+//   Sheet(open)             →     0 B
+//   Modal(open)             →     0 B
+//   FormErrorSummary        →   156 B   ← the one that does render
+//   AlertBanner(open)       →   279 B   ← and the one D-19 leans on
+//
+// All four dialogs return `<DSPortal>…</DSPortal>`, and DSPortal returns null
+// until a mount EFFECT has run (dist/index.js:2429-2436). Under SSR no effect
+// runs. UI-SPEC's hydration table prescribes that dialogs and sheets are
+// sketched "open and static" — with the components as shipped that instruction
+// is not executable, and the hydration budget was fully spent by plan 14.
+//
+// So the chrome below is hand-authored against the design system's OWN class
+// names from modal.css — ds-atom-modal-backdrop, ds-atom-modal,
+// ds-atom-modal-hd, ds-atom-modal-hd-title, ds-atom-modal-body,
+// ds-atom-modal-ft. Every painted pixel is still modal.css's; the only local
+// thing is the mounting. Each site names the component it stands in for. It is
+// the sanctioned local-prototype shape plan 15 used twice and plan 13 set the
+// precedent for with density-compact.css, and it dies with this directory.
+//
+// TWO COMPONENTS ARE COMPOSED FOR REAL, and that is the point of measuring
+// first rather than assuming: `FormErrorSummary` and `AlertBanner` both render
+// under SSR, so O-publish-invalid uses the real FormErrorSummary and the D-19
+// treatment uses the real AlertBanner. Only the four that render nothing are
+// prototyped.
+//
+// ═══ THE COUNTS AGREE WITH THE DASHBOARD, AND THE BUILD PROVES IT ══════════
+// D-15's "two places that must agree" is a rule about the pipeline strip, but
+// the failure it names is general: a publish modal that summarises a different
+// set from the one the dashboard lists is the same defect. So this file imports
+// BOTH fixtures and throws if the entity set or any per-entity change count has
+// drifted. Agreement is a build failure here rather than a promise.
+//
+// ═══ ZERO HYDRATION ════════════════════════════════════════════════════════
+// This plan takes none of the budget. The acceptance criterion counts the
+// directive prefix and requires zero, so the prefix is deliberately not spelled
+// anywhere in this file — not even in prose. check-no-js.sh is the assertion
+// with teeth, because it reads the emitted HTML rather than the source.
+//
+// ═══ SCOPE FENCE (D-02) ════════════════════════════════════════════════════
+// No auth, no D1, no endpoint, no publish action that does anything. Every
+// button on every route in this file is inert and every number is read from a
+// fixture. Nothing here posts, fetches or stores.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Divider,
+	Eyebrow,
+	FormErrorSummary,
+	Heading,
+	Link,
+	Text,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import fx from "../../../fixtures/overlays.json";
+import dashboard from "../../../fixtures/dashboard.json";
+
+// ── THE ARTEFACT REGISTER FOR THIS FILE ───────────────────────────────────
+// Exported so the coverage generator can see which artefacts are DESIGNED on a
+// route that has no coverage cell of its own. `O-` and `T-` artefacts are
+// cross-cutting: they are pointed at by cells rather than owning one, which is
+// exactly how `T-error-publish` came to be inherited by the dashboard while
+// being designed nowhere. src/lib/coverage.mjs reads this export, unions it
+// with every `designed` cell, and check-coverage.mjs fails on an `inherits` ref
+// that resolves to nothing. Same shape as conflict-diff.astro's ARTEFACT.
+export const ARTEFACTS = [
+	{
+		id: "O-publish-valid",
+		route: "/admin/overlays/publish-valid",
+		proves:
+			"That D-14's confirmation is against a LIST of what will ship rather than a bare question, and that D-12's asynchrony for photos is stated where the decision is made rather than discovered afterwards.",
+	},
+	{
+		id: "O-publish-invalid",
+		route: "/admin/overlays/publish-invalid",
+		proves:
+			"That the strict half of D-18 is a designed screen naming three specific failures — and that G-6 is real: FormErrorSummary takes `errors: string[]`, so every deep link had to be rendered as a separate element beside it.",
+	},
+	{
+		id: "T-error-publish",
+		route: "/admin/overlays/error-publish",
+		proves:
+			"The inline publish-block treatment the dashboard's `error` cell inherits. Before this route that ref resolved to nothing — a covered-looking cell that was not covered.",
+	},
+	{
+		id: "O-discard-screen",
+		route: "/admin/overlays/discard-screen",
+		proves:
+			"That a per-screen discard states its own cost in the fixture's real numbers, and that D-11 is what makes the copy true: a draft is pending changes layered on published JSON, so discard always returns to published state.",
+	},
+	{
+		id: "O-discard-all",
+		route: "/admin/overlays/discard-all",
+		proves:
+			"That the guard scales with what it destroys — a confirm for one screen, a typed word for everything — and that the asymmetry between the two is legible when they are read one after the other.",
+	},
+];
+
+// The seven overlay routes. `o: undefined` produces `/admin/overlays/`.
+export const OVERLAY_IDS = [
+	"publish-valid",
+	"publish-invalid",
+	"error-publish",
+	"error-network",
+	"discard-screen",
+	"discard-all",
+	"pipeline-failure",
+];
+
+// Astro hoists imports and TOP-LEVEL EXPORTS into module scope and leaves plain
+// `const`s inside the component factory, so anything getStaticPaths reads must
+// be exported. Plan 15 lost a build to exactly this.
+export function getStaticPaths() {
+	return [{ params: { o: undefined } }, ...OVERLAY_IDS.map((o) => ({ params: { o } }))];
+}
+
+const o = Astro.params.o ?? "index";
+if (o !== "index" && !OVERLAY_IDS.includes(o)) {
+	throw new Error(
+		`admin/overlays/[...o]: unknown overlay "${o}". getStaticPaths emits \`undefined\` plus ` +
+			"OVERLAY_IDS, so this can only be reached by editing one and not the other.",
+	);
+}
+
+// ══ THE AGREEMENT GUARD ════════════════════════════════════════════════════
+// Fail loud, before anything renders. The failure this catches is a sketch that
+// looks fine on its own page and contradicts the screen it summarises.
+const dashScreens = dashboard.dirty.groups;
+const ourScreens = fx.session.screens;
+const dashKey = dashScreens.map((g) => `${g.id}:${g.changes.length}`).join(" ");
+const ourKey = ourScreens.map((g) => `${g.id}:${g.changes.length}`).join(" ");
+if (dashKey !== ourKey) {
+	throw new Error(
+		"admin/overlays: the overlay fixture has drifted from the dashboard fixture.\n" +
+			`  dashboard.json dirty : ${dashKey}\n` +
+			`  overlays.json session: ${ourKey}\n` +
+			"A publish modal that summarises a different set from the one the dashboard lists is " +
+			"the same defect D-15 names for the pipeline strip — two places that must agree. Fix " +
+			"the fixture; do not relax this check.",
+	);
+}
+
+// ── EVERY NUMBER IN EVERY PIECE OF COPY BELOW IS COMPUTED, NEVER TYPED ─────
+const screens = ourScreens;
+const screenCount = screens.length;
+const changeCount = screens.reduce((n, s) => n + s.changes.length, 0);
+const fileCount = new Set(screens.map((s) => s.file)).size;
+const target = screens.find((s) => s.id === fx.discardScreen.target);
+const targetCount = target.changes.length;
+
+// UI-SPEC's contract table, VERBATIM, as literal constants — so the exact
+// strings are greppable in one place and cannot drift as the markup moves
+// around them. This is plan 12's idiom and it is deliberately not "read the
+// string out of the fixture": a contract string belongs beside the screen that
+// promises it, and a fixture is data.
+const PUBLISH_CTA = "Publish changes";
+const KEEP_EDITING = "Keep editing";
+const DISCARD_SCREEN_CTA = "Discard changes";
+const NET_TITLE = "Your session expired.";
+const NET_BODY = "Sign in again — nothing on this screen has been lost.";
+const NET_CTA = "Sign in";
+const PIPE_TITLE = "Processing failed for 2 photos.";
+const PIPE_BODY = "The originals are still staged. Retrying does not re-upload them.";
+const PIPE_CTA = "Retry processing";
+const INVALID_TITLE = "3 things must be fixed before publishing.";
+
+// ── THE LITERALS ARE TIED BACK TO THE DATA, SO A NUMBER CANNOT BE TYPED ───
+// Two of the contract strings carry a COUNT inside them, and a count written
+// into prose is a count nobody checks. Both are asserted against the fixture
+// they describe, and both throw rather than warn: `Processing failed for 2
+// photos.` must agree with the number of failed photos, and `3 things must be
+// fixed…` with the length of the error list the same screen renders.
+const CONTRACT_CHECKS = [
+	[INVALID_TITLE, `${fx.invalid.errors.length} things must be fixed before publishing.`, "invalid"],
+	[PIPE_TITLE, `Processing failed for ${fx.pipelineFailure.failed} photos.`, "pipelineFailure"],
+	[PIPE_BODY, fx.pipelineFailure.body, "pipelineFailure.body"],
+	[PIPE_CTA, fx.pipelineFailure.cta, "pipelineFailure.cta"],
+	[NET_TITLE, fx.network.title, "network.title"],
+	[NET_BODY, fx.network.body, "network.body"],
+	[NET_CTA, fx.network.cta, "network.cta"],
+	[KEEP_EDITING, fx.discardScreen.cancelLabel, "discardScreen.cancelLabel"],
+	[DISCARD_SCREEN_CTA, fx.discardScreen.confirmLabel, "discardScreen.confirmLabel"],
+];
+for (const [literal, derived, where] of CONTRACT_CHECKS) {
+	if (literal !== derived) {
+		throw new Error(
+			`admin/overlays: the contract string for "${where}" no longer matches the fixture.\n` +
+				`  written on the screen : ${JSON.stringify(literal)}\n` +
+				`  implied by the data   : ${JSON.stringify(derived)}\n` +
+				"A count stated in destructive or blocking copy has to be the real count — a dialog " +
+				"whose job is to state a cost may not state it from an example.",
+		);
+	}
+}
+
+// The two destructive strings. The `across N screens` clause is UI-SPEC's,
+// verbatim and true; the counts are the fixture's — see overlays.json's README
+// for why an illustrative number may not be quoted by a dialog whose job is to
+// state a blast radius.
+const DISCARD_SCREEN_TITLE = `Discard changes to ${target.entity}?`;
+const DISCARD_SCREEN_BODY = `The ${targetCount} pending changes on this screen go back to what's published. This can't be undone.`;
+const DISCARD_ALL_TITLE = "Discard all pending changes?";
+const DISCARD_ALL_BODY = `${changeCount} pending changes across ${screenCount} screens go back to what's published.`;
+
+const nav = { home: "draft", photos: "draft", resume: "ready", site: "ready" };
+
+const FAILURE_STRIP = {
+	tone: "danger",
+	title: PIPE_TITLE,
+	description: PIPE_BODY,
+	value: 1,
+	max: 3,
+	label: `1 of 3 processed · ${fx.pipelineFailure.failed} failed`,
+};
+
+const INDEX = [
+	{ o: "publish-valid", id: "O-publish-valid", d: "D-14", what: "Publish confirm, valid" },
+	{ o: "publish-invalid", id: "O-publish-invalid", d: "D-18", what: "Publish confirm, invalid" },
+	{ o: "error-publish", id: "T-error-publish", d: "D-18", what: "Publish block, inline" },
+	{ o: "error-network", id: "T-error-network", d: "D-19", what: "Network / 401, inline" },
+	{ o: "discard-screen", id: "O-discard-screen", d: "D-17", what: "Discard this screen" },
+	{ o: "discard-all", id: "O-discard-all", d: "D-17", what: "Discard all" },
+	{ o: "pipeline-failure", id: "O-pipeline-strip", d: "D-15", what: "Pipeline failure + retry" },
+];
+
+const TITLES = {
+	index: "Publish, discard and error overlays",
+	"publish-valid": "O-publish-valid",
+	"publish-invalid": "O-publish-invalid",
+	"error-publish": "T-error-publish",
+	"error-network": "T-error-network",
+	"discard-screen": "O-discard-screen",
+	"discard-all": "O-discard-all",
+	"pipeline-failure": "O-pipeline-strip — failure",
+};
+---
+
+<Admin
+	title={TITLES[o]}
+	active="dashboard"
+	route="/admin"
+	navStates={nav}
+	pipeline={o === "pipeline-failure" ? FAILURE_STRIP : undefined}
+>
+	{/* ══ THE INDEX ═════════════════════════════════════════════════════════ */}
+	{o === "index" && (
+		<div class="ov-head">
+			<Eyebrow size="sm" tone="muted">CROSS-CUTTING OVERLAYS</Eyebrow>
+			<Heading level={2} size="lg" weight="bold">
+				Seven surfaces that belong to publishing rather than to a screen.
+			</Heading>
+			<Text size="sm" tone="muted">
+				None of these owns a coverage cell. They are what cells point AT — which is why the
+				coverage gate now checks that an <code class="ov-code">inherits</code> reference
+				resolves to an artefact somebody actually built, and not merely to a canonical id.
+			</Text>
+			<ol class="ov-index">
+				{INDEX.map((row) => (
+					<li class="ov-index-row">
+						<a class="ov-index-link" href={`/admin/overlays/${row.o}/`}>{row.id}</a>
+						<span class="ov-index-what">{row.what}</span>
+						<Badge tone="neutral">{row.d}</Badge>
+					</li>
+				))}
+			</ol>
+			<Text size="sm" tone="muted">
+				This session is the dashboard's <code class="ov-code">dirty</code> state:
+				{" "}{changeCount} changes across {screenCount} screens, in {fileCount} files. Every
+				count in every dialog below is computed from it, and the build fails if the two
+				fixtures diverge.
+			</Text>
+		</div>
+	)}
+
+	{/* ══ O-publish-valid — D-14 ════════════════════════════════════════════
+	    D-14 requires explicit confirmation AGAINST A LIST of what will ship,
+	    not a bare "Publish?". So the panel is a list first and a question
+	    second: four entities, their files, and every individual change at its
+	    real authored length.
+
+	    IT ALSO CARRIES D-12's CONSEQUENCE, because this is where the operator
+	    forms an expectation about what happens next. Publish is ASYNCHRONOUS
+	    FOR PHOTOS: the binary is staged to R2, publish fires the dispatch, and
+	    Actions resizes and reads EXIF afterwards. A confirm that implies the
+	    gallery is updated when the commit lands teaches the wrong model, and
+	    the operator then reads the pipeline strip as a fault.
+
+	    DS composition per UI-SPEC: `ConfirmDialog tone="neutral"`. Measured at
+	    0 B under SSR, so the panel is modal.css's classes with the mounting
+	    local. `ConfirmDialog`'s panel additionally has NO STYLESHEET AT ALL —
+	    there is no .ds-atom-confirm-panel rule anywhere under dist/css/, only
+	    one inline style object with a hardcoded near-white background (plan
+	    15's F-15-3) — so even a hydrated version of this dialog would not be
+	    reachable from the charcoal cascade. Using modal.css here is therefore
+	    the MORE faithful choice, not merely the available one. */}
+	{o === "publish-valid" && (
+		<div class="ds-atom-modal-backdrop ov-backdrop" data-artefact="O-publish-valid">
+			<div
+				class="ds-atom-modal ov-panel"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="pv-title"
+				data-ds-component="ConfirmDialog"
+				data-ds-tone="neutral"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="pv-title" class="ds-atom-modal-hd-title">
+						Publish {changeCount} changes across {screenCount} screens?
+					</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					<p class="ov-lede">
+						This commits {fileCount} files. Everything listed below goes live; nothing else
+						changes.
+					</p>
+					<ul class="ov-groups">
+						{screens.map((s) => (
+							<li class="ov-group">
+								<div class="ov-group-head">
+									<span class="ov-group-entity">{s.entity}</span>
+									<Badge tone={s.state === "ready" ? "info" : "warning"} dot>
+										{s.state === "ready" ? "Ready" : "Draft"}
+									</Badge>
+									<code class="ov-code">{s.file}</code>
+									<span class="ov-group-n">
+										{s.changes.length} {s.changes.length === 1 ? "change" : "changes"}
+									</span>
+								</div>
+								<ul class="ov-changes">
+									{s.changes.map((c) => (
+										<li>{c}</li>
+									))}
+								</ul>
+							</li>
+						))}
+					</ul>
+
+					{/* D-12, ON THE SCREEN RATHER THAN ONLY IN A DOCUMENT. */}
+					<div class="ov-async">
+						<Eyebrow size="sm" tone="muted">WHAT PUBLISHING DOES NOT DO</Eyebrow>
+						<p>{fx.asyncPhotos.note}</p>
+					</div>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="secondary">{KEEP_EDITING}</Button>
+					<Button variant="primary">{PUBLISH_CTA}</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+
+	{/* ══ O-publish-invalid — D-18's STRICT HALF, AND G-6's EVIDENCE ════════
+	    D-18 is one schema at two severities. The lenient half is T-error-inline
+	    on /admin/photos/error/ — a warning that lets the draft save anyway. This
+	    is the strict half: the same schema run server-side at publish time,
+	    blocking, and naming every failure.
+
+	    THE INVALID STATE IS A DESIGNED SCREEN. D-18 says so in as many words,
+	    and the reason is operational rather than aesthetic: a publish button
+	    that is simply switched off tells the operator nothing about what to fix,
+	    so they go looking. Three named failures, each pointing at the screen
+	    that owns it, is the whole difference.
+
+	    ═══ G-6 IS VISIBLE HERE, NOT DESCRIBED ═══════════════════════════════
+	    `FormErrorSummary` is composed for real — it renders 156 B under SSR, so
+	    unlike the four dialogs it needed no prototype. Its prop surface is
+	    exactly
+
+	        interface FormErrorSummaryProps {
+	          errors: string[];        // dist/index.d.ts:3350-3354
+	          title?: string;
+	          className?: string;
+	        }
+
+	    `errors` is `string[]`. There is NO href, no ReactNode, no per-error
+	    action — so D-18's "deep-links to the offending screen" cannot be
+	    expressed through the component at any level of effort. The three
+	    `Go to …` actions below therefore render as SEPARATE ELEMENTS BESIDE the
+	    summary, in the same order as the errors inside it, which is the closest
+	    a consumer can get and is visibly not the same thing: the link is next to
+	    the list rather than on the failure. Renumber or reorder the array and the
+	    two fall out of step with nothing to catch it.
+
+	    The component is NOT forked to add an href. That is the Core Value: the
+	    gap is a finding, and this route is its evidence. */}
+	{o === "publish-invalid" && (
+		<div class="ds-atom-modal-backdrop ov-backdrop" data-artefact="O-publish-invalid">
+			<div
+				class="ds-atom-modal ov-panel"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="pi-title"
+				data-ds-component="Modal"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="pi-title" class="ds-atom-modal-hd-title">{INVALID_TITLE}</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					{/* THE REAL COMPONENT. */}
+					<FormErrorSummary title={INVALID_TITLE} errors={fx.invalid.errors} />
+
+					{/* G-6 — THE DEEP LINKS, BESIDE THE SUMMARY BECAUSE THEY CANNOT BE
+					    INSIDE IT. `errors: string[]` carries no anchor. */}
+					<div class="ov-targets" role="group" aria-label="Go to the screen that owns each failure">
+						<Eyebrow size="sm" tone="muted">
+							G-6 — THESE BELONG INSIDE THE LIST ABOVE AND CANNOT BE
+						</Eyebrow>
+						<ol class="ov-target-list">
+							{fx.invalid.targets.map((t, i) => (
+								<li class="ov-target">
+									<span class="ov-target-n">{i + 1}</span>
+									<Link href={t.href} variant="inline">{t.label}</Link>
+								</li>
+							))}
+						</ol>
+						<p class="ov-note">
+							The numbers are the only thing binding an action to its failure. The component
+							takes plain strings, so the ordering is a convention two arrays happen to share
+							rather than a relationship anything checks. The proposed fix is
+							<code class="ov-code">errors: Array&lt;&#123; message: string; href?: string &#125;&gt;</code>.
+						</p>
+					</div>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="secondary">{KEEP_EDITING}</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+
+	{/* ══ T-error-publish — THE INLINE HALF, AND A RULING ═══════════════════
+	    THE BOOKKEEPING PROBLEM THIS ROUTE EXISTS TO CLOSE. The dashboard has
+	    declared `{ state: "error", coverage: "inherits", ref: "T-error-publish" }`
+	    since plan 12, and until this route NO SCREEN DESIGNED IT. The contact
+	    sheet's ref guard could not catch it, because the guard checks that a ref
+	    is a member of CANONICAL_IDS and `T-error-publish` is one — it is a
+	    covered-looking cell that was not covered. The gate added in task 3
+	    closes the class: an `inherits` ref must now resolve to an artefact some
+	    module actually declares, not merely to a legal id.
+
+	    WHY IT IS A SEPARATE ARTEFACT FROM O-publish-invalid. The modal is what
+	    the operator sees when they PRESS PUBLISH. This is what the dashboard
+	    shows when they arrive and publish is already blocked — the same three
+	    failures, no dialog, nothing to close, and the pending list still on the
+	    screen underneath. One is an interruption; the other is a condition. The
+	    dashboard's `error` cell needs the second, which is why it inherits
+	    rather than pointing at the modal.
+
+	    Composed from AlertBanner (279 B under SSR — the component renders) plus
+	    the same FormErrorSummary and the same three separated actions, so the
+	    two surfaces say the same three things in the same words. */}
+	{o === "error-publish" && (
+		<div class="ov-treatment" data-artefact="T-error-publish">
+			<Eyebrow size="sm" tone="muted">TREATMENT — PUBLISH BLOCKED (D-18)</Eyebrow>
+			<AlertBanner
+				open
+				tone="danger"
+				title={INVALID_TITLE}
+				description="Nothing has been lost and the pending list below is unchanged. Fix each item on the screen that owns it, then publish. The draft keeps saving while this is on screen — D-18 is lenient about drafts and strict about publishing, and this is the strict end."
+			/>
+			<FormErrorSummary title={INVALID_TITLE} errors={fx.invalid.errors} />
+			<div class="ov-targets" role="group" aria-label="Go to the screen that owns each failure">
+				<Eyebrow size="sm" tone="muted">G-6 — SAME MISSING ANCHOR, SECOND SURFACE</Eyebrow>
+				<ol class="ov-target-list">
+					{fx.invalid.targets.map((t, i) => (
+						<li class="ov-target">
+							<span class="ov-target-n">{i + 1}</span>
+							<Link href={t.href} variant="inline">{t.label}</Link>
+						</li>
+					))}
+				</ol>
+			</div>
+
+			<Divider />
+
+			{/* The pending list stays. A blocked publish is not a lost draft. */}
+			<Eyebrow size="sm" tone="muted">STILL PENDING, STILL SAVED</Eyebrow>
+			<ul class="ov-groups ov-groups-plain">
+				{screens.map((s) => (
+					<li class="ov-group">
+						<div class="ov-group-head">
+							<span class="ov-group-entity">{s.entity}</span>
+							<Badge tone={s.state === "ready" ? "info" : "warning"} dot>
+								{s.state === "ready" ? "Ready" : "Draft"}
+							</Badge>
+							<code class="ov-code">{s.file}</code>
+						</div>
+						<ul class="ov-changes">
+							{s.changes.map((c) => (
+								<li>{c}</li>
+							))}
+						</ul>
+					</li>
+				))}
+			</ul>
+			<Text size="sm" tone="muted">
+				{changeCount} changes across {screenCount} screens are still pending. Publishing is what
+				is blocked, not editing.
+			</Text>
+		</div>
+	)}
+
+	{/* ══ T-error-network — D-19, RESTATED RATHER THAN RE-CLAIMED ═══════════
+	    THE ARTEFACT IS PLAN 15's. `T-error-network` is designed at
+	    /admin/projects/cairn/network/, where plan 15 claimed it because
+	    UI-SPEC carries ONE contract row for "network / 401" and no screen had a
+	    host for it. Re-claiming it here would give one treatment two owners,
+	    which is exactly the drift the artefact register exists to prevent — so
+	    this route is a CROSS-CHECK, not a second host, and the ARTEFACTS export
+	    above deliberately does not list it.
+
+	    WHAT IT IS FOR. D-19 says the expiry is detected ON AUTOSAVE. The modal
+	    at plan 15's route is what a long-form editing screen shows; this is the
+	    inline band the same detection raises on the publish surface, and the
+	    reason it is worth rendering twice is that BOTH MUST SAY THE SAME THING.
+	    Two surfaces describing an auth failure differently is how a soft path
+	    gets built: one of them eventually offers a way to keep working, and
+	    then the admin no longer fails closed. The copy below is byte-identical
+	    to plan 15's, and the acceptance grep over this whole file asserts that
+	    no alternative route off the surface is offered anywhere in it.
+
+	    NOTHING HERE HOLDS A CREDENTIAL. One action, out to the identity
+	    provider. No token, no session value, no form field. */}
+	{o === "error-network" && (
+		<div class="ov-treatment" data-artefact="T-error-network" data-claimed-at={fx.network.host}>
+			<Eyebrow size="sm" tone="muted">TREATMENT — SESSION EXPIRED (D-19)</Eyebrow>
+			<AlertBanner open tone="danger" title={NET_TITLE} description={NET_BODY} />
+			<div class="ov-actions">
+				<Button variant="primary">{NET_CTA}</Button>
+			</div>
+			<Text size="sm" tone="muted">
+				Detected on autosave. The save is retried in place once the session is renewed, so the
+				{" "}{changeCount} pending changes below are the ones that get written. They are still
+				on this screen and still in the draft; what stopped is the write, and it resumes.
+			</Text>
+
+			<Divider />
+
+			<Eyebrow size="sm" tone="muted">THE SAME WORDS, IN TWO PLACES, ON PURPOSE</Eyebrow>
+			<Text size="sm" tone="muted">
+				The full modal is O-reauth-401, sketched in plan 15 on the longest editing screen in the
+				admin. This band is the same treatment where autosave surfaces it. Neither offers any
+				action but re-authenticating, and the copy is identical in both so that no later phase
+				can pick the softer of two readings.
+			</Text>
+			{/* THE LINK IS ITS OWN ROW, NOT A WORD IN THE SENTENCE ABOVE. A `Link`
+			    written inline measures 16px at every coarse-pointer class — the
+			    browser audit caught it here exactly as it caught the identical
+			    failure on plan 14's PDF link and plan 15's detail screen. Pulling
+			    it out is the fix; claiming WCAG 2.5.8's "in a sentence" exception
+			    would be the excuse. */}
+			<p class="ov-linkrow">
+				<Link href={fx.network.host} variant="inline">O-reauth-401</Link>
+			</p>
+			<ul class="ov-groups ov-groups-plain">
+				{screens.map((s) => (
+					<li class="ov-group">
+						<div class="ov-group-head">
+							<span class="ov-group-entity">{s.entity}</span>
+							<span class="ov-group-n">
+								{s.changes.length} unsaved {s.changes.length === 1 ? "change" : "changes"}, still
+								here
+							</span>
+						</div>
+					</li>
+				))}
+			</ul>
+		</div>
+	)}
+
+	{/* ══ O-discard-screen — D-17, THE WEAKER OF TWO GUARDS ═════════════════
+	    DS composition per UI-SPEC: `ConfirmDialog tone="danger"`. 0 B under SSR,
+	    so modal.css's classes carry the chrome and the danger tone is a local
+	    accent on --red-ink. ConfirmDialog's danger tone is a 40px tile in
+	    var(--red) over a hardcoded rgba(239,68,68,.1) INSIDE AN INLINE STYLE
+	    OBJECT, with no .ds-atom-confirm-panel rule anywhere in dist/css/ —
+	    plan 15's F-15-3 — so the tone is unreachable from the charcoal cascade
+	    even in a hydrated build.
+
+	    D-11 IS WHAT MAKES THIS COPY TRUE, and it is worth stating because the
+	    sentence would otherwise be a promise. A draft is always pending changes
+	    LAYERED on published JSON, never an independent fork. So "go back to
+	    what's published" is a description of the storage model rather than an
+	    undo feature: discarding drops the layer, and the published file
+	    underneath was never modified. That is also why the second sentence can
+	    say the change cannot be undone without also saying the file is at risk. */}
+	{o === "discard-screen" && (
+		<div class="ds-atom-modal-backdrop ov-backdrop" data-artefact="O-discard-screen">
+			<div
+				class="ds-atom-modal ov-panel ov-panel-danger"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="dsc-title"
+				aria-describedby="dsc-desc"
+				data-ds-component="ConfirmDialog"
+				data-ds-tone="danger"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="dsc-title" class="ds-atom-modal-hd-title ov-danger">
+						{DISCARD_SCREEN_TITLE}
+					</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					<p id="dsc-desc" class="ov-lede">{DISCARD_SCREEN_BODY}</p>
+					<Eyebrow size="sm" tone="muted">WHAT GOES</Eyebrow>
+					<ul class="ov-changes ov-changes-danger">
+						{target.changes.map((c) => (
+							<li>{c}</li>
+						))}
+					</ul>
+					<p class="ov-note">
+						The other {screenCount - 1} screens keep their {changeCount - targetCount} pending
+						changes. This is per screen, which is the whole reason it needs a weaker guard than
+						the global one.
+					</p>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="secondary">{KEEP_EDITING}</Button>
+					<Button variant="primary">{DISCARD_SCREEN_CTA}</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+
+	{/* ══ O-discard-all — D-17, THE STRONGER GUARD ══════════════════════════
+	    DS composition per UI-SPEC: `TypeToConfirm guardWord="discard"`. Measured
+	    at 0 B under SSR like the other three, so the panel is modal.css's and
+	    the guard field is prototyped — including the property that makes the
+	    component what it is: `guardWord` is compared CASE-SENSITIVELY WITH NO
+	    TRIM (dist/index.d.ts:1385-1388), so the field below shows the exact word
+	    and says so.
+
+	    THE ASYMMETRY IS THE DESIGN. Read the two routes one after the other: one
+	    screen is a confirm, everything is a typed word. The guard is proportional
+	    to what is destroyed, and the two dialogs are deliberately NOT the same
+	    component. A single dialog reused at both scopes would either over-guard
+	    the small case until the operator learns to type through it, or
+	    under-guard the large one. */}
+	{o === "discard-all" && (
+		<div class="ds-atom-modal-backdrop ov-backdrop" data-artefact="O-discard-all">
+			<div
+				class="ds-atom-modal ov-panel ov-panel-danger"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="dal-title"
+				aria-describedby="dal-desc"
+				data-ds-component="TypeToConfirm"
+				data-ds-guard-word="discard"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="dal-title" class="ds-atom-modal-hd-title ov-danger">{DISCARD_ALL_TITLE}</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					<p id="dal-desc" class="ov-lede">{DISCARD_ALL_BODY}</p>
+					<ul class="ov-groups ov-groups-plain">
+						{screens.map((s) => (
+							<li class="ov-group">
+								<div class="ov-group-head">
+									<span class="ov-group-entity">{s.entity}</span>
+									<span class="ov-group-n">
+										{s.changes.length} {s.changes.length === 1 ? "change" : "changes"}
+									</span>
+								</div>
+								<ul class="ov-changes ov-changes-danger">
+									{s.changes.map((c) => (
+										<li>{c}</li>
+									))}
+								</ul>
+							</li>
+						))}
+					</ul>
+
+					{/* THE GUARD FIELD — TypeToConfirm's own mechanism, prototyped. */}
+					<div class="ov-guard">
+						<label class="ov-guard-label" for="guard-word">
+							Type <strong>{fx.discardAll.guardWord}</strong> to confirm
+						</label>
+						<input
+							id="guard-word"
+							class="ds-atom-textinput ov-guard-input"
+							type="text"
+							value=""
+							placeholder={fx.discardAll.guardWord}
+							readonly
+							aria-describedby="guard-help"
+						/>
+						<p id="guard-help" class="ov-note">
+							Matched exactly — the component compares case-sensitively and does not trim, so
+							<code class="ov-code">Discard</code>, <code class="ov-code">DISCARD</code> and
+							<code class="ov-code">discard&nbsp;</code> with a trailing space all fail. The
+							field is inert in this sketch (D-02); its job here is to show that the global
+							scope costs a deliberate act and the per-screen scope does not.
+						</p>
+					</div>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="secondary">{fx.discardAll.cancelLabel}</Button>
+					<Button variant="primary">{fx.discardAll.confirmLabel}</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+
+	{/* ══ O-pipeline-strip, FAILURE — D-15 ══════════════════════════════════
+	    THE STRIP ITSELF IS IN THE TOPBAR, above, passed through the layout's
+	    `pipeline` prop in its failure tone — so this route renders the SAME
+	    region every other admin route carries, in the state D-15's contract copy
+	    names. That is the point: the strip has to survive navigation, so its
+	    failure state cannot be a panel invented on one screen.
+
+	    THE SECOND SENTENCE IS THE ARTEFACT. "The originals are still staged.
+	    Retrying does not re-upload them." D-15 requires the failure to be
+	    RECOVERABLE by retrying the dispatch without re-uploading, and the
+	    difference between a retry a user trusts and one they fear is entirely
+	    whether the screen says so. An operator who thinks retry means re-upload
+	    will not press it on a slow connection, and the two photos stay stuck.
+
+	    G-8 is why the strip is in the topbar at all: AppShell's slots are
+	    sidebar / topbar / main / footer, with no banner region. */}
+	{o === "pipeline-failure" && (
+		<div class="ov-treatment" data-artefact="O-pipeline-strip">
+			<Eyebrow size="sm" tone="muted">PIPELINE FAILURE (D-15) — THE STRIP IS ABOVE</Eyebrow>
+			<Heading level={2} size="lg" weight="bold">{PIPE_TITLE}</Heading>
+			<Text size="sm" tone="muted">{PIPE_BODY}</Text>
+			<div class="ov-actions">
+				<Button variant="primary">{PIPE_CTA}</Button>
+			</div>
+
+			<Card surface="subtle" padding="md" radius="lg">
+				<div class="ov-pipe">
+					<Eyebrow size="sm" tone="muted">THE OTHER PLACE, WHICH MUST AGREE</Eyebrow>
+					<Text size="sm" tone="muted">
+						D-15 puts pipeline state in two places: this strip, which survives navigation, and
+						per-photo inline state on the affected tiles in the photos grid. Both name the same
+						{" "}{fx.pipelineFailure.failed} photos, because a strip that says two while the grid
+						marks three is the divergence D-15 exists to forbid.
+					</Text>
+					{/* Own row, same reason as the 401 cross-link above: a `Link` inside a
+					    sentence measures 16px on every coarse-pointer class. */}
+					<p class="ov-linkrow">
+						<Link href="/admin/photos/" variant="inline">/admin/photos</Link>
+					</p>
+					<ul class="ov-changes">
+						{fx.pipelineFailure.photos.map((p) => (
+							<li>{p} — original still staged in R2, not processed</li>
+						))}
+					</ul>
+					<Text size="sm" tone="muted">
+						Retrying re-fires the dispatch against the staged originals. Nothing is uploaded
+						again, so a retry on a phone costs a tap rather than the photographs.
+					</Text>
+				</div>
+			</Card>
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	{o !== "index" && (
+		<aside class="ov-review">
+			<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+			<p class="ov-review-note">
+				<Link href="/admin/overlays/">All seven</Link>
+				{INDEX.filter((r) => r.o !== o).map((r) => (
+					<Link href={`/admin/overlays/${r.o}/`}>{r.id}</Link>
+				))}
+			</p>
+			<p class="ov-review-note">
+				Every dialog on these routes is a LOCAL PROTOTYPE of the component named in its
+				<code class="ov-code">data-ds-component</code> attribute, hand-authored against
+				<code class="ov-code">modal.css</code>'s own classes because
+				<code class="ov-code">Modal</code>, <code class="ov-code">ConfirmDialog</code>,
+				<code class="ov-code">TypeToConfirm</code> and <code class="ov-code">Sheet</code> each
+				server-render to 0 B. Only the mounting is local.
+			</p>
+		</aside>
+	)}
+</Admin>
+
+<style>
+	/* App LAYOUT css only, per QUAL-03. Every colour is a charcoal token, and
+	   nothing below re-implements a design-system component: the panels wear
+	   modal.css's own classes and these rules only place them. */
+
+	.ov-head,
+	.ov-treatment,
+	.ov-pipe {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.ov-code {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	/* ── The index ────────────────────────────────────────────────────────── */
+	.ov-index {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ov-index-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ov-index-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+		display: inline-flex;
+		align-items: center;
+		min-height: 30px;
+	}
+	.ov-index-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.ov-index-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ov-index-what {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+
+	/* ── The prototyped panels ────────────────────────────────────────────
+	   .ds-atom-modal-backdrop is position:fixed with the --scrim, exactly as
+	   the component mounts it, so the admin shell stays visible behind the
+	   dialog — which is the property being reviewed: a confirm is a layer over
+	   work in progress, not a replacement for it. The two rules here set the
+	   panel's own maximum width and let a long change list scroll, both of
+	   which modal.css already provides at 480px / 80vh; the override is the
+	   width only, because these panels carry a list rather than a sentence. */
+	.ov-backdrop {
+		padding: var(--space-4);
+	}
+	.ov-panel {
+		max-width: 560px;
+	}
+	.ov-panel-danger {
+		border-color: var(--red-ink);
+	}
+	.ov-danger {
+		color: var(--red-ink);
+	}
+
+	.ov-lede {
+		margin: 0 0 var(--space-3);
+		font-size: var(--text-base);
+		line-height: var(--lh-relaxed);
+		color: var(--ink);
+	}
+
+	.ov-note {
+		margin: var(--space-2) 0 0;
+		font-size: var(--text-xs);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-3);
+	}
+
+	/* ── The change list ──────────────────────────────────────────────────── */
+	.ov-groups {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-3);
+	}
+	.ov-group {
+		display: grid;
+		gap: var(--space-1);
+		padding-left: var(--space-3);
+		border-left: 2px solid var(--wire);
+	}
+	.ov-groups-plain .ov-group {
+		border-left-color: var(--rule);
+	}
+	.ov-group-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ov-group-entity {
+		font-size: var(--text-base);
+		font-weight: 500;
+		color: var(--ink);
+	}
+	.ov-group-n {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+	}
+	.ov-changes {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-1);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+	.ov-changes-danger {
+		color: var(--ink);
+	}
+
+	.ov-async {
+		margin-top: var(--space-4);
+		padding: var(--space-3);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ov-async p {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	/* ── G-6's separated actions ──────────────────────────────────────────── */
+	.ov-targets {
+		margin-top: var(--space-4);
+		padding: var(--space-3);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ov-target-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-1);
+	}
+	.ov-target {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ov-target-n {
+		flex: 0 0 auto;
+		width: 18px;
+		text-align: center;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	/* ── The typed guard ──────────────────────────────────────────────────── */
+	.ov-guard {
+		margin-top: var(--space-4);
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ov-guard-label {
+		font-size: var(--text-sm);
+		color: var(--ink);
+	}
+	.ov-guard-input {
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.ov-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* A cross-reference link on its own row rather than inside a sentence, so
+	   the 44px floor below can reach it. Measured, not assumed: the same link
+	   written inline reported 16px at all five coarse classes. */
+	.ov-linkrow {
+		display: flex;
+		margin: 0;
+		align-items: center;
+	}
+
+	/* ── Review chrome ────────────────────────────────────────────────────── */
+	.ov-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.ov-review-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0;
+		font-size: var(--text-xs);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-3);
+	}
+
+	/* ══ THE 44px FLOOR, EVERY COARSE-POINTER CLASS ════════════════════════
+	   Last block in the file so no base rule at the same specificity can win on
+	   source order. density-compact.css carries the floor for the design
+	   system's own controls; these are the targets that are mine. */
+	@media (pointer: coarse) {
+		.ov-index-link,
+		.ov-review-note .ds-atom-link,
+		.ov-target .ds-atom-link,
+		.ov-linkrow .ds-atom-link {
+			min-height: 44px;
+		}
+		.ov-guard-input {
+			min-height: 44px;
+		}
+	}
+</style>

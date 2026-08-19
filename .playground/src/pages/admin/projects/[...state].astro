@@ -1,0 +1,560 @@
+---
+// ═══ S-projects — five records, a status badge each, and no date anywhere ══
+//
+// TWO ARTEFACTS DESIGNED FROM ONE FILE: S-projects (populated) and E-projects
+// (empty). Everything else is plan 12's or plan 13's and is declared `inherits`.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK ══════════════
+// Under `output: 'static'` Astro strips the query string in DEV as well as at
+// build (astro/dist/core/request.js:20 - `if (isPrerendered) url.search = "";`).
+// Plan 12 proved it with seven byte-identical bodies and plan 13 made the
+// rest-param route the prescriptive idiom. This plan's frontmatter names
+// `src/pages/admin/projects.astro`, which would produce a screen with no state
+// axis at all; the idiom wins and the deviation is recorded in the SUMMARY.
+//
+// ═══ THIS ROUTE AND ITS SIBLING DETAIL ROUTE DO NOT COLLIDE ════════════════
+// `/admin/projects/[...state]` and `/admin/projects/[id]/[...state]` both match
+// a two-segment tail. Astro's routeComparator (core/routing/priority.js:23-27)
+// ranks a segment carrying a spread BELOW one that is merely dynamic, so the
+// detail route is tried first; when its getStaticPaths has no entry for the id
+// (`empty`, `loading`, …) the dev server falls through to this route rather
+// than 404ing (core/routing/dev.js:39). At build time there is no ambiguity at
+// all, because the emitted paths are disjoint. Read out of the installed astro
+// before either file was written, not discovered by watching a gate fail.
+//
+// ═══ D-45: STATUS, NEVER A DATE ════════════════════════════════════════════
+// A reader learns whether a project is real and current without the page
+// ageing. So there is no "updated", no "last commit", no year, and the
+// acceptance grep for `20[0-9]{2}` on this file must find nothing. The status
+// values are read out of 00-COPY/one-liners.md, which is canonical for them;
+// none is invented here.
+//
+// ═══ A LIST, NOT A GRID — AND THE COMPONENT CHOICE IS A MEASUREMENT ════════
+// ADMIN-IA says S-projects proves "that five records with a status badge are a
+// list, not a grid, and that D-45's three statuses are distinguishable at badge
+// size". UI-SPEC offers `DataGrid` OR a `Card` list. The Card list is the
+// design, and the reason is measured rather than preferred: plan 13's F-13-2
+// established that DataGrid stringifies every cell and that the ONLY path for a
+// Badge into a row is a column keyed exactly `status`, routed through a private
+// job-application tone map {applied, interviewing, offer, rejected}. D-45's
+// three values are not in that map, so all three fall through to one neutral
+// tone and the second half of S-projects' claim would be unprovable inside a
+// DataGrid. The evidence block below renders that collapse rather than
+// asserting it.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Chip,
+	DataGrid,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Heading,
+	Link,
+	Skeleton,
+	Text,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import { CANONICAL_STATES } from "../../../lib/artefacts.mjs";
+import fixtures from "../../../fixtures/projects.json";
+
+export const SCREEN = {
+	id: "projects",
+	route: "/admin/projects",
+	entity: "projects.json (D-24, not yet extracted)",
+	layouts: ["desktop"],
+	proves:
+		"That five project records with a status badge read as a list rather than a grid, and that D-45's three statuses are distinguishable at badge size — which they are NOT inside DataGrid, whose only Badge path is a closed job-application tone map, so the component choice is the finding rather than a preference. It also carries E-projects, whose second line is the first place a reader meets D-24's model: a project owns its case study, so adding one here adds both.",
+};
+
+// Seven paths from one file. `state: undefined` is the base path, so the
+// populated state is `/admin/projects/` and dist/admin/projects/index.html
+// exists. No eighth route: D-09 gives the projects LIST no refusal — the
+// refusal belongs to case-study authoring, which lives on the detail route.
+export function getStaticPaths() {
+	return [
+		{ params: { state: undefined } },
+		...CANONICAL_STATES.map((s) => ({ params: { state: s } })),
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-projects" },
+	// DESIGNED here. E-projects is one of the five per-screen empty states
+	// ADMIN-IA enumerates, and this is its only host.
+	{ state: "empty", coverage: "designed", ref: "E-projects" },
+	// INHERITS. Plan 13 claimed T-loading-list on /admin/photos, where the list
+	// is 39 rows. Five records is not a more demanding host.
+	{ state: "loading", coverage: "inherits", ref: "T-loading-list" },
+	// INHERITS. Plan 13 claimed T-error-inline on /admin/photos and prescribed
+	// that plans 14 and 15 inherit rather than re-claim it. The state still
+	// renders an INSTANCE of the warning, because "saving still works" is
+	// invisible without a save control on screen.
+	{ state: "error", coverage: "inherits", ref: "T-error-inline" },
+	// INHERITS. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// INHERITS. D-16's per-file diff has ZERO design-system coverage (G-7) and
+	// is sketched by this plan at /admin/conflict-diff/.
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// INHERITS. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Replacing it with a constant is the
+// negative control for check-states.mjs.
+const state = Astro.params.state ?? "populated";
+const fx = fixtures[state];
+if (!fx) {
+	throw new Error(
+		`admin/projects/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined` plus one entry per CANONICAL_STATES member, and src/fixtures/projects.json " +
+			"must carry a key for each. A state declared in STATES with no fixture is a fake " +
+			"artefact: the route would answer 200, render a plausible page, and be screenshotted " +
+			"under a state name it is not in.",
+	);
+}
+
+const noop = () => {};
+
+// UI-SPEC's contract table, verbatim, in named constants so the exact strings
+// are greppable in one place and cannot drift as the markup moves.
+const EMPTY_TITLE = "No projects yet.";
+const EMPTY_DESC = "A project owns its case study, so adding one here adds both.";
+const EMPTY_CTA = "Add a project";
+const INLINE_ERROR = "Needs a title before this can be published.";
+
+// D-45's three statuses mapped to three Badge tones. `Archived` is UNUSED BY
+// THE REAL DATA — all five projects are Live or Maintained — so the swatch row
+// below renders the third tone explicitly and says it is not from the data.
+// Inventing an Archived project to fill the gap would have put a false record
+// in front of a reviewer; showing the tone beside the list does not.
+const STATUS_TONE = { Live: "success", Maintained: "info", Archived: "neutral" };
+const STATUS_MEANS = {
+	Live: "deployed and still receiving work",
+	Maintained: "shipped and still mine, no work in flight",
+	Archived: "finished; honest about it, and better than an undated project assumed dead",
+};
+
+const isLoading = state === "loading";
+const isEmpty = fx.projects.length === 0 && !isLoading;
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+
+const statusCounts = {};
+for (const p of fx.projects) statusCounts[p.status] = (statusCounts[p.status] ?? 0) + 1;
+
+// F-13-2's evidence, three rows. The column is keyed exactly `status` because
+// that is the only key DataGrid routes through its Badge path at all.
+const gridColumns = [
+	{ key: "title", label: "Project" },
+	{ key: "status", label: "Status" },
+];
+const gridRows = ["Live", "Maintained", "Archived"].map((s, i) => ({
+	id: `dg-${i}`,
+	title: s === "Archived" ? "(tone not in the data)" : s === "Live" ? "Cairn" : "hued",
+	status: s,
+}));
+
+const reviewStates = ["populated", ...CANONICAL_STATES];
+const hrefFor = (s) => (s === "populated" ? "/admin/projects/" : `/admin/projects/${s}/`);
+---
+
+<Admin
+	title={`S-projects / ${state}`}
+	active="projects"
+	route="/admin/projects"
+	navStates={fx.nav}
+>
+	<div class="pj-head" data-artefact={state === "populated" ? "S-projects" : undefined}>
+		<Eyebrow size="sm" tone="muted">PROJECTS</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+		<Text size="sm" tone="muted">{fx.sub}</Text>
+	</div>
+
+	{/* ── T-loading-list, INHERITED ─────────────────────────────────────────
+	    The shell, the sidebar and Publish stay usable while the body waits.
+	    Skeleton rather than a hand-rolled shape — but NOT a component's own
+	    loading prop, because the Card list has none and the DataGrid this
+	    screen deliberately does not use is the only thing here that does.
+	    Plan 14's F-14-5 already records that absence for Sortable and
+	    RichText; a Card list is the third component with the same hole. */}
+	{isLoading && (
+		<div class="pj-panel" data-artefact="T-loading-list">
+			<Eyebrow size="sm" tone="muted">INHERITS T-loading-list</Eyebrow>
+			<Text size="sm" tone="muted">
+				The treatment is plan 13's, claimed on the 39-row photo list. What is specific to
+				projects is that each row reserves TWO heights, not one — the card fields and the
+				case-study summary beneath them — so a single-line skeleton would let the page jump by
+				a whole row per record when the data lands.
+			</Text>
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+		</div>
+	)}
+
+	{/* ── E-projects ────────────────────────────────────────────────────────
+	    Copy verbatim from UI-SPEC's contract table. The second sentence is
+	    D-24's whole model stated in one line, and this is the first place a
+	    reader meets it: adding a project here also creates the case study,
+	    because a project OWNS its case study rather than linking to one.
+
+	    Plan 13's distinguishing rule applies — an empty state must say WHY it
+	    is empty. This one is empty because nothing exists, so it carries a CTA;
+	    E-category-filtered on /admin/photos is empty because a filter excluded
+	    everything, so it carries none. Two reasons, two designs. */}
+	{isEmpty && (
+		<div class="pj-panel" data-artefact="E-projects">
+			<EmptyState title={EMPTY_TITLE} description={EMPTY_DESC}>
+				<Button variant="primary">{EMPTY_CTA}</Button>
+			</EmptyState>
+			<Text size="sm" tone="muted">
+				Nothing else on the screen is broken and nothing is disabled. The Work page simply
+				renders one band fewer until a project exists.
+			</Text>
+		</div>
+	)}
+
+	{/* ── THE LIST ──────────────────────────────────────────────────────────
+	    A Card per project, one column, full width. Each row carries: the
+	    title, the D-45 status Badge, the platform label as a Chip, the card
+	    description, the tech chips, the live link, and the case-study summary —
+	    tier and real length — because D-24 pairs the two and a list that showed
+	    only the card half would hide half of what the row owns.
+
+	    NO EDITING HAPPENS HERE. ADMIN-IA is explicit: the list is an entry
+	    point, editing lives on the detail route. So every row's affordance is a
+	    link to /admin/projects/<id>/ and there is not one input on this page. */}
+	{!isLoading && !isEmpty && (
+		<section class="pj-section">
+			<Eyebrow size="sm" tone="muted">FIVE PROJECTS</Eyebrow>
+			<Text size="sm" tone="muted">
+				{fx.projects.length} records, {Object.entries(statusCounts).map(([k, v]) => `${v} ${k}`).join(", ")}.
+				Status, never a date: the row says whether a project is real and current, and it does
+				not age.
+			</Text>
+
+			{fx.projects.map((p) => {
+				const err = fx.titleError === p.id;
+				return (
+					<Card surface="subtle" padding="md" radius="lg">
+						<div class="pj-row">
+							<div class="pj-row-head">
+								<Link href={`/admin/projects/${p.id}/`}>{p.title}</Link>
+								<Badge tone={STATUS_TONE[p.status]}>{p.status}</Badge>
+								<Chip>{p.label.text}</Chip>
+								<code class="pj-key">{p.id}</code>
+							</div>
+
+							{err && (
+								<Text size="sm" tone="muted">
+									<span class="pj-warn">{INLINE_ERROR}</span>
+								</Text>
+							)}
+
+							<Text size="sm" tone="secondary">{p.description}</Text>
+
+							<div class="pj-chips">
+								{p.tech.map((t) => (
+									<Chip>{t}</Chip>
+								))}
+							</div>
+
+							<div class="pj-meta">
+								<code class="pj-key">{p.caseTier} form</code>
+								<code class="pj-key">{p.caseSections.length} sections</code>
+								<code class="pj-key">{p.caseWords} words</code>
+								<code class="pj-key">{p.badges.length} badge{p.badges.length === 1 ? "" : "s"}</code>
+							</div>
+
+							<div class="pj-actions">
+								<Link href={`/admin/projects/${p.id}/`}>Edit card and case study</Link>
+								<Link href={p.href}>Open the live site</Link>
+							</div>
+						</div>
+					</Card>
+				);
+			})}
+		</section>
+	)}
+
+	{/* ── D-45's THREE TONES, AND THE ONE THE DATA CANNOT SHOW ──────────────
+	    S-projects has to prove the three statuses are distinguishable at badge
+	    size. Two of the three are in the real data; `Archived` is in none of
+	    the five records, so it is rendered here as a swatch and labelled as
+	    such rather than pinned onto a project that is not archived. Plan 13's
+	    fixture rule, applied to a value instead of a row: a sketch may show
+	    what the real content cannot produce, as long as it says so where it
+	    does it. */}
+	{!isLoading && (
+		<section class="pj-section">
+			<Eyebrow size="sm" tone="muted">D-45 — THE THREE STATUSES AT BADGE SIZE</Eyebrow>
+			<ul class="pj-swatches">
+				{Object.keys(STATUS_TONE).map((s) => (
+					<li class="pj-swatch">
+						<Badge tone={STATUS_TONE[s]}>{s}</Badge>
+						<Text size="sm" tone="muted">{STATUS_MEANS[s]}</Text>
+						<code class="pj-key">
+							{statusCounts[s] ? `${statusCounts[s]} in the data` : "0 in the data"}
+						</code>
+					</li>
+				))}
+			</ul>
+		</section>
+	)}
+
+	{/* ── WHY THIS IS NOT A DataGrid — RENDERED, NOT ASSERTED ───────────────
+	    Plan 13's F-13-2: DataGrid stringifies every cell, and the single escape
+	    hatch is a column keyed exactly `status`, routed through a PRIVATE tone
+	    map covering {applied, interviewing, offer, rejected}. D-45's values are
+	    not in it, so each falls through to `tone: "neutral"` carrying the raw
+	    string. The grid below is three rows keyed `status` with D-45's three
+	    values in it, so the collapse is visible beside the swatch row above
+	    where the same three values carry three different tones.
+
+	    Left in place rather than worked around. Recolouring the grid locally
+	    would delete the evidence, which is the workaround Core Value forbids —
+	    and the practical consequence is already decided: the list above is
+	    Cards, and F-13-2's proposed `render?: (row) => ReactNode` is what would
+	    let it be a table instead. */}
+	{!isLoading && (
+		<section class="pj-section">
+			<Eyebrow size="sm" tone="muted">EVIDENCE — THE SAME THREE VALUES INSIDE DataGrid</Eyebrow>
+			<Text size="sm" tone="muted">
+				One column keyed <code class="pj-key">status</code>, which is the only key DataGrid
+				routes through a Badge at all. Its tone map is closed and private, so all three D-45
+				values land on one tone. Compare with the swatch row above: same values, three tones.
+				This is why the list is a Card list.
+			</Text>
+			<DataGrid columns={gridColumns} rows={gridRows} />
+		</section>
+	)}
+
+	{/* ── T-error-inline: the pointer plus what a reviewer cannot infer ─────
+	    D-18's LENIENT half: the message is about PUBLISHING, saving still
+	    works, and it attaches to the record it is about. The treatment is plan
+	    13's; what is added here is the save control, enabled, beside it.
+
+	    AND THE COMPONENT STILL CANNOT EXPRESS THE SEVERITY. Plan 14's F-14-3:
+	    FieldErrorProps is `{ message, className }` with no tone and a fixed
+	    role="alert" span in --red-ink, so D-18's lenient warning and its strict
+	    publish block render identically. This screen has NO Field at all — it
+	    is a list, and editing lives on the detail route — so the warning here
+	    is a plain span carrying the same verbatim string, and the severity
+	    problem is inherited rather than restated. */}
+	{state === "error" && (
+		<div class="pj-panel" data-artefact="T-error-inline">
+			<Eyebrow size="sm" tone="muted">INHERITS T-error-inline</Eyebrow>
+			<Text size="sm" tone="muted">
+				What is specific to the projects list is that the warning has no field to attach to:
+				this screen holds no inputs, so the message attaches to the ROW and the fix is one
+				link away on the detail screen. A list that showed the warning at the top of the page
+				would make a reviewer hunt five rows for which record is incomplete.
+			</Text>
+			<div class="pj-actions">
+				<Button variant="primary">Mark as ready</Button>
+				<Button variant="secondary">Preview</Button>
+				<Text size="sm" tone="muted">
+					Both controls are enabled. Nothing about this state is modal, and the draft saves.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ───── */}
+	{isInherit && (
+		<div
+			class="pj-inherit"
+			data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}
+		>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to projects is that ONE record carries two publishable things — the card and the case study — so the change list has to name which half moved, or an operator reads a card-copy tweak and a rewritten case study as the same edit."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all (G-7). What is specific to projects is that the file is not yet extracted: until D-24's projects.json exists, a project edit and a résumé edit are the SAME file, so every project conflict is also a résumé conflict. The extraction is what makes per-file resolution meaningful here."
+						: "The outcome is plan 12's. What is specific to projects is that a case study ships as JSON like everything else — there is no pipeline and no asynchronous half — so 'committed' and 'live' mean the same thing on this screen, unlike photos."}
+			</Text>
+			{state === "dirty" && (
+				<div class="pj-badge-row">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Projects, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+			{state === "conflict" && (
+				<AlertBanner
+					open
+					tone="warning"
+					title="projects.json changed after your draft started."
+					description="Resolving is per file, on its own screen. Home and Photos stay pending while this one is decided."
+					dismissible={false}
+				/>
+			)}
+		</div>
+	)}
+
+	<Divider />
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	<aside class="pj-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="pj-review-line">
+			{reviewStates.map((s) => (
+				<a class="pj-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+		</p>
+		<p class="pj-review-note">
+			The detail screen and its two extra artefacts are at
+			<a class="pj-review-link" href="/admin/projects/cairn/">/admin/projects/cairn/</a>
+			and the per-file conflict diff is at
+			<a class="pj-review-link" href="/admin/conflict-diff/">/admin/conflict-diff/</a>.
+		</p>
+	</aside>
+</Admin>
+
+<style>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+	   Scoped rather than global is safe here: this route carries NO island, so
+	   every element below is in the Astro template and receives the scoping
+	   attribute. Plan 13's global-style rule applies to island hosts only. */
+
+	.pj-head,
+	.pj-panel,
+	.pj-inherit,
+	.pj-section {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.pj-section {
+		gap: var(--space-4);
+	}
+
+	.pj-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.pj-row {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.pj-row-head,
+	.pj-meta,
+	.pj-actions,
+	.pj-chips,
+	.pj-badge-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.pj-chips {
+		gap: var(--space-2);
+	}
+
+	.pj-key {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.pj-warn {
+		color: var(--red-ink, var(--ink));
+		font-weight: 600;
+	}
+
+	.pj-swatches {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-3);
+	}
+	.pj-swatch {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* Two columns of swatches from the near-square foldable class up — the
+	   first width where a second column is honest. One column below, which is
+	   REFLOW rather than hiding: all three are present at 344px. */
+	@media (min-width: 673px) {
+		.pj-swatches {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	/* == Review chrome ===================================================== */
+	.pj-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.pj-review-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.pj-review-note {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+	.pj-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.pj-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+
+	/* == THE 44px FLOOR, EVERY COARSE-POINTER CLASS ========================
+	   Five of the six device classes in the responsive contract are coarse
+	   pointer, so the floor is the common case rather than the exception, and
+	   it sits on the HIT AREA rather than on the painted control.
+	   density-compact.css carries the floor for the design system's own
+	   controls; the rows below are mine.
+
+	   THE BASE RULES COME FIRST AND THE FLOOR LAST, DELIBERATELY. Plan 14
+	   measured a control stuck at 30px because its coarse-pointer floor was
+	   written ABOVE the base rule at the same specificity (0,1,0) and source
+	   order decided it. Nothing above sets a min-height on any of these
+	   selectors, and this block is the last in the file. */
+	@media (pointer: coarse) {
+		.pj-review-link,
+		.pj-row-head .ds-atom-link,
+		.pj-actions .ds-atom-link,
+		.pj-review-note .ds-atom-link {
+			min-height: 44px;
+		}
+	}
+</style>

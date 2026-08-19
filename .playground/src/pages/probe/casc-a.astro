@@ -1,0 +1,39 @@
+---
+// Cascade probe — VARIANT A (MEASURE-3, D-02 claim 3).
+//
+// Import shape: the design system's `tokens.css` FIRST, `theme-charcoal.css`
+// SECOND, both in this frontmatter. Emitted order: tokens, then charcoal.
+//
+// The two lines below are the entire experiment. Astro decides the order of
+// imported stylesheets with `cssOrder(a, b)` (astro/dist/core/build/runtime.js),
+// which sorts by accumulated import index ascending then module-graph depth
+// descending — and the import index is literally the position of the `import`
+// statement inside the importing module. Swapping the two lines flips the
+// emitted order every time, which is why this matrix is CONSTRUCTED rather
+// than observed: you cannot reliably reproduce ordering nondeterminism by
+// hoping to catch it, you reproduce it by building both orderings and
+// asserting the theme wins in each.
+//
+// `data-brand="charcoal"` on <html> is what selects the theme. The `dark`
+// class is deliberately ABSENT: `probe.mjs` toggles it on and off between
+// reads so both modes are measured on one build of one page, and neither mode
+// can be accidentally baked into the markup.
+//
+// Nothing else may differ between casc-a/b/c/d. Body, title and attributes are
+// identical across all four by design — the import shape is the only variable.
+
+import "@akhil-saxena/design-system/tokens.css";
+import "../../styles/theme-charcoal.css";
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/casc-a — tokens then theme, both in .astro</title>
+	</head>
+	<body>
+		<h1>casc-a</h1>
+		<p>tokens.css then theme-charcoal.css, both imported from .astro frontmatter.</p>
+	</body>
+</html>

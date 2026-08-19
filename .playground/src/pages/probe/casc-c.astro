@@ -1,0 +1,54 @@
+---
+// Cascade probe — VARIANT C (MEASURE-3, D-02 claim 3).
+//
+// Import shape: the design system's `tokens.css` from this frontmatter,
+// `theme-charcoal.css` from a HYDRATED ISLAND (`ThemeCssIsland.tsx`).
+//
+// Variant C matters on its own, independently of the ordering question:
+// Astro hoists island CSS out of the island into a page-level stylesheet, so
+// it competes in the SAME cascade bucket as an `.astro` import. There is no
+// separate island cascade. A theme delivered by a component rather than by a
+// layout is therefore subject to exactly the same tie, and that is not
+// obvious from the outside — it is the kind of thing a team assumes is
+// isolated until a colour changes.
+//
+// The `client:load` directive below is load-bearing and must not be removed to
+// quieten `check-no-js.sh`. Without it the component is server-rendered and
+// the island path is never exercised, which would make this variant a
+// duplicate of A rather than a distinct measurement. `check-no-js.sh` excludes
+// this route BY NAME for that reason.
+//
+// THE ORDER OF THE TWO IMPORT LINES BELOW IS LOAD-BEARING, and the reason is
+// a measured finding rather than a style preference. With the COMPONENT import
+// first, this page emits charcoal before tokens; moving the `tokens.css` line
+// above it flips the emitted order to tokens before charcoal (measured both
+// ways, INLINE_CSS=never, 2026-08-17). So an island's position in the page
+// cascade is decided by where the COMPONENT's import statement sits in the
+// page — not by the fact that it is an island, and not by anything about the
+// island itself. Being hoisted does not mean being last.
+//
+// Keep the component import first. It is what makes casc-c emit
+// charcoal-then-tokens while casc-d emits tokens-then-charcoal, so the island
+// half of the matrix covers BOTH orders instead of testing one order twice.
+// Reformatting these two lines — an import sorter, a lint autofix — silently
+// halves the matrix while leaving the probe green.
+//
+// See casc-a.astro for the full note on why the matrix is constructed.
+
+import ThemeCssIsland from "../../components/ThemeCssIsland.tsx";
+
+import "@akhil-saxena/design-system/tokens.css";
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/casc-c — tokens in .astro, theme from an island</title>
+	</head>
+	<body>
+		<h1>casc-c</h1>
+		<p>tokens.css from frontmatter; theme-charcoal.css hoisted out of a hydrated island.</p>
+		<ThemeCssIsland client:load />
+	</body>
+</html>

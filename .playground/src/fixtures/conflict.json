@@ -1,0 +1,118 @@
+{
+	"draftStartedAt": "the draft's saved baseline",
+	"files": [
+		{
+			"path": "data/portfolio_images.json",
+			"bytes": 57344,
+			"status": "conflicted",
+			"resolution": null,
+			"remoteAuthor": "github-actions · process-photos.yml",
+			"remoteWhat": "appended 3 processed photos and their variants",
+			"localWhat": "retitled 2 photos",
+			"baseSha": "a1c9f30",
+			"remoteSha": "7be4d18",
+			"rows": [
+				{
+					"field": "photos[] · wildlife-pigeon",
+					"remote": "+ {\"id\":\"wildlife-pigeon\",\"title\":\"Pigeon\",\"category\":\"wildlife\",\"order\":37}",
+					"local": null,
+					"note": "added remotely by the pipeline; absent from the draft because it did not exist when the draft started"
+				},
+				{
+					"field": "photos[] · wildlife-starfish",
+					"remote": "+ {\"id\":\"wildlife-starfish\",\"title\":\"Starfish\",\"category\":\"wildlife\",\"order\":38}",
+					"local": null,
+					"note": "added remotely by the pipeline; absent from the draft because it did not exist when the draft started"
+				},
+				{
+					"field": "photos[] · wildlife-yinyangjpg",
+					"remote": "+ {\"id\":\"wildlife-yinyangjpg\",\"title\":\"Yin Yang\",\"category\":\"wildlife\",\"order\":39}",
+					"local": null,
+					"note": "added remotely by the pipeline; absent from the draft because it did not exist when the draft started"
+				},
+				{
+					"field": "photos[] · abstract-intothemist · title",
+					"remote": "Into The Mist",
+					"local": "Into The Mist II",
+					"note": "changed locally only"
+				},
+				{
+					"field": "photos[] · abstract-lightscameraart · title",
+					"remote": "Lights Camera Art",
+					"local": "Lights Camera Art II",
+					"note": "changed locally only"
+				}
+			]
+		},
+		{
+			"path": "data/home_config.json",
+			"bytes": 979,
+			"status": "conflicted",
+			"resolution": "reload",
+			"remoteAuthor": "akhil-saxena · direct commit",
+			"remoteWhat": "swapped the sixth peek slot",
+			"localWhat": "rewrote the intro",
+			"baseSha": "3d0b7a4",
+			"remoteSha": "c82e551",
+			"rows": [
+				{
+					"field": "peekIds[5]",
+					"remote": "wildlife-starfish",
+					"local": "architecture-eiffeljpg",
+					"note": "both sides changed the same slot"
+				},
+				{
+					"field": "intro",
+					"remote": "Building for the web. Photographing everything else.",
+					"local": "Building for the web. Photographing everything else, mostly at 35mm.",
+					"note": "changed locally only"
+				}
+			]
+		},
+		{
+			"path": "data/site_config.json",
+			"bytes": 176,
+			"status": "conflicted",
+			"resolution": null,
+			"remoteAuthor": "akhil-saxena · direct commit",
+			"remoteWhat": "raised the Architecture column count",
+			"localWhat": "raised the Nature column count",
+			"baseSha": "0f5ac62",
+			"remoteSha": "9ad3e07",
+			"rows": [
+				{
+					"field": "categoryColumns.Architecture",
+					"remote": "4",
+					"local": "3",
+					"note": "changed remotely only"
+				},
+				{
+					"field": "categoryColumns.Nature",
+					"remote": "2",
+					"local": "3",
+					"note": "changed locally only"
+				}
+			]
+		},
+		{
+			"path": "data/resume.json",
+			"bytes": 8112,
+			"status": "clean",
+			"resolution": null,
+			"remoteAuthor": null,
+			"remoteWhat": null,
+			"localWhat": "edited 11-bullet Brevo (Formerly Sendinblue) entry",
+			"baseSha": "5e1d2b8",
+			"remoteSha": "5e1d2b8",
+			"rows": []
+		}
+	],
+	"counts": {
+		"files": 4,
+		"conflicted": 3,
+		"clean": 1,
+		"resolved": 1,
+		"unresolved": 2,
+		"rows": 9
+	}
+}

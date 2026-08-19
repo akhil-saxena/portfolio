@@ -1,0 +1,343 @@
+{
+	"populated": {
+		"categories": [
+			{
+				"id": "abstract",
+				"label": "Abstract",
+				"columns": 3,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "architecture",
+				"label": "Architecture",
+				"columns": 3,
+				"photos": 14,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "nature",
+				"label": "Nature",
+				"columns": 2,
+				"photos": 8,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "portraits",
+				"label": "Portraits",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "product",
+				"label": "Product",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "street",
+				"label": "Street",
+				"columns": 2,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "wildlife",
+				"label": "Wildlife",
+				"columns": 2,
+				"photos": 5,
+				"bridgeAgrees": true
+			}
+		],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "Seven categories, each one a record with a separate id and label.",
+		"headline": "Site",
+		"sub": "Seven categories, each one a record with a separate id and label.",
+		"nav": {
+			"site": "published"
+		}
+	},
+	"empty": {
+		"categories": [],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "The last category cannot be deleted, so this table cannot be empty.",
+		"headline": "Site",
+		"sub": "The last category cannot be deleted, so this table cannot be empty.",
+		"nav": {
+			"site": "published"
+		}
+	},
+	"loading": {
+		"categories": [],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "One committed file of 176 bytes, with no asynchronous load to wait on.",
+		"headline": "Site",
+		"sub": "One committed file of 176 bytes, with no asynchronous load to wait on.",
+		"nav": {
+			"site": "published"
+		}
+	},
+	"error": {
+		"categories": [
+			{
+				"id": "abstract",
+				"label": "Abstract",
+				"columns": 3,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "architecture",
+				"label": "Architecture",
+				"columns": 3,
+				"photos": 14,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "nature",
+				"label": "Nature",
+				"columns": 2,
+				"photos": 8,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "portraits",
+				"label": "Portraits",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "product",
+				"label": "Product",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "street",
+				"label": "Street",
+				"columns": 2,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "wildlife",
+				"label": "Wildlife",
+				"columns": 2,
+				"photos": 5,
+				"bridgeAgrees": true
+			}
+		],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": "street",
+		"marker": "A category label cannot be blank. Saving still works.",
+		"headline": "Site",
+		"sub": "A category label cannot be blank. Saving still works.",
+		"nav": {
+			"site": "draft"
+		}
+	},
+	"dirty": {
+		"categories": [
+			{
+				"id": "abstract",
+				"label": "Abstract",
+				"columns": 3,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "architecture",
+				"label": "Architecture",
+				"columns": 3,
+				"photos": 14,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "nature",
+				"label": "Nature",
+				"columns": 2,
+				"photos": 8,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "portraits",
+				"label": "Portraits",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "product",
+				"label": "Product",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "street",
+				"label": "Street",
+				"columns": 2,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "wildlife",
+				"label": "Wildlife",
+				"columns": 2,
+				"photos": 5,
+				"bridgeAgrees": true
+			}
+		],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "Two column counts differ from what is published.",
+		"headline": "Site",
+		"sub": "Two column counts differ from what is published.",
+		"nav": {
+			"site": "draft"
+		}
+	},
+	"conflict": {
+		"categories": [
+			{
+				"id": "abstract",
+				"label": "Abstract",
+				"columns": 3,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "architecture",
+				"label": "Architecture",
+				"columns": 3,
+				"photos": 14,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "nature",
+				"label": "Nature",
+				"columns": 2,
+				"photos": 8,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "portraits",
+				"label": "Portraits",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "product",
+				"label": "Product",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "street",
+				"label": "Street",
+				"columns": 2,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "wildlife",
+				"label": "Wildlife",
+				"columns": 2,
+				"photos": 5,
+				"bridgeAgrees": true
+			}
+		],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "site_config.json changed after your draft started.",
+		"headline": "Site",
+		"sub": "site_config.json changed after your draft started.",
+		"nav": {
+			"site": "draft"
+		}
+	},
+	"success": {
+		"categories": [
+			{
+				"id": "abstract",
+				"label": "Abstract",
+				"columns": 3,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "architecture",
+				"label": "Architecture",
+				"columns": 3,
+				"photos": 14,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "nature",
+				"label": "Nature",
+				"columns": 2,
+				"photos": 8,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "portraits",
+				"label": "Portraits",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "product",
+				"label": "Product",
+				"columns": 2,
+				"photos": 2,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "street",
+				"label": "Street",
+				"columns": 2,
+				"photos": 4,
+				"bridgeAgrees": true
+			},
+			{
+				"id": "wildlife",
+				"label": "Wildlife",
+				"columns": 2,
+				"photos": 5,
+				"bridgeAgrees": true
+			}
+		],
+		"allColumns": 3,
+		"configBytes": 176,
+		"total": 39,
+		"labelError": null,
+		"marker": "Published. The category records and their column counts shipped.",
+		"headline": "Site",
+		"sub": "Published. The category records and their column counts shipped.",
+		"nav": {
+			"site": "published"
+		}
+	}
+}

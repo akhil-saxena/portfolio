@@ -1,0 +1,48 @@
+/* Charcoal brand - FACE layer (D-29).
+   Imported via:
+     import "../styles/fonts-charcoal.css";
+   Pair it with theme-charcoal.css, which carries the tokens. This file carries
+   the faces and nothing else - zero custom properties - which is what makes
+   DS-04 ("the token layer ends with no face rules") literally true rather than
+   aspirational.
+
+   WHY THE SPLIT IS TWO FILES AND NOT PER-FAMILY SUBPATHS. Omitting this file
+   leaves every type token naming a family the browser has never heard of, so
+   the whole page falls back at once and you notice within a second. The
+   rejected alternative degrades one family at a time: forget one subpath and a
+   single family silently falls back while the page still looks almost right,
+   which is the exact DS-05 failure mode the split exists to kill.
+
+   D-30, RESTATED AFTER MEASUREMENT. "Latin subset only" is not a package
+   option for these two variable families - neither Playfair Display nor DM
+   Sans ships per-subset CSS, only per-axis. What is actually guaranteed is a
+   latin-only DOWNLOAD: the non-latin rules carry a unicode-range this site's
+   content never matches, so the browser fetches one file per family. The four
+   entry points below produce 8 face rules (4 + 2 + 1 + 1) against the design
+   system's measured 73, and 4 of those 8 are Playfair's four subsets.
+
+   D-30's premise "all three ship variable" is FALSE and this is the factual
+   correction, not a supply-chain finding: no variable build of IBM Plex Mono
+   is published to npm. Google Fonts never onboarded the family, so Fontsource
+   has nothing to mirror, and the guessable package name returns a registry
+   404. Only the static package exists, which is why two per-weight entry
+   points appear below instead of one axis file. Do NOT "fix" this by guessing
+   a variable package name: that name is unclaimed, so it would resolve to
+   whatever eventually claims it (T-00-12).
+
+   EDITING THIS FILE: the acceptance checks are plain greps that read prose the
+   same as code. They require exactly four at-rule inclusions and zero lines
+   beginning with a custom-property name, so do not add a fifth mention in a
+   comment and do not open a comment line with a token name.
+
+   KNOWN GAP, deliberately not patched here. Only the roman axis of Playfair is
+   loaded. UI-SPEC gives two real italic-serif roles (the 22px display subtitle
+   and the cross-link at the foot of Work and Photos), and both will render as
+   a synthesised oblique until the italic axis is added - which costs 4 more
+   face rules and takes the count from 8 to 12. That is a Phase 1 decision about
+   what "8 rules" is measuring, not a defect in this file. */
+
+@import "@fontsource-variable/playfair-display/wght.css";
+@import "@fontsource-variable/dm-sans/wght.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";

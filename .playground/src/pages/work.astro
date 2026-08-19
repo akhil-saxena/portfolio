@@ -1,0 +1,455 @@
+---
+// X-work — the same page RESTRUCTURED. Read it beside /work-recolour.
+//
+// THE TWO ARTEFACTS DIFFER BY STRUCTURE ONLY. Both are charcoal dark, both use
+// the same tokens, both resolve the same substitution table. Everything that
+// moved between them is one of three locked decisions, so a reviewer who
+// dislikes this page can say which decision caused it:
+//
+//   D-44  Two bands, employment FIRST, then projects. The ivory 2x2 grid and
+//         the trailing engineering-at-Brevo strip are gone. Brevo, PharmEasy and
+//         MAQ are a professional-experience band; the five own projects sit
+//         below. They are different kinds of evidence, read for different
+//         reasons, and burying employment under a tail made it read as a
+//         footnote to a side project.
+//   D-45  Live / Maintained / Archived status badges, and no date reliance. A
+//         reader learns whether a project is real and current without the page
+//         ageing on its own.
+//   D-38  FIVE projects, not four. Cairn was absent from the handoff entirely,
+//         so the 2x2 grid is gone regardless of anything else.
+//
+// Exception 8 also lands here and is a DSGN-03 decision rather than a token
+// change - see the band cap in the stylesheet below.
+//
+// Copy is plan 02's, verbatim. 00-COPY/one-liners.md is canonical and this
+// sketch must not paraphrase it: the whole point of D-40 is that build phases
+// work against real text at real lengths, and a paraphrase silently changes the
+// length. Company, role and period come from data/resume.json.
+
+import { Badge, Card, Chip, Divider, Eyebrow, Heading, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+import resume from "../data/resume.json";
+
+const OCHRE_D = "var(--ochre-d)";
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+
+// EMPLOYMENT BAND (D-44, band one).
+//
+// Company, role and period are read out of resume.json rather than retyped. The
+// metric is not a field in that data, so it is a lookup keyed by the same id,
+// and each entry names the bullet it was read from - a number on a portfolio
+// that cannot be traced to a source is the liability, in front of the exact
+// audience most likely to check.
+const metrics: Record<string, { value: string; source: string }> = {
+	brevo: {
+		value: "+15% CONVERSION",
+		source: "bullet 2 — “Improved conversion by 15% … for 2.5M+ users”",
+	},
+	pharmeasy: {
+		value: "4K+ FRANCHISES",
+		source: "bullet 1 — “enhancing productivity for 4K+ franchises across 4 countries”",
+	},
+	maq: {
+		value: "6× FASTER PIPELINES",
+		source: "bullet 4 — “Improved pipeline execution time by 6×”",
+	},
+};
+
+const employment = resume.experience.map((e) => ({
+	id: e.id,
+	company: e.company,
+	role: e.role,
+	period: e.period,
+	metric: metrics[e.id]?.value ?? "",
+}));
+
+// PROJECTS BAND (D-44, band two; D-38's five; D-45's statuses).
+//
+// `description` and `status` are the `- card:` and `- badge:` payloads from
+// 00-COPY/one-liners.md, character for character. `title` and `tech` come from
+// resume.json. Order puts the design system first because D-38 makes it the
+// flagship - it is the only project whose outcome the reader is looking at while
+// reading about it.
+const copy: Record<string, { description: string; status: string }> = {
+	"design-system": {
+		description:
+			"A React component library where one token change lands across every screen at once. 80 components in 10 categories, and this site is built entirely out of them.",
+		status: "Live",
+	},
+	cairn: {
+		description:
+			"A job application tracker for a search that runs long, where restraint is the product. Its forever-no list rules out streaks, comparisons and resume scoring, and it runs on Cloudflare's free tier.",
+		status: "Live",
+	},
+	hued: {
+		description:
+			"Turns your camera roll into the colours you actually lived in, by week, month or year. Palettes are clustered in CIELAB so perceptually close shades merge, and it requests no network permission.",
+		status: "Maintained",
+	},
+	momentum: {
+		description:
+			"Breaks a long-term goal into a number for today, and recalculates it when you fall behind. The target, streak and milestone maths sits in a pure-Kotlin engine layer with no Android imports.",
+		status: "Maintained",
+	},
+	timeshift: {
+		description:
+			"Right-click any time written on a page and read it in your own zone. It disambiguates CST, IST and BST from surrounding context, and follows the current DST state rather than a cached offset.",
+		status: "Maintained",
+	},
+};
+
+const icons: Record<string, { initial: string; bg: string; ink: string; italic: boolean }> = {
+	"design-system": { initial: "D", bg: "var(--ink)", ink: "var(--page-bg)", italic: false },
+	// Exception 2: charcoal ink on the ochre fill at 4.56:1. The handoff's white
+	// glyph measures 3.97:1 and fails. Per-icon, not global.
+	hued: { initial: "h", bg: "var(--ochre)", ink: "var(--ink-inverse)", italic: true },
+	momentum: { initial: "M", bg: "#3E5A48", ink: "#FFFFFF", italic: false },
+	timeshift: { initial: "T", bg: "#52585E", ink: "#FFFFFF", italic: false },
+	// Cairn has no handoff icon, because the handoff omits Cairn. A cairn is a
+	// stack of stones, so the glyph is the project's own idea rather than an
+	// invented brand colour; the square reuses the neutral raised surface.
+	cairn: { initial: "C", bg: "var(--cream-3)", ink: "var(--ink)", italic: false },
+};
+
+// D-38 LOCKS FIVE, AND THIS SKETCH SAYS SO OUT LOUD.
+//
+// Titles are read from resume.json rather than retyped, which is right — but it
+// leaves the page silent about what it expects, so resume.json dropping back to
+// four would render a four-project grid that looks entirely intentional. That is
+// precisely the regression D-38 exists to prevent, and it was already made once:
+// PROJECT.md and ROADMAP.md both said "four own projects" until the count was
+// corrected.
+//
+// The check runs BEFORE the lookup, not after. Written the other way round — map
+// first with a non-null assertion, then verify — the assertion throws first and
+// the build dies on "Cannot read properties of undefined (reading 'title')",
+// which names neither the project nor the decision. A guard whose message does
+// not survive its own failure is not a guard. Measured, not assumed: the first
+// draft of this block did exactly that.
+const EXPECTED_PROJECTS: Record<string, string> = {
+	"design-system": "Design System",
+	cairn: "Cairn",
+	hued: "hued",
+	momentum: "Momentum",
+	timeshift: "TimeShift",
+};
+
+const order = ["design-system", "cairn", "hued", "momentum", "timeshift"];
+const projects = order.map((id) => {
+	const p = resume.projects.find((x) => x.id === id);
+	if (!p) {
+		throw new Error(
+			`X-work: D-38 locks five projects and "${EXPECTED_PROJECTS[id]}" (id "${id}") is ` +
+				`missing from resume.json, which currently holds: ` +
+				`${resume.projects.map((x) => x.id).join(", ")}.`,
+		);
+	}
+	if (p.title !== EXPECTED_PROJECTS[id]) {
+		throw new Error(
+			`X-work: project "${id}" is titled "${p.title}" in resume.json but this sketch ` +
+				`was composed against "${EXPECTED_PROJECTS[id]}". Reconcile before shipping.`,
+		);
+	}
+	return { id, title: p.title, tech: p.tech, ...copy[id], ...icons[id] };
+});
+
+// D-45's vocabulary is three values and only two of them occur in the real data.
+// The third is rendered as a legend rather than pinned to a project, because
+// labelling a live project "Archived" to fill a swatch is inventing a fact.
+const statusTones: Record<string, "success" | "count" | "pending"> = {
+	Live: "success",
+	Maintained: "count",
+	Archived: "pending",
+};
+---
+
+<Public title="X-work — Work, restructured" active="work" maxWidth={1280}>
+	<!-- header: unchanged from the recolour, so the diff is structural only -->
+	<header class="wk-header">
+		<Heading level={1} size="4xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+			Things I design<br />and build<span style={{ color: OCHRE_D }}>.</span>
+		</Heading>
+		<Text size="md" tone="muted" maxWidth={480} style={{ marginTop: "var(--space-5)" }}>
+			Products shipped on my own — a component system and a few apps — alongside
+			frontend engineering at Brevo.
+		</Text>
+	</header>
+
+	<!-- ── BAND ONE: employment, first (D-44) ─────────────────────────────
+	     Capped at 1080px per exception 8 while the page stays at 1280px for the
+	     card grid below. The band is hairline rows with a serif title left and a
+	     mono metric right; across a full 1280px those two ends read as two
+	     unrelated things rather than one row, and the fix is measure, not colour.
+	     Judge the cap by eye — it is flagged for review. -->
+	<section class="wk-band">
+		<Eyebrow size="md" tone="muted">PROFESSIONAL EXPERIENCE</Eyebrow>
+		<div class="wk-rows">
+			{
+				employment.map((e, i) => (
+					<Fragment>
+						<div class="wk-row">
+							<div class="wk-row-left">
+								<Heading level={2} size="xl" weight="regular" as="span">{e.company}</Heading>
+								<Text size="sm" tone="muted">{e.role} · {e.period}</Text>
+							</div>
+							{/*
+							  Exception 1: 11px mono is small accent TEXT, so Rule C-6 puts it on
+							  --ochre-d-strong at 8.16:1. The ivory page painted the same metrics
+							  #B0722A at 3.52:1 — already failing AA before the port.
+							*/}
+							<Text size="xs" mono weight="medium" color={OCHRE_D_STRONG}>{e.metric}</Text>
+						</div>
+						{i < employment.length - 1 && <Divider />}
+					</Fragment>
+				))
+			}
+		</div>
+	</section>
+
+	<!-- ── BAND TWO: the five own projects (D-38, D-45) ──────────────────── -->
+	<section class="wk-projects">
+		<div class="wk-projects-head">
+			<Eyebrow size="md" tone="muted">PROJECTS</Eyebrow>
+			<Text size="xs" mono tone="muted">FIVE — SHIPPED ON MY OWN</Text>
+		</div>
+
+		<div class="wk-grid">
+			{
+				projects.map((p) => (
+					<Card className="wk-card" surface="subtle" padding="lg" radius="lg">
+						<div class="wk-card-top">
+							<span
+								class="wk-icon"
+								style={{
+									background: p.bg,
+									color: p.ink,
+									fontStyle: p.italic ? "italic" : "normal",
+								}}
+							>
+								{p.initial}
+							</span>
+							<Badge tone={statusTones[p.status]}>{p.status}</Badge>
+						</div>
+						<Heading level={2} size="xl" weight="bold">{p.title}</Heading>
+						<Text size="md" tone="muted">{p.description}</Text>
+						<div class="wk-tags">
+							{p.tech.map((t) => <Chip className="wk-chip" tone="default">{t}</Chip>)}
+						</div>
+					</Card>
+				))
+			}
+		</div>
+
+		<!--
+		  D-45's status vocabulary, rendered as a legend. Only two of the three
+		  values occur in the real data, and pinning "Archived" to a live project
+		  to fill the swatch would be inventing a fact.
+
+		  Look at this row twice. `Live` is the semantic success tone and separates
+		  cleanly. `Maintained` and `Archived` are the two neutral tones, and on the
+		  raised card surface above they very nearly collapse into each other: the
+		  design system builds `neutral` and `pending` out of --cream-2 and `count`
+		  out of --cream-3, and on charcoal dark those three surfaces sit within
+		  about 1.1:1 of one another. Three distinguishable neutral statuses is
+		  exactly what D-45 needs and the tone palette supplies roughly one. That is
+		  a finding, not something to paint around.
+		-->
+		<div class="wk-legend">
+			<Eyebrow size="sm" tone="muted">D-45 STATUS VOCABULARY — ON THE PAGE</Eyebrow>
+			<div class="wk-legend-row">
+				<Badge tone="success">Live</Badge>
+				<Badge tone="count">Maintained</Badge>
+				<Badge tone="pending">Archived</Badge>
+			</div>
+			<Eyebrow size="sm" tone="muted">THE SAME THREE, ON A RAISED CARD</Eyebrow>
+			<Card className="wk-legend-card" surface="subtle" padding="sm" radius="md">
+				<div class="wk-legend-row">
+					<Badge tone="success">Live</Badge>
+					<Badge tone="count">Maintained</Badge>
+					<Badge tone="pending">Archived</Badge>
+				</div>
+			</Card>
+		</div>
+	</section>
+
+	<Fragment slot="crosslink">
+		<a class="wk-xlink" href="/photos" style={{ color: OCHRE_D_STRONG }}>
+			see the photographs →
+		</a>
+	</Fragment>
+</Public>
+
+<style>
+	/* App LAYOUT css. Colours are charcoal tokens; the two literal hexes in the
+	   frontmatter are the Momentum and TimeShift icon fills, carried across
+	   unchanged because they already measure 7.61:1 and 7.20:1 against white. */
+
+	.wk-header {
+		padding-bottom: var(--space-12);
+	}
+
+	/* EXCEPTION 8 — measure length. The page is 1280px for the card grid and the
+	   masonry; this band is 1080px to match Home. A hairline row spanning the full
+	   1280px puts a serif title and a mono metric at opposite ends of a dark
+	   field, where they stop reading as one row. This is a DSGN-03 decision and it
+	   is open for review, not a token change. */
+	.wk-band {
+		max-width: 1080px;
+		display: grid;
+		gap: var(--space-3);
+		padding-bottom: var(--space-16);
+	}
+
+	.wk-rows {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.wk-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: var(--space-6);
+		padding: var(--space-5) 0;
+	}
+
+	.wk-row-left {
+		display: grid;
+		gap: var(--space-1);
+	}
+
+	.wk-projects {
+		display: grid;
+		gap: var(--space-6);
+		padding-bottom: var(--space-12);
+	}
+
+	.wk-projects-head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-4);
+	}
+
+	/* Three columns, so five projects fill two rows with a deliberate gap in the
+	   second rather than being padded to six. The 2x2 the handoff drew cannot
+	   survive D-38 in any arrangement.
+
+	   THE COLUMN COUNT IS THE R-6 REFLOW, AND IT IS WHAT CLOSED THIS PAGE'S
+	   HORIZONTAL SCROLL. Measured in a browser at 344 and 390 rather than read
+	   off the CSS: the offending box was the status Badge in .wk-card-top —
+	   `right=396` in a 344px viewport, `right=424` in a 390px one — a single
+	   `span` 78px wide sitting 92px past its own card's content edge. Three
+	   columns of a 312px content width is 90.7px per column; the card's lg
+	   padding leaves about 43px inside, and a 44px icon plus a 12px gap plus a
+	   78px nowrap Badge needs 134px. `minmax(0, 1fr)` lets the CARD shrink, so
+	   the card never overflowed — the Badge did, and it escaped.
+
+	   The fix is arrangement, never presence (§6 rule 1): all five projects
+	   exist at 344px, one per row. */
+	/* `overflow-x: hidden` WAS THE WRONG ANSWER AND WAS NOT USED. It would have
+	   clipped the Badge — the one word that tells a reader whether a project is
+	   Live — while leaving the reported document width looking clean, which is
+	   the failure mode R-6 exists to forbid: the symptom disappears from the
+	   instrument and the content disappears from the reader. (Named on a line
+	   that OPENS a comment on purpose; the acceptance gate for this rule strips
+	   exactly those, so a grep cannot mistake this sentence for a rule.) */
+	/*
+
+	   Rungs are the contract's class boundaries, the same three the shell's
+	   gutter ladder steps at, so the page and its shell never disagree about
+	   which class they are in. */
+	.wk-grid {
+		display: grid;
+		/* classes 1–2 (≤ 672): one column. 312px of content per card. */
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-5);
+	}
+
+	/* classes 3–4 · the foldable unfolds at 673 · 2 x ~294px */
+	@media (min-width: 673px) {
+		.wk-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	/* classes 5–6 · DELIBERATELY UNCHANGED — the approved 1440 design is three
+	   columns and this rung reproduces it exactly. */
+	@media (min-width: 1024px) {
+		.wk-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+	}
+
+	/* EXCEPTION 3 — on dark, the border is the boundary. Card binds its border to
+	   --rule (1.43:1 against the page) and exposes no prop that reaches it, so the
+	   override is one line and the gap is recorded. Same reasoning for the chips
+	   below: a --cream-3 fill on a --cream-2 card is about 1.05:1 and draws
+	   nothing at all. */
+	.wk-card {
+		border-color: var(--wire) !important;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		transition: border-color 0.25s ease;
+	}
+	.wk-card:hover {
+		border-color: var(--ochre-d) !important;
+	}
+
+	.wk-card-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-3);
+	}
+
+	.wk-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 11px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--display);
+		font-size: var(--text-xl);
+		font-weight: 700;
+		flex: none;
+	}
+
+	.wk-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+		margin-top: auto;
+	}
+
+	.wk-chip {
+		border-color: var(--wire) !important;
+	}
+
+	.wk-legend {
+		display: grid;
+		gap: var(--space-2);
+		justify-items: start;
+		padding-top: var(--space-6);
+		border-top: 1px solid var(--rule);
+	}
+
+	.wk-legend-row {
+		display: flex;
+		gap: var(--space-2);
+		align-items: center;
+	}
+
+	.wk-legend-card {
+		border-color: var(--wire) !important;
+	}
+
+	.wk-xlink {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		text-decoration: none;
+	}
+</style>

@@ -1,0 +1,122 @@
+{
+	"_README": [
+		"Fixtures for the publish / discard / error overlays (plan 16 task 1).",
+		"",
+		"THIS FILE IS THE SAME PENDING SESSION THE DASHBOARD SHOWS, AND THE PAGE",
+		"PROVES IT RATHER THAN CLAIMING IT. `session.screens` below is the dashboard",
+		"fixture's `dirty` state transcribed field for field, and",
+		"src/pages/admin/overlays/[...o].astro imports dashboard.json and THROWS if",
+		"the entity set or any per-entity change count has drifted. A publish modal",
+		"that summarises six changes while the dashboard lists four is the same class",
+		"of defect D-15 names for the pipeline strip — two places that must agree —",
+		"so here the agreement is a build failure rather than a promise.",
+		"",
+		"WHY `dirty` AND NOT `populated`. Publish and Discard-all are both reached",
+		"from a session that has unpublished work on more than one screen, and the",
+		"dashboard's `dirty` state is the one that has four. `populated` has three.",
+		"",
+		"THE COUNTS ARE THE FIXTURE'S, NOT UI-SPEC'S EXAMPLE. UI-SPEC's contract",
+		"table illustrates the two discard dialogs with `The 6 pending changes on",
+		"this screen` and `12 pending changes across 4 screens`. Those are worked",
+		"examples, and this session really has 6 changes across 4 screens, of which",
+		"Photos owns 2. The copy below therefore says 2 and 6. Plan 15 set this",
+		"precedent explicitly for the category-delete dialog (UI-SPEC illustrates it",
+		"with `12 photos use it`; Architecture really has 14): a dialog whose entire",
+		"job is to state the blast radius may not state it from an example. The",
+		"phrase `across 4 screens` survives verbatim because it is true.",
+		"",
+		"NOTHING NON-PUBLIC IS IN HERE. Every string derives from data/*.json,",
+		"already committed public site content, by way of src/fixtures/dashboard.json.",
+		"No credential, token or Access value appears and none is needed, because",
+		"nothing on these routes authenticates, posts or stores (T-00-29)."
+	],
+
+	"session": {
+		"screens": [
+			{
+				"id": "home",
+				"entity": "Home",
+				"file": "home_config.json",
+				"route": "/admin/home/",
+				"state": "draft",
+				"changes": [
+					"Tagline changed from \"Interfaces & Imagery\"",
+					"Peek slot 4 focal point moved — Hawa Mahal Daytime, was 50% 25%"
+				]
+			},
+			{
+				"id": "photos",
+				"entity": "Photos",
+				"file": "portfolio_images.json",
+				"route": "/admin/photos/",
+				"state": "draft",
+				"changes": [
+					"Into The Mist retitled",
+					"Water Texture moved from Abstract to Street"
+				]
+			},
+			{
+				"id": "resume",
+				"entity": "Résumé",
+				"file": "resume.json",
+				"route": "/admin/resume/",
+				"state": "ready",
+				"changes": ["Brevo bullet 4 edited — 11 bullets total"]
+			},
+			{
+				"id": "site",
+				"entity": "Site",
+				"file": "site_config.json",
+				"route": "/admin/site/",
+				"state": "ready",
+				"changes": ["Street column count changed from 2 — 8 categories total"]
+			}
+		]
+	},
+
+	"asyncPhotos": {
+		"count": 3,
+		"note": "3 photos are staged in R2 and are not processed by publishing. D-12 makes publish asynchronous for photos: the dispatch fires, Actions resizes and reads EXIF, and the gallery updates when that finishes rather than when the commit lands."
+	},
+
+	"invalid": {
+		"title": "3 things must be fixed before publishing.",
+		"errors": [
+			"Résumé → Brevo → bullet 4: an emphasis segment has no text.",
+			"Photos → Water Texture: Street is not a category on Site.",
+			"Home → peek slot 4: Hawa Mahal Daytime has no focal point."
+		],
+		"targets": [
+			{ "label": "Go to Résumé", "href": "/admin/resume/error/" },
+			{ "label": "Go to Photos", "href": "/admin/photos/error/" },
+			{ "label": "Go to Home", "href": "/admin/home/error/" }
+		]
+	},
+
+	"discardScreen": {
+		"target": "photos",
+		"confirmLabel": "Discard changes",
+		"cancelLabel": "Keep editing"
+	},
+
+	"discardAll": {
+		"guardWord": "discard",
+		"confirmLabel": "Discard everything",
+		"cancelLabel": "Keep editing"
+	},
+
+	"pipelineFailure": {
+		"failed": 2,
+		"title": "Processing failed for 2 photos.",
+		"body": "The originals are still staged. Retrying does not re-upload them.",
+		"cta": "Retry processing",
+		"photos": ["Into The Mist", "Water Texture"]
+	},
+
+	"network": {
+		"title": "Your session expired.",
+		"body": "Sign in again — nothing on this screen has been lost.",
+		"cta": "Sign in",
+		"host": "/admin/projects/cairn/network/"
+	}
+}

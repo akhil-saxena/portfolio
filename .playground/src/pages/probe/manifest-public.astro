@@ -1,0 +1,55 @@
+---
+// D-33 manifest probe — the PUBLIC set.
+//
+// One import. That is the whole point of D-33: a page names its surface, not
+// its component sheets, and the manifest is the single place the sheet list
+// lives. Adding a component to this page without adding its sheet to the
+// manifest renders it visibly unstyled, which is the accepted and deliberately
+// loud failure mode.
+//
+// This page exists so `manifest.css` is exercised by a real build rather than
+// only by greps, and so `check-css-size.mjs` has a public-surface route to
+// measure. Plans 09-11 replace it with the real public sketches; the manifest
+// they import is this one.
+//
+// No hydration directive anywhere below, so this route ships zero framework JS
+// and stays inside `check-no-js.sh`'s protection rather than its exclusion
+// list. The components rendered are the hook-free set already proven safe by
+// probe/static.astro.
+//
+// Dark by default (DSGN-03) — the public site's mode, and the one where the
+// charcoal cascade is actually contested.
+
+import { Card, Chip, Heading, Text } from "@akhil-saxena/design-system";
+
+import "../../styles/manifest.css";
+---
+
+<html lang="en" class="dark" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/manifest-public — D-33 public manifest</title>
+	</head>
+	<body style="background: var(--cream); color: var(--ink); margin: 0;">
+		<main style="padding: 2rem; display: grid; gap: 1.25rem; max-width: 60rem;">
+			<Heading level={1}>Public manifest</Heading>
+			<Text>
+				One import line pulls the token layer, the charcoal faces, the charcoal
+				tokens, base, and thirteen per-component sheets — in that order, in one
+				file, so nothing can reorder them.
+			</Text>
+			<div style="display: flex; gap: 0.5rem;">
+				<Chip tone="default">architecture</Chip>
+				<Chip tone="default">nature</Chip>
+			</div>
+			<Card>
+				<Heading level={2}>The measurement</Heading>
+				<Text>
+					`node check-css-size.mjs` reports what this route actually ships, linked
+					and inlined, raw and gzip.
+				</Text>
+			</Card>
+		</main>
+	</body>
+</html>

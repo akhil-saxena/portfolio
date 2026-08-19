@@ -1,0 +1,2587 @@
+{
+	"populated": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "Eighteen bullets across three roles",
+		"headline": "Résumé",
+		"sub": "Eighteen bullets across three roles, three skill groups and one education entry, full width.",
+		"nav": {
+			"resume": "ready"
+		},
+		"loading": false
+	},
+	"empty": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "No education entries.",
+		"headline": "Résumé",
+		"sub": "Everything else on this screen is populated. One section is not.",
+		"nav": {
+			"resume": "ready"
+		},
+		"loading": false
+	},
+	"loading": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "Reading the three roles and their bullets.",
+		"headline": "Résumé",
+		"sub": "Reading the three roles and their bullets. The shell and Publish already work.",
+		"nav": {
+			"resume": "ready"
+		},
+		"loading": true
+	},
+	"error": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": "brevo",
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "One role is missing its title, and saving still works.",
+		"headline": "Résumé",
+		"sub": "One role is missing its title, and saving still works.",
+		"nav": {
+			"resume": "draft"
+		},
+		"loading": false
+	},
+	"dirty": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "Two bullets on Brevo are not published yet.",
+		"headline": "Résumé",
+		"sub": "Two bullets on Brevo are not published yet.",
+		"nav": {
+			"resume": "draft"
+		},
+		"loading": false
+	},
+	"conflict": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "resume.json changed after your draft started.",
+		"headline": "Résumé",
+		"sub": "One file is conflicted; the other screens stay pending.",
+		"nav": {
+			"resume": "draft"
+		},
+		"loading": false
+	},
+	"success": {
+		"experience": [
+			{
+				"id": "brevo",
+				"company": "Brevo (Formerly Sendinblue)",
+				"role": "Senior Software Engineer",
+				"location": "Noida",
+				"url": "https://www.brevo.com",
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2023",
+				"endMonth": null,
+				"endYear": null,
+				"isPresent": true,
+				"periodOnDisk": "Jul 2023 – Present",
+				"bullets": [
+					[
+						{
+							"text": "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows"
+						}
+					],
+					[
+						{
+							"text": "Improved "
+						},
+						{
+							"text": "conversion by 15%",
+							"emphasis": true
+						},
+						{
+							"text": " by transforming a one-page checkout for "
+						},
+						{
+							"text": "2.5M+ users",
+							"emphasis": true
+						},
+						{
+							"text": " into a 3-step flow"
+						}
+					],
+					[
+						{
+							"text": "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control"
+						}
+					],
+					[
+						{
+							"text": "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance"
+						}
+					],
+					[
+						{
+							"text": "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences"
+						}
+					],
+					[
+						{
+							"text": "Engineered a unified, responsive settings navigation package adopted across "
+						},
+						{
+							"text": "18+ micro-frontend apps",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript"
+						}
+					],
+					[
+						{
+							"text": "Integrated "
+						},
+						{
+							"text": "18+ GoLang APIs",
+							"emphasis": true
+						},
+						{
+							"text": " and optimized payload structures, reducing "
+						},
+						{
+							"text": "API response size by 50%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Reduced support tickets by "
+						},
+						{
+							"text": "12–20%",
+							"emphasis": true
+						},
+						{
+							"text": " in high-traffic modules ("
+						},
+						{
+							"text": "10K+ weekly users",
+							"emphasis": true
+						},
+						{
+							"text": ") via UX improvements and automated domain authentication"
+						}
+					],
+					[
+						{
+							"text": "Integrated Sniper Links into signup emails, boosting engagement across "
+						},
+						{
+							"text": "5M+ annual signups",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Introduced RBAC with "
+						},
+						{
+							"text": "40+ permissions",
+							"emphasis": true
+						},
+						{
+							"text": " across 6 business verticals, scaling access for "
+						},
+						{
+							"text": "1K+ enterprise users",
+							"emphasis": true
+						}
+					]
+				]
+			},
+			{
+				"id": "pharmeasy",
+				"company": "PharmEasy",
+				"role": "Software Engineer",
+				"location": "Bengaluru",
+				"url": null,
+				"logo": null,
+				"startMonth": "Nov",
+				"startYear": "2022",
+				"endMonth": "Jun",
+				"endYear": "2023",
+				"isPresent": false,
+				"periodOnDisk": "Nov 2022 – Jun 2023",
+				"bullets": [
+					[
+						{
+							"text": "Modernized the UX for the B2B portal orders page, enhancing productivity for "
+						},
+						{
+							"text": "4K+ franchises",
+							"emphasis": true
+						},
+						{
+							"text": " across "
+						},
+						{
+							"text": "4 countries",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Developed UIs for receipt generation and editing, reducing support tickets and "
+						},
+						{
+							"text": "response time by 30%",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+						}
+					]
+				]
+			},
+			{
+				"id": "maq",
+				"company": "MAQ Software",
+				"role": "Data Engineer",
+				"location": "Mumbai",
+				"url": null,
+				"logo": null,
+				"startMonth": "Dec",
+				"startYear": "2021",
+				"endMonth": "Nov",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Dec 2021 – Nov 2022",
+				"bullets": [
+					[
+						{
+							"text": "Built analytics pipelines from "
+						},
+						{
+							"text": "7+ data sources",
+							"emphasis": true
+						},
+						{
+							"text": ", modeling data into a Delta Lake (bronze, silver, gold) architecture"
+						}
+					],
+					[
+						{
+							"text": "Developed a real-time write-back sync system for an app deployed to "
+						},
+						{
+							"text": "16K+ stores",
+							"emphasis": true
+						},
+						{
+							"text": ", ensuring operational reliability"
+						}
+					],
+					[
+						{
+							"text": "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in "
+						},
+						{
+							"text": "under 3 months",
+							"emphasis": true
+						}
+					],
+					[
+						{
+							"text": "Improved pipeline execution time by "
+						},
+						{
+							"text": "6×",
+							"emphasis": true
+						},
+						{
+							"text": " by replacing Power Automate workflows with Azure Data Factory"
+						}
+					]
+				]
+			}
+		],
+		"skills": [
+			{
+				"category": "Frontend & Backend",
+				"icon": "code",
+				"items": [
+					"React",
+					"Next.js",
+					"TypeScript",
+					"Node.js",
+					"PHP",
+					"Go"
+				]
+			},
+			{
+				"category": "Platform & AI",
+				"icon": "layers",
+				"items": [
+					"Architecture Design",
+					"CI/CD",
+					"a11y",
+					"i18n",
+					"AI-driven Personalization"
+				]
+			},
+			{
+				"category": "Analytics",
+				"icon": "filter",
+				"items": [
+					"A/B Testing",
+					"Funnel Optimization",
+					"Attribution & Event Tracking (GTM)",
+					"Metabase",
+					"Omni"
+				]
+			}
+		],
+		"education": [
+			{
+				"id": "vit",
+				"school": "Vellore Institute of Technology (VIT), Vellore",
+				"degree": "B.Tech, Computer Science & Engineering",
+				"cgpa": "8.62",
+				"url": null,
+				"logo": null,
+				"startMonth": "Jul",
+				"startYear": "2018",
+				"endMonth": "Jun",
+				"endYear": "2022",
+				"isPresent": false,
+				"periodOnDisk": "Jul 2018 – Jun 2022",
+				"leadership": [
+					"Director of Events, SEDS-VIT",
+					"Lead, NASA-sponsored CAMS-SETI"
+				]
+			}
+		],
+		"pdf": {
+			"path": "/resume.pdf",
+			"label": "Download PDF",
+			"uploadedAt": "2026-08-09T10:12:00Z",
+			"dataChangedAt": "2026-08-13T10:12:00Z",
+			"driftDays": 4
+		},
+		"roleError": null,
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"lossDoc": {
+			"type": "doc",
+			"content": [
+				{
+					"type": "paragraph",
+					"content": [
+						{
+							"type": "text",
+							"text": "Introduced RBAC with "
+						},
+						{
+							"type": "text",
+							"text": "40+ permissions",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": " across "
+						},
+						{
+							"type": "text",
+							"text": "6 business verticals",
+							"marks": [
+								{
+									"type": "italic"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": ", scaling access for "
+						},
+						{
+							"type": "text",
+							"text": "1K+ enterprise users",
+							"marks": [
+								{
+									"type": "bold"
+								}
+							]
+						},
+						{
+							"type": "text",
+							"text": "."
+						}
+					]
+				}
+			]
+		},
+		"marker": "Committed. The PDF was not touched",
+		"headline": "Résumé",
+		"sub": "Committed. The PDF was not touched, so the drift warning is still up.",
+		"nav": {
+			"resume": "published"
+		},
+		"loading": false
+	}
+}

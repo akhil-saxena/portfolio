@@ -1,0 +1,237 @@
+{
+  "experience": [
+    {
+      "id": "brevo",
+      "company": "Brevo (Formerly Sendinblue)",
+      "role": "Senior Software Engineer",
+      "period": "Jul 2023 – Present",
+      "location": "Noida",
+      "logo": null,
+      "url": "https://www.brevo.com",
+      "bullets": [
+        "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows",
+        "Improved <strong>conversion by 15%</strong> by transforming a one-page checkout for <strong>2.5M+ users</strong> into a 3-step flow",
+        "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control",
+        "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance",
+        "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences",
+        "Engineered a unified, responsive settings navigation package adopted across <strong>18+ micro-frontend apps</strong>",
+        "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript",
+        "Integrated <strong>18+ GoLang APIs</strong> and optimized payload structures, reducing <strong>API response size by 50%</strong>",
+        "Reduced support tickets by <strong>12–20%</strong> in high-traffic modules (<strong>10K+ weekly users</strong>) via UX improvements and automated domain authentication",
+        "Integrated Sniper Links into signup emails, boosting engagement across <strong>5M+ annual signups</strong>",
+        "Introduced RBAC with <strong>40+ permissions</strong> across 6 business verticals, scaling access for <strong>1K+ enterprise users</strong>"
+      ]
+    },
+    {
+      "id": "pharmeasy",
+      "company": "PharmEasy",
+      "role": "Software Engineer",
+      "period": "Nov 2022 – Jun 2023",
+      "location": "Bengaluru",
+      "logo": null,
+      "url": null,
+      "bullets": [
+        "Modernized the UX for the B2B portal orders page, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
+        "Developed UIs for receipt generation and editing, reducing support tickets and <strong>response time by 30%</strong>",
+        "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
+      ]
+    },
+    {
+      "id": "maq",
+      "company": "MAQ Software",
+      "role": "Data Engineer",
+      "period": "Dec 2021 – Nov 2022",
+      "location": "Mumbai",
+      "logo": null,
+      "url": null,
+      "bullets": [
+        "Built analytics pipelines from <strong>7+ data sources</strong>, modeling data into a Delta Lake (bronze, silver, gold) architecture",
+        "Developed a real-time write-back sync system for an app deployed to <strong>16K+ stores</strong>, ensuring operational reliability",
+        "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
+        "Improved pipeline execution time by <strong>6×</strong> by replacing Power Automate workflows with Azure Data Factory"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "id": "cairn",
+      "title": "Cairn",
+      "label": {
+        "text": "Web",
+        "icon": "code"
+      },
+      "description": "Job application tracker with interview workflows and feedback tracking, built on a custom design system. Deliberately anti-gamified and runs entirely on Cloudflare's free tier.",
+      "tech": [
+        "Astro",
+        "React",
+        "TypeScript",
+        "Cloudflare"
+      ],
+      "icon": null,
+      "href": "https://cairn.co.in",
+      "badges": [
+        {
+          "label": "Live",
+          "href": "https://cairn.co.in",
+          "icon": "arrow-up-right"
+        }
+      ]
+    },
+    {
+      "id": "hued",
+      "title": "hued",
+      "label": {
+        "text": "Android App",
+        "icon": "android"
+      },
+      "description": "See your life through color. Extracts dominant palettes from your photo gallery by week, month, and year. Privacy-first, all on-device.",
+      "tech": [
+        "Kotlin",
+        "CIELAB"
+      ],
+      "icon": "/assets/hued-icon.png",
+      "href": "https://play.google.com/store/apps/details?id=app.hued",
+      "badges": [
+        {
+          "label": "Play Store",
+          "href": "https://play.google.com/store/apps/details?id=app.hued",
+          "icon": "play-store"
+        },
+        {
+          "label": "GitHub",
+          "href": "https://github.com/akhil-saxena/hued",
+          "icon": "github"
+        }
+      ]
+    },
+    {
+      "id": "momentum",
+      "title": "Momentum",
+      "label": {
+        "text": "Android App",
+        "icon": "android"
+      },
+      "description": "Goal tracker with adaptive daily targets, streaks, milestones, badges, home screen widgets, and cloud sync.",
+      "tech": [
+        "Kotlin",
+        "Material 3"
+      ],
+      "icon": "/assets/momentum-icon.png",
+      "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
+      "badges": [
+        {
+          "label": "Play Store",
+          "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
+          "icon": "play-store"
+        },
+        {
+          "label": "GitHub",
+          "href": "https://github.com/akhil-saxena/momentum-android",
+          "icon": "github"
+        }
+      ]
+    },
+    {
+      "id": "timeshift",
+      "title": "TimeShift",
+      "label": {
+        "text": "Chrome Extension",
+        "icon": "chrome"
+      },
+      "description": "Right-click any time on the web to convert it instantly. NLP-powered parsing with smart timezone disambiguation and DST awareness.",
+      "tech": [
+        "JavaScript",
+        "Chrome APIs",
+        "NLP"
+      ],
+      "icon": "/assets/timeshift-icon.png",
+      "href": "https://chromewebstore.google.com/detail/timeshift-global-timezone/bnghkolhekleahihlmpjniedgedjphel",
+      "badges": [
+        {
+          "label": "Chrome Store",
+          "href": "https://chromewebstore.google.com/detail/timeshift-global-timezone/bnghkolhekleahihlmpjniedgedjphel",
+          "icon": "chrome-store"
+        },
+        {
+          "label": "GitHub",
+          "href": "https://github.com/akhil-saxena/convert-timezone",
+          "icon": "github"
+        }
+      ]
+    },
+    {
+      "id": "design-system",
+      "title": "Design System",
+      "label": {
+        "text": "Web",
+        "icon": "code"
+      },
+      "description": "80-component React library with semantic tokens, dark mode, and live Storybook docs.",
+      "tech": [
+        "React",
+        "TypeScript",
+        "CSS"
+      ],
+      "icon": null,
+      "href": "https://design-system-ed1.pages.dev",
+      "badges": [
+        {
+          "label": "GitHub",
+          "href": "https://github.com/akhil-saxena/design-system",
+          "icon": "github"
+        }
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "category": "Frontend & Backend",
+      "icon": "code",
+      "items": [
+        "React",
+        "Next.js",
+        "TypeScript",
+        "Node.js",
+        "PHP",
+        "Go"
+      ]
+    },
+    {
+      "category": "Platform & AI",
+      "icon": "layers",
+      "items": [
+        "Architecture Design",
+        "CI/CD",
+        "a11y",
+        "i18n",
+        "AI-driven Personalization"
+      ]
+    },
+    {
+      "category": "Analytics",
+      "icon": "filter",
+      "items": [
+        "A/B Testing",
+        "Funnel Optimization",
+        "Attribution & Event Tracking (GTM)",
+        "Metabase",
+        "Omni"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "vit",
+      "school": "Vellore Institute of Technology (VIT), Vellore",
+      "logo": null,
+      "degree": "B.Tech, Computer Science & Engineering",
+      "cgpa": "8.62",
+      "period": "Jul 2018 – Jun 2022",
+      "url": null,
+      "leadership": [
+        "Director of Events, SEDS-VIT",
+        "Lead, NASA-sponsored CAMS-SETI"
+      ]
+    }
+  ]
+}

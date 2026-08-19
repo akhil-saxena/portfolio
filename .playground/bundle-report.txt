@@ -1,0 +1,19 @@
+ChipIsland.D0ISvrsm.js  570555 B raw  176922 B gzip  99 modules {
+  lucide: 43,
+  prosemirror: 10,
+  tiptap: 23,
+  highlightjs: 4,
+  lowlight: 4,
+  dndkit: 3
+}
+  FAIL: prosemirror (10 modules), tiptap (23 modules), lowlight (4 modules), highlightjs (4 modules), dndkit (3 modules) reached a hydrated client chunk. The design-system barrel is not tree-shaking: importing one atom pulled the editor/drag-drop stack into the browser. On /photos — the only hydrating public route — this makes PUB-14 and QUAL-01 unreachable. The fix is upstream per-component JS subpath exports, never a local workaround.
+  FAIL: 176922 B gzip exceeds the 51200 B budget by 3.5x. NOTE: this budget is research assumption A8 and is UNCONFIRMED — it gates nothing in Phase 0. Treat the byte count as the finding, not this comparison.
+client.B1tlbW9L.js  180634 B raw  56513 B gzip  6 modules {}
+  FAIL: 56513 B gzip exceeds the 51200 B budget by 1.1x. NOTE: this budget is research assumption A8 and is UNCONFIRMED — it gates nothing in Phase 0. Treat the byte count as the finding, not this comparison.
+css-W3EDTG4F.D5l_8KUR.js  11838 B raw  4264 B gzip  1 modules {}
+javascript-FVTGYGYA.w9aIBC1S.js  6434 B raw  2651 B gzip  1 modules {}
+json-FO57KJAQ.DS4EA3dC.js  463 B raw  360 B gzip  1 modules {}
+python-AEGVDJPP.DwhXSSGr.js  3311 B raw  1508 B gzip  1 modules {}
+react-dom.xFBohArb.js  11590 B raw  4169 B gzip  4 modules {}
+typescript-RK5OCB3E.CTV1Js34.js  7734 B raw  3113 B gzip  1 modules {}
+xml-XKLQZ4NN.DasnpDVC.js  1948 B raw  823 B gzip  1 modules {}

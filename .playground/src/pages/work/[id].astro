@@ -1,0 +1,455 @@
+---
+// X-case-{id} — THE case-study template. One template, five routes (DSGN-02).
+//
+// ONE PAGE PER CASE. The user's direction was "one page per case, not like
+// scroll to 10 cases in single page scrolling down".
+// `00-RESPONSIVE-CONTRACT.md` §7 reads that as ROUTING rather than length — a
+// case may still scroll internally, it just may not share a scroll with four
+// others — and supersedes D-39 while it is there. R-3 resolves the route shape
+// as `/work/{id}` over `/case/{id}`: a case study is evidence *under* Work, and
+// putting it there makes the Work page the index of its own children instead of
+// a page that links sideways into an unrelated top-level section.
+//
+// This file replaces `src/pages/case/long.astro` and `src/pages/case/short.astro`,
+// which stacked two and three studies on one scroll respectively. Those two are
+// exactly what the direction rules out. Almost everything else survives them: the
+// five Case*.astro components, case.css, the 68ch measure, the 200px mono rail,
+// the gap-block --wire treatment, the figure treatment and the three
+// non-final-content treatments are unchanged. What is gone is the tier split and
+// the stacking.
+//
+// NO TIERS. There is one composition and one length band. hued, Momentum and
+// TimeShift used to render through a "short" template asserting they had NO
+// numbered register; the design system and Cairn through a "long" one asserting
+// they DID. That assertion pair is deleted rather than merged: a register is now
+// a property of a study, not a class of study, and the evidence that the single
+// template holds is that a three-entry register and a running section come out of
+// the identical composition. The register count is REPORTED on the page (see
+// `registerEntries` below) so a reviewer can see which is which without the
+// template caring.
+//
+// THE PROSE IS READ IN PLACE FROM THE COMMITTED DRAFTS. Nothing is duplicated
+// into this gitignored directory. src/lib/copy.mjs reads
+// .planning/phases/00-design-ideation/00-COPY/*.md at build time and writes
+// nothing, so the sketch and the draft cannot drift. The drafts survive this
+// directory's deletion; this file does not.
+//
+// ZERO FRAMEWORK JAVASCRIPT. Every component composed here — Heading, Text,
+// Eyebrow, Divider, Badge — is hook-free, so Astro renders it to static HTML.
+// There is no hydration directive anywhere in this file or in the five case
+// components, and check-no-js.sh gates it across every built route. The one
+// interactive thing on the page, the review toggle, is a checkbox and a CSS
+// selector.
+//
+// A GREP DEPENDS ON THIS FILE. The acceptance criteria count hydration
+// directives here, so the name of that directive is never spelled out in this
+// file, in prose or in a comment. Plans 01, 04, 07 and 09 each rediscovered that
+// a grep cannot tell a rule from a sentence describing one; this paragraph is the
+// tripwire so the next author does not rediscover it a sixth time.
+
+import { Eyebrow, Text } from "@akhil-saxena/design-system";
+import CaseChrome from "../../components/CaseChrome.astro";
+import CaseFigure from "../../components/CaseFigure.astro";
+import CaseHeader from "../../components/CaseHeader.astro";
+import CaseProse from "../../components/CaseProse.astro";
+import CaseSection from "../../components/CaseSection.astro";
+import Public from "../../layouts/Public.astro";
+import { CASE_STUDIES } from "../../lib/artefacts.mjs";
+import { leadNotes, loadOneLiners, loadStudy, spansText } from "../../lib/copy.mjs";
+
+import "../../styles/case.css";
+
+// THE MEASURE, DECLARED HERE RATHER THAN ONLY IN THE STYLESHEET.
+//
+// 68ch. UI-SPEC derives it: at --text-md 15px DM Sans, 68ch is about 620px,
+// which sits inside the standard 55-75ch readability band. It is written as a
+// literal in the artefact so the derived number is visible where it is used
+// rather than buried in a shared file, and CaseProse asserts the declared value
+// matches its own canonical one. That assertion used to guard two templates
+// against drifting apart; with one template it guards this file against drifting
+// from the stylesheet, which is the same failure with one fewer place to happen.
+const MEASURE = "68ch";
+
+// ── The five routes ──────────────────────────────────────────────────────────
+//
+// THE IDS ARE D-38's, AND THEY ARE THE ROUTE. One array, imported rather than
+// declared here, read by getStaticPaths — so there is no hand-listed URL set
+// anywhere: a sixth study cannot be added to the corpus without a route
+// appearing, and a route cannot exist for a study with no draft, because
+// loadStudy throws on a missing file.
+//
+// It is imported from artefacts.mjs for two reasons, both in that file's own
+// comment: the registry asserts every id there has a matching `X-case-*`
+// artefact, and Astro hoists `getStaticPaths` above the frontmatter, so a local
+// `const` would be in the temporal dead zone when it runs.
+
+// ── D-41's asset plan, per study ─────────────────────────────────────────────
+//
+// A hero plus one or two inline screenshots "where a decision is easier shown
+// than described". That is a claim about a POSITION in the argument, not about a
+// page having pictures, so each inline slot names the register entry it belongs
+// under and CaseProse asserts the ordinal exists. Every caption and every source
+// below is taken from the study's own ## Assets section — this page renders the
+// asset plan the draft states rather than inventing one.
+//
+// `section: MIDDLE` IS A SENTINEL, NOT A HEADING. It resolves at render time to
+// whichever of MIDDLE_HEADINGS that particular draft used. Writing "Decisions"
+// here would work today and would silently drop the figure from any draft
+// spelling it "Decision" — the figure list is a filter, so a section name that
+// matches nothing yields no figure and no error. That is the same class of silent
+// drop the loader exists to prevent, one layer up, and it is what plan 00-20's
+// positive control exercises end to end.
+const MIDDLE = "@middle";
+
+const ASSETS: Record<string, any[]> = {
+	"design-system": [
+		{
+			role: "Hero",
+			hero: true,
+			ratio: "16 / 9",
+			inRepo: false,
+			caption:
+				"This site, rendered — a wide capture of a real page from this portfolio. It is the one image that makes the study's closing claim checkable rather than rhetorical.",
+			source: "this portfolio, live",
+		},
+		{
+			role: "Inline 1",
+			section: MIDDLE,
+			afterEntry: "1",
+			ratio: "16 / 9",
+			inRepo: false,
+			caption:
+				"The same component in both themes, side by side. Decision 1 is a claim about a defect that existed in only one theme — light mode set --ink-4 and --ink-3 to the identical value — so a paired light/dark capture shows in one glance why reviewing in a single mode could never have caught it.",
+			source: "Storybook — design-system-ed1.pages.dev",
+		},
+		{
+			role: "Inline 2",
+			section: MIDDLE,
+			afterEntry: "3",
+			ratio: "16 / 10",
+			inRepo: false,
+			caption:
+				"The Storybook a11y panel on a story, reporting zero warnings. Decision 3 is about enforcement rather than intention, and a screenshot of the check passing is more convincing than the sentence claiming it does.",
+			source: "Storybook — design-system-ed1.pages.dev",
+		},
+	],
+	cairn: [
+		{
+			role: "Hero",
+			hero: true,
+			ratio: "16 / 9",
+			inRepo: false,
+			caption:
+				"The board, populated — the kanban across its five stages. It establishes the product in one image and makes the pipeline decision legible without a paragraph explaining it.",
+			source: "cairn.co.in, live",
+		},
+		{
+			role: "Inline 1",
+			section: MIDDLE,
+			afterEntry: "1",
+			ratio: "3 / 4",
+			inRepo: false,
+			caption:
+				"The Rejection Reframe — the single screen the worst-week test was written for, and the one place where the anti-gamification stance is a visible design choice rather than an absence. It is the shipped counter-example to the confetti every other tracker would show here.",
+			source: "cairn.co.in, live",
+		},
+	],
+	hued: [
+		{
+			role: "Hero",
+			hero: true,
+			ratio: "1024 / 500",
+			inRepo: true,
+			caption:
+				"publishing/feature-graphic.png — it already carries the palette strip as its whole composition, and therefore states the idea without a caption.",
+			source: "../hued/publishing/feature-graphic.png",
+		},
+		{
+			role: "Inline 1",
+			section: MIDDLE,
+			afterEntry: null,
+			ratio: "9 / 16",
+			inRepo: true,
+			caption:
+				"publishing/screenshots/final/01.png — the launch state, showing a real clustered palette, which is the output the CIELAB decision above is about. Six finished screenshots exist in that directory; D-41 caps this page at the hero plus one, so the rest stay unused.",
+			source: "../hued/publishing/screenshots/final/01.png",
+		},
+	],
+	momentum: [
+		{
+			role: "Hero",
+			hero: true,
+			ratio: "1024 / 500",
+			inRepo: true,
+			caption: "store-listing/feature-graphic.png — the one composed asset the repository carries.",
+			source: "../Momentum/store-listing/feature-graphic.png",
+		},
+		{
+			role: "Inline 1",
+			section: "Problem",
+			afterEntry: null,
+			ratio: "9 / 16",
+			inRepo: false,
+			caption:
+				"A goal card with the day's required amount on it. That number is the argument the whole page makes and it is easier shown than described. Not in the repository — store-listing/ holds only the feature graphic, the launcher icon, mock data and a local database file.",
+			source: "the live Play Store listing",
+		},
+	],
+	timeshift: [
+		{
+			role: "Hero",
+			hero: true,
+			ratio: "16 / 9",
+			inRepo: false,
+			caption:
+				"The right-click conversion happening on a real page — that single moment is the product and it needs no caption. Not in the repository: the only image the repo carries is icons/icon512.png, which is the extension icon and cannot stand in for it.",
+			source: "the live Chrome Web Store listing",
+		},
+		{
+			role: "Inline 1",
+			section: MIDDLE,
+			afterEntry: null,
+			ratio: "16 / 10",
+			inRepo: false,
+			caption:
+				"The resolver reporting medium confidence on an ambiguous abbreviation — the half of that decision easier shown than described.",
+			source: "the live Chrome Web Store listing",
+		},
+	],
+};
+
+// ── Build ────────────────────────────────────────────────────────────────────
+
+export function getStaticPaths() {
+	return CASE_STUDIES.map((meta) => ({ params: { id: meta.id }, props: { meta } }));
+}
+
+const { meta } = Astro.props;
+
+const study = loadStudy(`case-${meta.id}`);
+const oneLiners = loadOneLiners();
+
+// The draft's H1 may carry a drafting suffix, so the page title comes from the
+// canonical project title and the H1 is asserted to START with it. That keeps the
+// two from drifting without forcing every draft to be retitled.
+if (!study.title.startsWith(meta.title)) {
+	throw new Error(
+		`X-case-${meta.id}: ${study.file} opens with the H1 "${study.title}", which does not start ` +
+			`with the canonical project title "${meta.title}". Reconcile the draft or the title map.`,
+	);
+}
+
+const canonical = oneLiners[meta.project];
+if (!canonical?.oneLiner || !canonical?.badge) {
+	throw new Error(
+		`X-case-${meta.id}: 00-COPY/one-liners.md has no "## ${meta.project}" entry carrying both a ` +
+			"one-liner and a badge. That file is canonical for both — it is the only copy in the " +
+			"corpus with an enforced character budget, and X-work and X-home-act2 are laid out " +
+			"against those exact strings.",
+	);
+}
+
+// Where both declare a D-45 status they must agree, or two artefacts are quietly
+// telling a reader different things about whether a project is current.
+if (study.frontmatter.badge && study.frontmatter.badge !== canonical.badge) {
+	throw new Error(
+		`X-case-${meta.id}: ${study.file} declares \`badge: ${study.frontmatter.badge}\` while ` +
+			`00-COPY/one-liners.md declares "${canonical.badge}" for ${meta.project}.`,
+	);
+}
+
+// The sentinel resolved. One line, and it is the whole either-branch at this
+// layer: whichever spelling this draft used is the section the figures attach to.
+const assets = (ASSETS[meta.id] ?? []).map((a) =>
+	a.section === MIDDLE ? { ...a, section: study.middleHeading } : a,
+);
+
+// D-41 is a budget, not a suggestion: a hero plus ONE OR TWO inline screenshots.
+// Asserted rather than trusted, because the budget is what stops a case study
+// drifting into a gallery — and because an extra inline slot added by hand would
+// change the page's vertical rhythm, which is the thing under review here.
+//
+// ONE BUDGET, NOT TWO. The old short template allowed at most one inline and the
+// long template required at least one; that split was D-39's and D-39 is gone.
+// The surviving range is D-41's own.
+const heroes = assets.filter((a) => a.hero).length;
+const inlineCount = assets.length - heroes;
+if (heroes !== 1 || inlineCount < 1 || inlineCount > 2) {
+	throw new Error(
+		`X-case-${meta.id}: ${meta.title}'s asset plan is ${heroes} hero and ${inlineCount} inline ` +
+			"figure(s). D-41 allows exactly one hero plus one or two inline screenshots.",
+	);
+}
+
+// Reported, not asserted. Two of the five studies carry a numbered register and
+// three carry a running section; that difference used to select a template and
+// now selects nothing. Printing it on the page is what makes "the identical
+// composition carries both" checkable by a reviewer rather than claimed.
+const registerEntries = study.sections[study.middleHeading].filter((b: any) => b.kind === "h3" && b.ordinal).length;
+
+// THE ONE CLOSING THAT MUST NOT BE TRUNCATED.
+//
+// The design-system study ends with a paragraph pointing at the page the reader
+// is on: it is the only project whose outcome the reader is looking at while
+// reading about it, and D-38 makes that the reason it is the flagship. That
+// paragraph sits AFTER the study's gap block, and it is finished prose rather
+// than a placeholder.
+//
+// The distinction is fragile enough to be worth a build assertion. The corpus
+// checker measures a gap as everything from the marker to the next heading, which
+// is the right rule for a length FLOOR and would, applied to rendering, swallow
+// this paragraph and render it muted and labelled provisional — a false statement
+// about the only claim in the corpus that is already true. The loader therefore
+// scopes a gap opened inside a block quote to that block quote. This asserts the
+// consequence rather than trusting it.
+if (meta.id === "design-system") {
+	const outcome = study.sections.Outcome;
+	const lastProse = [...outcome].reverse().find((b: any) => b.kind !== "note");
+	if (!lastProse || lastProse.kind !== "p" || !spansText(lastProse.spans).includes("the page you are reading")) {
+		throw new Error(
+			"X-case-design-system: the study's ## Outcome must END with its page-pointing closing " +
+				"paragraph as ordinary prose, not inside the gap block.\n" +
+				`  Last non-note block is "${lastProse ? lastProse.kind : "(none)"}".\n` +
+				"  If the gap boundary rule changed, that paragraph is now rendering as provisional — " +
+				"which would be wrong about the one outcome in the corpus that needs no interview.",
+		);
+	}
+}
+
+// The corpus index, rendered in the chrome. Every study links to its own route,
+// so a reader who lands on one case can reach the other four without going back
+// through /work — and, more to the point, every route is reachable from every
+// other route, which is what stops five separate pages being five orphans.
+const siblings = CASE_STUDIES.map((s) => ({
+	anchor: s.id,
+	href: `/work/${s.id}/`,
+	label: s.title,
+	current: s.id === meta.id,
+	words: s.id === meta.id ? study.counts.bandWords : null,
+}));
+
+const LEGEND = [
+	{
+		term: "[NEEDS AKHIL]",
+		body: "A D-40 gap: placeholder prose written at finished length, because a six-word stub would hand this template a measure the real copy will never fit. Rendered at paragraph scale behind a solid rule so a reviewer can see that a paragraph-scale gap occupies a paragraph-scale slot. Filled in the final-phase interview. Never stripped. All five studies carry exactly one, in the same place — no repository records what happened after a thing was built.",
+	},
+	{
+		term: "[source: …]",
+		body: "Provenance. Every factual claim in these drafts names the file it was read out of, so a reviewer can audit rather than trust. Rendered inline in mono at the smallest step. Excluded from the R-1 word count, so a compression pass cannot reach the band by keeping its citations and cutting its sentences. Phase 6 strips them, and that removal is a planned step rather than something to remember.",
+	},
+	{
+		term: "Drafting note",
+		body: "An HTML comment in the draft, carrying what was searched and why it came up empty, a correction to a stale figure in a project's own README, or what a compression pass cut and why. Offset in mono so it never reads as prose. Phase 6 strips these too, but the corrections have to survive the stripping.",
+	},
+	{
+		term: "Reserved figure",
+		body: "A D-41 slot at its intended aspect ratio, holding the space an image will take. No image is rendered even where the file exists: hued is the only project whose assets are committed, and rendering its two for real while the rest stayed reserved would make one study look different from the others for a reason that has nothing to do with the design. That is D-42's CLS argument made visible before a single byte exists.",
+	},
+];
+
+const HEADLINE = `${meta.title} — the case-study template at one route per study`;
+
+const PROVES =
+	`That ONE template renders this study at a 68ch measure with nothing bespoke to it. ` +
+	`This route carries ${registerEntries > 0 ? `a ${registerEntries}-entry numbered register` : "a running decision section with no register"}, ` +
+	`${inlineCount === 1 ? "one inline figure" : `${inlineCount} inline figures`} and a paragraph-scale gap block, ` +
+	`in ${study.counts.bandWords} words over its four required sections — inside R-1's 500-700 band, which the loader ` +
+	`asserts at build time for all five studies. The other four routes differ from this one only in their copy: same ` +
+	`stylesheet, same components, same measure, same spacing, nothing tightened or loosened per study. Every word ` +
+	`below is the committed first-pass draft, read in place at build time — nothing here is lorem, and nothing here ` +
+	`is a six-word stub standing in for a paragraph.`;
+---
+
+<Public title={`X-case-${meta.id} — ${meta.title} case study`} active="work" maxWidth={980}>
+	<div class="case-page" style={`--case-measure: ${MEASURE};`}>
+		<CaseChrome
+			artefact={`X-case-${meta.id}`}
+			headline={HEADLINE}
+			proves={PROVES}
+			measure={MEASURE}
+			studies={siblings}
+			legend={LEGEND}
+		/>
+
+		<article class="case-study">
+			<CaseHeader
+				anchor={meta.id}
+				tierLabel="Case study"
+				title={meta.title}
+				badge={canonical.badge}
+				oneLiner={canonical.oneLiner}
+				meta={[
+					study.file,
+					`/work/${meta.id}/`,
+					`${study.frontmatter.status} · awaiting ${study.frontmatter.awaiting}`,
+					`${study.counts.bandWords.toLocaleString("en-US")} words (R-1: 500-700)`,
+					`${study.counts.sources} sourced claims`,
+					`${study.counts.gaps} gap block`,
+					`## ${study.middleHeading} · ${registerEntries || "no"} register ${registerEntries === 1 ? "entry" : "entries"}`,
+				]}
+			/>
+
+			{/* The draft's own preamble is an instruction to this template rather
+			    than prose for the page — it says the study opens with the canonical
+			    one-liner, which the header above does. It renders as a drafting note
+			    so that nothing in the committed draft is silently dropped, and so a
+			    reviewer can see the instruction beside the thing that carried it
+			    out. Three of the five drafts open with an HTML comment instead, and
+			    those pass through as notes unchanged. */}
+			<div class="case-section">
+				<div class="case-rail"><span class="case-rail-ord">00</span><span>preamble</span></div>
+				<div class="case-col">
+					<CaseProse
+						blocks={leadNotes(study)}
+						measure={MEASURE}
+						where={`X-case-${meta.id} / preamble`}
+					/>
+				</div>
+			</div>
+
+			{assets.filter((a) => a.hero).map((a) => <CaseFigure {...a} />)}
+
+			{study.required.map((heading: string, i: number) => (
+				<CaseSection
+					index={i + 1}
+					total={study.required.length}
+					heading={heading}
+					blocks={study.sections[heading]}
+					measure={MEASURE}
+					figures={assets.filter((a) => !a.hero && a.section === heading)}
+					where={`X-case-${meta.id} / ## ${heading}`}
+					last={i === study.required.length - 1}
+				/>
+			))}
+		</article>
+
+		<footer class="case-section">
+			<div class="case-rail">
+				<span class="case-rail-ord">END</span>
+			</div>
+			<div class="case-col">
+				<Eyebrow size="sm" tone="muted">THE OTHER FOUR</Eyebrow>
+				<Text size="sm" tone="muted" leading="relaxed">
+					One study per route, five routes. R-3 puts them under Work rather than at
+					`/case/{`{id}`}` because a case study is evidence <em>under</em> Work, which makes
+					the Work page the index of its own children instead of a page linking sideways.
+					The stacked `/case/long` and `/case/short` routes this replaces are retired: they
+					put two and three studies on one scroll, which is the arrangement the direction
+					rules out.
+				</Text>
+				<ul class="case-index case-index-end">
+					<li><a href="/work">← Work — all five projects</a></li>
+					{
+						siblings
+							.filter((s) => !s.current)
+							.map((s) => (
+								<li>
+									<a href={s.href}>{s.label}</a>
+								</li>
+							))
+					}
+				</ul>
+			</div>
+		</footer>
+	</div>
+</Public>

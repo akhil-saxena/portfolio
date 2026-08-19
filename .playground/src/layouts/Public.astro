@@ -1,0 +1,221 @@
+---
+// The public shell for every X- artefact (DSGN-03).
+//
+// Charcoal DARK is the public default and it is set here, once, so no sketch can
+// forget it: `class="dark"` selects the design system's dark block and
+// `data-brand="charcoal"` selects charcoal's. Together they resolve charcoal's
+// dark block at (0,3,0), which outranks ":root.dark" at (0,2,0) by arithmetic
+// rather than by source order — that is the exhaustiveness invariant doing its
+// job, and plan 07 measured it holding across four constructed import orders.
+//
+// ONE STYLESHEET IMPORT, DELIBERATELY. manifest.css is D-33's single-file
+// manifest: it pulls the token layer, the charcoal faces, the charcoal tokens,
+// base, and one sheet per component the public surfaces render — in that order,
+// in one file, so nothing can reorder them. Adding a second stylesheet import to
+// this layout would reintroduce exactly the ordering hazard the manifest exists
+// to remove. If a sketch renders a component whose sheet is not listed, it
+// renders visibly unstyled; the remedy is a line in manifest.css, never an
+// import here.
+//
+// NO HYDRATION DIRECTIVE ANYWHERE IN THE PUBLIC TREE. Every hydrated island
+// currently costs ~177 KB gzip because the design-system barrel does not
+// tree-shake (G-15), and PUB-14 requires four of five public routes to ship zero
+// framework JS. check-no-js.sh gates it. PublicNav is a React module, which is
+// not the same thing as a hydrated one — Astro server-renders it to HTML.
+//
+// FOOTER SHAPE, AND A GAP IT EXPOSES. The handoff's footer is one row: socials
+// left, an italic serif cross-link right. The design system's Footer takes a
+// STRING for its left slot and a link ARRAY for its right, with no ReactNode on
+// either side, so that row cannot be composed from it. The cross-link is
+// therefore promoted to its own right-aligned row above the Footer, and the
+// Footer carries the socials and the copyright. Recorded in
+// 00-PUBLIC-DESIGN-NOTES.md under "Open for review" rather than worked around
+// with a hand-rolled footer.
+
+import { Footer } from "@akhil-saxena/design-system";
+import PublicNav, { type PublicRoute } from "../components/PublicNav";
+import home from "../data/home_config.json";
+
+import "../styles/manifest.css";
+
+interface Props {
+	title: string;
+	active?: PublicRoute;
+	/** Page content max-width. Home is 1080; Work and Photos are 1280 (handoff). */
+	maxWidth?: number;
+}
+
+const { title, active = "none", maxWidth = 1280 } = Astro.props;
+
+// Real socials from home_config.json — never invented. D-40's argument collapses
+// if a fixture is made up, and these are the three the live site already ships.
+const socials = home.socialLinks.map((s) => ({ label: s.label, href: s.url }));
+---
+
+<html lang="en" class="dark" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+	</head>
+	<body>
+		<div class="pub-shell" style={`--pub-max: ${maxWidth}px;`}>
+			<div class="pub-bar">
+				<PublicNav active={active} />
+			</div>
+
+			<main class="pub-main">
+				<slot />
+			</main>
+
+			<div class="pub-crosslink">
+				<slot name="crosslink" />
+			</div>
+
+			<div class="pub-footer">
+				<Footer variant="compact" copyright="© 2026 Akhil Saxena" links={socials} />
+			</div>
+		</div>
+
+		<style is:global>
+			/* APP LAYOUT CSS ONLY. QUAL-03 permits layout; it does not permit
+			   re-implementing a component the design system already ships. Nothing
+			   below sets a colour that is not a charcoal token, and nothing below
+			   restyles a design-system class. */
+
+			body {
+				margin: 0;
+				background: var(--page-bg);
+				color: var(--ink);
+				font-family: var(--font-body);
+				/* Both handoff prototypes set this and the approved dark Home uses it.
+				   Its consequence is a typography rule, recorded in UI-SPEC: Playfair
+				   at 400 must not carry a body role below 15px on a dark surface. */
+				-webkit-font-smoothing: antialiased;
+
+				/* RESPONSIVE CONTRACT §5.1 — THE UNIT IS `svh`, AND THIS IS THE ONE
+				   LINE IN THE CODEBASE PLAN 00-22 COPIES FROM. The plain `vh` unit
+				   this replaced resolves to the LARGE viewport: the height with the
+				   mobile address bar RETRACTED. At first paint on iOS Safari and
+				   Android Chrome the bar is VISIBLE, so that unit is taller than
+				   what the user can actually see, and a two-state full-viewport
+				   landing puts the one element whose whole job is to be seen at
+				   first paint — the scroll prompt — below the fold. `svh` is the
+				   smallest the viewport gets, so state A fits under every chrome
+				   state. Desktop is unaffected: with no dynamic chrome all four
+				   units are equal at classes 5 and 6.
+
+				   `dvh` IS FORBIDDEN on any scroll-transition participant. It
+				   tracks the live viewport, so it changes DURING the scroll and
+				   moves the transition's own target distance mid-gesture — jitter
+				   on its own, and a snap-fight where a snap point is in play
+				   (§5.4). Plan 00-22 must not reach for it.
+
+				   `min-height`, NEVER `height`. Content taller than the budget has
+				   to overflow VISIBLY rather than clip invisibly: a visible
+				   overflow is a failure a screenshot catches, and a clip is one it
+				   hides. */
+				min-height: 100svh;
+			}
+
+			/* THE GUTTER LADDER — 00-RESPONSIVE-CONTRACT.md §3. Four steps, every
+			   value a real step on the 4px grid, written mobile-first so class 1
+			   (the folded cover, ≤ 374px) is the unstyled base and each `min-width`
+			   names the class boundary it crosses. The unconditional 48px this
+			   replaced spent 96px — 28% — of a 344px viewport on padding.
+
+			   CSS ONLY, AND NEVER A JS WIDTH BRANCH (§6 rule 2). Unfolding a
+			   foldable takes the viewport from ~344px to ~841px in ONE FRAME with
+			   no reload and no route change, so any layout that depends on a
+			   viewport measurement taken once is wrong for the rest of the session.
+			   A media query re-evaluates on resize; `window.innerWidth` read into
+			   state does not.
+
+			   ONE PROPERTY, NOT FOUR VALUES (T-00-59). `--pub-gutter` is the single
+			   source: the shell pads by it, and the two full-bleed rows — the bar
+			   and the footer — cancel it with the same value negated and pay it
+			   back as their own inner padding. Step the padding without stepping
+			   the negative margin and the AppBar overhangs by 32px at class 1,
+			   which presents as a horizontal scroll — precisely the R-6 violation
+			   this plan closes, reintroduced by the fix for it. Deriving all four
+			   from one property is what makes that drift unrepresentable. */
+			.pub-shell {
+				/* class 1 · ≤ 374 · folded cover · 16px → 344 − 32 = 312 content */
+				--pub-gutter: var(--space-4);
+
+				max-width: var(--pub-max);
+				margin: 0 auto;
+				padding: 0 var(--pub-gutter);
+				box-sizing: border-box;
+			}
+
+			/* class 2 · phone portrait begins at 375 · 24px → 360 − 48 = 312 */
+			@media (min-width: 375px) {
+				.pub-shell {
+					--pub-gutter: var(--space-6);
+				}
+			}
+
+			/* classes 3–4 · the foldable unfolds at 673, tablet portrait at 768 ·
+			   32px → 673 − 64 = 609 */
+			@media (min-width: 673px) {
+				.pub-shell {
+					--pub-gutter: var(--space-8);
+				}
+			}
+
+			/* classes 5–6 · DELIBERATELY UNCHANGED (§3). This rung reproduces
+			   exactly the 48px the approved 1440 design was signed off at, so the
+			   ladder cannot move anything a reviewer has already accepted. At 1024
+			   the resulting 928px content sits under Home's 1080 cap, so the cap is
+			   inert there and no new cap interaction is introduced.
+			   48px → 1024 − 96 = 928 */
+			@media (min-width: 1024px) {
+				.pub-shell {
+					--pub-gutter: var(--space-12);
+				}
+			}
+
+			/* AppBar ships its own 12px/20px padding and a --surf-2 background. The
+			   negative margin pulls it back out to the shell's own gutter so the nav
+			   aligns with the content below it, which is what the handoff shows.
+			   Both halves read --pub-gutter, so the pull-out and the pay-back are
+			   the same number by construction and cannot drift from the ladder. */
+			.pub-bar {
+				margin: 0 calc(var(--pub-gutter) * -1);
+			}
+			.pub-bar .ds-atom-appbar {
+				padding: var(--space-6) var(--pub-gutter);
+				background: transparent;
+				backdrop-filter: none;
+			}
+
+			.pub-main {
+				padding-top: var(--space-11);
+			}
+
+			.pub-crosslink {
+				display: flex;
+				justify-content: flex-end;
+				padding: var(--space-8) 0 var(--space-4);
+			}
+
+			/* The footer is the second full-bleed row and takes the same treatment
+			   for the same reason — one property, negated out and paid back in. */
+			.pub-footer {
+				margin: 0 calc(var(--pub-gutter) * -1);
+			}
+			.pub-footer .ds-atom-footer {
+				background: transparent;
+				border-top: 1px solid var(--rule);
+				padding: var(--space-4) var(--pub-gutter) var(--space-10);
+			}
+
+			/* The editorial band cap — Ivory→Charcoal exception 8. Used by the Work
+			   employment band, which is narrower than the page it sits on. */
+			.pub-band {
+				max-width: 1080px;
+			}
+		</style>
+	</body>
+</html>

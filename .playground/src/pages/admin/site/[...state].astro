@@ -1,0 +1,672 @@
+---
+// ═══ S-site — D-25's canonical category records, and the drift they kill ═══
+//
+// TWO ARTEFACTS DESIGNED FROM ONE FILE: S-site (populated) and
+// O-category-reassign (the delete-with-reassignment dialog, at its own route).
+//
+// ═══ THE SCREEN THE LEGACY ADMIN NEVER HAD ═════════════════════════════════
+// 00-ADMIN-IA.md maps all thirteen legacy `Selection` variants to a route and
+// records that NONE of them maps here: `site_config.json` had no editor at all,
+// its categoryColumns map was hand-edited in the repo, "and that is also why
+// the drift below was free to develop unnoticed." So this screen is not a port
+// of anything. It is the first editor the file has ever had, and the drift is
+// the reason it exists.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK ══════════════
+// astro/dist/core/request.js:20 strips the query string on every prerendered
+// route, in dev as well as at build. Plan 12 measured it, plan 13 made the rest
+// param the idiom. This plan's frontmatter names `src/pages/admin/site.astro`;
+// the idiom wins and the deviation is in the SUMMARY.
+//
+// ═══ THE NUMBERS ARE COUNTED, NOT QUOTED ═══════════════════════════════════
+// Counted this session out of data/portfolio_images.json: 39 photos across the
+// SEVEN lowercase categories — architecture 14, nature 8, wildlife 5, abstract
+// 4, street 4, portraits 2, product 2. data/site_config.json is 176 bytes and
+// its categoryColumns map carries EIGHT keys for those seven categories,
+// because "All" is in it and is not a category.
+//
+// UI-SPEC's contract table illustrates the delete dialog with "12 photos use
+// it." The real count for Architecture is FOURTEEN, so the dialog quotes 14.
+// A dialog whose whole job is to state the blast radius may not state it from
+// an example.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Divider,
+	Eyebrow,
+	Field,
+	Heading,
+	InlineEdit,
+	NumberStepper,
+	Select,
+	Skeleton,
+	Text,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import { CANONICAL_STATES } from "../../../lib/artefacts.mjs";
+import fixtures from "../../../fixtures/site.json";
+
+export const SCREEN = {
+	id: "site",
+	route: "/admin/site",
+	entity: "site_config.json",
+	layouts: ["desktop"],
+	proves:
+		"That the category triple is editable in place and that `id` and `label` are visibly DIFFERENT fields — the whole point of ADMIN-IA's schema decision 4. The two columns are rendered side by side and separately labelled, so a reviewer can see that renaming the label no longer touches the key the 39 photos are stored against, and that the legacy render-time Title-casing bridge has nothing left to do. It also carries O-category-reassign, which makes deleting a category impossible without choosing where its real photos go.",
+};
+
+// Seven state paths plus one overlay route. `state: undefined` is the base
+// path, so dist/admin/site/index.html exists.
+export const VARIANTS = ["reassign"];
+
+export function getStaticPaths() {
+	return [
+		{ params: { state: undefined } },
+		...CANONICAL_STATES.map((s) => ({ params: { state: s } })),
+		{ params: { state: "reassign" } },
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-site" },
+	// n/a. THE LAST CATEGORY CANNOT BE DELETED, so the table cannot be empty:
+	// O-category-reassign requires choosing a destination among the OTHER
+	// categories, and with photos in the library at least one category must
+	// survive to hold them. A library with nothing in it is E-photos, which is
+	// a state of a different screen. The route still exists and renders this
+	// reason, because a coverage cell nobody can read is a claim.
+	{
+		state: "empty",
+		coverage: "n/a",
+		ref: null,
+		reason: "the reassignment path makes the last category undeletable while photos exist",
+	},
+	// n/a. /admin/site reads ONE committed JSON file of 176 bytes with no
+	// asynchronous load — no list to page, no pipeline, no remote fetch — so
+	// there is no interval during which a skeleton would be true.
+	{
+		state: "loading",
+		coverage: "n/a",
+		ref: null,
+		reason: "one 176-byte committed file, read at build time, with no async load",
+	},
+	// INHERITS. Plan 13 claimed T-error-inline on /admin/photos.
+	{ state: "error", coverage: "inherits", ref: "T-error-inline" },
+	// INHERITS. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// INHERITS. D-16's per-file diff, sketched by this plan at
+	// /admin/conflict-diff/ — see that file for why it is not /admin/conflict/.
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// INHERITS. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Replacing it with a constant is the
+// negative control for check-states.mjs.
+const state = Astro.params.state ?? "populated";
+const isVariant = VARIANTS.includes(state);
+const fx = fixtures[isVariant ? "populated" : state];
+if (!fx) {
+	throw new Error(
+		`admin/site/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined` plus one entry per CANONICAL_STATES member plus the reassign overlay, and " +
+			"src/fixtures/site.json must carry a key for every state. A state declared in STATES " +
+			"with no fixture is a fake artefact.",
+	);
+}
+
+const wiring = (id) => ({
+	controlId: id,
+	hintId: undefined,
+	errorId: undefined,
+	describedBy: undefined,
+	invalid: false,
+});
+
+const noop = () => {};
+
+// The category the delete dialog is about, pinned by id so the quoted count
+// cannot drift onto a different category as the fixture changes.
+const DOOMED = "architecture";
+const doomed = fx.categories.find((c) => c.id === DOOMED) ?? fx.categories[0];
+const destinations = fx.categories.filter((c) => c.id !== doomed?.id);
+
+// UI-SPEC's contract table, verbatim except for the count, which is read from
+// the real data. Held in named constants so the exact strings are greppable.
+const DELETE_TITLE = `Delete the ${doomed?.label ?? ""} category?`;
+const DELETE_BODY_A = `${doomed?.photos ?? 0} photos use it. `;
+const DELETE_BODY_B = "Choose where they go:";
+const INLINE_ERROR = "A category label cannot be blank.";
+
+const isLoading = state === "loading";
+const isEmpty = state === "empty";
+const isReassign = state === "reassign";
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+
+const stateRoutes = ["populated", ...CANONICAL_STATES];
+const hrefFor = (s) => (s === "populated" ? "/admin/site/" : `/admin/site/${s}/`);
+---
+
+<Admin title={`S-site / ${state}`} active="site" route="/admin/site" navStates={fx.nav}>
+	<div class="st-head" data-artefact={state === "populated" ? "S-site" : undefined}>
+		<Eyebrow size="sm" tone="muted">SITE</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+		<Text size="sm" tone="muted">{fx.sub}</Text>
+	</div>
+
+	{/* ── WHY `loading` AND `empty` ARE n/a ON THIS SCREEN ──────────────────
+	    Both routes exist and both say why their cell is `n/a`, in the exact
+	    one-clause shape plan 16's coverage table expects. Writing the reason
+	    here rather than in the plan means plan 16 TRANSCRIBES it instead of
+	    inventing it — and a reviewer can check the claim against the screen
+	    rather than taking the table's word. */}
+	{(isLoading || isEmpty) && (
+		<div class="st-panel">
+			<Eyebrow size="sm" tone="muted">
+				{isLoading ? "LOADING — n/a ON THIS SCREEN" : "EMPTY — n/a ON THIS SCREEN"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{isLoading
+					? "This screen reads one committed file of 176 bytes, with no asynchronous load to wait on. There is no list to page, no pipeline to poll and no remote read, so there is no interval during which a skeleton would be true. A skeleton here would depict a wait that never happens."
+					: "The last category cannot be deleted, so this table cannot be empty. Deleting one requires choosing a destination among the OTHERS, and while there are photos in the library at least one category must survive to hold them. An empty library is E-photos — a state of a different screen."}
+			</Text>
+			{isLoading && (
+				<Fragment>
+					<Text size="sm" tone="muted">
+						Shown for comparison only, and it is what the treatment would have to claim: that
+						these bars are the height of the rows that replace them.
+					</Text>
+					<Skeleton shape="text" />
+					<Skeleton shape="text" />
+				</Fragment>
+			)}
+		</div>
+	)}
+
+	{/* ══ THE D-25 FIX, MADE LEGIBLE ════════════════════════════════════════
+	    `id` and `label` are DIFFERENT FIELDS and the table shows both columns
+	    side by side, separately labelled. That is the whole of schema decision
+	    4: `architecture` is the key data/portfolio_images.json stores against
+	    39 photos, `Architecture` is the string a visitor reads, and until now
+	    nothing reconciled them except a render-time transform in the legacy
+	    admin — `c.charAt(0).toUpperCase() + c.slice(1)` — which populated the
+	    category <select> by Title-casing on the fly.
+
+	    THE TRANSFORM HAPPENS TO BE CORRECT ON ALL SEVEN CATEGORIES TODAY, AND
+	    THAT IS THE POINT. It is right for every one-word lowercase name, so
+	    nothing ever went visibly wrong and the drift was free to develop
+	    unnoticed. It breaks on the first category whose display form is not a
+	    simple capitalisation — "Black & white", "Street portraits", "35mm" —
+	    and it breaks silently, on the public page, at render time. A transform
+	    that does not exist cannot disagree with the data.
+
+	    THE ID COLUMN IS NOT EDITABLE and the label column is. That asymmetry
+	    IS the design: renaming a label must not touch the key, or 14 photos
+	    lose their category. Changing an id is a data migration, not a rename,
+	    and it belongs behind the same reassignment path as a delete. */}
+	{!isLoading && !isEmpty && (
+		<section class="st-section">
+			<Eyebrow size="sm" tone="muted">CATEGORIES — ID AND LABEL ARE DIFFERENT FIELDS</Eyebrow>
+			<Text size="sm" tone="muted">
+				{fx.categories.length} records covering {fx.total} photos, out of one {fx.configBytes}-byte
+				file. The <code class="st-key">id</code> is what every photo is stored against; the
+				<code class="st-key">label</code> is what a visitor reads. Editing one does not touch the
+				other, which is what removes the legacy render-time bridge entirely.
+			</Text>
+
+			<div class="st-table" role="table" aria-label="Category records">
+				<div class="st-row st-row-head" role="row">
+					<span class="st-cell st-h" role="columnheader">id — the stored key</span>
+					<span class="st-cell st-h" role="columnheader">label — what a visitor reads</span>
+					<span class="st-cell st-h" role="columnheader">columns</span>
+					<span class="st-cell st-h" role="columnheader">photos</span>
+					<span class="st-cell st-h" role="columnheader">actions</span>
+				</div>
+
+				{fx.categories.map((c) => {
+					const err = fx.labelError === c.id;
+					return (
+						<div class="st-row" role="row" data-err={err ? "true" : undefined}>
+							<span class="st-cell" role="cell">
+								<code class="st-id">{c.id}</code>
+								<span class="st-note">not editable</span>
+							</span>
+							<span class="st-cell" role="cell">
+								{/* InlineEdit is what UI-SPEC's component mapping names for the
+								    label, and it server-renders its idle state correctly: a
+								    span with role="button" and tabindex=0 that would open an
+								    input on click. Static here — the click does nothing, which
+								    is the D-02 fence.
+
+								    IT CARRIES A FIXED aria-label OF "Click to edit". There is
+								    no prop to change it, so seven rows announce the same three
+								    words and none of them says WHICH label is being edited.
+								    Recorded in the SUMMARY; not worked around, because the
+								    workaround would be a wrapper that hides the gap. */}
+								<InlineEdit value={c.label} onSave={noop} />
+								{err && <span class="st-warn">{INLINE_ERROR}</span>}
+							</span>
+							<span class="st-cell" role="cell">
+								<NumberStepper
+									value={c.columns}
+									onChange={noop}
+									min={1}
+									max={6}
+									ariaLabel={`Columns for ${c.label}`}
+								/>
+							</span>
+							<span class="st-cell" role="cell">
+								<Badge tone="neutral">{c.photos}</Badge>
+							</span>
+							<span class="st-cell" role="cell">
+								<a class="st-delete" href="/admin/site/reassign/">Delete…</a>
+							</span>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* ── THE EIGHTH KEY ────────────────────────────────────────────────
+			    categoryColumns has EIGHT keys for SEVEN categories, because "All"
+			    is in it. "All" is not a category: no photo carries it, deleting it
+			    is meaningless and reassigning out of it is meaningless. It is the
+			    column count for the unfiltered gallery, which is a different kind
+			    of setting, so it sits outside the record table rather than as an
+			    eighth row. Folding it in would have made "All" deletable and given
+			    it a photo count of zero next to seven real ones. */}
+			<Card surface="subtle" padding="md" radius="lg">
+				<div class="st-entry">
+					<Eyebrow size="sm" tone="muted">THE UNFILTERED GALLERY</Eyebrow>
+					<Text size="sm" tone="muted">
+						<code class="st-key">categoryColumns</code> carries eight keys for seven categories.
+						The eighth is <code class="st-key">All</code>, which is not a category — no photo is
+						stored against it, and it can be neither deleted nor reassigned out of. It is the
+						column count for the unfiltered gallery, so it is edited here and not as an eighth
+						row in the table above.
+					</Text>
+					<Field label="Columns for All" wiring={wiring("f-all-columns")}>
+						<NumberStepper
+							value={fx.allColumns}
+							onChange={noop}
+							min={1}
+							max={6}
+							ariaLabel="Columns for the unfiltered gallery"
+						/>
+					</Field>
+				</div>
+			</Card>
+
+			<div class="st-actions">
+				<Button variant="secondary">Add a category</Button>
+				<Text size="sm" tone="muted">
+					Adding one asks for an id and a label separately, for the same reason the table shows
+					them separately. Inert here — the D-02 fence.
+				</Text>
+			</div>
+		</section>
+	)}
+
+	{/* ── T-error-inline: the pointer plus what a reviewer cannot infer ───── */}
+	{state === "error" && (
+		<div class="st-panel" data-artefact="T-error-inline">
+			<Eyebrow size="sm" tone="muted">INHERITS T-error-inline</Eyebrow>
+			<Text size="sm" tone="muted">
+				What is specific to this screen is that a blank LABEL is a draft-legal state while a
+				blank ID never is: the id is not editable at all, so the only field that can be
+				incomplete is the display string, and the warning has to sit in the row rather than
+				above the table or a reviewer cannot tell which of seven is wrong. The photos keep
+				their category throughout, because nothing about a label touches the key.
+			</Text>
+			<div class="st-actions">
+				<Button variant="primary">Mark as ready</Button>
+				<Button variant="secondary">Preview</Button>
+				<Text size="sm" tone="muted">
+					Both controls are enabled. Nothing about this state is modal, and the draft saves.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ───── */}
+	{isInherit && (
+		<div
+			class="st-inherit"
+			data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}
+		>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to this screen is that a pending category change is felt on a DIFFERENT screen: renaming a label changes what /admin/photos shows in its filter row, so the change list has to name the category rather than the file, or the operator publishes a rename without connecting it to the seven chips it moves."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all (G-7). What is specific to this screen is that the file is 176 bytes: the whole document fits in a diff pane, so this is the ONE conflicted file where a plain side-by-side would genuinely be readable — and it is also the file whose conflicts matter most, because a stale category record breaks every photo that references it."
+						: "The outcome is plan 12's. What is specific to this screen is that publishing a category rename changes the public gallery's filter labels immediately and touches no photo record at all, which is exactly the separation the id/label split buys."}
+			</Text>
+			{state === "dirty" && (
+				<div class="st-actions">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Site, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+			{state === "conflict" && (
+				<AlertBanner
+					open
+					tone="warning"
+					title="site_config.json changed after your draft started."
+					description="Resolving is per file, on its own screen. Photos and Home stay pending while this one is decided."
+				/>
+			)}
+		</div>
+	)}
+
+	<Divider />
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	<aside class="st-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="st-review-line">
+			{stateRoutes.map((s) => (
+				<a class="st-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+			<a class="st-review-link" href="/admin/site/reassign/" data-on={isReassign ? "true" : undefined}>reassign</a>
+		</p>
+		<p class="st-review-note">
+			The drift this screen fixes was surfaced on
+			<a class="st-review-link" href="/admin/photos/">/admin/photos/</a>, where every filter chip
+			carries its rendered label and its raw stored key side by side.
+		</p>
+	</aside>
+
+	{/* ══ O-category-reassign — DELETE CANNOT PROCEED WITHOUT A DESTINATION ══
+	    D-25 says rename and delete need a DESIGNED reassignment path, and the
+	    design is that the destination is part of the confirm rather than a
+	    follow-up. So there is no bare confirm, no second dialog, and no way off
+	    this surface that leaves 14 photos pointing at a category that no longer
+	    exists.
+
+	    THE COUNT IS READ FROM THE REAL DATA. UI-SPEC's contract table
+	    illustrates the copy with "12 photos use it"; Architecture really has
+	    FOURTEEN. A dialog whose entire job is to state the blast radius may not
+	    state it from an example, so the number below is computed from
+	    data/portfolio_images.json and the label comes from the record.
+
+	    THE Select LISTS THE OTHER SIX REAL CATEGORIES and nothing else — no
+	    "uncategorised", no blank option, no default. A blank default would be a
+	    way to confirm without choosing, which is the thing this dialog exists
+	    to prevent.
+
+	    ═══ THE MARKUP IS A LOCAL PROTOTYPE, AND HERE IS WHY ═════════════════
+	    `ConfirmDialog tone="danger"` is what UI-SPEC's component mapping names
+	    and it cannot be used. Measured with react-dom/server before this file
+	    was written: ConfirmDialog(open) renders 0 B, because it mounts through
+	    DSPortal, which returns null until a mount effect has run
+	    (dist/index.js:2429-2436). Under SSR no effect runs. The same is true of
+	    Modal and Sheet, so EVERY overlay in the design system server-renders to
+	    nothing — and UI-SPEC's hydration table prescribes sketching all of them
+	    "open and static". That instruction is not satisfiable as shipped.
+
+	    A second reason it could not be reproduced faithfully even with
+	    hydration: ConfirmDialog's panel has NO STYLESHEET AT ALL. There is no
+	    `.ds-atom-confirm-panel` rule in any file under dist/css; the panel is
+	    one inline style object carrying a hardcoded `rgba(255,255,255,.97)`
+	    background, annotated in the source as "intentionally NOT the cream
+	    token — always-light". Nothing in the charcoal cascade reaches it. Same
+	    family as plan 13's F-13-6 on the FileInput dropzone.
+
+	    So the chrome below is the design system's `ds-atom-modal-*` classes,
+	    which ARE in a stylesheet, with a danger-toned heading; the only local
+	    things are the mounting and that substitution. It names its upstream
+	    owner, it dies with the playground, and the finding is in the SUMMARY. */}
+	{isReassign && (
+		<div class="ds-atom-modal-backdrop st-dialog" data-artefact="O-category-reassign">
+			<div
+				class="ds-atom-modal"
+				role="alertdialog"
+				aria-modal="true"
+				aria-labelledby="reassign-title"
+				aria-describedby="reassign-desc"
+			>
+				<header class="ds-atom-modal-hd">
+					<span id="reassign-title" class="ds-atom-modal-hd-title st-danger">{DELETE_TITLE}</span>
+				</header>
+				<div class="ds-atom-modal-body">
+					<div id="reassign-desc">{DELETE_BODY_A}{DELETE_BODY_B}</div>
+					<div class="st-dialog-field">
+						<Field label="Move them to" wiring={wiring("f-reassign-dest")}>
+							<Select
+								value={destinations[0]?.id}
+								onChange={noop}
+								options={destinations.map((c) => ({
+									value: c.id,
+									label: `${c.label} (${c.photos} today)`,
+								}))}
+								ariaLabel="Move them to"
+								searchable={false}
+								size="sm"
+							/>
+						</Field>
+					</div>
+					<p class="st-dialog-note">
+						The destination is part of this confirm rather than a step after it. There is no
+						confirm without a destination, because a category record with photos still pointing
+						at it is the drift this screen was built to end.
+					</p>
+				</div>
+				<footer class="ds-atom-modal-ft">
+					<Button variant="secondary">Cancel</Button>
+					<Button variant="primary">Delete and move {doomed?.photos} photos</Button>
+				</footer>
+			</div>
+		</div>
+	)}
+</Admin>
+
+<style>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+	   Scoped rather than global: this route carries NO island. */
+
+	.st-head,
+	.st-panel,
+	.st-inherit,
+	.st-section,
+	.st-entry {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.st-section {
+		gap: var(--space-4);
+	}
+
+	.st-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.st-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.st-key,
+	.st-id {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.st-id {
+		font-size: var(--text-xs);
+		color: var(--ink-2);
+	}
+	.st-note {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-4);
+	}
+	.st-warn {
+		font-size: var(--text-xs);
+		font-weight: 600;
+	}
+
+	/* ── THE CATEGORY TABLE ────────────────────────────────────────────────
+	   A CSS grid with explicit ARIA roles rather than DataGrid, and the reason
+	   is measured rather than preferred. DataGrid stringifies every cell
+	   (plan 13's F-13-2), so neither InlineEdit nor NumberStepper — the two
+	   controls UI-SPEC's own component mapping names for this screen — can
+	   enter a row at all; both would render as `[object Object]`. It also
+	   hardcodes its own aria-label to "Job applications" (F-13-1), pins
+	   density="comfortable" with no prop (F-13-3), and renders a Pagination
+	   for a seven-row table with no way to hide it (F-13-4). UI-SPEC offers
+	   "Table or DataGrid"; Table's Root is the same code path. So this is
+	   layout CSS, which QUAL-03 permits, and G-2/F-13-2 are what would let it
+	   be the component instead.
+
+	   REFLOW, NEVER HIDE. Below 673px the five cells stack into a labelled
+	   block per record: every id, label, column count, photo count and delete
+	   affordance is present at 344px, in one column. Nothing is dropped. */
+	.st-table {
+		display: grid;
+		gap: var(--space-3);
+	}
+	.st-row {
+		display: grid;
+		gap: var(--space-2);
+		padding: var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.st-row-head {
+		display: none;
+	}
+	.st-row[data-err="true"] {
+		border-color: var(--wire);
+		border-left-width: 2px;
+	}
+	.st-cell {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		min-width: 0;
+	}
+
+	@media (min-width: 673px) {
+		.st-table {
+			gap: var(--space-2);
+		}
+		.st-row {
+			grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) auto auto auto;
+			align-items: center;
+			gap: var(--space-3);
+		}
+		.st-row-head {
+			display: grid;
+			border-color: transparent;
+			background: transparent;
+			padding-bottom: 0;
+		}
+		.st-h {
+			font-family: var(--mono);
+			font-size: var(--text-2xs);
+			letter-spacing: var(--ls-wide);
+			text-transform: uppercase;
+			color: var(--ink-3);
+		}
+	}
+
+	.st-delete {
+		font-size: var(--text-xs);
+		color: var(--ink-2);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.st-delete:hover {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+
+	/* == O-category-reassign =============================================== */
+	.st-dialog {
+		position: fixed;
+	}
+	.st-dialog-field {
+		margin-top: var(--space-3);
+	}
+	.st-dialog-note {
+		margin: var(--space-3) 0 0;
+		color: var(--ink-3);
+	}
+	/* The heading tone. ConfirmDialog's own danger treatment is a 40px icon
+	   tile in `var(--red)` over `rgba(239,68,68,.1)`, both inline; charcoal
+	   declares --red-ink for exactly this job and the sketch uses it so the
+	   dialog stays inside the theme's token contract. */
+	.st-danger {
+		color: var(--red-ink, var(--ink));
+	}
+
+	/* == Review chrome ===================================================== */
+	.st-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.st-review-line,
+	.st-review-note {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+	.st-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.st-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+
+	/* == THE 44px FLOOR, EVERY COARSE-POINTER CLASS ========================
+	   Last block in the file, so no base rule at the same specificity can win
+	   on source order — the failure plan 14 measured on a reset button.
+
+	   ONLY MY OWN CLASSES ARE HERE. The three design-system controls this
+	   screen introduced — InlineEdit's idle span, NumberStepper's two icon
+	   buttons and its input, all measured under the floor — are carried in
+	   density-compact.css instead, and NOT because that file is tidier. A
+	   scoped rule cannot reach them at all: Astro stamps its scoping attribute
+	   onto elements in the Astro template and passes it as a prop to a
+	   framework component, and a component with a fixed prop list never
+	   receives it. The rule was written here first and measured no change,
+	   which is how the reason was found. */
+	@media (pointer: coarse) {
+		.st-delete,
+		.st-review-link {
+			min-height: 44px;
+		}
+	}
+</style>

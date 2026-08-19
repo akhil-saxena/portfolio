@@ -1,0 +1,1045 @@
+---
+// ═══ S-photos — the densest admin screen, at real length ════════════════════
+//
+// FIVE ARTEFACTS FROM ONE FILE: S-photos (populated), E-photos (empty),
+// E-category-filtered (filtered-empty), T-loading-list (loading) and
+// T-error-inline (error). `dirty`, `conflict` and `success` declare
+// `coverage: "inherits"` and point at treatments plan 12 sketched on the
+// dashboard, its own most demanding host.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK. ══════════════
+// Read plan 12's header at src/pages/admin/[...state].astro for the measurement:
+// under `output: 'static'` Astro strips the query string in DEV as well as at
+// build (astro/dist/core/request.js:20, `if (isPrerendered) url.search = "";`),
+// so seven `?state=` URLs returned byte-identical HTML. UI-SPEC is wrong on this
+// point and this file follows the corrected idiom instead:
+//
+//   ONE FILE PER SCREEN at src/pages/admin/<screen>/[...state].astro, exporting
+//   getStaticPaths, SCREEN and STATES.
+//
+// Astro ranks a static segment above a rest param, so `/admin/photos/` is not
+// swallowed by the dashboard's `[...state]`, and in a static build nothing is
+// emitted that getStaticPaths does not return.
+//
+// ═══ WHY THIS ROUTE EMITS EIGHT PATHS, NOT SEVEN ═══════════════════════════
+// `filtered-empty` is NOT one of D-03's six states and is deliberately not added
+// to CANONICAL_STATES: a filtered-empty is a FILTER CONDITION, not a point in a
+// draft lifecycle, and adding it would make the coverage table 7 x 7 = 49 while
+// every check that counts non-blank cells kept passing. E-category-filtered is
+// one of the five E- artefacts precisely because it has no coverage CELL of its
+// own. It gets a route so plan 16 can review it and plan 17 can screenshot it at
+// a real URL, and STATES still declares exactly seven entries.
+//
+// ═══ THE DATA IS REAL AND WAS COUNTED, NOT QUOTED ══════════════════════════
+// Counted out of data/portfolio_images.json this session: 39 photos, 7 lowercase
+// categories, distribution architecture 14 / nature 8 / wildlife 5 / abstract 4 /
+// street 4 / portraits 2 / product 2, and 0 of 39 carrying a tag. Three claims in
+// 00-ADMIN-IA.md about this file were checked; two hold and one does not, and the
+// SUMMARY records the correction. `product-peppers` does NOT lack an exif key: it
+// carries an exif OBJECT whose six values are every one of them null. The design
+// consequence is identical (nothing to show) but the SHAPE is not, and Phase 3's
+// migration would have been written against a key that is always present.
+//
+// The omission rule also bites far wider than the two photos ADMIN-IA names:
+// ELEVEN of 39 have at least one absent EXIF field, because `lens` is null on
+// nine otherwise-complete records. A rule that fires on 28% of the library is a
+// layout requirement, not an edge case.
+//
+// ═══ D-15's PIPELINE STATE IS A Badge, AND THAT IS G-5 ON A SECOND SURFACE ══
+// StatusPill's `stage` prop is the closed union
+// "wishlist" | "applied" | "screening" | "interviewing" | "offer" | "closed" — a
+// job-application pipeline, hardcoded — so it cannot express processed /
+// processing / failed. Plan 12 recorded the same substitution on the dashboard
+// for D-13. Two independent surfaces reaching for it and neither being able to
+// use it is what makes G-5 a pattern rather than an anecdote. No StatusPill
+// element appears anywhere in this file.
+//
+// ═══ AND THE SUBSTITUTE HAS ITS OWN CEILING, MEASURED HERE ═════════════════
+// DataGrid renders every cell as `String(row[col.key] ?? "")`
+// (dist/index.js:8586). A ReactNode cell becomes "[object Object]", so a Badge
+// cannot be placed in a DataGrid row by composition at all. The ONE exception is
+// a column keyed exactly `status`, which DataGrid routes through a PRIVATE
+// job-application lookup (`applied | interviewing | offer | rejected`,
+// dist/index.js:8376) and renders as a Badge. An unknown value falls through to
+// `tone: "neutral"` with the raw string as the label, which is why the Pipeline
+// column below IS keyed `status` and why all three pipeline states render in one
+// tone. The colour that distinguishes them is unreachable from the list view.
+// Recorded, not worked around. The grid tiles below set their own Badge tone,
+// which is the second half of the same evidence: the same fact, two surfaces,
+// two different capabilities.
+//
+// ═══ D-25's DRIFT IS SHOWN, NOT FIXED ══════════════════════════════════════
+// data/portfolio_images.json stores `architecture`; data/site_config.json keys
+// the same category `Architecture`. Nothing reconciles them except a render-time
+// transform: the legacy PropertiesPanel Title-cased on the fly with
+// `c.charAt(0).toUpperCase() + c.slice(1)` to populate the category select
+// (git show legacy/nextjs-portfolio:src/components/admin/PropertiesPanel.tsx,
+// lines 335-418). Every category label on this screen therefore carries its raw
+// key beside it. D-25's canonical records are edited on /admin/site in plan 15
+// and migrated in Phase 3; this screen is where the COST of the drift is visible.
+//
+// ═══ NO HYDRATION DIRECTIVE IN TASK 1 ══════════════════════════════════════
+// The reorder island arrives in task 2 and is one of exactly three sanctioned
+// islands. The acceptance criterion for task 1 counts LINES carrying the
+// directive prefix and requires zero, so the prefix is not spelled anywhere
+// above, not even in prose.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Chip,
+	DataGrid,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Field,
+	FileInput,
+	Heading,
+	ProgressBar,
+	Select,
+	Text,
+	Textarea,
+	TextInput,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import PhotoLayoutBoard from "../../../components/PhotoLayoutBoard";
+import { CANONICAL_STATES } from "../../../lib/artefacts.mjs";
+import fixtures from "../../../fixtures/photos.json";
+
+export const SCREEN = {
+	id: "photos",
+	route: "/admin/photos",
+	entity: "portfolio_images.json",
+	layouts: ["desktop", "phone"],
+	proves:
+		"That a 32px compact row stays legible against the LONGEST REAL photo title across all 39 real photos, rather than against ten rows of lorem. It also proves three things the design system cannot do that no smaller sample would have surfaced: DataGrid stringifies every cell so a Badge can only enter a row through a column keyed `status` and a private job-application lookup; DataGrid pins its own Table to density=comfortable at a specificity the density prototype cannot reach, so the 32px target is never met inside it; and the two empty states are genuinely different designs rather than one state reused, which is the failure DataGrid's own `loading` docstring warns about one level up.",
+};
+
+// Eight paths from one file. `state: undefined` produces the base path, so the
+// populated state is `/admin/photos/` and `dist/admin/photos/index.html` exists,
+// which is what the artefact contract and the acceptance criteria both name.
+export function getStaticPaths() {
+	return [
+		{ params: { state: undefined } },
+		...CANONICAL_STATES.map((s) => ({ params: { state: s } })),
+		{ params: { state: "filtered-empty" } },
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-photos" },
+	{ state: "empty", coverage: "designed", ref: "E-photos" },
+	// DESIGNED here, not inherited. T-loading-list's most demanding host is the
+	// longest list in the admin, and that is this one: 39 rows.
+	{ state: "loading", coverage: "designed", ref: "T-loading-list" },
+	// DESIGNED here. T-error-inline is D-18's lenient draft error, and its most
+	// demanding host is a screen where the invalid record is one row of thirty-nine
+	// and has to be findable. Plans 14 and 15 should declare `inherits` for it.
+	{ state: "error", coverage: "designed", ref: "T-error-inline" },
+	// Inherits. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// Inherits. D-16's per-file diff has ZERO design-system coverage (G-7) and is
+	// its own screen.
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// Inherits. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Replacing it with a constant is the
+// negative control for check-states.mjs: all seven bodies become identical and
+// the gate fails naming this screen.
+const state = Astro.params.state ?? "populated";
+const fx = fixtures[state];
+if (!fx) {
+	throw new Error(
+		`admin/photos/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined`, CANONICAL_STATES and `filtered-empty`, and src/fixtures/photos.json " +
+			"must carry a key for each. A state declared in STATES with no fixture is a fake " +
+			"artefact: the route would answer 200, render a plausible page, and be screenshotted " +
+			"under a state name it is not in.",
+	);
+}
+
+const categories = fixtures.categories;
+const labelFor = (id) => categories.find((c) => c.id === id)?.label ?? id;
+
+// D-15's three states. `tone` is honoured by the grid tiles and ignored by the
+// list, for the reason recorded in the header.
+const PIPE = {
+	processed: { label: "Processed", tone: "success" },
+	processing: { label: "Processing", tone: "info" },
+	failed: { label: "Failed", tone: "error" },
+};
+
+// D-12: a photo reaches the GALLERY when processing finishes, not when you
+// publish. So a processing or failed upload is STAGED and is deliberately not in
+// the grid, which is what makes the topbar strip and the grid agree rather than
+// merely sit near each other (D-15's "two places that must agree").
+const gallery = fx.photos.filter((p) => p.pipeline === "processed");
+const staged = fx.photos.filter((p) => p.pipeline !== "processed");
+
+const inCategory =
+	fx.activeCategory === "all" ? gallery : gallery.filter((p) => p.category === fx.activeCategory);
+
+// DataGrid columns. `status` is keyed exactly so, on purpose: see the header.
+const columns = [
+	{ key: "title", label: "Title", width: 208, sortable: true },
+	{ key: "category", label: "Category", width: 186, sortable: true },
+	{ key: "status", label: "Pipeline", width: 128 },
+	{ key: "order", label: "Order", width: 76, align: "right", sortable: true },
+	{ key: "exif", label: "EXIF", width: 88, align: "right" },
+	{ key: "size", label: "Pixels", width: 118, align: "right" },
+	{ key: "date", label: "Added", width: 108, sortable: true },
+];
+
+const rows = fx.photos.map((p) => ({
+	id: p.id,
+	title: p.title,
+	// The drift, in every row: rendered label first, raw stored key in brackets.
+	category: `${labelFor(p.category)} (${p.category})`,
+	status: PIPE[p.pipeline].label,
+	order: p.order,
+	// The omission rule cannot be expressed inside a stringified cell, so the list
+	// states the COUNT and the detail form does the omitting.
+	exif: `${p.exifPresent.length} of 6`,
+	size: `${p.width} × ${p.height}`,
+	date: p.date,
+}));
+
+// The two photos whose EXIF holes are real, pinned BY ID so the detail panels
+// cannot drift onto a record with a full six-field set.
+const selected = fx.selected.map((id) => fx.photos.find((p) => p.id === id)).filter(Boolean);
+
+const EXIF_FIELDS = [
+	{ key: "camera", label: "Camera" },
+	{ key: "lens", label: "Lens" },
+	{ key: "aperture", label: "Aperture" },
+	{ key: "shutter", label: "Shutter" },
+	{ key: "iso", label: "ISO" },
+	{ key: "focalLength", label: "Focal length" },
+];
+
+// Field takes `wiring` from the useField HOOK. A static Astro page cannot call a
+// hook, but FieldWiring is a plain data interface, so the object is built here
+// instead. That works and is worth recording: the id generation the hook exists
+// to provide becomes the consumer's problem the moment the page does not
+// hydrate, and there is no un-hooked constructor for it.
+const wiring = (id) => ({
+	controlId: id,
+	hintId: undefined,
+	errorId: undefined,
+	describedBy: undefined,
+	invalid: false,
+});
+
+const categoryOptions = categories.map((c) => ({ value: c.id, label: c.label }));
+const noop = () => {};
+
+// UI-SPEC's contract table, verbatim. Held as constants so the exact strings are
+// greppable in one place and cannot drift as the markup around them changes.
+const EMPTY_TITLE = "No photos yet.";
+const EMPTY_DESC = "Upload a photo to start the gallery. Processing runs after you publish.";
+const EMPTY_CTA = "Upload a photo";
+const FILTERED_TITLE = "No photos in Architecture.";
+const FILTERED_DESC = "Move a photo into this category, or delete the category on Site.";
+const INLINE_ERROR = "Needs a title before this can be published.";
+
+// ═══ THE MISSING-ALT COUNT IS DERIVED, NEVER TYPED ═════════════════════════
+// This is the screen's REAL FIRST-RUN STATE, not an edge case: `alt` is null on
+// every one of the 39, because plan 00-19 opened the 39 [AKHIL-ALT] rows in
+// 00-PHOTO-CONTENT.md as human content and no alt text has been invented for
+// them. An editor that shows 39 blank optional-looking fields is an editor that
+// still has 39 blank fields in a year, so the count goes on screen.
+//
+// Counted off the fixture rather than written as "39" so the banner cannot go
+// stale: fill one alt and the number drops by one on the next build. A hardcoded
+// 39 would keep claiming 39 forever, which is the failure mode that makes a
+// content-debt banner untrustworthy the first time someone acts on it.
+const missingAlt = fx.photos.filter((p) => !p.alt).length;
+const totalPhotos = fx.photos.length;
+// D-18 IS LENIENT and the wording has to carry it: this blocks PUBLISHING, not
+// saving. A reviewer cannot see that saving still works, so the body text says
+// it. AlertBanner, never a dialog — Modal, ConfirmDialog and Sheet each mount
+// through DSPortal and server-render to 0 B, so a dialog on a static sketch is
+// an empty page.
+const ALT_DEBT_TITLE = `${missingAlt} of ${totalPhotos} photos have no alt text.`;
+const ALT_DEBT_DESC =
+	"Alt text is required before a photo can be published — the public gallery ships no JavaScript, " +
+	"so alt is the entire non-visual experience of the image. Saving still works: fill them in as you go. " +
+	"The outstanding rows are tracked in 00-PHOTO-CONTENT.md.";
+
+// The new fields, per 00-19's schema decision 6. `place` is MANUAL FREE TEXT and
+// must never be derived: the pipeline calls exifr with `gps: false` beside its
+// seven-field pick list, so location is STRIPPED rather than missing, and an
+// empty `place` is a privacy decision that already happened. Deriving it would
+// publish precise coordinates of personal photographs.
+const PLACE_HINT =
+	"Typed by hand. There is nothing to derive it from — the photo pipeline strips GPS on import (gps: false), on purpose.";
+// The one hint that has to do real work, because the WRONG value looks right:
+// "Into The Mist" is a name, not a description, and a reader who has the title
+// read to them twice has been told nothing about the photograph.
+const ALT_HINT =
+	"Required. Describe what is in the frame. Do not repeat the title. Do not start with “Image of” or “Photo of”.";
+const DESC_HINT = "Optional. Shown in the lightbox only, never in the grid.";
+const TAGS_HINT = "Optional. Press Enter to add. Empty on all 39 today.";
+
+const showHead = !["empty", "filtered-empty"].includes(state);
+const showFilters = state !== "empty";
+const showList = !["empty", "filtered-empty"].includes(state);
+const showGrid = ["populated", "error", "dirty", "conflict", "success"].includes(state);
+const showForm = ["populated", "error"].includes(state);
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+
+const reviewStates = ["populated", ...CANONICAL_STATES, "filtered-empty"];
+const hrefFor = (s) => (s === "populated" ? "/admin/photos/" : `/admin/photos/${s}/`);
+---
+
+<Admin
+	title={`S-photos / ${state}`}
+	active="photos"
+	route="/admin/photos"
+	navStates={fx.nav}
+	pipeline={fx.pipeline}
+>
+	{showHead && (
+		<div class="ph-head" data-artefact={state === "populated" ? "S-photos" : undefined}>
+			<Eyebrow size="sm" tone="muted">PHOTOS</Eyebrow>
+			<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+			<Text size="sm" tone="muted">{fx.sub}</Text>
+		</div>
+	)}
+
+	{/* ── THE MISSING-ALT STATE, sketched because it IS the first run ────────
+	    Not a hypothetical and not an error: 39 of 39 photos have no alt text
+	    today, so this banner is what the operator sees the first time they open
+	    the screen. It sits ABOVE the filter row rather than inside the detail
+	    form because the debt is a property of the library, not of the one photo
+	    that happens to be selected.
+
+	    AlertBanner and not a dialog, deliberately. Modal, ConfirmDialog and
+	    Sheet each mount through DSPortal and server-render to ZERO BYTES, so on
+	    a statically-rendered sketch a dialog is an empty page — the treatment
+	    would look designed in source and be absent in the artefact. AlertBanner
+	    and FormErrorSummary are the two that actually render.
+
+	    tone="warning", not "error": D-18 is lenient. Publishing is blocked,
+	    saving is not, and the body text says so out loud because a reviewer
+	    looking at a screenshot has no other way to learn it. */}
+	{missingAlt > 0 && (
+		<div class="ph-altdebt" data-artefact={state === "populated" ? "S-photos-alt-debt" : undefined}>
+			<AlertBanner
+				open
+				tone="warning"
+				title={ALT_DEBT_TITLE}
+				description={ALT_DEBT_DESC}
+				dismissible={false}
+			/>
+		</div>
+	)}
+
+	{/* ── The category filter, and D-25's drift in the one place it costs ────
+	    Chip anchors rather than a hydrated control, per the hydration budget:
+	    the whole public filter idiom is Chip/Link anchors and the admin has no
+	    reason to differ. Every chip carries the RENDERED LABEL and, in mono
+	    beside it, the RAW STORED KEY. Two spellings of one concept, side by
+	    side, which is what D-25 costs today and what the canonical record shape
+	    removes.
+
+	    Two of the eight filters have a sketched route: All and Architecture.
+	    The other six are rendered inert rather than linked to a page that does
+	    not exist, and the review band at the foot says so. A chip that looks
+	    like a control and answers 404 is a worse sketch than one that admits
+	    its own boundary. */}
+	{showFilters && (
+		<nav class="ph-filters" aria-label="Category filter">
+			<ul class="ph-filter-list">
+				{[{ id: "all", label: "All", count: gallery.length }, ...categories].map((c) => {
+					const on = fx.activeCategory === c.id;
+					const linked = c.id === "all" || c.id === "architecture";
+					const href = c.id === "all" ? "/admin/photos/" : "/admin/photos/filtered-empty/";
+					const body = (
+						<>
+							<Chip>{c.label}</Chip>
+							<code class="ph-key">{c.id}</code>
+							<span class="ph-count">{c.count}</span>
+						</>
+					);
+					return (
+						<li class="ph-filter">
+							{linked ? (
+								<a class="ph-filter-hit" href={href} aria-current={on ? "page" : undefined} data-on={on ? "true" : undefined}>{body}</a>
+							) : (
+								<span class="ph-filter-hit" data-inert="true">{body}</span>
+							)}
+						</li>
+					);
+				})}
+			</ul>
+		</nav>
+	)}
+
+	{/* ── E-photos ──────────────────────────────────────────────────────────
+	    Copy verbatim from UI-SPEC's contract table. The second sentence is
+	    load-bearing rather than decorative: D-12 makes publish ASYNCHRONOUS for
+	    photos, and this empty state is the first place in the product where a
+	    reader learns it. Removing it would make the first upload feel broken.
+
+	    This is a DIFFERENT DESIGN from E-category-filtered below, not the same
+	    component with different words. This one has a CTA because there is
+	    something to do; that one has none, because the fix is elsewhere. */}
+	{state === "empty" && (
+		<div class="ph-panel" data-artefact="E-photos">
+			<EmptyState title={EMPTY_TITLE} description={EMPTY_DESC}>
+				<Button variant="primary">{EMPTY_CTA}</Button>
+			</EmptyState>
+		</div>
+	)}
+
+	{/* ── E-category-filtered ───────────────────────────────────────────────
+	    Copy verbatim. "Nothing exists" and "your filter excluded everything"
+	    are two different facts with two different fixes, and conflating them is
+	    exactly the failure DataGrid's own `loading` docstring warns about one
+	    level up: a grid that has not loaded and a grid with no matches look
+	    identical unless someone designs them apart.
+
+	    Three deliberate differences from E-photos, each doing work:
+	      1. NO primary CTA. The photo is not missing, it is somewhere else, so
+	         the action is recategorising or deleting the category rather than
+	         uploading.
+	      2. The library count stays visible. 25 photos exist; none is here.
+	      3. The filter row stays on screen with Architecture marked, so the
+	         cause of the emptiness is in the same glance as the effect.
+
+	    THE FIXTURE HOLDS 25 PHOTOS, NOT 39, AND THAT IS DELIBERATE. Every one
+	    of the seven real categories has members, so the real data cannot
+	    produce this state at all. A fixture exists precisely to produce a state
+	    the data cannot; the 14 architecture photos are the ones removed. */}
+	{state === "filtered-empty" && (
+		<div class="ph-panel" data-artefact="E-category-filtered">
+			<EmptyState title={FILTERED_TITLE} description={FILTERED_DESC} />
+			<Text size="sm" tone="muted">
+				{fx.photos.length} photos in the library. None is in Architecture.
+			</Text>
+		</div>
+	)}
+
+	{/* ── The upload target ─────────────────────────────────────────────────
+	    D-02 SCOPE FENCE: this dropzone accepts a file and does nothing with it.
+	    No endpoint, no R2 client, no workflow dispatch, no size or MIME
+	    handling is depicted, so Phase 7 cannot inherit a validation shape from a
+	    sketch. The legacy route's real gates (MAX_BYTES, magic-byte checks, 413
+	    and 415) stay Phase 7's to build against CONCERNS.md. */}
+	{["populated", "empty", "filtered-empty"].includes(state) && (
+		<div class="ph-upload">
+			<FileInput
+				variant="dropzone"
+				accept="image/jpeg,image/png,image/webp"
+				multiple
+				ariaLabel="Upload photos"
+				onSelect={noop}
+			>
+				<span class="ph-drop">
+					<strong>Drop photos here, or click to choose.</strong>
+					<span>They are resized and read for EXIF before they reach the gallery.</span>
+				</span>
+			</FileInput>
+		</div>
+	)}
+
+	{/* ── T-loading-list ────────────────────────────────────────────────────
+	    DataGrid's OWN `loading` prop rather than a bespoke skeleton, and the
+	    reason is its own docstring, quoted rather than paraphrased:
+
+	      "Show a loading row instead of the body while rows are being fetched.
+	       An empty grid and a grid that has not loaded look identical
+	       otherwise, so the user cannot tell 'no matches' from 'not yet'."
+
+	    That is the same distinction E-photos and E-category-filtered draw one
+	    level up, which is why all three treatments live on this screen.
+
+	    T-loading-list is a DIFFERENT artefact from plan 12's T-loading-shell.
+	    The shell claim is that navigation never blanks the window; this claim
+	    is that the LIST reserves its own height and states that it is waiting,
+	    so nothing jumps when 39 rows land. The chrome around it is already
+	    usable, which the filter row and the dropzone above demonstrate by
+	    staying interactive while the body is a single loading row. */}
+
+	{showList && (
+		<div
+			class="ph-list"
+			data-artefact={state === "loading" ? "T-loading-list" : undefined}
+		>
+			<div class="ph-section-head">
+				<Eyebrow size="sm" tone="muted">LIST VIEW / METADATA</Eyebrow>
+				<Text size="sm" tone="muted">
+					{fx.listLoading
+						? "Waiting for the list. The shell, the filters and the upload target already work."
+						: `${rows.length} rows. Sorting and column widths are the design system's; the row height is not.`}
+				</Text>
+			</div>
+			<DataGrid
+				columns={columns}
+				rows={rows}
+				loading={fx.listLoading}
+				loadingText="Reading the photo list."
+				page={1}
+				totalPages={1}
+			/>
+			<Text size="sm" tone="muted">
+				Pagination is unconditional in DataGrid and there is no prop to hide it, so a
+				single-page list still renders a pager. Recorded, not hidden with CSS.
+			</Text>
+		</div>
+	)}
+
+	{/* ── The grid view: order, not metadata ────────────────────────────────
+	    THE ONLY HYDRATED THING ON THIS ROUTE, and one of exactly three in the
+	    phase. The hydration directive is on its own line below and appears
+	    nowhere else in this file, because the acceptance criterion counts LINES
+	    carrying the prefix rather than occurrences of it.
+
+	    THE BUDGET, IN NUMBERS RATHER THAN IN PRINCIPLE. Every hydrated island
+	    currently costs roughly 177 KB gzip, because the design-system barrel does
+	    not tree-shake (DS-09, measured as G-15 by check-bundle.mjs, which is the
+	    one gate in this directory that exits 1 by design). So this is a BUDGETED
+	    EXCEPTION rather than a default: three routes in the whole phase may spend
+	    it, and each of the three spends it because the INTERACTION is what is
+	    under review. The dashboard spends none of it and is asserted to stay at
+	    zero.
+
+	    THE ISLAND IS UNCONDITIONAL, and that is deliberate rather than sloppy.
+	    check-no-js.sh fails an allowlisted route that ships ZERO script tags, and
+	    every state of this screen is an allowlisted route, so a grid rendered only
+	    on some states would turn a design decision into a gate failure. The
+	    component returns null when it has nothing to order, which is the honest
+	    shape anyway: the empty states above are the artefacts, and a second
+	    message underneath them would put two designs on screen for one fact.
+
+	    THE TWO VIEWS ARE STACKED HERE RATHER THAN SWITCHED. In production this is
+	    a SegmentedControl and one view renders at a time; a sketch that hid one
+	    behind a control nobody can click would need a second URL to review the
+	    other, and the point of the route-per-state idiom is that a reviewer walks
+	    URLs that exist. */}
+	<div class="ph-grid-view">
+		{showGrid && (
+			<div class="ph-section-head">
+				<Eyebrow size="sm" tone="muted">LAYOUT BOARD / ORDER + FOCAL POINT</Eyebrow>
+				<Text size="sm" tone="muted">
+					{inCategory.length} in the gallery, {staged.length} staged. This is the PUBLIC
+					MASONRY, not a thumbnail grid: the same three columns, the same gap and the same
+					real aspect ratios that <code class="ph-key">/photos</code> renders, so a photo
+					dragged here lands where you can see it land. The category control is the filter
+					AND the ordering axis, because D-22 makes them one decision.
+				</Text>
+			</div>
+		)}
+		<PhotoLayoutBoard
+			client:load
+			photos={showGrid ? inCategory : []}
+			staged={showGrid ? staged : []}
+			categories={categories}
+			activeCategory={fx.activeCategory}
+		/>
+		{state === "error" && (
+			<AlertBanner
+				open
+				tone="error"
+				title="Processing failed for 2 photos."
+				description="The originals are still staged. Retrying does not re-upload them."
+				dismissible={false}
+			/>
+		)}
+	</div>
+
+	{/* ── The per-photo detail form, converted from the legacy panel ─────────
+	    The legacy field catalog for a photo is
+	    git show legacy/nextjs-portfolio:src/components/admin/PropertiesPanel.tsx
+	    lines 335-418, with the six-field EXIF sub-form at 382-409. Every bespoke
+	    `<label className="admin-field">` becomes Field + TextInput, and the
+	    category select becomes Field + Select, per ADMIN-IA's field catalog.
+
+	    TAGS ARE DROPPED ON PURPOSE, not lost: 0 of 39 photos carry a tag, and
+	    PROJECT.md puts them out of scope. The drop is a decision with evidence.
+
+	    THE OMISSION RULE, AND THE ONE PLACE IT DOES NOT APPLY. ADMIN-IA says a
+	    missing EXIF field is OMITTED ENTIRELY and never rendered as an em dash,
+	    because a dash beside f/11 reads as a data bug rather than an absence. It
+	    also says the admin must render an absent field as EMPTY AND EDITABLE, so
+	    it can be filled in. Both are true and they apply to different surfaces:
+
+	      READ-ONLY surfaces omit.   The present/absent line below, the list's
+	                                 "1 of 6" cell and the public lightbox.
+	      EDITABLE surfaces render.  The six inputs, empty, with the absence
+	                                 stated by the summary line rather than by a
+	                                 character inside the field.
+
+	    Both real shapes are in view: architecture-redbuilding has CAMERA ONLY,
+	    and product-peppers has an exif object of six nulls. Neither is a
+	    hypothetical. */}
+	{showForm && (
+		<div class="ph-forms">
+			<Divider />
+			<Eyebrow size="sm" tone="muted">SELECTED PHOTO</Eyebrow>
+			<div class="ph-form-row">
+				{selected.map((p) => (
+					<Card surface="subtle" padding="md" radius="lg">
+						<div class="ph-form">
+							<div class="ph-form-head">
+								<img class="ph-form-img" src={p.src} alt={p.title} width={p.width} height={p.height} loading="lazy" decoding="async" />
+								<div class="ph-form-id">
+									<Text size="sm" tone="secondary">{p.title}</Text>
+									<code class="ph-key">{p.id}</code>
+								</div>
+							</div>
+
+							<Field
+								label="Title"
+								wiring={wiring(`f-${p.id}-title`)}
+								errorMessage={state === "error" && p.id === "product-peppers" ? INLINE_ERROR : undefined}
+							>
+								<TextInput
+									id={`f-${p.id}-title`}
+									defaultValue={state === "error" && p.id === "product-peppers" ? "" : p.title}
+									error={state === "error" && p.id === "product-peppers"}
+								/>
+							</Field>
+
+							{/* Field + Select is what ADMIN-IA prescribes, and it is composed as
+							    prescribed. Field renders `<label for>` with NO id of its own, and
+							    Select's trigger is a role=combobox BUTTON, which is not a labelable
+							    element: the label points at nothing and there is no label id to
+							    pass to ariaLabelledBy. So the accessible name has to be supplied a
+							    SECOND time through ariaLabel, duplicating the visible label. Done
+							    here rather than dropped, and recorded. */}
+							<Field label="Category" wiring={wiring(`f-${p.id}-cat`)}>
+								<Select
+									value={p.category}
+									onChange={noop}
+									options={categoryOptions}
+									ariaLabel="Category"
+									searchable={false}
+									size="sm"
+								/>
+							</Field>
+							<Text size="sm" tone="muted">
+								Stored as <code class="ph-key">{p.category}</code>, rendered as{" "}
+								<strong>{labelFor(p.category)}</strong>. Two spellings, one concept.
+							</Text>
+
+							{/* ── The four fields plan 00-19 specified ─────────────────────
+							    ALT TEXT COMES FIRST, above Place and Description, because it
+							    is the only required one and it is unfilled on all 39: the
+							    field the operator must fill should not be the third thing
+							    they scroll past.
+
+							    IT IS MARKED REQUIRED IN THE LABEL STRING, and that is a
+							    design-system finding rather than a preference — FieldProps is
+							    { label, hint, errorMessage, wiring, group, children,
+							    className } with NO required flag, so there is no component-
+							    level required affordance to reach for. The consumer encodes
+							    requiredness in the label text and repeats it in the hint,
+							    which means every screen invents its own marker. Recorded, not
+							    worked around.
+
+							    ALT IS NOT TITLE. Both are on screen together here on purpose:
+							    "Red Building" beside an empty Alt text field is the clearest
+							    possible statement that one names the photograph and the other
+							    describes it. photos.astro shipped alt={title} on all 39 until
+							    this plan, which is exactly the confusion this layout answers.
+
+							    THE OMISSION RULE, on the new fields: an absent place or
+							    description renders EMPTY AND EDITABLE here (never an em dash —
+							    a "—" beside f/11 reads as a data bug) and renders NOTHING AT
+							    ALL on the public surface. Both treatments are in view because
+							    the two pinned records differ: architecture-redbuilding carries
+							    fixture-only values, product-peppers carries none. */}
+							<Divider />
+							<Eyebrow size="sm" tone="muted">CONTENT</Eyebrow>
+
+							<Field
+								label="Alt text (required)"
+								wiring={wiring(`f-${p.id}-alt`)}
+								hint={ALT_HINT}
+							>
+								<TextInput
+									id={`f-${p.id}-alt`}
+									defaultValue={p.alt === null ? "" : p.alt}
+									placeholder="Describe what is in the frame"
+									required
+									aria-required="true"
+								/>
+							</Field>
+
+							<Field label="Place" wiring={wiring(`f-${p.id}-place`)} hint={PLACE_HINT}>
+								<TextInput
+									id={`f-${p.id}-place`}
+									defaultValue={p.place === null ? "" : p.place}
+									placeholder="Where it was taken"
+								/>
+							</Field>
+
+							<Field
+								label="Description"
+								wiring={wiring(`f-${p.id}-description`)}
+								hint={DESC_HINT}
+							>
+								<Textarea
+									id={`f-${p.id}-description`}
+									rows={3}
+									defaultValue={p.description === null ? "" : p.description}
+									placeholder="Shown when the photo is opened"
+								/>
+							</Field>
+
+							{/* TAGS ARE REVIVED, not resurrected by accident. Plan 13 dropped
+							    them on evidence (0 of 39 carry one) and the owner of the
+							    content asked for them back, so the record shows a field
+							    dropped on measurement and revived by decision. The treatment is
+							    the one Skills and Project — Tech Stack already use: a Chip set
+							    with an add-on-Enter input. `group` is set because the control
+							    is a set of chips plus an input, not one labelable element.
+
+							    The input is inert here, per the D-02 fence: it takes focus and
+							    does nothing. */}
+							<Field label="Tags" wiring={wiring(`f-${p.id}-tags`)} hint={TAGS_HINT} group>
+								<div class="ph-chips">
+									{p.tags.map((t) => (
+										<Chip>{t}</Chip>
+									))}
+									<TextInput
+										id={`f-${p.id}-tags`}
+										placeholder="Add tag..."
+										aria-label="Add tag"
+									/>
+								</div>
+							</Field>
+
+							<Divider />
+							<Eyebrow size="sm" tone="muted">EXIF</Eyebrow>
+							<Text size="sm" tone="muted">
+								{p.exifPresent.length === 0
+									? "Nothing was read from this file. All six values are null in the record; the key itself is present."
+									: `Present: ${p.exifPresent.map((k) => EXIF_FIELDS.find((f) => f.key === k).label).join(", ")}. Absent: ${EXIF_FIELDS.filter((f) => !p.exifPresent.includes(f.key)).map((f) => f.label).join(", ")}.`}
+							</Text>
+							<div class="ph-exif">
+								{EXIF_FIELDS.map((f) => (
+									<Field label={f.label} wiring={wiring(`f-${p.id}-${f.key}`)}>
+										<TextInput
+											id={`f-${p.id}-${f.key}`}
+											defaultValue={p.exif[f.key] === null ? "" : String(p.exif[f.key])}
+											placeholder={p.exif[f.key] === null ? "Not read from the file" : undefined}
+										/>
+									</Field>
+								))}
+							</div>
+						</div>
+					</Card>
+				))}
+			</div>
+		</div>
+	)}
+
+	{/* ── T-error-inline ────────────────────────────────────────────────────
+	    D-18's LENIENT DRAFT: the message is a warning about publishing, not a
+	    save failure, and saving still works. The wording is UI-SPEC's verbatim
+	    "Needs a title before this can be published." and it is attached to the
+	    field it is about, on the photo it is about, inside a list of 39 where
+	    the invalid record has to be findable. That findability is why this
+	    screen is the treatment's most demanding host: on a form with four
+	    fields an inline error is unmissable, and on a screen with 39 rows it is
+	    not. */}
+	{state === "error" && (
+		<div class="ph-panel" data-artefact="T-error-inline">
+			<Text size="sm" tone="muted">
+				One photo of 39 blocks publishing. The list keeps its normal sort, the field carries
+				the message, and Save is still enabled. Nothing about this state is modal.
+			</Text>
+		</div>
+	)}
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ─────
+	    All three are declared `inherits` above. Plan 12 sketched them on the
+	    dashboard, which is their most demanding host, and inventing a
+	    photos-local variant would put two designs in the review for one
+	    decision. What is rendered instead is the coverage decision itself plus
+	    the ONE thing that is genuinely photos-specific about each, so a
+	    reviewer walking the coverage table can check the `inherits` cell
+	    without opening a second document. */}
+	{isInherit && (
+		<div class="ph-inherit" data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to Photos is that a reorder is a change: dragging one tile makes the whole file pending, and the change list has to say which ordering was written or the operator cannot tell a lost reorder from an unsaved one."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all. What is specific to Photos is that portfolio_images.json is the file the pipeline itself commits to, so it is the file most likely to conflict, and the conflict is per FILE: the other screens stay pending rather than being abandoned."
+						: "The outcome is plan 12's. What is specific to Photos is that a commit is not a gallery: D-12 makes processing asynchronous, so three photos are still not visible to a visitor after a successful publish, and the copy must not claim otherwise."}
+			</Text>
+			{state === "success" && (
+				<ProgressBar value={1} max={3} label="1 of 3 processed" />
+			)}
+			{state === "dirty" && (
+				<div class="ph-badge-row">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Photos, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ─────────────────────────────
+	    State names only, no state's marker copy: check-states.mjs asserts each
+	    marker appears on its own page and no other, and a legend carrying every
+	    state's copy would make that assertion pass vacuously.
+
+	    The last link is `filtered-empty`, which is a route but not a state, and
+	    it is listed here because a reviewer needs to reach it. */}
+	<aside class="ph-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="ph-review-line">
+			{reviewStates.map((s) => (
+				<a class="ph-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+		</p>
+		<p class="ph-review-note">
+			Six of the eight category filters above are inert: only All and Architecture have a
+			sketched route. A chip that looks like a control and answers 404 is a worse sketch than
+			one that admits its own boundary.
+		</p>
+	</aside>
+</Admin>
+
+<style is:global>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+
+	   THIS BLOCK IS GLOBAL RATHER THAN SCOPED, AND THAT IS FORCED. Astro's scoped
+	   styles work by stamping a data-astro-cid attribute onto every element in the
+	   ASTRO TEMPLATE and appending an attribute selector to every rule. A framework
+	   island renders its own DOM, which never receives the attribute, so a scoped
+	   rule cannot reach a single node inside a React island. That is why this
+	   block is is:global rather than scoped. The board's OWN rules no longer live
+	   here — PhotoLayoutBoard ships them with the component — so what is left is
+	   page chrome only. Recorded because plans 14 and 15 hit the same wall the
+	   moment they add their own island. */
+
+	.ph-head,
+	.ph-panel,
+	.ph-inherit,
+	.ph-list,
+	.ph-grid-view,
+	.ph-staged,
+	.ph-forms,
+	.ph-upload {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.ph-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.ph-section-head {
+		display: grid;
+		gap: var(--space-1);
+	}
+
+	/* == The category filter row ============================================
+	   THE 44px FLOOR LIVES ON THE HIT AREA, NOT ON THE CHIP. Chip draws itself
+	   at its own small geometry and exposes no size prop, so the row's touch
+	   target is the anchor around it. Five of the six device classes in the
+	   responsive contract are coarse pointer, so this is the common case. */
+	.ph-filter-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+	.ph-filter-hit {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-2);
+		padding: 4px var(--space-2);
+		border-radius: var(--radius-md);
+		border: 1px solid transparent;
+		text-decoration: none;
+		color: var(--ink-2);
+	}
+	.ph-filter-hit[data-on="true"] {
+		border-color: var(--wire);
+		background: var(--cream-3);
+		color: var(--ink);
+	}
+	.ph-filter-hit[data-inert="true"] {
+		opacity: 0.62;
+	}
+	a.ph-filter-hit:hover {
+		border-color: var(--rule);
+		background: var(--cream-2);
+	}
+	a.ph-filter-hit:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ph-key {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.ph-count {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-4);
+		min-width: 1.5em;
+		text-align: right;
+	}
+
+	/* == The layout board's chrome lives WITH THE COMPONENT =================
+	   Every rule the old reorder island needed was here, because an Astro page's
+	   scoped `<style>` cannot reach into an island's DOM and this block had to be
+	   is:global to do it. PhotoLayoutBoard ships its own CSS inside the component
+	   instead, the way FocalPointSketch already did — which is both portable and
+	   honest, since the masonry it copies from photos.astro is then one block that
+	   can be diffed against one block rather than half a page. Nothing was kept
+	   here for the board: dead rules for a deleted component are a name that lies
+	   in the same way the component's own name would have been. */
+
+	/* == The dropzone's own copy ============================================
+	   FileInput ships NO stylesheet at all. Its dropzone chrome is one inline
+	   style object carrying a hardcoded hex plus three tokens charcoal does not
+	   redeclare, so nothing below can reach the panel itself. These two rules
+	   style only the children this page passes in. */
+	.ph-drop {
+		display: grid;
+		gap: 2px;
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+	.ph-drop strong {
+		font-weight: 600;
+		color: var(--ink);
+	}
+
+	/* == The detail forms ================================================== */
+	.ph-form-row {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 673px) {
+		.ph-form-row {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.ph-form {
+		display: grid;
+		gap: var(--space-4);
+	}
+	.ph-form-head {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	.ph-form-img {
+		width: 72px;
+		height: 48px;
+		object-fit: cover;
+		border-radius: var(--radius-sm);
+		background: var(--cream-3);
+	}
+	.ph-form-id {
+		display: grid;
+		gap: 2px;
+		min-width: 0;
+	}
+	.ph-exif {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 375px) {
+		.ph-exif {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	/* The tag chip set, same treatment as Skills and Project — Tech Stack. The
+	   input is capped so a three-chip row does not push it onto a line of its
+	   own, which is what makes "type here to add" read as part of the set. */
+	.ph-chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ph-chips .ds-atom-input-wrap,
+	.ph-chips .ds-atom-input {
+		max-width: 12rem;
+	}
+
+	/* The alt-debt banner sits between the head and the filter row, full width,
+	   with a section break below it rather than a field gap: it is a statement
+	   about the library, not a control in a form. */
+	.ph-altdebt {
+		margin-block-end: var(--space-6);
+	}
+
+	.ph-badge-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* == Review chrome ===================================================== */
+	.ph-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.ph-review-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.ph-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.ph-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+	.ph-review-note {
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	/* == The 44px floor, every coarse-pointer class ========================= */
+	@media (pointer: coarse) {
+		.ph-filter-hit,
+		.ph-review-link {
+			min-height: 44px;
+		}
+		/* The board's own controls and its tiles carry their floor in
+		   PhotoLayoutBoard's stylesheet, beside the rules they override. */
+	}
+</style>

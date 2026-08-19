@@ -1,0 +1,373 @@
+---
+// ═══ P-dashboard — CAPABILITY 1 OF 4: REVIEW PENDING CHANGES ════════════════
+// ═══ O-phone-sidebar — the desktop sidebar collapsed to Sheet side="left" ═══
+//
+// D-09 permits EXACTLY FOUR things on a phone — review pending changes, fix
+// text, reorder photos, publish — and refuses exactly two. This route is the
+// first capability, and it also carries the sidebar posture all four share.
+//
+// ═══ COMFORTABLE, NOT COMPACT, AND IT IS NOT A PREFERENCE ══════════════════
+// UI-SPEC's viewport-and-mode contract puts `S- E- T- O-` at compact on a
+// 1440 fine pointer and `P- R-` at COMFORTABLE, and its density invariant 2 is
+// explicit that compact never applies below the phone breakpoint: compact's
+// 30px controls sit under the 44px touch floor D-09 implies. A phone sketch
+// drawn at compact looks fine on the 1440px screen it is reviewed on and is
+// unusable on the device it was drawn for. Every rule in density-compact.css
+// is scoped under BOTH the compact density selector and a fine-pointer media
+// query, so `comfortable` is not a second rule set — it is the design system's
+// own geometry with the prototype switched off. (The compact attribute selector
+// is deliberately not spelled out here: the acceptance criterion for these four
+// routes is a grep, and a grep cannot tell a rule from prose describing one.)
+//
+// ═══ THE SIDEBAR IS ALREADY GONE AT THIS WIDTH, WHICH IS WHY THE SHEET ═════
+// appshell.css ships ONE hardcoded responsive posture: `@media (max-width:
+// 767px)` hides the sidebar region outright. So at 390 the shell has no
+// navigation at all and D-09's Sheet is not a nicety — it is the only way back
+// to the other six screens. The sheet below renders the SAME `AdminSidebar`
+// the desktop shell renders, which is the point: it is a posture change, not a
+// second navigation with its own drift.
+//
+// ═══ Sheet side="left" SERVER-RENDERS TO 0 B ══════════════════════════════
+// Measured with react-dom/server against the installed 1.11.4 tarball:
+// `Sheet(open)` → 0 B, because it mounts through DSPortal which returns null
+// until a mount effect runs (dist/index.js:2429-2436). UI-SPEC says to sketch
+// sheets "open and static"; with the component as shipped that is not
+// executable, and the hydration budget was spent by plan 14. So the panel below
+// is hand-authored against sheet.css's OWN classes — ds-atom-sheet-backdrop,
+// ds-atom-sheet, ds-atom-sheet-hd, ds-atom-sheet-hd-title, ds-atom-sheet-body,
+// ds-atom-sheet-ft — and carries `data-side="left"`, which is the attribute
+// sheet.css's own `[data-side="left"]` rule selects. Every painted pixel is
+// still sheet.css's; only the mounting is local. Same sanctioned shape plan 15
+// used twice.
+//
+// THREE PROPERTIES ARE NEUTRALISED FOR THE REVIEW FRAME, AND ONLY THREE.
+// `.ds-atom-sheet` is `position: fixed; height: 100vh` and, under 640px,
+// `width: 100vw`. Rendered that way the sheet would cover the dashboard it is
+// being compared against, so P-dashboard and O-phone-sidebar could not be
+// screenshotted separately. Inside `.ph-frame` those three become absolute /
+// 100% / 100% and NOTHING ELSE CHANGES — the header, body and footer geometry,
+// the border, the shadow and the left-edge treatment are all sheet.css's. The
+// overrides are stated here and marked at their site rather than being quietly
+// absorbed into a local class.
+//
+// ═══ ZERO HYDRATION ═══════════════════════════════════════════════════════
+// No directive on this route or any of the other three. The budget ends where
+// it started — exactly four hydrating pages — so plan 07's DS-09 measurement
+// stays readable.
+
+import { Badge, Button, Card, Divider, Eyebrow, Heading, Link, Text } from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import AdminSidebar from "../../../components/AdminSidebar";
+import fx from "../../../fixtures/overlays.json";
+import { PHONE_NAV, PHONE_ROUTES, REFUSALS, phoneNav } from "../../../lib/phone.mjs";
+
+export const ARTEFACTS = [
+	{
+		id: "P-dashboard",
+		route: "/admin/phone/dashboard",
+		proves:
+			"That D-09's first permitted capability — review what is pending — needs no second information architecture: the desktop dashboard's entity grouping is already one column, so the phone reads the same list at touch scale rather than a summarised version of it.",
+	},
+	{
+		id: "O-phone-sidebar",
+		route: "/admin/phone/dashboard",
+		proves:
+			"That the sidebar collapses to a left Sheet carrying the SAME AdminSidebar the desktop shell renders — a posture change rather than a second navigation. appshell.css hides the sidebar outright below 768px, so without this there is no way off the screen.",
+	},
+];
+
+const screens = fx.session.screens;
+const changeCount = screens.reduce((n, s) => n + s.changes.length, 0);
+const CAPABILITY = "Capability 1 of 4 — review pending changes.";
+---
+
+<Admin
+	title="P-dashboard"
+	active="dashboard"
+	route="/admin"
+	navStates={phoneNav}
+	density="comfortable"
+>
+	<div class="ph-head" data-artefact="P-dashboard">
+		<Eyebrow size="sm" tone="muted">PHONE · 390 × 844 · CHARCOAL LIGHT · COMFORTABLE</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">
+			{changeCount} changes across {screens.length} screens are waiting to publish.
+		</Heading>
+		{/* THE ONE-LINE CAPABILITY NOTE D-09 REQUIRES OF EACH OF THE FOUR. */}
+		<p class="ph-capability">{CAPABILITY}</p>
+		<Text size="sm" tone="muted">
+			Deliberately omitted here: nothing. This screen is the one capability that loses
+			nothing on a phone, because the desktop dashboard is already a single column of
+			entity groups — which is itself the argument for D-06 putting pending state on a
+			screen rather than inside a modal.
+		</Text>
+	</div>
+
+	{/* ── THE PENDING LIST, ONE COLUMN ──────────────────────────────────────
+	    Identical grouping, identical counts and identical authored strings to
+	    the desktop dashboard and to O-publish-valid. All three read the same
+	    fixture and the overlay route throws if it has drifted from the
+	    dashboard's. */}
+	<ul class="ph-groups">
+		{screens.map((s) => (
+			<li>
+				<Card surface="subtle" padding="md" radius="lg">
+					<div class="ph-group">
+						<div class="ph-group-head">
+							<span class="ph-group-entity">{s.entity}</span>
+							<Badge tone={s.state === "ready" ? "info" : "warning"} dot>
+								{s.state === "ready" ? "Ready" : "Draft"}
+							</Badge>
+						</div>
+						<code class="ph-code">{s.file}</code>
+						<ul class="ph-changes">
+							{s.changes.map((c) => (
+								<li>{c}</li>
+							))}
+						</ul>
+						<p class="ph-linkrow">
+							<Link href={s.route} variant="inline">Open {s.entity}</Link>
+						</p>
+					</div>
+				</Card>
+			</li>
+		))}
+	</ul>
+
+	<div class="ph-actions">
+		<Button variant="primary">Publish changes</Button>
+		<Button variant="secondary">Discard all</Button>
+	</div>
+
+	<Divider />
+
+	{/* ══ O-phone-sidebar ═══════════════════════════════════════════════════ */}
+	<section class="ph-section" data-artefact="O-phone-sidebar">
+		<Eyebrow size="sm" tone="muted">O-phone-sidebar — Sheet side="left", OPEN AND STATIC</Eyebrow>
+		<Text size="sm" tone="muted">
+			The seven-row navigation the desktop shell keeps permanently visible, in the only
+			posture a 390px screen has room for. It is the same component with the same D-13
+			badges, so a screen that is Draft in the rail is Draft in the sheet — there is no
+			second source for the state. The trigger is the topbar's own control; the sheet is
+			drawn open because the open state is what is being reviewed.
+		</Text>
+		<div class="ph-frame" aria-label="390 × 640 review frame">
+			<div class="ds-atom-sheet-backdrop ph-frame-backdrop"></div>
+			<div
+				class="ds-atom-sheet ph-frame-sheet"
+				data-side="left"
+				role="dialog"
+				aria-modal="true"
+				aria-labelledby="phsheet-title"
+				data-ds-component="Sheet"
+			>
+				<header class="ds-atom-sheet-hd">
+					<span id="phsheet-title" class="ds-atom-sheet-hd-title">Sections</span>
+				</header>
+				<div class="ds-atom-sheet-body ph-sheet-body">
+					<AdminSidebar entries={PHONE_NAV} active="dashboard" pendingCount={screens.length} />
+				</div>
+				<footer class="ds-atom-sheet-ft">
+					<Button variant="secondary">Close</Button>
+				</footer>
+			</div>
+		</div>
+		<Text size="sm" tone="muted">
+			Three properties are neutralised so the sheet can be reviewed beside the screen it
+			covers: <code class="ph-code">position: fixed</code> becomes absolute,
+			<code class="ph-code">height: 100vh</code> and the under-640px
+			<code class="ph-code">width: 100vw</code> both become 100% of this frame. Everything
+			else on the panel — header, body, footer, border, shadow and the left-edge rule — is
+			<code class="ph-code">sheet.css</code>'s.
+		</Text>
+	</section>
+
+	<Divider />
+
+	{/* ── PART 3's SIX ROWS, REACHABLE FROM HERE ────────────────────────────
+	    D-09's design is as much about what a phone does not do as what it does,
+	    so both refusals are linked from the phone set rather than living only
+	    on the desktop screens that host them. */}
+	<section class="ph-section">
+		<Eyebrow size="sm" tone="muted">D-09 — FOUR PERMITTED, TWO REFUSED</Eyebrow>
+		<ol class="ph-index">
+			{PHONE_ROUTES.map((r) => (
+				<li class="ph-index-row">
+					<a class="ph-index-link" href={`${r.route}/`}>{r.id}</a>
+					<span class="ph-index-what">{r.what}</span>
+				</li>
+			))}
+			{REFUSALS.map((r) => (
+				<li class="ph-index-row" data-refusal="true">
+					<a class="ph-index-link" href={`${r.route}/`}>{r.id}</a>
+					<span class="ph-index-what">{r.what}</span>
+					<Badge tone="neutral">refused</Badge>
+				</li>
+			))}
+		</ol>
+		<Text size="sm" tone="muted">
+			The two refusals are designed screens rather than missing ones. Neither ends in a dead
+			end: the crop refusal leaves every other field on Home editable, and the case-study
+			refusal leaves the project's card fields editable. That is the difference between an
+			honest refusal and a broken screen.
+		</Text>
+	</section>
+</Admin>
+
+<style is:global>
+	/* ═══ is:global IS REQUIRED HERE, AND THE REASON IS MEASURED ═══════════
+	   Astro stamps its scoping attribute onto elements in the .astro template
+	   and passes it as a PROP to a framework component — so a component with a
+	   fixed prop list never receives it and a scoped rule cannot reach inside
+	   the DOM it renders. This page carries AdminSidebar, and the sheet frame
+	   below has to reach `.ds-atom-sheet`. Plan 13 recorded this as an ISLAND
+	   rule; plan 15 measured that hydration is irrelevant — what matters is
+	   that a framework component renders its own DOM.
+
+	   App LAYOUT css only, per QUAL-03. Every colour is a charcoal token. */
+
+	.ph-head,
+	.ph-section,
+	.ph-group {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.ph-capability {
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		border-left: 2px solid var(--wire);
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-2);
+	}
+
+	.ph-code {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.ph-groups {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-4);
+	}
+	.ph-group-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ph-group-entity {
+		font-size: var(--text-md);
+		font-weight: 500;
+		color: var(--ink);
+	}
+	.ph-changes {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-linkrow {
+		display: flex;
+		align-items: center;
+		margin: 0;
+	}
+
+	.ph-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* ── The 390 × 640 review frame ────────────────────────────────────────
+	   The ONLY rules that touch a ds-atom class, and each one is a containment
+	   override named in this file's header. */
+	.ph-frame {
+		position: relative;
+		width: 100%;
+		max-width: 390px;
+		height: 640px;
+		overflow: hidden;
+		border: 1px solid var(--wire);
+		border-radius: var(--radius-md);
+		background: var(--page-bg);
+	}
+	.ph-frame-backdrop {
+		position: absolute;
+	}
+	.ph-frame-sheet {
+		position: absolute;
+		height: 100%;
+		width: 100%;
+	}
+	.ph-sheet-body {
+		padding: 0;
+	}
+
+	/* ── The six-row D-09 list ─────────────────────────────────────────────── */
+	.ph-index {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-index-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ph-index-row[data-refusal="true"] {
+		border-style: dashed;
+	}
+	.ph-index-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+	}
+	.ph-index-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.ph-index-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ph-index-what {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+
+	/* ══ THE 44px FLOOR ════════════════════════════════════════════════════
+	   Last block in the file. These routes render at COMFORTABLE density, so
+	   density-compact.css contributes nothing here and every target below is
+	   the design system's own geometry or mine. Applied at every pointer,
+	   not only coarse: a phone artefact reviewed on a desktop is still a phone
+	   artefact, and the floor is the thing under review. */
+	.ph-linkrow .ds-atom-link {
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
+	}
+</style>

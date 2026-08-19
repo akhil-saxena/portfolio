@@ -1,0 +1,468 @@
+---
+// The admin shell for every S- / E- / T- / O- artefact (DSGN-01).
+//
+// ═══ CHARCOAL LIGHT, AND IT IS NOT A PREFERENCE ════════════════════════════
+// D-08 puts the admin in charcoal LIGHT and UI-SPEC is explicit that sketching
+// it in dark mode is an ANTI-PATTERN: the light palette is where the DS-02 /
+// DS-03 contrast failures live, and dark hides them. So there is deliberately
+// no `dark` class on the html element below. `data-brand="charcoal"` alone
+// selects charcoal's light block at specificity (0,2,0), which beats the design
+// system's `:root` (0,1,0) unconditionally.
+//
+// The bet paid off on the first build. Three things visible ONLY in light mode:
+// a TextInput whose `background: var(--cream)` equals the page background
+// exactly, leaving a 1.38:1 hairline as its sole boundary; a `pending` Badge at
+// a 1.07:1 fill delta, so D-13's draft state renders as an invisible pill; and
+// the global CTA rendering the design system's yellow because charcoal declares
+// no `--amber`. None of the seven automated checks sees any of them.
+//
+// ═══ IMPORT ORDER IS LOAD-BEARING AND IS ASSERTED BY LINE NUMBER ═══════════
+// The acceptance criterion compares the FIRST line mentioning each stylesheet,
+// so the two names are deliberately never written on one line — not even in
+// prose. The order is: manifest-admin.css first,
+// then the density prototype second, both HERE rather than
+// inside the manifest. The manifest was authored in plan 07 before the density
+// prototype existed, and importing the prototype after it makes SOURCE ORDER
+// carry the override instead of specificity — which is the honest arrangement,
+// because every density rule is scoped under `[data-density="compact"]` and
+// therefore already outranks the design system's own single-class rules. Source
+// order is the belt; specificity is the braces. Whether Astro preserves the
+// order in the emitted CSS is a free second data point on the same D-02
+// ordering hazard plan 07 measured, and it is reported in this plan's SUMMARY.
+//
+// ═══ NO HYDRATION DIRECTIVE ════════════════════════════════════════════════
+// AppShell uses hooks and renders under SSR at its initial collapse state with
+// no hydration, which is what a static sketch wants. All three permitted
+// islands are reserved for plans 13 and 14.
+
+import AdminShell from "../components/AdminShell";
+import type { AdminNavEntry, EntityState } from "../components/AdminSidebar";
+import type { PipelineStrip } from "../components/AdminTopbar";
+
+import "../styles/manifest-admin.css";
+import "../styles/density-compact.css";
+
+interface Props {
+	title: string;
+	/** A CANONICAL_SCREENS id. */
+	active: string;
+	route: string;
+	/**
+	 * Per-entity D-13 state, keyed by CANONICAL_SCREENS id. Merged over the
+	 * baseline below rather than replacing the whole nav, so the labels and
+	 * monograms have exactly one home and a screen can vary only what it knows
+	 * about. This is what makes D-13's second place — the sidebar badge — track
+	 * the same fixture the dashboard renders from, rather than being a decorative
+	 * constant that happens to look right in the populated state.
+	 */
+	navStates?: Record<string, EntityState>;
+	pipeline?: PipelineStrip | null;
+	lastPublished?: string;
+	/**
+	 * ADDED BY PLAN 14. UI-SPEC's viewport-and-mode contract is not one density
+	 * for the whole admin: `S- E- T- O-` render at **compact** on a 1440 fine
+	 * pointer, and `P- R-` — the phone artefacts and the two designed refusals —
+	 * render at **comfortable**, because compact's 30px controls sit under the
+	 * 44px touch floor D-09 implies. Plan 12 hardcoded `compact` because no
+	 * `R-` artefact existed yet; `R-crop-picker` is the first, so the axis
+	 * becomes a prop rather than a constant.
+	 *
+	 * Every rule in density-compact.css is scoped under
+	 * `[data-density="compact"]` AND `@media (pointer: fine)`, so `comfortable`
+	 * is not a second set of rules — it is the design system's own geometry with
+	 * the prototype switched off. Verified by grep before this prop was added.
+	 */
+	density?: "compact" | "comfortable";
+}
+
+// The six D-05 entities plus the seventh route D-24 implies — the one that owns
+// a project's case study. Each row carries a Badge for D-13's three-state
+// model, which is the second of the three places D-13 requires draft / ready /
+// published to be legible; the screen is the first and the dashboard the third.
+const DEFAULT_NAV: AdminNavEntry[] = [
+	{ id: "dashboard", label: "Dashboard", monogram: "DB", href: "/admin/", state: "published" },
+	{ id: "home", label: "Home", monogram: "HM", href: "/admin/home/", state: "draft" },
+	{ id: "photos", label: "Photos", monogram: "PH", href: "/admin/photos/", state: "draft" },
+	{ id: "resume", label: "Résumé", monogram: "RS", href: "/admin/resume/", state: "ready" },
+	{
+		id: "projects",
+		label: "Projects",
+		monogram: "PJ",
+		href: "/admin/projects/",
+		state: "published",
+	},
+	{
+		id: "project-detail",
+		label: "Cairn",
+		monogram: "PD",
+		href: "/admin/projects/cairn/",
+		child: true,
+		state: "published",
+	},
+	{ id: "site", label: "Site", monogram: "ST", href: "/admin/site/", state: "published" },
+];
+
+// D-15's photo-pipeline strip, on by default so it is present on EVERY admin
+// route — D-15 requires pipeline status to survive navigation and to agree with
+// the per-photo tile, "two places that must agree".
+//
+// THE STRIP LIVES IN AppShell's `topbar` BECAUSE AppShell HAS NO `banner` SLOT.
+// Its four slots are sidebar, topbar, main and footer. That is finding G-8, and
+// this composition is the evidence for it: the strip therefore does not survive
+// as a distinct region, it shares the topbar's row with the publish action, and
+// it has no landmark of its own. The alternative is worse in the exact way
+// D-15 forbids — placing it in `main` makes each of the seven routes
+// re-implement it, which is the divergence D-15 rules out when it says the two
+// places must agree. G-8 proposes an optional `banner` slot between topbar and
+// main; this is what that proposal is for. Artefact O-pipeline-strip.
+//
+// The copy states D-12's asynchrony rather than glossing it: processing
+// finishes on its own schedule, not on publish.
+const DEFAULT_PIPELINE: PipelineStrip = {
+	tone: "info",
+	title: "Processing 3 photos.",
+	description:
+		"Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+	value: 1,
+	max: 3,
+	label: "1 of 3 processed",
+};
+
+const {
+	title,
+	active,
+	route,
+	navStates = {},
+	pipeline = DEFAULT_PIPELINE,
+	lastPublished = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+	density = "compact",
+} = Astro.props;
+
+const nav: AdminNavEntry[] = DEFAULT_NAV.map((e) => ({
+	...e,
+	state: navStates[e.id] ?? e.state,
+}));
+
+// Pending means "differs from what is published", so both draft and ready count.
+const pendingCount = nav.filter((e) => e.state === "draft" || e.state === "ready").length;
+const screenTitle = nav.find((e) => e.id === active)?.label ?? title;
+---
+
+<html lang="en" data-brand="charcoal" data-density={density}>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>{title}</title>
+	</head>
+	<body>
+		<AdminShell
+			entries={nav}
+			active={active}
+			screenTitle={screenTitle}
+			route={route}
+			publishLabel="Publish changes"
+			pendingCount={pendingCount}
+			lastPublished={lastPublished}
+			pipeline={pipeline}
+			sidebarWidth={208}
+		>
+			<slot />
+		</AdminShell>
+
+		<style is:global>
+			/* APP LAYOUT CSS ONLY, per QUAL-03. Every colour below is a charcoal
+			   token. Nothing below re-implements a design-system component; the
+			   four rules that touch a `ds-atom-` class adjust LAYOUT on the shell
+			   and each says why, following the precedent Public.astro set for
+			   the AppBar and Footer gutters. */
+
+			body {
+				margin: 0;
+				background: var(--page-bg);
+				color: var(--ink);
+				font-family: var(--font-body);
+				-webkit-font-smoothing: antialiased;
+			}
+
+			/* ── svh, NOT vh ──────────────────────────────────────────────────
+			   appshell.css ships `min-height: 100vh`. 100vh is the LARGE
+			   viewport — the height with a mobile address bar retracted — so at
+			   first paint on iOS Safari and Android Chrome the shell is taller
+			   than what the user can see. 100svh is the small viewport, the
+			   smallest it gets, so the shell fits under every chrome state.
+			   The responsive contract makes svh a requirement rather than a
+			   nicety, and appshell.css is the one place in the stack most likely
+			   to be copied from. Reachable from CSS because the declaration is
+			   in the stylesheet rather than inline; recorded upstream all the
+			   same. */
+			.ds-atom-appshell {
+				min-height: 100svh;
+			}
+
+			/* ── The admin gutter ladder ───────────────────────────────────────
+			   16 / 24 / 32 / 48, per the responsive contract's four-rung ladder.
+			   The >= 1024 rung is deliberately unchanged so nothing a reviewer
+			   has already accepted at 1440 moves.
+
+			   THE LENGTHS ARE LITERALS, NOT `--space-*`, AND THAT IS DELIBERATE.
+			   The ladder's four values ARE --space-4 / -6 / -8 / -12, but three
+			   of those four are exactly the tokens density-compact.css
+			   reassigns on `.adm-main` to demonstrate DS-11's mechanism. Binding
+			   the gutter to a reassigned token would couple the responsive axis
+			   to the density axis, so changing density would silently move the
+			   page margins. That coupling is the scope problem DS-11 does not
+			   address, and writing literals here is the only way to keep the two
+			   axes orthogonal while the prototype exists. Noted in the SUMMARY.
+
+			   Mobile-first ascending, so the narrowest class needs no query. */
+			.adm-main {
+				--adm-gutter: 16px;
+				padding: var(--adm-gutter);
+			}
+			@media (min-width: 375px) {
+				.adm-main {
+					--adm-gutter: 24px;
+				}
+			}
+			@media (min-width: 673px) {
+				.adm-main {
+					--adm-gutter: 32px;
+				}
+			}
+			@media (min-width: 1024px) {
+				.adm-main {
+					--adm-gutter: 48px;
+				}
+			}
+
+			/* The admin content column, capped at UI-SPEC's 960px. A max-width
+			   smaller than the content box is already inert, so the cap needs no
+			   breakpoint of its own. */
+			.adm-content {
+				max-width: 960px;
+				display: grid;
+				gap: var(--space-6);
+			}
+
+			/* ── Topbar ────────────────────────────────────────────────────────
+			   appshell.css gives the topbar region a --surf-3 background and a
+			   --rule bottom border; only the inner padding and rhythm are set
+			   here. */
+			.adm-topbar {
+				display: grid;
+				gap: var(--space-2);
+				padding: var(--space-3) var(--space-6);
+			}
+			.adm-topbar-row {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				justify-content: space-between;
+				gap: var(--space-4);
+			}
+			.adm-topbar-title {
+				display: grid;
+				gap: var(--space-1);
+			}
+			.adm-topbar-actions {
+				display: flex;
+				flex-wrap: wrap;
+				align-items: center;
+				gap: var(--space-3);
+			}
+			.adm-strip {
+				max-width: 720px;
+			}
+			.adm-strip .ds-atom-progress {
+				margin-top: var(--space-2);
+			}
+
+			/* ── Sidebar ───────────────────────────────────────────────────────
+			   The selected row uses the ink ramp plus a --wire marker, never the
+			   accent: UI-SPEC's accent-reserved list is seven items long and
+			   sidebar selection is explicitly not one of them. An accent that
+			   appears in eight places is an accent; one that appears in forty is
+			   a theme. */
+			.adm-nav {
+				display: grid;
+				grid-template-rows: auto 1fr auto;
+				gap: var(--space-4);
+				padding: var(--space-3) var(--space-2);
+				height: 100%;
+				box-sizing: border-box;
+			}
+			.adm-nav-brand,
+			.adm-nav-foot {
+				display: flex;
+				align-items: center;
+				gap: var(--space-2);
+				margin: 0;
+				padding: 0 var(--space-2);
+				font-family: var(--mono);
+				font-size: var(--text-2xs);
+				letter-spacing: var(--ls-wide);
+				text-transform: uppercase;
+				color: var(--ink-3);
+			}
+			.adm-nav-foot {
+				align-self: end;
+			}
+			.adm-nav-list {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				display: grid;
+				gap: 2px;
+				align-content: start;
+			}
+			.adm-nav-link {
+				display: flex;
+				align-items: center;
+				gap: var(--space-2);
+				min-height: 36px;
+				padding: 0 var(--space-2);
+				border-radius: var(--radius-md);
+				border-left: 2px solid transparent;
+				text-decoration: none;
+				font-family: var(--font-body);
+				font-size: var(--text-base);
+				font-weight: 500;
+				color: var(--ink-2);
+			}
+			.adm-nav-link:hover {
+				background: var(--cream-2);
+				color: var(--ink);
+			}
+			.adm-nav-link:focus-visible {
+				outline: 2px solid var(--focus);
+				outline-offset: 1px;
+			}
+			.adm-nav-link[data-active="true"] {
+				background: var(--cream-3);
+				border-left-color: var(--wire);
+				color: var(--ink);
+			}
+			.adm-nav-link[data-child="true"] .adm-nav-label {
+				padding-left: var(--space-3);
+			}
+			.adm-nav-mono {
+				flex: 0 0 auto;
+				width: 22px;
+				text-align: center;
+				font-family: var(--mono);
+				font-size: var(--text-2xs);
+				letter-spacing: var(--ls-wide);
+				color: var(--ink-3);
+			}
+			.adm-nav-label {
+				flex: 1 1 auto;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+			/* The rail's short badge is hidden while the sidebar is expanded and
+			   swapped in inside the rail band below. */
+			.adm-nav-badge-short {
+				display: none;
+			}
+
+			/* ══ THE COLLAPSED ICON RAIL — device classes 3 and 4 ══════════════
+			   673-1023: the foldable unfolded (673-884) and the tablet in
+			   portrait (768-834), both coarse pointer, plus the 884-1023 dead
+			   zone between class 3's ceiling and class 5's floor. A 240px
+			   sidebar inside 777px of content is 31% of the screen for a tool
+			   whose content column is capped at 960px, so the rail is the right
+			   posture there — and it is a rail rather than a Sheet because at
+			   these widths there is room for a persistent affordance and losing
+			   it would cost a tap on every navigation.
+
+			   THE RAIL IS DRIVEN BY WIDTH, AND UNLIKE DENSITY THAT IS CORRECT.
+			   Density cannot be decided by width because a 1024px laptop window
+			   and a 1024px tablet in landscape want OPPOSITE answers at the same
+			   width. The rail has no such flip: a 240px sidebar in an 800px
+			   viewport is wrong whether the pointer is fine or coarse. So the
+			   rail is gated on width and density is gated on `pointer: fine`,
+			   and the difference is a property of the two decisions rather than
+			   an inconsistency.
+
+			   ═══ WHY THIS IS CSS AND NOT PROPS — A FINDING ═══════════════════
+			   The rail posture SHOULD be reachable through AppShell's existing
+			   `sidebar` prop, which is typed
+			   `ReactElement<{ collapsed?: boolean; onToggleCollapse?: () => void }>`.
+			   It is not, for three independent reasons read out of
+			   ../design-system/src/layout/AppShell/index.tsx:
+			     1. AppShell has no `collapsed` or `defaultCollapsed` prop. The
+			        state is a private useState seeded only from localStorage,
+			        and readStorage() returns false under SSR.
+			     2. `React.cloneElement(sidebar, { collapsed, onToggleCollapse })`
+			        merges the injected props OVER the element's own, so a
+			        `collapsed` the consumer writes is overwritten.
+			     3. `--ds-sidebar-w` is written as an INLINE STYLE on the shell
+			        root, so no media query reaches the width without an
+			        importance override, and `sidebarWidth` is a constant.
+			   So the consumer cannot select the rail, and the four rules below
+			   are what a consumer is FORCED into: reach past the component and
+			   restate its grid. That is the finding, reported in the SUMMARY,
+			   and it is distinct from G-8 (a missing slot) because it is about
+			   responsive posture.
+
+			   The grid restatement is also undoing appshell.css's OWN single
+			   hardcoded responsive posture — `@media (max-width: 767px)` hides
+			   the sidebar outright — which fires at 767, a width that is not a
+			   boundary in the six-class matrix and which cuts device class 3
+			   (673-884) in half. */
+			@media (min-width: 673px) and (max-width: 1023px) {
+				.ds-atom-appshell {
+					grid-template-areas:
+						"topbar topbar"
+						"sidebar main";
+					grid-template-columns: 48px 1fr;
+					grid-template-rows: auto 1fr;
+				}
+				.ds-atom-appshell-sidebar {
+					display: block;
+				}
+				.adm-nav {
+					padding: var(--space-3) 0;
+					justify-items: center;
+				}
+				.adm-nav-label,
+				.adm-nav-badge-text,
+				.adm-nav-foot {
+					display: none;
+				}
+				.adm-nav-badge-short {
+					display: inline;
+				}
+				.adm-nav-link {
+					justify-content: center;
+					gap: 0;
+					padding: 0;
+					border-left-width: 0;
+					border-radius: 0;
+					box-shadow: inset 2px 0 0 0 transparent;
+				}
+				.adm-nav-link[data-active="true"] {
+					box-shadow: inset 2px 0 0 0 var(--wire);
+				}
+				.adm-nav-link[data-child="true"] .adm-nav-mono {
+					color: var(--ink-4);
+				}
+			}
+
+			/* ══ THE 44px TOUCH FLOOR — every coarse-pointer class ═════════════
+			   Five of the six device classes are coarse pointer, so the floor is
+			   the common case rather than the exception. It is a floor on the
+			   HIT AREA, not on the drawn control, so the rail's monogram keeps
+			   its 9.5px mono geometry and reaches 44px through the row's
+			   min-height. 48px of rail width clears it horizontally.
+			   density-compact.css carries the floor for the design system's own
+			   controls; this rule carries it for the rows that are mine. */
+			@media (pointer: coarse) {
+				.adm-nav-link {
+					min-height: 44px;
+				}
+			}
+		</style>
+	</body>
+</html>

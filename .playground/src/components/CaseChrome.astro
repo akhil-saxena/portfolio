@@ -1,0 +1,94 @@
+---
+// CaseChrome.astro — the review band at the top of BOTH case-study sketches.
+//
+// NONE OF THIS IS THE DESIGN. It is fenced inside a bordered band and labelled
+// as scaffolding for that reason: a reviewer walking the contact sheet has to be
+// able to tell, in one glance, which parts of the page are the artefact and
+// which parts exist to make the artefact reviewable. Plan 09's X-work does the
+// same thing with its D-45 status legend.
+//
+// THE TOGGLE IS A CHECKBOX AND A CSS SELECTOR — no script, no framework, no
+// hydration directive. It exists because plan 11 has to answer a question that
+// cannot be answered by looking at the page once: whether the visible
+// scaffolding is legible enough to judge provenance and length WITHOUT
+// dominating the page. Both states are the same page, so the comparison is
+// honest. It hides the provenance markers and the drafting notes and does NOT
+// hide the gap blocks, because the gap blocks are the artefact — their length is
+// the whole reason D-40 required length-realistic placeholders.
+//
+// The selector uses :has() on the page root, which is why every case class lives
+// in one plain stylesheet rather than in scoped <style> blocks — a scoped rule
+// could not reach from the page root into the prose renderer's output.
+
+import { Eyebrow, Heading, Text } from "@akhil-saxena/design-system";
+
+interface Props {
+	artefact: string;
+	headline: string;
+	proves: string;
+	measure: string;
+	/**
+	 * The corpus index. `href` is optional and falls back to `#anchor`, which is
+	 * what the stacked-tier templates needed when five studies shared three
+	 * scrolls. With one study per route there is nothing to jump to on the page,
+	 * so the list becomes the way between routes: `href` set, `current` marking
+	 * the one you are on, `words` only where the number is known — which is the
+	 * study this page actually loaded, since loading the other four to print
+	 * their lengths in a footer would parse the whole corpus five times per
+	 * build for a number nobody reads.
+	 */
+	studies: { anchor: string; label: string; words: number | null; href?: string; current?: boolean }[];
+	legend: { term: string; body: string }[];
+}
+
+const { artefact, headline, proves, measure, studies, legend } = Astro.props;
+
+const totalWords = studies.reduce((a, s) => a + (s.words ?? 0), 0);
+---
+
+<div class="case-chrome">
+	<Eyebrow size="md" tone="muted">{artefact} — DSGN-02 · REVIEW SCAFFOLDING, NOT THE DESIGN</Eyebrow>
+
+	{/* level={2}, and each study below keeps its own <h1>. The page therefore
+	    carries more than one h1, which is deliberate: every <article> here is a
+	    page-to-be — in Phase 5 each study is its own route — and flattening them
+	    to h2 so this sketch validated as a single document would make it show a
+	    heading structure the shipped page will not have. The thing under review
+	    is the template, so the template's own outline is the one that has to be
+	    right. */}
+	<Heading level={2} size="xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+		{headline}
+	</Heading>
+	<Text size="base" tone="muted" leading="relaxed">{proves}</Text>
+
+	<ul class="case-index">
+		{
+			studies.map((s) => (
+				<li>
+					<a href={s.href ?? `#${s.anchor}`} aria-current={s.current ? "page" : undefined}>
+						{s.label}
+						{s.words != null && <> · {s.words.toLocaleString("en-US")} words</>}
+						{s.current && <> · you are here</>}
+					</a>
+				</li>
+			))
+		}
+	</ul>
+
+	<ul class="case-legend">
+		{
+			legend.map((l) => (
+				<li>
+					<span class="case-gap-label">{l.term}</span>
+					<Text size="sm" tone="muted" leading="relaxed">{l.body}</Text>
+				</li>
+			))
+		}
+	</ul>
+
+	<label class="case-toggle">
+		<input type="checkbox" />
+		Hide provenance markers and drafting notes · {totalWords.toLocaleString("en-US")} words
+		at {measure}
+	</label>
+</div>

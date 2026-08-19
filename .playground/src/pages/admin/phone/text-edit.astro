@@ -1,0 +1,339 @@
+---
+// ═══ P-text-edit — CAPABILITY 2 OF 4: FIX TEXT ══════════════════════════════
+//
+// D-09 permits "fix text" on a phone, and this is the smallest honest reading
+// of that: ONE field, on ONE record, at touch scale. Not the résumé screen
+// shrunk — a single-field edit reached from the pending list.
+//
+// ═══ THE BULLET IS REAL, AND THAT IS THE WHOLE ARGUMENT ════════════════════
+// D-40 exists because a six-word stub makes a layout decision that a real
+// string then breaks. This screen edits Brevo bullet 4 out of
+// data/resume.json, read at build time:
+//
+//   "Built analytics & attribution pipelines with event tracking, custom
+//    logging, and Omni dashboards to track funnel drop-offs and experiment
+//    performance"
+//
+// 148 characters. On a 390px phone at comfortable density that is five lines,
+// which is the number that decides whether the field, its hint and its two
+// actions fit above the keyboard — and it is the number a short stand-in would
+// have hidden. The count is computed below rather than typed.
+//
+// ═══ WHY THIS BULLET AND NOT ANOTHER ═══════════════════════════════════════
+// It is the one the dashboard already lists as pending ("Brevo bullet 4 edited
+// — 11 bullets total") and the one the publish block names as failing
+// ("Résumé → Brevo → bullet 4: an emphasis segment has no text."). Three
+// surfaces, one record: the pending list, the publish block, and the screen
+// that fixes it. Picking a different bullet here would have made the phone
+// route the only place in the admin talking about something else.
+//
+// ═══ D-20 SEGMENTS, NOT AN HTML STRING ═════════════════════════════════════
+// The stored form is an array of `{text}` / `{text, emphasis}` — never a markup
+// string. The editor below is a plain Textarea over the PLAIN TEXT of those
+// segments, and it says so, because that is exactly the trade D-09 makes: on a
+// phone you fix wording, and emphasis stays as it is. G-3 is the reason that is
+// a design rather than a limitation to paper over — `RichText` cannot restrict
+// its marks, so ⌘I / ⌘U / ⌘K stay live even with the toolbar replaced, and a
+// segment serializer would silently drop what they produce. A phone has no ⌘.
+//
+// ═══ Field TAKES `wiring` FROM THE useField HOOK ══════════════════════════
+// An .astro page cannot call a hook, so the wiring object is hand-built. Plan
+// 13's idiom; unchanged here.
+//
+// ═══ ZERO HYDRATION ═══════════════════════════════════════════════════════
+// No directive. The Textarea below does not save; D-02 fences this sketch.
+
+import { Badge, Button, Card, Divider, Eyebrow, Field, Heading, Link, Text, Textarea } from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import resume from "../../../data/resume.json";
+import { REFUSALS, phoneNav } from "../../../lib/phone.mjs";
+
+export const ARTEFACTS = [
+	{
+		id: "P-text-edit",
+		route: "/admin/phone/text-edit",
+		proves:
+			"That D-09's 'fix text' is one field on one record rather than the résumé screen shrunk, and that it survives a real 148-character bullet at 390px — with emphasis deliberately out of scope, because G-3 means the marks that produce it cannot be restricted.",
+	},
+];
+
+// READ OUT OF THE REAL COMMITTED DATA. `bullet 4` is 1-indexed, as the
+// dashboard and the publish block both spell it.
+const BREVO = resume.experience.find((e) => e.id === "brevo");
+const BULLET_INDEX = 3;
+const RAW = BREVO.bullets[BULLET_INDEX];
+
+// D-20's shape, derived from the stored string rather than invented: the legacy
+// bullets carry <strong> spans, and the migration turns each into a segment.
+// This one has none, which is why it is the bullet the phone can safely edit.
+const segments = RAW.split(/(<strong>.*?<\/strong>)/g)
+	.filter((p) => p.length > 0)
+	.map((p) =>
+		p.startsWith("<strong>")
+			? { text: p.replace(/<\/?strong>/g, ""), emphasis: true }
+			: { text: p },
+	);
+const plain = segments.map((s) => s.text).join("");
+const CHARS = plain.length;
+const EMPHASIS = segments.filter((s) => s.emphasis).length;
+const TOTAL_BULLETS = BREVO.bullets.length;
+
+const wiring = (id) => ({
+	controlId: id,
+	hintId: `${id}-hint`,
+	errorId: undefined,
+	describedBy: `${id}-hint`,
+	invalid: false,
+});
+
+const CAPABILITY = "Capability 2 of 4 — fix text.";
+---
+
+<Admin
+	title="P-text-edit"
+	active="resume"
+	route="/admin/resume"
+	navStates={phoneNav}
+	density="comfortable"
+>
+	<div class="ph-head" data-artefact="P-text-edit">
+		<Eyebrow size="sm" tone="muted">PHONE · 390 × 844 · CHARCOAL LIGHT · COMFORTABLE</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">Brevo — bullet {BULLET_INDEX + 1}</Heading>
+		<p class="ph-capability">{CAPABILITY}</p>
+		<div class="ph-meta">
+			<Badge tone="warning" dot>Draft</Badge>
+			<code class="ph-code">resume.json</code>
+			<span class="ph-metric">{CHARS} characters</span>
+			<span class="ph-metric">{TOTAL_BULLETS} bullets in this role</span>
+			<span class="ph-metric">{EMPHASIS} emphasis segments</span>
+		</div>
+	</div>
+
+	<Card surface="subtle" padding="md" radius="lg">
+		<div class="ph-section">
+			<Field
+				label="Bullet text"
+				hint="Wording only. Emphasis, links and ordering are desktop work — see below."
+				wiring={wiring("f-bullet")}
+			>
+				<Textarea value={plain} onChange={() => {}} rows={7} />
+			</Field>
+			<div class="ph-actions">
+				<Button variant="primary">Save</Button>
+				<Button variant="secondary">Cancel</Button>
+			</div>
+			<Text size="sm" tone="muted">
+				Autosaved to the draft as you type (D-13). Saving here marks Résumé as changed on the
+				dashboard; it does not publish anything.
+			</Text>
+		</div>
+	</Card>
+
+	{/* ── WHAT THIS SCREEN DELIBERATELY OMITS ───────────────────────────────
+	    D-09's design is as much about what a phone does not do, so the
+	    omissions are on the screen rather than discovered by a reviewer
+	    poking at a control that is not there. */}
+	<section class="ph-section" data-omissions="P-text-edit">
+		<Eyebrow size="sm" tone="muted">DELIBERATELY NOT HERE</Eyebrow>
+		<ul class="ph-omit">
+			<li>
+				<strong>Emphasis, links and code.</strong> The stored form is D-20 segments — an array of
+				{" "}<code class="ph-code">&#123;text&#125;</code> and
+				{" "}<code class="ph-code">&#123;text, emphasis&#125;</code>, never a markup string. This
+				field edits the plain text and leaves the {EMPHASIS} emphasis segments on this bullet
+				exactly as they are. G-3 is why: <code class="ph-code">RichText</code> has no way to
+				restrict its marks, so a phone editor built on it would keep ⌘I / ⌘U / ⌘K live with
+				nothing to press them with, and a serializer would drop whatever they produced.
+			</li>
+			<li>
+				<strong>Reordering the {TOTAL_BULLETS} bullets.</strong> That is capability 3's shape, and
+				it is drawn for photos rather than for bullets because reorder on a phone is one problem,
+				not two.
+			</li>
+			<li>
+				<strong>Adding or deleting a bullet.</strong> Structural edits are desktop work. Fixing a
+				typo on the train is the capability D-09 named; restructuring a role is not.
+			</li>
+		</ul>
+	</section>
+
+	<Divider />
+
+	{/* ── THE STORED SHAPE, SHOWN ───────────────────────────────────────────
+	    So a reviewer can see that the field above is a view of segments and
+	    not a view of HTML. Nothing in this path holds a markup string. */}
+	<section class="ph-section">
+		<Eyebrow size="sm" tone="muted">WHAT IS ACTUALLY STORED (D-20)</Eyebrow>
+		<ol class="ph-segments">
+			{segments.map((s, i) => (
+				<li>
+					<span class="ph-seg-n">{i + 1}</span>
+					<Badge tone={s.emphasis ? "info" : "neutral"}>{s.emphasis ? "emphasis" : "plain"}</Badge>
+					<span class="ph-seg-text">{s.text}</span>
+				</li>
+			))}
+		</ol>
+		<Text size="sm" tone="muted">
+			One segment, no emphasis — which is precisely why this bullet is the one a phone can edit
+			safely. A bullet carrying emphasis segments would round-trip through this field as plain
+			text and lose them, and that is the data loss G-3 describes rather than a UI decision.
+		</Text>
+	</section>
+
+	<section class="ph-section">
+		<Eyebrow size="sm" tone="muted">REFUSED ON A PHONE</Eyebrow>
+		<ol class="ph-index">
+			{REFUSALS.map((r) => (
+				<li class="ph-index-row" data-refusal="true">
+					<a class="ph-index-link" href={`${r.route}/`}>{r.id}</a>
+					<span class="ph-index-what">{r.what}</span>
+				</li>
+			))}
+		</ol>
+		<p class="ph-linkrow">
+			<Link href="/admin/phone/dashboard/" variant="inline">Back to P-dashboard</Link>
+		</p>
+	</section>
+</Admin>
+
+<style is:global>
+	/* is:global for the same measured reason as P-dashboard: this page carries
+	   Field, Textarea and Badge, all of which render their own DOM, and a
+	   scoped rule cannot reach inside a framework component.
+	   App LAYOUT css only, per QUAL-03. */
+
+	.ph-head,
+	.ph-section {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.ph-capability {
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		border-left: 2px solid var(--wire);
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-2);
+	}
+
+	.ph-code {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.ph-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ph-metric {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+	}
+
+	.ph-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.ph-omit {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-3);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-segments {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-segments > li {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: var(--space-2);
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ph-seg-n {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.ph-seg-text {
+		flex: 1 1 200px;
+		min-width: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-index {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-index-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border: 1px dashed var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ph-index-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+	}
+	.ph-index-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.ph-index-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ph-index-what {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+
+	.ph-linkrow {
+		display: flex;
+		align-items: center;
+		margin: 0;
+	}
+
+	/* ══ THE 44px FLOOR — last block, at every pointer ═════════════════════ */
+	.ph-linkrow .ds-atom-link {
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
+	}
+</style>

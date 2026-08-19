@@ -1,0 +1,378 @@
+---
+// X-work-recolour — the handoff's Work page, RECOLOURED ONLY.
+//
+// WHAT THIS ARTEFACT IS FOR, AND WHY IT LOOKS DATED ON PURPOSE. The structure
+// below is Work.dc.html's, unchanged: four projects in a 2x2 grid, the
+// "ALSO - ENGINEERING AT BREVO" tail underneath, Cairn absent, no status badges.
+// Three locked decisions (D-38, D-44, D-45) all say that structure is wrong, and
+// /work implements them. This page deliberately does not, because if a reviewer
+// dislikes the restructured page we need to know whether the colour resolution
+// or the restructure caused it. Two artefacts, one variable each. Same
+// attributability argument that split cascade layers out of Phase 1 (D-28).
+//
+// So: do not "improve" this page. Every difference between it and /work must be
+// a structural one. The only thing that moved here is colour (plus the family
+// swap and the placeholder deletion, both of which the substitution table owns).
+//
+// The three exceptions that live on this page are marked EXCEPTION 1/2/3 inline.
+// The other six are on /work, /photos and /home-act2. All nine are written up in
+// .planning/phases/00-design-ideation/00-PUBLIC-DESIGN-NOTES.md, which survives
+// this directory's deletion.
+
+import { Card, Eyebrow, Heading, Link, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+
+// THE ACCENT DOES NOT FLOW THROUGH `tone`, AND THIS IS THE REASON EVERY ACCENT
+// BELOW IS AN EXPLICIT `color`. The design system resolves tone="accent" to
+// var(--amber-d), and charcoal declares --ochre / --ochre-d / --ochre-d-strong
+// as NEW names without redeclaring --amber-d. So the declarative accent path
+// renders the design system's yellow (#fbbf24 in dark) on a charcoal page: high
+// contrast, wrong identity. Written up as a finding; the sketch reaches for the
+// charcoal token by name rather than pretending the tone axis works.
+const OCHRE_D = "var(--ochre-d)";
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+
+// Card descriptions are plan 02's, verbatim from 00-COPY/one-liners.md.
+//
+// The handoff's two bracketed grey markers - the one asking for expanded detail
+// on the Design System card and the one asking for a one-liner on the other
+// three - are DELETED rather than recoloured. The substitution table's row for
+// the placeholder grey says exactly that, because a recoloured
+// placeholder is a placeholder that survived the port and now looks intentional.
+//
+// Do not quote either marker's literal text anywhere in this file, including in
+// a comment: an acceptance grep asserts their absence and cannot tell a marker
+// from prose describing one. Describe them, as above.
+const projects = [
+	{
+		id: "design-system",
+		initial: "D",
+		// The ivory icon was an ink-coloured square carrying a page-coloured
+		// letter. Straight substitution flips it to a light square with a charcoal
+		// letter, which is exactly what the handoff's own HOME spec already asks
+		// for ("Design System - icon bg #EAE7E0 / text #161616"). 14.65:1.
+		iconBg: "var(--ink)",
+		iconInk: "var(--page-bg)",
+		iconItalic: false,
+		// The handoff says 55. The design system's README says 80 at v1.11.4, and
+		// UI-SPEC forbids carrying the 55 into any sketch or any copy.
+		tag: "80 COMPONENTS",
+		name: "Design System",
+		description:
+			"A React component library where one token change lands across every screen at once. 80 components in 10 categories, and this site is built entirely out of them.",
+	},
+	{
+		id: "hued",
+		initial: "h",
+		// EXCEPTION 2 - the hued icon's ink is wrong in BOTH themes, so this is a
+		// correction rather than a port. The handoff specifies a white italic h on
+		// #B0722A: 3.97:1, fails. Charcoal ink on the same fill is 4.56:1. The
+		// other two squares below keep white at 7.61:1 and 7.20:1, so THE INK
+		// COLOUR IS PER-ICON, NOT GLOBAL - which is the part a mechanical port gets
+		// wrong, because "icon text is white" reads like a rule.
+		iconBg: "var(--ochre)",
+		iconInk: "var(--ink-inverse)",
+		iconItalic: true,
+		tag: "ANDROID",
+		name: "hued",
+		description:
+			"Turns your camera roll into the colours you actually lived in, by week, month or year. Palettes are clustered in CIELAB so perceptually close shades merge, and it requests no network permission.",
+	},
+	{
+		id: "momentum",
+		initial: "M",
+		// Unchanged from the handoff - 7.61:1 with white, so it ports as-is.
+		iconBg: "#3E5A48",
+		iconInk: "#FFFFFF",
+		iconItalic: false,
+		tag: "ANDROID",
+		name: "Momentum",
+		description:
+			"Breaks a long-term goal into a number for today, and recalculates it when you fall behind. The target, streak and milestone maths sits in a pure-Kotlin engine layer with no Android imports.",
+	},
+	{
+		id: "timeshift",
+		initial: "T",
+		// Unchanged from the handoff - 7.20:1 with white.
+		iconBg: "#52585E",
+		iconInk: "#FFFFFF",
+		iconItalic: false,
+		tag: "CHROME",
+		name: "TimeShift",
+		description:
+			"Right-click any time written on a page and read it in your own zone. It disambiguates CST, IST and BST from surrounding context, and follows the current DST state rather than a cached offset.",
+	},
+];
+
+// The three Brevo rows, verbatim from the handoff. They are the same three facts
+// data/resume.json carries in the Brevo bullets (15% conversion / 2.5M+ users,
+// 18+ micro-frontends, the Next.js login migration).
+const brevoRows = [
+	{ title: "Checkout redesign for 2.5M+ users", metric: "+15% CONVERSION" },
+	{ title: "Unified settings nav across 18+ micro-frontends", metric: "20% FASTER CYCLES" },
+	{ title: "Login migration — Next.js + NAOS", metric: "90% COVERAGE" },
+];
+---
+
+<Public title="X-work-recolour — Work, recoloured only" active="work" maxWidth={1280}>
+	<!-- header -->
+	<header class="wr-header">
+		<div>
+			{/*
+			  --text-4xl is 44px and the handoff authored 52px. The 44-to-60 hole in
+			  the shared type scale is G-11, filed upstream as a new step available to
+			  every brand rather than patched into charcoal - --text-* is sizing and
+			  sizing is design-system-owned (D-31). So the PRIMARY header is 44px and
+			  the 52px below it is a labelled reference, not a second opinion.
+
+			  data-size="4xl" also carries --lh-tight 0.94, and UI-SPEC assigns
+			  --lh-snug 1.08 to page headers at 40-44px; the 0.94 is for the 60px Home
+			  name only. The line-height is therefore overridden here. That the token
+			  size and the token line-height cannot be chosen independently is a real
+			  constraint of the data-attr path, recorded with the other observations.
+			*/}
+			<Heading level={1} size="4xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+				Things I design<br />and build<span style={{ color: OCHRE_D }}>.</span>
+			</Heading>
+
+			{/*
+			  EXCEPTION 1, first of three appearances. The period is DISPLAY type at
+			  44px, so it takes --ochre-d and not the strong step: above 22px the
+			  darker value reads brown rather than ochre and the identity goes with
+			  it (Rule C-6, prohibition 3). --ochre-d measures 6.02:1 on this page.
+			*/}
+			<Text size="md" tone="muted" maxWidth={480} style={{ marginTop: "var(--space-5)" }}>
+				Products shipped on my own — a component system and a few apps — alongside
+				frontend engineering at Brevo.
+			</Text>
+		</div>
+
+		<!--
+		  THE G-11 REFERENCE. Rendered so Phase 1 has evidence rather than an
+		  assertion, and because the family swap is not size-neutral: Playfair
+		  Display has a larger x-height and heavier stems than Newsreader at the
+		  same pixel size, so 52px Playfair is visibly bigger than the 52px
+		  Newsreader the handoff drew. Judge 44 against 52 by eye here, in the two
+		  places it actually appears (this page and /photos).
+		-->
+		<aside class="wr-g11">
+			<Eyebrow size="sm" tone="muted">G-11 REFERENCE — 52PX, NOT SHIPPED</Eyebrow>
+			<div class="wr-g11-sample">
+				Things I design<br />and build<span style={{ color: OCHRE_D }}>.</span>
+			</div>
+			<Text size="sm" tone="muted">
+				The header above is <strong>--text-4xl</strong>, 44px, the largest step the
+				shared scale actually has below 60. This sample is the handoff's authored
+				52px, hardcoded here and nowhere else, so the gap is visible rather than
+				argued.
+			</Text>
+		</aside>
+	</header>
+
+	<!-- projects: the handoff's 2x2, unchanged -->
+	<div class="wr-grid">
+		{
+			projects.map((p) => (
+				<Card className="wr-card" surface="subtle" padding="lg" radius="lg">
+					<div class="wr-card-top">
+						<span
+							class="wr-icon"
+							style={{
+								background: p.iconBg,
+								color: p.iconInk,
+								fontStyle: p.iconItalic ? "italic" : "normal",
+							}}
+						>
+							{p.initial}
+						</span>
+						<Eyebrow size="sm" tone="muted">{p.tag}</Eyebrow>
+					</div>
+					<Heading level={2} size="xl" weight="bold">{p.name}</Heading>
+					<Text size="md" tone="muted">{p.description}</Text>
+				</Card>
+			))
+		}
+	</div>
+
+	<!-- brevo tail: the handoff's "ALSO" section, kept exactly where it was -->
+	<section class="wr-brevo">
+		<Eyebrow size="md" tone="muted">ALSO — ENGINEERING AT BREVO</Eyebrow>
+		<div class="wr-rows">
+			{
+				brevoRows.map((r, i) => (
+					<div class="wr-row" data-last={i === brevoRows.length - 1 ? "true" : "false"}>
+						<Heading level={3} size="xl" weight="regular" as="span">{r.title}</Heading>
+						{/*
+						  EXCEPTION 1 again, and this is the appearance that matters. These
+						  metrics are 11px mono - small accent TEXT - so Rule C-6 puts them
+						  on --ochre-d-strong at 8.16:1, not on the fill token. The handoff
+						  paints them #B0722A, which measured 3.52:1 on its own ivory page:
+						  it was already failing AA before the port. Mapping accent to
+						  accent would have carried a failure across and then added a second
+						  one, because #B0722A drops to 4.20 on a card and 3.91 on a panel
+						  in dark. A role change AND a token split, from one substitution.
+						*/}
+						<Text size="xs" mono weight="medium" color={OCHRE_D_STRONG}>{r.metric}</Text>
+					</div>
+				))
+			}
+		</div>
+	</section>
+
+	<Fragment slot="crosslink">
+		{/*
+		  EXCEPTION 1, third appearance, and the one UI-SPEC calls a judgement
+		  rather than arithmetic. WCAG's large-text threshold is 24px; this link is
+		  22px, two pixels below it, so a strict reading wants 7:1 and --ochre-d
+		  reaches only 6.02. It takes --ochre-d-strong. The stated fallback - raise
+		  the link to 24px and revert to --ochre-d, resolving the ambiguity by
+		  arithmetic instead - is rendered beside it, because UI-SPEC says sketch
+		  both and a fallback nobody has looked at is not a fallback.
+
+		  Both render as browser-synthesised oblique rather than Playfair's drawn
+		  italic: the face layer ships four roman entry points and no italic axis
+		  (plan 04's Option A). On an editorial serif that is visible, and this link
+		  is one of exactly two italic roles charcoal has. Flagged for review, not
+		  resolved here - adding the axis moves a recorded acceptance baseline from
+		  8 face rules to 12.
+		*/}
+		<div class="wr-crosslinks">
+			<a class="wr-xlink" href="/photos" style={{ color: OCHRE_D_STRONG }}>
+				see the photographs →
+			</a>
+			<span class="wr-xlink-alt">
+				<Eyebrow size="xs" tone="muted">FALLBACK — 24PX / --OCHRE-D</Eyebrow>
+				<a
+					class="wr-xlink"
+					href="/photos"
+					style={{ fontSize: "24px", color: OCHRE_D }}
+					aria-hidden="true"
+					tabindex="-1"
+				>
+					see the photographs →
+				</a>
+			</span>
+		</div>
+	</Fragment>
+</Public>
+
+<style>
+	/* App LAYOUT css. Every colour below is a charcoal token; the two literal
+	   hexes in the frontmatter are the Momentum and TimeShift icon fills, which
+	   the substitution table carries across UNCHANGED because they already
+	   measure 7.61:1 and 7.20:1 against white. */
+
+	.wr-header {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 320px;
+		gap: var(--space-12);
+		align-items: start;
+		padding-bottom: var(--space-12);
+	}
+
+	.wr-g11 {
+		display: grid;
+		gap: var(--space-2);
+		padding: var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+
+	.wr-g11-sample {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: 52px;
+		line-height: var(--lh-snug);
+		letter-spacing: var(--ls-tighter);
+		color: var(--ink);
+	}
+
+	.wr-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--space-5);
+		padding-bottom: var(--space-6);
+	}
+
+	/* EXCEPTION 3 - card boundaries invert which property carries them.
+	   On ivory the card surface is LIGHTER than the page and its border grey is
+	   decorative: the FILL draws the boundary. On charcoal dark the fill delta
+	   between --cream-2 #1E1E1D and the page #161616 is about 1.08:1, so the fill
+	   cannot draw anything and the BORDER becomes the sole boundary. It therefore
+	   takes --wire, not --rule. Mapping the ivory card border onto --rule
+	   mechanically gives 1.43:1 and cards that visually dissolve into the page.
+
+	   That this needs an app-level rule at all is a design-system gap rather than
+	   a preference: Card's boundary colour is not settable. `glass` and `subtle`
+	   both bind border-color to --rule, and no prop reaches it. Recorded. */
+	.wr-card {
+		border-color: var(--wire) !important;
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-4);
+		transition: border-color 0.25s ease;
+	}
+	.wr-card:hover {
+		border-color: var(--ochre-d) !important;
+	}
+
+	.wr-card-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.wr-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 11px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--display);
+		font-size: var(--text-xl);
+		font-weight: 700;
+	}
+
+	.wr-brevo {
+		padding: var(--space-8) 0 var(--space-12);
+	}
+
+	.wr-rows {
+		display: flex;
+		flex-direction: column;
+		padding-top: var(--space-2);
+	}
+
+	.wr-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: baseline;
+		gap: var(--space-6);
+		padding: var(--space-5) 0;
+		border-bottom: 1px solid var(--rule);
+	}
+	.wr-row[data-last="true"] {
+		border-bottom: none;
+	}
+
+	.wr-crosslinks {
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-8);
+	}
+
+	.wr-xlink {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		text-decoration: none;
+	}
+
+	.wr-xlink-alt {
+		display: inline-flex;
+		align-items: baseline;
+		gap: var(--space-2);
+		opacity: 0.85;
+	}
+</style>

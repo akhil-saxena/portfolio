@@ -1,0 +1,28 @@
+{
+  "name": "portfolio-phase0-playground",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Phase 0 throwaway design-system sketch playground. Deleted at phase exit (plan 17). NOT the Phase 2 foundation - see D-02 scope fence.",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "astro build",
+    "dev": "astro dev"
+  },
+  "dependencies": {
+    "@akhil-saxena/design-system": "file:./akhil-saxena-design-system-1.11.4.tgz",
+    "@astrojs/react": "6.0.2",
+    "@fontsource-variable/dm-sans": "5.3.0",
+    "@fontsource-variable/playfair-display": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "astro": "7.2.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "stub-theme-pkg": "file:fixtures/stub-theme-pkg"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}

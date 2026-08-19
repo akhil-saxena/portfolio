@@ -1,0 +1,531 @@
+/* case.css — ONE stylesheet for BOTH case-study tiers, and that is the point.
+
+   D-39 tiers case studies by DEPTH, not by brand. Two templates that looked
+   like two different sites would fail its intent while passing every check, and
+   the cheapest way to make that impossible is to give the two templates one
+   stylesheet rather than a shared convention. There is no `.case-long-*` class
+   and no `.case-short-*` class anywhere below; the pages differ in which blocks
+   they compose and in nothing else. If a future edit needs a tier-specific rule,
+   that is the moment to ask whether the difference is structural — which D-39
+   permits — or stylistic, which it does not.
+
+   WHY A PLAIN .css FILE RATHER THAN SCOPED <style> BLOCKS. Astro scopes a
+   component's styles to that component's own elements, so a rule written in the
+   page could not reach an element emitted by the shared prose renderer, and the
+   two tiers would end up with two copies of the same declarations kept in sync
+   by hand. That is exactly the drift this file exists to prevent. It also makes
+   the review toggle below possible, which needs a selector that crosses from the
+   page root into the renderer's output.
+
+   ORDERING: this sheet declares only `.case-*` classes and overrides no
+   design-system class, so it has no cascade interaction with manifest.css and
+   its position relative to it does not matter. That is a property to preserve —
+   the moment a rule in here needs to beat a design-system rule, it belongs in a
+   finding rather than in this file.
+
+   APP LAYOUT AND TYPOGRAPHY ROLES ONLY (QUAL-03). Every colour below is a
+   charcoal token by name. Nothing here re-implements a component the design
+   system ships. */
+
+.case-page {
+	/* THE MEASURE. 68ch, from UI-SPEC's layout maxima: at --text-md 15px DM Sans
+	   68ch is about 620px, inside the standard 55-75ch readability band. It is a
+	   fallback here — both templates declare it explicitly and the shared prose
+	   renderer asserts they declare the SAME value, so the two tiers cannot
+	   drift apart on the one number that decides whether long-form prose is
+	   readable. */
+	--case-measure: 68ch;
+
+	/* The left rail, from the handoff's Resume.dc.html — the only long-scroll
+	   editorial page in the handoff, and therefore the reference for measure and
+	   heading rhythm. It runs a 200px mono rail beside a 1fr column at a 48px
+	   gap. Same rail, same gap; 48px is --space-12, a real step. */
+	--case-rail: 200px;
+}
+
+/* ── Review chrome ───────────────────────────────────────────────────────────
+   Everything in this block is scaffolding for the plan 11 eye review. None of
+   it is the design. It is fenced off visually for that reason. */
+
+.case-chrome {
+	display: grid;
+	gap: var(--space-3);
+	padding: var(--space-6);
+	border: 1px solid var(--wire);
+	border-radius: var(--radius-lg);
+	background: var(--cream-2);
+}
+
+.case-legend {
+	display: grid;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.case-legend > li {
+	display: grid;
+	grid-template-columns: 210px minmax(0, 1fr);
+	gap: var(--space-4);
+	align-items: baseline;
+}
+
+/* The review toggle is a bare checkbox and a label — no framework, no directive,
+   no script. It exists because plan 11 has to answer whether the visible
+   scaffolding is legible enough to judge length WITHOUT dominating the page, and
+   the only honest way to answer that is to look at the page both ways. It does
+   not hide the gap blocks: those are the artefact. */
+.case-toggle {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+	cursor: pointer;
+	justify-self: start;
+}
+
+.case-toggle input {
+	width: 16px;
+	height: 16px;
+	accent-color: var(--ochre-d);
+	/* WCAG 1.4.11: an interactive control's boundary needs 3:1. --rule is
+	   1.43:1 on charcoal dark and would be illegal here; --wire is 3.72:1. */
+	outline: 1px solid var(--wire);
+	outline-offset: 1px;
+	margin: 0;
+}
+
+.case-page:has(.case-toggle input:checked) .case-src,
+.case-page:has(.case-toggle input:checked) .case-note {
+	display: none;
+}
+
+.case-index {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.case-index a {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-2);
+	text-decoration: none;
+	border-bottom: 1px solid var(--wire);
+	padding-bottom: 2px;
+}
+
+.case-index a:hover {
+	color: var(--ochre-d);
+	border-bottom-color: var(--ochre-d);
+}
+
+/* ── One study ───────────────────────────────────────────────────────────── */
+
+.case-study {
+	padding: var(--space-16) 0;
+}
+
+/* The studies are stacked on one page because this is a template sketch, not
+   the shipped route shape: in Phase 5 each becomes its own page. The rule marks
+   where one page would end and the next begin. */
+.case-study + .case-study {
+	border-top: 1px solid var(--wire);
+}
+
+.case-head {
+	display: grid;
+	gap: var(--space-4);
+	max-width: var(--case-measure);
+	padding-bottom: var(--space-10);
+}
+
+.case-head-top {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	flex-wrap: wrap;
+}
+
+.case-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2) var(--space-5);
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+	padding-top: var(--space-2);
+	border-top: 1px solid var(--rule);
+}
+
+/* ── Section: the rail + the measure ─────────────────────────────────────── */
+
+.case-section {
+	display: grid;
+	grid-template-columns: var(--case-rail) minmax(0, 1fr);
+	gap: var(--space-12);
+	padding: var(--space-10) 0;
+}
+
+.case-rail {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+	display: grid;
+	gap: var(--space-1);
+	align-content: start;
+}
+
+.case-rail-ord {
+	color: var(--ochre-d-strong);
+}
+
+/* THE PROSE COLUMN. Everything that is prose is capped here and nowhere else,
+   so there is exactly one declaration in the project that decides the measure. */
+.case-col {
+	max-width: var(--case-measure);
+	display: grid;
+	gap: var(--space-5);
+	align-content: start;
+}
+
+.case-col > .ds-atom-heading {
+	margin-bottom: var(--space-2);
+}
+
+/* ── The decisions register (long form only, structurally) ───────────────── */
+
+.case-entry {
+	display: grid;
+	gap: var(--space-4);
+	padding-top: var(--space-6);
+}
+
+.case-entry-ord {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	color: var(--ochre-d-strong);
+}
+
+/* THE D-39 TELL, MADE VISIBLE. RESEARCH names one reliable marker of a case
+   study done well: a decision section that states the option not taken and what
+   it would have cost. Both long-form drafts write every entry that way. Insetting
+   those paragraphs makes "decisions, including alternatives rejected" a property
+   of the RENDERED page rather than something a reader has to notice in the prose.
+
+   The hairline is --rule (1.43:1 on dark) and that is deliberate, not an
+   oversight: resolution 6 in 00-PUBLIC-DESIGN-NOTES.md says --rule is correct as
+   a decorative hairline between rows on the same page, and wrong as the sole
+   boundary of a control. This is the first case. The gap block below is closer
+   to the second, and takes --wire — the two sit on the same page on purpose, so
+   the difference between the two values is visible in one glance. */
+.case-alt {
+	border-left: 1px solid var(--rule);
+	padding-left: var(--space-5);
+}
+
+/* ── Gap blocks: the D-40 placeholders, rendered ─────────────────────────── */
+
+.case-gap {
+	display: grid;
+	gap: var(--space-3);
+	border-left: 2px solid var(--wire);
+	padding: var(--space-1) 0 var(--space-1) var(--space-5);
+}
+
+/* THERE IS DELIBERATELY NO COLOUR RULE FOR THE PROSE INSIDE .case-gap, AND THE
+   REASON IS A FINDING. `.case-gap .ds-atom-text { color: … }` was the obvious
+   way to mute a gap block and it does nothing at all: Text inlines its variant's
+   colour whenever the `tone` prop is absent, and an inline style outranks a
+   stylesheet, so the gap blocks rendered at the identical colour to the prose
+   around them while this rule sat here looking correct. The colour is set with
+   `tone="muted"` in CaseProse.astro instead — the declarative path, which is the
+   only one a wrapping class can reach. Generalised: a design-system Text cannot
+   be recoloured by the page that contains it; it can only be told its tone. */
+
+.case-gap-label {
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.case-gap-marker {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	color: var(--ochre-d-strong);
+	white-space: nowrap;
+}
+
+/* ── Review scaffolding: provenance markers and drafting notes ───────────── */
+
+.case-src {
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: 0;
+	color: var(--ink-3);
+	background: var(--cream-2);
+	border-radius: var(--radius-sm);
+	padding: 1px 5px;
+	white-space: normal;
+}
+
+.case-src code {
+	font-size: inherit;
+	background: none;
+	padding: 0;
+	color: inherit;
+}
+
+.case-note {
+	border: 1px dashed var(--rule);
+	border-radius: var(--radius-md);
+	padding: var(--space-4);
+	display: grid;
+	gap: var(--space-2);
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	line-height: var(--lh-normal);
+	color: var(--ink-3);
+}
+
+.case-note-label {
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+
+.case-note p {
+	margin: 0;
+}
+
+/* ── Inline furniture ────────────────────────────────────────────────────── */
+
+.case-code {
+	font-family: var(--mono);
+	font-size: 0.92em;
+	color: var(--ink);
+	background: var(--cream-2);
+	border-radius: var(--radius-sm);
+	padding: 1px 4px;
+	/* R-6 REFLOW, AND IT IS THE PROVENANCE MARKERS THAT NEED IT.
+	 *
+	 * Plan 00-20's browser audit found horizontal scroll at 344 folded on
+	 * /work/hued/ (373px of document in a 344px viewport) and /work/momentum/
+	 * (387px), and on neither of the other three. The cause is not layout: it is
+	 * one code span each — `app/src/main/java/app/hued/processing/ColorAggregator.kt`
+	 * and its Momentum equivalent — inside a `[source: ...]` marker. A file path
+	 * has no spaces, so the default `overflow-wrap: normal` treats it as one
+	 * unbreakable word, and one unbreakable word wider than the column widens the
+	 * COLUMN. `anywhere` lets it break mid-path.
+	 *
+	 * Scoped to code spans on purpose. `anywhere` on prose would break ordinary
+	 * words mid-syllable at narrow widths, which is a worse defect than the one
+	 * being fixed and would be invisible at the 1440 the screenshots capture.
+	 * Nothing changes at any width where the path already fits, so the four wider
+	 * classes render identically to before.
+	 *
+	 * Worth knowing for Phase 6: this only matters because the drafts carry
+	 * provenance markers, and Phase 6 strips them. The rule is cheap enough to
+	 * keep either way — the studies still quote paths in their prose. */
+	overflow-wrap: anywhere;
+}
+
+.case-list {
+	display: grid;
+	gap: var(--space-4);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.case-list > li {
+	border-left: 1px solid var(--rule);
+	padding-left: var(--space-5);
+}
+
+/* ── Figures: where a screenshot sits, and how much room it takes ────────── */
+
+/* THE HERO BREAKS THE MEASURE; INLINE FIGURES RESPECT IT. The hero sits outside
+   the sections and runs the full content width, because its job is to establish
+   the project before the argument starts. An inline figure is evidence INSIDE
+   the argument, so it is capped at the same 68ch the argument is — a screenshot
+   that ran wider than the paragraph it supports would pull the eye out of the
+   reading column at exactly the moment the prose is making its point. Both tiers
+   use both roles; nothing here is tier-specific. */
+.case-figure {
+	display: grid;
+	gap: var(--space-3);
+	margin: 0;
+	padding: var(--space-6) 0;
+	max-width: var(--case-measure);
+}
+
+.case-figure-hero {
+	max-width: none;
+	padding: 0 0 var(--space-10);
+}
+
+/* NO IMAGE IS RENDERED, AND THE SLOT IS THE ARTEFACT. Not one of the eleven
+   assets D-41 plans for these five studies has been through D-42's R2 path yet,
+   and four of them do not exist in any repository at all — they have to be
+   captured from live store listings. A template that assumed the files existed
+   would answer a question nobody asked; the question a reviewer actually has is
+   "where does a screenshot sit and how much vertical room does it take", and a
+   correctly-proportioned reserved slot answers exactly that.
+
+   The aspect-ratio is declared rather than measured for the same reason D-42
+   captures dimensions at upload: the space is reserved before the bytes arrive,
+   so nothing shifts. */
+.case-slot {
+	aspect-ratio: var(--slot-ratio, 16 / 9);
+	border: 1px dashed var(--wire);
+	border-radius: var(--radius-lg);
+	background: var(--cream-2);
+	display: grid;
+	align-content: center;
+	justify-items: center;
+	gap: var(--space-2);
+	padding: var(--space-6);
+	text-align: center;
+}
+
+.case-slot-role {
+	font-family: var(--mono);
+	font-size: var(--text-xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ochre-d-strong);
+}
+
+.case-slot-state {
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: var(--ls-wide);
+	text-transform: uppercase;
+	color: var(--ink-3);
+	border: 1px solid var(--wire);
+	border-radius: var(--radius-pill);
+	padding: 3px 10px;
+}
+
+.case-caption {
+	display: grid;
+	gap: var(--space-1);
+	max-width: var(--case-measure);
+}
+
+.case-caption-path {
+	font-family: var(--mono);
+	font-size: var(--text-2xs);
+	letter-spacing: var(--ls-wide);
+	color: var(--ink-3);
+}
+
+/* ── Touch targets ───────────────────────────────────────────────────────── */
+
+/* THE 44px FLOOR, KEYED ON POINTER AND NEVER ON WIDTH.
+ *
+ * Plan 00-20's browser audit walked every focusable box on the five case routes
+ * at all six device classes and found 84 boxes under 44px. They split cleanly by
+ * owner, and only one side of that split is fixable here:
+ *
+ *   30  .case-index a                — this stylesheet.  FIXED BELOW.
+ *   30  .case-index-end a            — this stylesheet.  FIXED BELOW.
+ *    6  .case-toggle input           — this stylesheet.  FIXED BELOW.
+ *   18  .ds-atom-appbar a            — the design system's AppBar.  D-16-1, LEFT.
+ *   18  .ds-atom-footer-link         — the design system's Footer.  D-16-1, LEFT.
+ *
+ * The 36 left alone are NOT an oversight. Those components paint their own
+ * geometry inside `@akhil-saxena/design-system`, and reaching past a component to
+ * restate its geometry from the consuming app is the local workaround PROJECT.md's
+ * Core Value forbids — a design-system gap is a finding, never a patch at the call
+ * site. They are recorded as D-16-1 and owned by Phase 1 with G-2.
+ *
+ * `(pointer: coarse)`, not `(max-width: …)`. A 1440px touch laptop needs the floor
+ * and a 390px desktop window emulating a phone does not; width is a proxy for the
+ * thing that actually matters and it is wrong at both ends.
+ *
+ * ON THE HIT AREA, NOT ON THE PAINT. The anchors keep the same type, the same
+ * colour and the same rule under the text — the rule moves from `border-bottom`
+ * (which would sit at the bottom of a 44px box, detached from the words) to a
+ * text-decoration underline, which hugs the text wherever the box ends. The box
+ * grows; the artefact looks the same. */
+@media (pointer: coarse) {
+	.case-index a {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		/* Rule reattached to the text now that the box is taller than it. */
+		border-bottom: 0;
+		text-decoration: underline;
+		text-decoration-color: var(--wire);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 4px;
+	}
+
+	.case-index a:hover {
+		text-decoration-color: var(--ochre-d);
+	}
+
+	/* The one control on the page that is not a link. It is a real checkbox
+	 * rather than a visually-hidden input behind a painted label, so the audit
+	 * measures the input itself and 16px is a genuine failure rather than the
+	 * label-masking artefact that made two of this phase's earlier 44px
+	 * measurements wrong. Growing it IS a paint change, and it is the correct
+	 * paint: a 44px checkbox on a touch device is what the floor asks for, and
+	 * this rule cannot reach a pointer-fine viewport, so the 1440 rendering the
+	 * screenshots capture is byte-identical to before. */
+	.case-toggle input {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+/* ── Narrow viewports ────────────────────────────────────────────────────── */
+
+/* 1024, AND THE NUMBER IS THE POINT.
+ *
+ * This is the only width media query in the whole playground, so it is also the
+ * only place the phase states a breakpoint, which makes the number it states
+ * worth more than the behaviour it produces.
+ *
+ * It used to read 900px, and 900px was correct BY ACCIDENT. Per
+ * 00-RESPONSIVE-CONTRACT.md §4, 900 lands in the dead zone between class 3's
+ * ceiling (884) and class 5's floor (1024) — no real viewport in the six device
+ * classes sits between them, so the rendered behaviour at every viewport that
+ * exists is byte-identical either way. What differs is what the number MEANS: 900
+ * is a round number that happens to work, 1024 is a class boundary, and a
+ * boundary can be checked against the contract while a round number can only be
+ * re-guessed. Changed by plan 00-20 for that reason and no other.
+ *
+ * If this ever needs to move again, move it to another class edge from §4 — not
+ * to a number that looks tidy. A bare number here is indistinguishable from a
+ * typo, which is why this comment is longer than the rule. */
+@media (max-width: 1024px) {
+	.case-section {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-4);
+	}
+	.case-legend > li {
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--space-1);
+	}
+}

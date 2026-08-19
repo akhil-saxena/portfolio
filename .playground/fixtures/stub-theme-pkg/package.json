@@ -1,0 +1,20 @@
+{
+	"name": "stub-theme-pkg",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Throwaway fixture proving D-35's proposed exports-map shape resolves in a real Astro build, WITHOUT editing ../design-system. See README.md.",
+	"license": "MIT",
+	"files": ["themes", "fonts", "README.md", "LICENSE"],
+	"sideEffects": ["*.css"],
+	"exports": {
+		"./themes/*.css": {
+			"style": "./themes/*.css",
+			"default": "./themes/*.css"
+		},
+		"./fonts/*.css": {
+			"style": "./fonts/*.css",
+			"default": "./fonts/*.css"
+		}
+	}
+}

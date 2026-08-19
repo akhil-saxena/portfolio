@@ -1,0 +1,320 @@
+---
+// ═══ P-photo-reorder — CAPABILITY 3 OF 4: REORDER PHOTOS ════════════════════
+//
+// D-09 permits reordering photos on a phone, and reorder is the capability
+// where the 44px floor either holds or does not: every row is simultaneously a
+// drag handle, a tap target and a keyboard stop, and there is nowhere for a
+// missed 22px to hide.
+//
+// ═══ STATIC, AND THE REASON IS THE BUDGET RATHER THAN THE DESIGN ═══════════
+// The running interaction is on /admin/photos, hydrated, keyboard-driven and
+// already measured by plan 13 (G-13: `Sortable` wires dnd-kit's KeyboardSensor
+// so items MOVE by keyboard but passes no announcements, so nothing is
+// announced). Repeating it here would spend a fourth island at ~177 KB gzip to
+// show a second time what has already been measured once. This route draws the
+// list and says so on screen rather than leaving a reviewer to discover a dead
+// control.
+//
+// `SortableStatic` is plan 14's shared host: the design system's own
+// `Sortable`, server-rendered with no directive, with `renderItem` supplied
+// from a .tsx file because an .astro frontmatter block cannot author JSX.
+//
+// ═══ THE TOUCH TARGET IS STATED AND MEASURED, NOT ASSERTED ════════════════
+// `.ds-atom-sortable-item` carries `user-select`, `cursor`, `border-radius` and
+// a transition — AND NO HEIGHT RULE OF ANY KIND. Its height is whatever its
+// content's line boxes come to, which on a two-line row is comfortably over the
+// floor and on a one-line row is not. That is the same family as plan 15's
+// F-15-7 (`InlineEdit` at 25px is its line box; `Checkbox`'s label at 22px is
+// its text) and plan 13's F-13-4 (`IconButton`'s three sizes top out at 40px).
+// So the floor is declared here explicitly rather than inherited by luck, the
+// declared number is printed ON the screen, and the browser audit measures the
+// rendered boxes against it.
+//
+// THE FLOOR CANNOT LIVE IN density-compact.css. Every rule in that file is
+// scoped under BOTH the compact density selector and a fine-pointer media
+// query, and this route is comfortable + coarse. A compact-only floor is
+// exactly the wrong place for a rule whose whole purpose is the touch case.
+// (The compact attribute selector is deliberately not spelled out here — the
+// acceptance criterion for these four routes is a grep.)
+//
+// ═══ ONE THING MEASURED WHILE COMPOSING IT ════════════════════════════════
+// `SortableItem` spreads dnd-kit's attributes and listeners onto the item
+// WRAPPER, so every row carries role="button" and tabindex=0 even when nothing
+// can drag. A non-hydrated Sortable therefore ships a keyboard stop per row
+// that does nothing — which is why nothing inside a row is interactive here
+// (a control nested inside role="button" is invalid ARIA and unreachable), and
+// why the per-row action sits beside the list rather than in it.
+//
+// ═══ ZERO HYDRATION ═══════════════════════════════════════════════════════
+// No directive. The list draws and does not drag, stated on the screen.
+
+import { Badge, Button, Card, Divider, Eyebrow, Heading, Link, Text } from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import SortableStatic from "../../../components/SortableStatic";
+import photos from "../../../fixtures/photos.json";
+import { REFUSALS, phoneNav } from "../../../lib/phone.mjs";
+
+export const ARTEFACTS = [
+	{
+		id: "P-photo-reorder",
+		route: "/admin/phone/photo-reorder",
+		proves:
+			"That gallery order can be changed on a phone with every row at or above the 44px floor — measured in a browser at all six device classes, not asserted — and that the floor has to be declared, because Sortable's row has no height rule at all.",
+	},
+];
+
+// THE DECLARED FLOOR. Printed on the screen and asserted by the browser audit,
+// so the number in the copy and the number in the CSS cannot drift apart.
+export const TOUCH_TARGET_PX = 56;
+
+// REAL PHOTOS, READ FROM THE COMMITTED MANIFEST via plan 13's fixture. The
+// category is Architecture because it is the largest (14 of the 39) and
+// therefore the one where order actually matters.
+const CATEGORY = "architecture";
+const all = photos.populated.photos.filter((p) => p.category === CATEGORY);
+const rows = all.slice(0, 6);
+
+const items = rows.map((p, i) => ({
+	id: p.id,
+	index: String(i + 1),
+	primary: p.title,
+	secondary: `${p.width} × ${p.height}`,
+	thumb: p.src,
+	badge: i === 1 ? { label: "moved", tone: "warning" } : null,
+}));
+
+const CAPABILITY = "Capability 3 of 4 — reorder photos.";
+---
+
+<Admin
+	title="P-photo-reorder"
+	active="photos"
+	route="/admin/photos"
+	navStates={phoneNav}
+	density="comfortable"
+>
+	<div class="ph-head" data-artefact="P-photo-reorder">
+		<Eyebrow size="sm" tone="muted">PHONE · 390 × 844 · CHARCOAL LIGHT · COMFORTABLE</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">Architecture — order</Heading>
+		<p class="ph-capability">{CAPABILITY}</p>
+		<div class="ph-meta">
+			<Badge tone="warning" dot>Draft</Badge>
+			<code class="ph-code">portfolio_images.json</code>
+			<span class="ph-metric">{all.length} photos in this category</span>
+			<span class="ph-metric">{rows.length} shown</span>
+			<span class="ph-metric" data-floor={TOUCH_TARGET_PX}>
+				no row shorter than {TOUCH_TARGET_PX}px — contract floor is 44px
+			</span>
+		</div>
+		<Text size="sm" tone="muted">
+			Every row is a drag handle, a tap target and a keyboard stop at the same time, so the
+			floor has to hold on the row itself and not on something inside it. The declared minimum
+			is {TOUCH_TARGET_PX}px, {TOUCH_TARGET_PX - 44}px of headroom over the 44px contract
+			minimum, because a drag needs a grab margin that a tap does not. Rows carrying a
+			thumbnail come out taller than the declared minimum — the thumbnail and two lines of
+			text drive the height — so {TOUCH_TARGET_PX}px is the guarantee rather than the
+			measurement. The measured heights are in the plan's SUMMARY, where they cannot drift out
+			of step with the copy.
+		</Text>
+	</div>
+
+	<Card surface="subtle" padding="md" radius="lg">
+		<div class="ph-section">
+			<SortableStatic items={items} listId="phone-reorder" className="ph-sortable" />
+			<Text size="sm" tone="muted">
+				This list DRAWS AND DOES NOT DRAG. The running interaction — pointer and keyboard — is
+				on the photos screen, where plan 13 measured it. Nothing here saves.
+			</Text>
+			<p class="ph-linkrow">
+				<Link href="/admin/photos/" variant="inline">The running reorder, on /admin/photos</Link>
+			</p>
+		</div>
+	</Card>
+
+	{/* Per-row actions live BESIDE the list, never inside it: every row is
+	    already role="button", and a control nested inside one is invalid ARIA
+	    and unreachable by keyboard. */}
+	<div class="ph-actions">
+		<Button variant="primary">Save order</Button>
+		<Button variant="secondary">Reset</Button>
+	</div>
+
+	<section class="ph-section" data-omissions="P-photo-reorder">
+		<Eyebrow size="sm" tone="muted">DELIBERATELY NOT HERE</Eyebrow>
+		<ul class="ph-omit">
+			<li>
+				<strong>The crop.</strong> Setting a focal point means dragging a marker inside a 3:2
+				frame, which is D-09's first refusal and G-1's missing component. Order is a list
+				operation; crop is a direct-manipulation one, and only the second one needs the pixels.
+			</li>
+			<li>
+				<strong>Upload.</strong> Staging a binary to R2 from a phone is possible and is not one of
+				the four capabilities D-09 names, so it is not drawn. The set is closed on purpose.
+			</li>
+			<li>
+				<strong>Category reassignment.</strong> Moving a photo between categories changes what the
+				Site screen's counts mean, and that is the surface where the consequence is legible.
+			</li>
+		</ul>
+	</section>
+
+	<Divider />
+
+	<section class="ph-section">
+		<Eyebrow size="sm" tone="muted">REFUSED ON A PHONE</Eyebrow>
+		<ol class="ph-index">
+			{REFUSALS.map((r) => (
+				<li class="ph-index-row" data-refusal="true">
+					<a class="ph-index-link" href={`${r.route}/`}>{r.id}</a>
+					<span class="ph-index-what">{r.what}</span>
+				</li>
+			))}
+		</ol>
+		<p class="ph-linkrow">
+			<Link href="/admin/phone/dashboard/" variant="inline">Back to P-dashboard</Link>
+		</p>
+	</section>
+</Admin>
+
+<style is:global>
+	/* is:global is REQUIRED on this route and it is the clearest case in the
+	   phase: the list is rendered by a React component, so a scoped rule
+	   carrying Astro's hashed attribute never reaches `.ds-atom-sortable-item`
+	   at all. Plan 15 measured exactly this on /admin/site, where a coarse
+	   rule for `.ds-atom-inlineedit` written in the route's own scoped block
+	   changed nothing.
+	   App LAYOUT css only, per QUAL-03. */
+
+	.ph-head,
+	.ph-section {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.ph-capability {
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		border-left: 2px solid var(--wire);
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-2);
+	}
+
+	.ph-code {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.ph-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ph-metric {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+	}
+	.ph-metric[data-floor] {
+		color: var(--ink-2);
+		border-bottom: 1px solid var(--wire);
+	}
+
+	.ph-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.ph-omit {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-3);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-index {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-index-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border: 1px dashed var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ph-index-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+	}
+	.ph-index-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.ph-index-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ph-index-what {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+
+	.ph-linkrow {
+		display: flex;
+		align-items: center;
+		margin: 0;
+	}
+
+	/* ══ THE 44px FLOOR — DECLARED, BECAUSE Sortable's ROW HAS NO HEIGHT ═══
+	   `.ds-atom-sortable-item` in sortable.css sets user-select, cursor,
+	   border-radius and a transition, and no height, min-height or padding. So
+	   a row is exactly its content's line boxes. This block is the local
+	   prototype of the geometry the component should own — it names its
+	   upstream owner, it is the same sanctioned shape as density-compact.css,
+	   and it dies with this directory.
+
+	   Applied at EVERY pointer rather than only coarse, deliberately: a phone
+	   artefact reviewed on a 1440px desktop is still a phone artefact, and the
+	   thing under review is the floor. Last block in the file so no base rule
+	   at the same specificity can win on source order. */
+	.ph-sortable .ds-atom-sortable-item {
+		min-height: 56px;
+		display: flex;
+		align-items: center;
+		box-sizing: border-box;
+		padding: var(--space-2) var(--space-3);
+		border: 1px solid var(--rule);
+		background: var(--cream-2);
+	}
+	.ph-sortable .ds-atom-sortable-item > * {
+		width: 100%;
+	}
+
+	.ph-linkrow .ds-atom-link {
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
+	}
+</style>

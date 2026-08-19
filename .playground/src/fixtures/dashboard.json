@@ -1,0 +1,291 @@
+{
+	"_README": [
+		"Fixtures for S-dashboard and its six states. One key per state name in",
+		"CANONICAL_STATES, plus `populated`.",
+		"",
+		"EVERY NAME, TITLE AND COUNT IN HERE IS REAL. The screen names, file names,",
+		"photo titles, company names, project ids, bullet counts and category counts",
+		"are read out of data/home_config.json, data/portfolio_images.json,",
+		"data/resume.json and data/site_config.json. D-40's argument that build",
+		"phases must work against real text lengths collapses the moment a fixture is",
+		"invented, and this screen's whole job is to make a list of pending items",
+		"legible at its real width — which is a claim about real string lengths.",
+		"Verified against the manifests: 39 photos across 7 categories (architecture",
+		"14, nature 8, wildlife 5, abstract 4, street 4, portraits 2, product 2);",
+		"Brevo 11 bullets, PharmEasy 3, MAQ Software 4; 3 skill groups; 1 education",
+		"entry (VIT); 5 projects; 6 peekIds with 1 peekPosition set; 8 keys in",
+		"categoryColumns.",
+		"",
+		"NOTHING NON-PUBLIC IS IN HERE. Every source file is already committed public",
+		"site content. No credential, token, D1 connection string or Cloudflare",
+		"Access value appears, and none is needed, because nothing in this plan",
+		"authenticates (T-00-29).",
+		"",
+		"`marker` is the string check-states.mjs asserts is unique to each state. It",
+		"is deliberately a piece of the state's own AUTHORED COPY rather than a debug",
+		"token, so the gate cannot pass on a page that renders a marker without",
+		"rendering the state. `lastPublishedDaysAgo` is a number rather than an ISO",
+		"date so the fixture stays pure data and the page computes the instant."
+	],
+
+	"populated": {
+		"marker": "5 changes across 3 screens are waiting to publish.",
+		"lastPublishedDaysAgo": 3,
+		"headline": "5 changes across 3 screens are waiting to publish.",
+		"sub": "Publishing commits the changed files. Photos already uploaded keep processing on their own schedule.",
+		"groups": [
+			{
+				"id": "home",
+				"entity": "Home",
+				"file": "home_config.json",
+				"route": "/admin/home/",
+				"state": "draft",
+				"changes": [
+					"Tagline changed from \"Interfaces & Imagery\"",
+					"Peek slot 4 focal point moved — Hawa Mahal Daytime, was 50% 25%"
+				]
+			},
+			{
+				"id": "photos",
+				"entity": "Photos",
+				"file": "portfolio_images.json",
+				"route": "/admin/photos/",
+				"state": "draft",
+				"changes": [
+					"Into The Mist retitled",
+					"Water Texture moved from Abstract to Street"
+				]
+			},
+			{
+				"id": "resume",
+				"entity": "Résumé",
+				"file": "resume.json",
+				"route": "/admin/resume/",
+				"state": "ready",
+				"changes": ["Brevo bullet 4 edited — 11 bullets total"]
+			}
+		],
+		"nav": {
+			"home": "draft",
+			"photos": "draft",
+			"resume": "ready",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		}
+	},
+
+	"empty": {
+		"marker": "Everything on the site matches what's published.",
+		"lastPublishedDaysAgo": 3,
+		"groups": [],
+		"nav": {
+			"home": "published",
+			"photos": "published",
+			"resume": "published",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": null
+	},
+
+	"loading": {
+		"marker": "Reading the pending set.",
+		"lastPublishedDaysAgo": 3,
+		"headline": "Reading the pending set.",
+		"sub": "The shell is already here. The list below arrives in a moment.",
+		"groups": [],
+		"skeletonGroups": 3,
+		"nav": {
+			"home": "published",
+			"photos": "published",
+			"resume": "published",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": null
+	},
+
+	"error": {
+		"marker": "3 things must be fixed before publishing.",
+		"lastPublishedDaysAgo": 3,
+		"headline": "3 things must be fixed before publishing.",
+		"sub": "The list below is unchanged and nothing has been lost. Fix each item on its own screen, then publish.",
+		"errors": [
+			"Résumé → Brevo → bullet 4: an emphasis segment has no text.",
+			"Photos → Water Texture: Street is not a category on Site.",
+			"Home → peek slot 4: Hawa Mahal Daytime has no focal point."
+		],
+		"groups": [
+			{
+				"id": "home",
+				"entity": "Home",
+				"file": "home_config.json",
+				"route": "/admin/home/",
+				"state": "draft",
+				"changes": [
+					"Peek slot 4 focal point moved — Hawa Mahal Daytime, was 50% 25%"
+				]
+			},
+			{
+				"id": "photos",
+				"entity": "Photos",
+				"file": "portfolio_images.json",
+				"route": "/admin/photos/",
+				"state": "draft",
+				"changes": ["Water Texture moved from Abstract to Street"]
+			},
+			{
+				"id": "resume",
+				"entity": "Résumé",
+				"file": "resume.json",
+				"route": "/admin/resume/",
+				"state": "ready",
+				"changes": ["Brevo bullet 4 edited — 11 bullets total"]
+			}
+		],
+		"nav": {
+			"home": "draft",
+			"photos": "draft",
+			"resume": "ready",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": null
+	},
+
+	"dirty": {
+		"marker": "Draft and ready are different states, and the difference is the point.",
+		"lastPublishedDaysAgo": 3,
+		"headline": "6 changes across 4 screens are waiting to publish.",
+		"sub": "Draft and ready are different states, and the difference is the point. Mark a screen as ready when you have finished with it; publishing takes both.",
+		"groups": [
+			{
+				"id": "home",
+				"entity": "Home",
+				"file": "home_config.json",
+				"route": "/admin/home/",
+				"state": "draft",
+				"changes": [
+					"Tagline changed from \"Interfaces & Imagery\"",
+					"Peek slot 4 focal point moved — Hawa Mahal Daytime, was 50% 25%"
+				]
+			},
+			{
+				"id": "photos",
+				"entity": "Photos",
+				"file": "portfolio_images.json",
+				"route": "/admin/photos/",
+				"state": "draft",
+				"changes": [
+					"Into The Mist retitled",
+					"Water Texture moved from Abstract to Street"
+				]
+			},
+			{
+				"id": "resume",
+				"entity": "Résumé",
+				"file": "resume.json",
+				"route": "/admin/resume/",
+				"state": "ready",
+				"changes": ["Brevo bullet 4 edited — 11 bullets total"]
+			},
+			{
+				"id": "site",
+				"entity": "Site",
+				"file": "site_config.json",
+				"route": "/admin/site/",
+				"state": "ready",
+				"changes": ["Street column count changed from 2 — 8 categories total"]
+			}
+		],
+		"nav": {
+			"home": "draft",
+			"photos": "draft",
+			"resume": "ready",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "ready"
+		},
+		"pipeline": null
+	},
+
+	"conflict": {
+		"marker": "portfolio_images.json changed on the site after your draft started.",
+		"lastPublishedDaysAgo": 0,
+		"headline": "1 file changed on the site after your draft started.",
+		"sub": "portfolio_images.json changed on the site after your draft started. Resolve it before publishing; the other 2 screens are unaffected and stay pending.",
+		"groups": [
+			{
+				"id": "photos",
+				"entity": "Photos",
+				"file": "portfolio_images.json",
+				"route": "/admin/photos/",
+				"state": "draft",
+				"conflicted": true,
+				"changes": [
+					"Into The Mist retitled",
+					"Remote added 2 photos — the pipeline committed while you were editing"
+				]
+			},
+			{
+				"id": "home",
+				"entity": "Home",
+				"file": "home_config.json",
+				"route": "/admin/home/",
+				"state": "draft",
+				"changes": ["Tagline changed from \"Interfaces & Imagery\""]
+			},
+			{
+				"id": "resume",
+				"entity": "Résumé",
+				"file": "resume.json",
+				"route": "/admin/resume/",
+				"state": "ready",
+				"changes": ["Brevo bullet 4 edited — 11 bullets total"]
+			}
+		],
+		"nav": {
+			"home": "draft",
+			"photos": "draft",
+			"resume": "ready",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": null
+	},
+
+	"success": {
+		"marker": "4 files committed.",
+		"lastPublishedDaysAgo": 0,
+		"groups": [],
+		"nav": {
+			"home": "published",
+			"photos": "published",
+			"resume": "published",
+			"projects": "published",
+			"project-detail": "published",
+			"site": "published"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Committed, not yet processed. The 3 photos you uploaded finish on their own schedule and the gallery updates when they do.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		}
+	}
+}

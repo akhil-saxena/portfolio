@@ -1,0 +1,197 @@
+---
+// CaseProse.astro — the block renderer, shared by BOTH case-study tiers.
+//
+// THIS IS WHERE "TWO TEMPLATES, ONE VISUAL LANGUAGE" IS ENFORCED RATHER THAN
+// INTENDED. Every paragraph, register entry, list, gap block and drafting note
+// on either tier is emitted from this one file, so the long and short forms
+// cannot drift apart stylistically even if someone tries. D-39 tiers case
+// studies by DEPTH; the difference between the tiers has to be which blocks a
+// page composes and in what order, never how a paragraph looks. Two templates
+// that read as two different sites would satisfy every acceptance check in the
+// plan while failing the decision the plan exists to implement.
+//
+// The three non-final content types each get one labelled treatment, and all
+// three treatments live here:
+//
+//   gap    [NEEDS AKHIL] — D-40's length-realistic placeholder. Rendered at full
+//          paragraph scale in --ink-3 behind a 2px --wire rule. Its LENGTH is
+//          what makes the template judgeable, so it occupies a paragraph-scale
+//          slot rather than collapsing to a marker. Filled in the final-phase
+//          interview; never stripped.
+//   src    [source: <file>] — provenance. Stripped in Phase 6. Rendered by
+//          CaseSpans; hideable by the review toggle on the page.
+//   note   an HTML drafting comment — D-40 rule 4's record of what was searched
+//          and why it came up empty. Stripped in Phase 6. Offset in mono so it
+//          never reads as prose.
+//
+// THE MEASURE ASSERTION. Each page declares 68ch in its own source, which is
+// what makes the derived number visible in the artefact instead of buried in a
+// shared file. This component then asserts the two pages declare the SAME value,
+// so the grep and the build agree. A source grep alone would pass on two
+// different literals.
+
+import { Heading, Text } from "@akhil-saxena/design-system";
+import { spansText } from "../lib/copy.mjs";
+import CaseFigure from "./CaseFigure.astro";
+import CaseSpans from "./CaseSpans.astro";
+
+/** The one measure both tiers lay out at. See UI-SPEC layout maxima. */
+const CANONICAL_MEASURE = "68ch";
+
+/** The lead-in that marks RESEARCH's "done well" tell — the rejected alternative. */
+const ALTERNATIVE_LEAD = "The option not taken:";
+
+interface Props {
+	blocks: any[];
+	/** The measure the calling page declares. Asserted against the canonical value. */
+	measure: string;
+	/** D-41 slots to interleave. `afterEntry` is a register ordinal, or null for
+	 *  "at the end of this section" — which is how a tier with no register places
+	 *  its one inline figure. */
+	figures?: any[];
+	/** Names the caller in an assertion failure. */
+	where?: string;
+}
+
+const { blocks, measure, figures = [], where = "a case template" } = Astro.props;
+
+if (measure !== CANONICAL_MEASURE) {
+	throw new Error(
+		`CaseProse: ${where} declares a prose measure of "${measure}", but both case-study ` +
+			`tiers lay out at "${CANONICAL_MEASURE}".\n` +
+			"  D-39 tiers by depth, not by brand: the long and short forms share one measure and\n" +
+			"  differ structurally. UI-SPEC derives 68ch from --text-md 15px DM Sans landing at\n" +
+			"  about 620px, inside the 55-75ch readability band. Change it in UI-SPEC and in both\n" +
+			"  templates, or not at all.",
+	);
+}
+
+// ── Interleave the figures ───────────────────────────────────────────────────
+//
+// A figure placed after the register entry it illustrates is D-41's actual
+// question answered — "where a decision is easier shown than described" is a
+// statement about a POSITION in the argument, not about a page having images.
+// A misplaced ordinal is therefore a silent design error, so every figure is
+// asserted to have landed.
+
+const ordinals = blocks.filter((b) => b.kind === "h3" && b.ordinal).map((b) => b.ordinal);
+
+for (const f of figures) {
+	if (f.afterEntry != null && !ordinals.includes(f.afterEntry)) {
+		throw new Error(
+			`CaseProse: ${where} places its "${f.role}" figure after register entry ` +
+				`"${f.afterEntry}", which this section does not contain.\n` +
+				`  Ordinals present: ${ordinals.length ? ordinals.join(", ") : "(none — this section has no register)"}\n` +
+				"  Use afterEntry: null to place a figure at the end of a section with no register.",
+		);
+	}
+}
+
+const items: any[] = [];
+let openOrdinal: string | null = null;
+const flush = (ordinal: string | null) => {
+	for (const f of figures) if (f.afterEntry === ordinal) items.push({ kind: "figure", fig: f });
+};
+
+for (const b of blocks) {
+	if (b.kind === "h3") {
+		if (openOrdinal !== null) flush(openOrdinal);
+		openOrdinal = b.ordinal;
+	}
+	items.push(b);
+}
+if (openOrdinal !== null) flush(openOrdinal);
+flush(null);
+
+const isAlternative = (b: any) =>
+	b.kind === "p" && spansText(b.spans).trimStart().startsWith(ALTERNATIVE_LEAD);
+---
+
+{
+	items.map((b) =>
+		b.kind === "figure" ? (
+			<CaseFigure {...b.fig} />
+		) : b.kind === "h3" ? (
+			<div class="case-entry">
+				{b.ordinal && <span class="case-entry-ord">Decision {b.ordinal}</span>}
+				<Heading level={3} size="xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+					<CaseSpans spans={b.spans} />
+				</Heading>
+			</div>
+		) : b.kind === "p" ? (
+			isAlternative(b) ? (
+				<div class="case-alt">
+					<Text size="md" tone="secondary" leading="relaxed">
+						<CaseSpans spans={b.spans} />
+					</Text>
+				</div>
+			) : (
+				<Text size="md" tone="secondary" leading="relaxed">
+					<CaseSpans spans={b.spans} />
+				</Text>
+			)
+		) : b.kind === "list" ? (
+			<ul class="case-list">
+				{b.items.map((spans: any[]) => (
+					<li>
+						<Text size="md" tone="secondary" leading="relaxed">
+							<CaseSpans spans={spans} />
+						</Text>
+					</li>
+				))}
+			</ul>
+		) : b.kind === "quote" ? (
+			<div class="case-alt">
+				{b.blocks.map((q: any) => (
+					<Text size="md" tone="secondary" leading="relaxed">
+						<CaseSpans spans={q.spans} />
+					</Text>
+				))}
+			</div>
+		) : b.kind === "gap" ? (
+			<div class="case-gap">
+				<span class="case-gap-label">
+					D-40 gap — placeholder prose at finished length · filled in the final-phase
+					interview · scope: {b.scope === "blockquote" ? "the block quote" : "to the next heading"}
+				</span>
+				{/* tone="muted" IS LOAD-BEARING AND HAD TO BE MEASURED. Gap prose is
+				    --ink-3 so it reads as provisional beside the --ink-2 of finished
+				    prose. The first draft of this file set that colour from
+				    `.case-gap .ds-atom-text` in the stylesheet and it did nothing:
+				    Text inlines its variant's colour whenever `tone` is ABSENT, and an
+				    inline style beats a stylesheet, so the gap blocks rendered at
+				    exactly the same colour as the prose around them. Passing the tone
+				    routes the colour through the data-attribute path instead, which is
+				    both the design system's preferred API and the only one a page can
+				    actually reach. Recorded as a finding — same shape as Button's
+				    inline padding (G-2) and Badge's inline tone styles. */}
+				{b.blocks.map((g: any) =>
+					g.kind === "list" ? (
+						<ul class="case-list">
+							{g.items.map((spans: any[]) => (
+								<li>
+									<Text size="md" tone="muted" leading="relaxed">
+										<CaseSpans spans={spans} />
+									</Text>
+								</li>
+							))}
+						</ul>
+					) : (
+						<Text size="md" tone="muted" leading="relaxed">
+							<CaseSpans spans={g.spans} />
+						</Text>
+					),
+				)}
+			</div>
+		) : b.kind === "note" ? (
+			<div class="case-note">
+				<span class="case-note-label">
+					{b.label ?? "Drafting note"} — review scaffolding, stripped in Phase 6
+				</span>
+				{b.paragraphs.map((p: string) => (
+					<p set:text={p} />
+				))}
+			</div>
+		) : null,
+	)
+}

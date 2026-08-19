@@ -1,0 +1,33 @@
+---
+// DS-09 tree-shaking probe — the HYDRATED fixture (MEASURE-1).
+//
+// `client:load` is the entire point of this page. Astro only emits a client
+// JS chunk for a component carrying a `client:*` directive; without it the
+// component renders to static HTML and the design-system barrel never reaches
+// the browser at all. That is precisely why Pitfall 2 exists: a zero-JS pass
+// on `probe/static.astro` says nothing about tree-shaking, because no bundle
+// was ever produced to shake.
+//
+// This is the ONLY page in the playground allowed to ship JS, and
+// `check-no-js.sh` excludes it by name for that reason.
+//
+// Run `node check-bundle.mjs` after `astro build` to read the verdict.
+import ChipIsland from "../../components/ChipIsland.tsx";
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/island — DS-09 tree-shaking fixture</title>
+	</head>
+	<body>
+		<h1>DS-09 probe: hydrated island</h1>
+		<p>
+			One <code>import &#123; Chip &#125;</code> from the design-system barrel,
+			rendered <code>client:load</code>. The emitted chunk in
+			<code>dist/_astro/</code> is the measurement.
+		</p>
+		<ChipIsland client:load />
+	</body>
+</html>

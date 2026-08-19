@@ -1,0 +1,60 @@
+---
+// CaseFigure.astro — a D-41 asset slot, shared by BOTH case-study tiers.
+//
+// NOTHING HERE RENDERS AN IMAGE, AND THAT IS THE DESIGN DECISION RATHER THAN A
+// SHORTCUT. Three reasons, in order of weight:
+//
+//   1. Not one of the eleven assets D-41 plans across the five studies has been
+//      through D-42's R2 path. A file dragged into this gitignored directory
+//      would be a different artefact from the one that ships — different origin,
+//      different dimensions, no width/height captured at upload — so it would
+//      prove the layout works for an image nobody will ever serve.
+//   2. Four of them do not exist in any repository: TimeShift's hero and its one
+//      inline both have to be captured from the Chrome Web Store listing, and
+//      Momentum's inline from its Play Store listing. hued is the only study
+//      whose two assets are committed. Rendering hued's real images and four
+//      studies' placeholders would make the two TIERS look different for a
+//      reason that has nothing to do with the tier, which is precisely the
+//      confound D-39's review must not carry.
+//   3. The question a reviewer actually has is "where does a screenshot sit, and
+//      how much vertical room does it take". A slot reserved at the intended
+//      aspect ratio answers that exactly, and answers it for the assets that do
+//      not exist yet as well as the two that do.
+//
+// The ratio is DECLARED, not measured, for the same reason D-42 captures
+// dimensions at upload rather than at render: the space is reserved before the
+// bytes arrive, so nothing shifts when they land.
+
+import { Text } from "@akhil-saxena/design-system";
+
+interface Props {
+	/** D-41 role — "Hero", "Inline 1", "Inline 2". */
+	role: string;
+	/** CSS aspect-ratio for the reserved box, e.g. "16 / 9". */
+	ratio: string;
+	/** What the image shows and why this study needs it. From the draft's ## Assets. */
+	caption: string;
+	/** Where it has to be captured from. */
+	source: string;
+	/** Whether the file exists in a repository today. */
+	inRepo: boolean;
+	/** Heroes break the measure; inline figures are capped at it. */
+	hero?: boolean;
+}
+
+const { role, ratio, caption, source, inRepo, hero = false } = Astro.props;
+---
+
+<figure class:list={["case-figure", hero && "case-figure-hero"]}>
+	<div class="case-slot" style={`--slot-ratio: ${ratio};`}>
+		<span class="case-slot-role">{role} — reserved · {ratio.replace(/\s/g, "")}</span>
+		<span class="case-slot-state">{inRepo ? "in repo" : "capture required"}</span>
+	</div>
+	<figcaption class="case-caption">
+		<Text size="sm" tone="muted">{caption}</Text>
+		<span class="case-caption-path">
+			{inRepo ? "SOURCE" : "CAPTURE FROM"}: {source} → R2 /assets/ · DIMENSIONS AT UPLOAD ·
+			NOT THE PHOTO PIPELINE (D-42)
+		</span>
+	</figcaption>
+</figure>

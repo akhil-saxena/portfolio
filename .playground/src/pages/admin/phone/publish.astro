@@ -1,0 +1,334 @@
+---
+// ═══ P-publish — CAPABILITY 4 OF 4: PUBLISH ═════════════════════════════════
+//
+// The fourth and last thing D-09 permits on a phone, and the only one of the
+// four that is irreversible from the phone's point of view. It is therefore the
+// one that must carry the SAME list and the SAME counts as the desktop
+// confirm — a phone confirm that summarises less is a phone confirm that hides
+// part of what it commits.
+//
+// ═══ THE COUNTS ARE THE SAME OBJECT, NOT THE SAME NUMBER TYPED TWICE ═══════
+// This route reads src/fixtures/overlays.json, exactly as O-publish-valid
+// does, and derives every count from it. That fixture in turn is asserted
+// against the dashboard's `dirty` state by /admin/overlays/[...o].astro, which
+// throws on drift. So the chain is: dashboard fixture → overlay fixture (guard)
+// → both confirms. There is no place for a phone-specific number to be typed.
+//
+// ═══ ConfirmDialog SERVER-RENDERS TO 0 B ══════════════════════════════════
+// Measured: ConfirmDialog(open) → 0 B, because it mounts through DSPortal.
+// Hand-authored against modal.css's own classes, exactly as O-publish-valid
+// does, so the two confirms are the same chrome at two widths rather than two
+// designs. `.ds-atom-modal` is already `width: calc(100% - var(--space-4))`
+// with a 480px cap, so at 390 it lands at 374 with no override at all — the
+// phone posture is the component's own.
+//
+// ═══ WHAT A PHONE CONFIRM ADDS THAT THE DESKTOP ONE DOES NOT NEED ═════════
+// D-12's asynchrony matters more here, not less: the most likely reason to
+// publish from a phone is that photos were uploaded from it, and those are
+// exactly the things publishing does NOT finish. The consequence line is
+// therefore promoted above the fold rather than tucked under the list.
+//
+// ═══ ZERO HYDRATION ═══════════════════════════════════════════════════════
+// No directive. Both buttons are inert (D-02).
+
+import { Badge, Button, Divider, Eyebrow, Heading, Link, Text } from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import fx from "../../../fixtures/overlays.json";
+import { REFUSALS, phoneNav } from "../../../lib/phone.mjs";
+
+export const ARTEFACTS = [
+	{
+		id: "P-publish",
+		route: "/admin/phone/publish",
+		proves:
+			"That D-09's fourth capability commits the same set the desktop confirm does — same list, same counts, same files, read from the same fixture — and that D-12's asynchrony is more prominent on a phone rather than less, because a phone is where the photos came from.",
+	},
+];
+
+const screens = fx.session.screens;
+const screenCount = screens.length;
+const changeCount = screens.reduce((n, s) => n + s.changes.length, 0);
+const fileCount = new Set(screens.map((s) => s.file)).size;
+
+const PUBLISH_CTA = "Publish changes";
+const KEEP_EDITING = "Keep editing";
+const CAPABILITY = "Capability 4 of 4 — publish.";
+---
+
+<Admin
+	title="P-publish"
+	active="dashboard"
+	route="/admin"
+	navStates={phoneNav}
+	density="comfortable"
+>
+	<div class="ph-head" data-artefact="P-publish">
+		<Eyebrow size="sm" tone="muted">PHONE · 390 × 844 · CHARCOAL LIGHT · COMFORTABLE</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">Publish</Heading>
+		<p class="ph-capability">{CAPABILITY}</p>
+		<Text size="sm" tone="muted">
+			The same confirm as <code class="ph-code">O-publish-valid</code>, at 390. Nothing is
+			summarised away: {changeCount} changes across {screenCount} screens, in {fileCount}{" "}
+			files, each named.
+		</Text>
+	</div>
+
+	{/* ══ THE CONFIRM ═══════════════════════════════════════════════════════
+	    Rendered in place rather than over a backdrop, because on a phone the
+	    confirm IS the screen — there is nothing behind it worth keeping
+	    visible at 390 wide, and a scrim over 374px of panel is 16px of
+	    darkened page. The desktop route keeps the backdrop for the opposite
+	    reason: there, the work under the dialog is the reassurance. */}
+	<div
+		class="ds-atom-modal ph-confirm"
+		role="dialog"
+		aria-modal="true"
+		aria-labelledby="pp-title"
+		data-ds-component="ConfirmDialog"
+		data-ds-tone="neutral"
+	>
+		<header class="ds-atom-modal-hd">
+			<span id="pp-title" class="ds-atom-modal-hd-title">
+				Publish {changeCount} changes across {screenCount} screens?
+			</span>
+		</header>
+		<div class="ds-atom-modal-body">
+			{/* D-12 FIRST ON A PHONE. */}
+			<div class="ph-async">
+				<Eyebrow size="sm" tone="muted">WHAT PUBLISHING DOES NOT DO</Eyebrow>
+				<p>{fx.asyncPhotos.note}</p>
+			</div>
+
+			<p class="ph-lede">This commits {fileCount} files. Everything listed below goes live.</p>
+
+			<ul class="ph-groups-tight">
+				{screens.map((s) => (
+					<li class="ph-group">
+						<div class="ph-group-head">
+							<span class="ph-group-entity">{s.entity}</span>
+							<Badge tone={s.state === "ready" ? "info" : "warning"} dot>
+								{s.state === "ready" ? "Ready" : "Draft"}
+							</Badge>
+							<span class="ph-metric">
+								{s.changes.length} {s.changes.length === 1 ? "change" : "changes"}
+							</span>
+						</div>
+						<code class="ph-code">{s.file}</code>
+						<ul class="ph-changes">
+							{s.changes.map((c) => (
+								<li>{c}</li>
+							))}
+						</ul>
+					</li>
+				))}
+			</ul>
+		</div>
+		<footer class="ds-atom-modal-ft ph-confirm-ft">
+			<Button variant="secondary">{KEEP_EDITING}</Button>
+			<Button variant="primary">{PUBLISH_CTA}</Button>
+		</footer>
+	</div>
+
+	<section class="ph-section" data-omissions="P-publish">
+		<Eyebrow size="sm" tone="muted">DELIBERATELY NOT HERE</Eyebrow>
+		<ul class="ph-omit">
+			<li>
+				<strong>The invalid state and the conflict screen.</strong> Both are reachable from a
+				phone and neither is drawn at 390, because both are reading surfaces rather than editing
+				ones: a publish block names three failures on three different screens, and a per-file
+				diff is two versions of one field side by side. The phone route for both is to show what
+				is wrong and send the operator to the screen that owns it.
+			</li>
+			<li>
+				<strong>Preview.</strong> The desktop secondary action opens the site with changes
+				applied. On a phone the site is one tab away and the confirm's list is the summary that
+				matters.
+			</li>
+		</ul>
+		<p class="ph-linkrow">
+			<Link href="/admin/overlays/publish-valid/" variant="inline">
+				The same confirm at 1440 — O-publish-valid
+			</Link>
+		</p>
+	</section>
+
+	<Divider />
+
+	<section class="ph-section">
+		<Eyebrow size="sm" tone="muted">REFUSED ON A PHONE</Eyebrow>
+		<ol class="ph-index">
+			{REFUSALS.map((r) => (
+				<li class="ph-index-row" data-refusal="true">
+					<a class="ph-index-link" href={`${r.route}/`}>{r.id}</a>
+					<span class="ph-index-what">{r.what}</span>
+				</li>
+			))}
+		</ol>
+		<p class="ph-linkrow">
+			<Link href="/admin/phone/dashboard/" variant="inline">Back to P-dashboard</Link>
+		</p>
+	</section>
+</Admin>
+
+<style is:global>
+	/* is:global because this page carries Badge, Button and Text, and because
+	   `.ph-confirm` has to reach `.ds-atom-modal`, which is a class the design
+	   system owns rather than one Astro scopes.
+	   App LAYOUT css only, per QUAL-03. */
+
+	.ph-head,
+	.ph-section,
+	.ph-group {
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-head,
+	.ph-section {
+		gap: var(--space-3);
+	}
+
+	.ph-capability {
+		margin: 0;
+		padding: var(--space-2) var(--space-3);
+		border-left: 2px solid var(--wire);
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-2);
+	}
+
+	.ph-code {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.ph-metric {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		color: var(--ink-3);
+	}
+
+	/* The confirm keeps modal.css's own width behaviour: calc(100% - space-4)
+	   capped at 480. At 390 that is 374 with no override. `max-height: 80vh`
+	   is relaxed here only because the panel is in the flow rather than over a
+	   backdrop, so the page scrolls instead of the body. */
+	.ph-confirm {
+		max-height: none;
+	}
+	.ph-confirm-ft {
+		flex-wrap: wrap;
+	}
+
+	.ph-lede {
+		margin: var(--space-3) 0;
+		font-size: var(--text-base);
+		line-height: var(--lh-relaxed);
+		color: var(--ink);
+	}
+
+	.ph-async {
+		padding: var(--space-3);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-async p {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-groups-tight {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-4);
+	}
+	.ph-group-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.ph-group-entity {
+		font-size: var(--text-base);
+		font-weight: 500;
+		color: var(--ink);
+	}
+	.ph-changes {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-2);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-omit {
+		margin: 0;
+		padding-left: var(--space-4);
+		display: grid;
+		gap: var(--space-3);
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+
+	.ph-index {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.ph-index-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+		padding: var(--space-2) var(--space-3);
+		border: 1px dashed var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.ph-index-link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 44px;
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+	}
+	.ph-index-link:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+	.ph-index-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.ph-index-what {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+	}
+
+	.ph-linkrow {
+		display: flex;
+		align-items: center;
+		margin: 0;
+	}
+
+	/* ══ THE 44px FLOOR — last block, at every pointer ═════════════════════ */
+	.ph-linkrow .ds-atom-link {
+		min-height: 44px;
+		display: inline-flex;
+		align-items: center;
+	}
+</style>

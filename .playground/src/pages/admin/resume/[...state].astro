@@ -1,0 +1,1128 @@
+---
+// ═══ S-resume — the 11-bullet entry, full width, and the RichText that loses ══
+//
+// TWO ARTEFACTS DESIGNED FROM ONE FILE: S-resume (populated) and
+// E-resume-section (empty). T-loading-list and T-error-inline are plan 13's and
+// are declared `inherits` here; the error state renders an INSTANCE of the
+// inline warning because "saving still works" is invisible without a save
+// control on screen.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK ══════════════
+// Under `output: 'static'` Astro strips the query string in DEV as well as at
+// build (astro/dist/core/request.js:20 — `if (isPrerendered) url.search = "";`).
+// Plan 12 proved it with seven byte-identical bodies. UI-SPEC is wrong on this
+// point; plan 13's corrected idiom is followed instead. This plan's frontmatter
+// names `src/pages/admin/resume.astro`, which would have produced a screen with
+// no state axis at all — the idiom wins and the deviation is in the SUMMARY.
+//
+// ═══ THE DATA IS REAL AND WAS COUNTED, NOT QUOTED ══════════════════════════
+// Counted out of data/resume.json this session: 3 experience entries with
+// 11 / 3 / 4 bullets, 3 skill groups with 6 / 5 / 5 items, 1 education entry.
+// The 18 bullets convert to 45 D-20 segments of which 17 carry emphasis, and the
+// ONLY markup in any of them is <strong> — scanned with a tag regex rather than
+// assumed, so ADMIN-IA's "the migration is narrow" claim is confirmed rather
+// than repeated. The generator throws on any other tag.
+//
+// THE 11-BULLET ENTRY RENDERS IN FULL. A three-bullet stand-in would hide the
+// scroll and the density problems this screen exists to expose, and S-resume's
+// claim is specifically that an 11-bullet entry is workable FULL WIDTH — the
+// case that decided D-07.
+//
+// ═══ THE DATE SHAPE IS ADMIN-IA'S, NOT THE LEGACY ONE ══════════════════════
+// ADMIN-IA decision 5 resolved the drift: `startMonth` / `startYear` /
+// `endMonth` / `endYear` / `isPresent` are STORED, and the `period` string is
+// DERIVED by one formatter and never persisted. The legacy admin carried BOTH,
+// with nothing keeping them in agreement, which is the actual defect.
+//
+// The acceptance test is exact reproduction of the four strings on disk today —
+// `Jul 2023 – Present`, `Nov 2022 – Jun 2023`, `Dec 2021 – Nov 2022`,
+// `Jul 2018 – Jun 2022`, en dash and three-letter month included. It runs in the
+// fixture generator AND again on this page against `periodOnDisk`, and the page
+// shows the result, because an acceptance test nobody can see is a claim.
+//
+// ═══ ONE HYDRATION DIRECTIVE, ON ONE LINE ══════════════════════════════════
+// This route spends sanctioned island 3 of 3 and the budget is now fully
+// allocated: plans 15 and 16 take zero. The acceptance grep counts LINES
+// carrying the directive prefix and requires exactly one, so the prefix appears
+// nowhere else in this file, not even in prose. `Sortable` for bullet order is
+// rendered WITHOUT hydration through SortableStatic — reordering itself is
+// demonstrated running, and keyboard-driven, on /admin/photos.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Checkbox,
+	Chip,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Field,
+	FileInput,
+	Heading,
+	Link,
+	Select,
+	Skeleton,
+	Text,
+	TextInput,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import RichTextBullets from "../../../components/RichTextBullets";
+import SortableStatic from "../../../components/SortableStatic";
+import { CANONICAL_STATES } from "../../../lib/artefacts.mjs";
+import fixtures from "../../../fixtures/resume.json";
+
+export const SCREEN = {
+	id: "resume",
+	route: "/admin/resume",
+	entity: "resume.json",
+	layouts: ["desktop"],
+	proves:
+		"That an 11-bullet experience entry plus two shorter ones, three skill groups and one education entry are workable FULL WIDTH — the case that decided D-07 — with the résumé date drift resolved ADMIN-IA's way and the formatter reproducing all four on-disk period strings byte for byte. It also carries the two findings the phase most needs demonstrated rather than described: RichText cannot restrict its marks (G-3) and cannot emit segments (G-4), so a bold-only serializer over it drops an italic run silently, which is data loss and not a styling miss. D-18's lenient half and D-26's soft warning are both shown non-blocking.",
+};
+
+// Seven paths from one file. `state: undefined` produces the base path, so the
+// populated state is `/admin/resume/` and `dist/admin/resume/index.html` exists.
+// There is no eighth route here: D-09 gives the résumé no phone refusal — text
+// editing is one of the four capabilities the phone layout KEEPS (P-text-edit),
+// and inventing a refusal would contradict it.
+export function getStaticPaths() {
+	return [
+		{ params: { state: undefined } },
+		...CANONICAL_STATES.map((s) => ({ params: { state: s } })),
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-resume" },
+	// DESIGNED here. E-resume-section is the only E- artefact about a SECTION
+	// rather than a screen, and this is the screen that has sections: education
+	// is empty while experience and skills are not.
+	{ state: "empty", coverage: "designed", ref: "E-resume-section" },
+	// INHERITS. Plan 13 claimed T-loading-list on /admin/photos, where the list
+	// is 39 rows. Eighteen bullets is not a more demanding host.
+	{ state: "loading", coverage: "inherits", ref: "T-loading-list" },
+	// INHERITS. Plan 13 claimed T-error-inline on /admin/photos and prescribed
+	// that plans 14 and 15 inherit it rather than re-claim it. This plan's own
+	// action assigns the treatment here; the coverage claim follows plan 13,
+	// which is the measured document, and the state still renders an INSTANCE of
+	// the warning on the 11-bullet entry. Recorded as a deviation in the SUMMARY.
+	{ state: "error", coverage: "inherits", ref: "T-error-inline" },
+	// INHERITS. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// INHERITS. D-16's per-file diff has ZERO design-system coverage (G-7).
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// INHERITS. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Replacing it with a constant is the
+// negative control for check-states.mjs.
+const state = Astro.params.state ?? "populated";
+const fx = fixtures[state];
+if (!fx) {
+	throw new Error(
+		`admin/resume/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined` plus one entry per CANONICAL_STATES member, and src/fixtures/resume.json " +
+			"must carry a key for each. A state declared in STATES with no fixture is a fake " +
+			"artefact: the route would answer 200, render a plausible page, and be screenshotted " +
+			"under a state name it is not in.",
+	);
+}
+
+// Field takes `wiring` from the useField HOOK and an Astro page cannot call a
+// hook. FieldWiring is a plain data interface, so it is built by hand — plan 13's
+// idiom, unchanged. Ids are unique across the page.
+const wiring = (id) => ({
+	controlId: id,
+	hintId: undefined,
+	errorId: undefined,
+	describedBy: undefined,
+	invalid: false,
+});
+
+const noop = () => {};
+
+// ── ADMIN-IA decision 5's formatter. The ONLY source of the display string ───
+const EN_DASH = "–";
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_OPTIONS = MONTHS.map((m) => ({ value: m, label: m }));
+const formatPeriod = (d) =>
+	d.isPresent
+		? `${d.startMonth} ${d.startYear} ${EN_DASH} Present`
+		: `${d.startMonth} ${d.startYear} ${EN_DASH} ${d.endMonth} ${d.endYear}`;
+
+// The acceptance test, run here as well as in the generator, so the page itself
+// reports whether the derived string still equals the byte on disk.
+const dated = [...fx.experience, ...fx.education].map((e) => ({
+	id: e.id,
+	derived: formatPeriod(e),
+	onDisk: e.periodOnDisk,
+	ok: formatPeriod(e) === e.periodOnDisk,
+}));
+const allPeriodsOk = dated.every((d) => d.ok);
+
+// UI-SPEC's contract table, verbatim, in named constants so the exact strings are
+// greppable in one place and cannot drift as the markup moves.
+const SECTION_EMPTY_TITLE = "No education entries.";
+const SECTION_EMPTY_DESC =
+	"Add one, or leave this section out — the résumé page omits empty sections entirely.";
+const INLINE_ERROR = "Needs a title before this can be published.";
+const DRIFT_TITLE = "The PDF is older than the résumé data.";
+const DRIFT_DESC_A = "changed ";
+const DRIFT_DESC_B = " days after ";
+const DRIFT_DESC_C = " was uploaded. This won't block publishing.";
+
+// The skill-group icon set, recovered from the icon values actually in the data.
+// NEITHER of the two icon fields on this screen had an editor in the legacy
+// admin: `skills[].icon` carries code / layers / filter and is rendered on the
+// public page, and `experience[].logo` is null on all three entries. The data
+// carried values nobody could change, which is why they get fields here.
+const ICON_OPTIONS = [
+	{ value: "code", label: "code" },
+	{ value: "layers", label: "layers" },
+	{ value: "filter", label: "filter" },
+	{ value: "database", label: "database" },
+	{ value: "chart", label: "chart" },
+];
+
+// Held as a string because writing the literal prop inline confuses the Astro
+// compiler — braces inside a template expression read as a nested expression.
+const TOOLBAR_PROP = "toolbar={null}";
+
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+const isLoading = state === "loading";
+// The entry the live editor is attached to: the 11-bullet one, pinned BY ID so
+// the island cannot drift onto a three-bullet entry and hide the density problem.
+const editEntry = fx.experience.find((e) => e.id === "brevo") ?? fx.experience[0];
+const editBullets = isLoading ? [] : (editEntry?.bullets ?? []);
+
+const reviewStates = ["populated", ...CANONICAL_STATES];
+const hrefFor = (s) => (s === "populated" ? "/admin/resume/" : `/admin/resume/${s}/`);
+
+const bulletItems = (entry) =>
+	entry.bullets.map((segs, i) => ({
+		id: `${entry.id}-b${i}`,
+		index: `${i + 1}`,
+		primary: segs.map((s) => s.text).join(""),
+		segments: segs,
+		meta: `${segs.filter((s) => s.emphasis).length} em`,
+	}));
+---
+
+<Admin
+	title={`S-resume / ${state}`}
+	active="resume"
+	route="/admin/resume"
+	navStates={fx.nav}
+	pipeline={fx.pipeline}
+>
+	<div class="rs-head" data-artefact={state === "populated" ? "S-resume" : undefined}>
+		<Eyebrow size="sm" tone="muted">RÉSUMÉ</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+		<Text size="sm" tone="muted">{fx.sub}</Text>
+	</div>
+
+	{/* ── D-26's PDF DRIFT WARNING — SOFT, AND THE COPY SAYS SO ─────────────
+	    Verbatim from UI-SPEC's contract table, and the last sentence is the
+	    design rather than a footnote: D-26 decided a SOFT warning. Rendering it
+	    as a blocking error would silently convert a decided-soft warning into a
+	    hard gate three phases downstream, which is threat T-00-34. So it is an
+	    AlertBanner at `warning`, it is not dismissible, and Publish stays
+	    enabled beside it.
+
+	    THE NUMBER IS COMPUTED, NOT TYPED. `4` comes from the two fixture
+	    timestamps, and the generator throws if they do not differ by exactly the
+	    number the verbatim copy states. D-02 fences this phase out of any upload
+	    target, so there is no real upload record to read and none is faked. */}
+	<div class="rs-panel">
+		<AlertBanner
+			open
+			tone="warning"
+			title={DRIFT_TITLE}
+			description={`resume.json ${DRIFT_DESC_A}${fx.pdf.driftDays}${DRIFT_DESC_B}resume.pdf${DRIFT_DESC_C}`}
+			dismissible={false}
+		/>
+		<Text size="sm" tone="muted">
+			Soft by decision. Publishing is not blocked, nothing on this screen is disabled, and the
+			warning stays up after a successful publish because publishing does not touch the PDF.
+		</Text>
+	</div>
+
+	{/* ── T-loading-list, INHERITED ─────────────────────────────────────────
+	    The shell, the drift warning and Publish stay usable while the body
+	    waits — that is the claim the treatment makes. Skeleton rather than a
+	    hand-rolled shape, but NOT a component's own loading prop, because
+	    neither Sortable nor RichText has one. That absence is the finding. */}
+	{isLoading && (
+		<div class="rs-panel" data-artefact="T-loading-list">
+			<Eyebrow size="sm" tone="muted">INHERITS T-loading-list</Eyebrow>
+			<Text size="sm" tone="muted">
+				The treatment is plan 13's, claimed on the 39-row photo list. What is specific to the
+				résumé is that the longest thing on the screen is one entry's ELEVEN bullets, so the
+				reserved height has to be per entry rather than per row, or the page jumps by a whole
+				section when the data lands.
+			</Text>
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+			<Skeleton shape="text" />
+		</div>
+	)}
+
+	{/* ── The period formatter's acceptance test, on screen ─────────────────
+	    ADMIN-IA decision 5 says `period` stops being stored and is derived. The
+	    test for that is exact reproduction of what is on disk, so the page runs
+	    it and prints both sides. If the formatter ever drifts, this block says so
+	    in words rather than a public page changing silently on migration. */}
+	{!isLoading && (
+		<div class="rs-panel">
+			<Eyebrow size="sm" tone="muted">DERIVED PERIOD — ACCEPTANCE TEST</Eyebrow>
+			<Text size="sm" tone="muted">
+				`period` is not stored. Each entry carries startMonth / startYear / endMonth / endYear /
+				isPresent, and one formatter derives the string. {allPeriodsOk ? "All" : "NOT all"}{" "}
+				{dated.length} strings reproduce the byte on disk exactly, en dash and three-letter month
+				included.
+			</Text>
+			<ul class="rs-test">
+				{dated.map((d) => (
+					<li class="rs-test-row" data-ok={d.ok ? "true" : "false"}>
+						<code class="rs-key">{d.id}</code>
+						<code class="rs-key">{d.derived}</code>
+						<Badge tone={d.ok ? "success" : "error"}>{d.ok ? "matches disk" : "DRIFTED"}</Badge>
+					</li>
+				))}
+			</ul>
+		</div>
+	)}
+
+	{/* ── EXPERIENCE ────────────────────────────────────────────────────────
+	    The field catalog is legacy:PropertiesPanel.tsx lines 421-497, verbatim:
+	    Company, Role, Location, Period, URL, then a Bullets section. Every
+	    bespoke `<label className="admin-field">` becomes Field + TextInput.
+
+	    THE PERIOD FIELD IS THE ONE THAT CHANGED SHAPE. ADMIN-IA decision 5
+	    replaces one free-text input with two month Selects, two year inputs and a
+	    Present checkbox that disables the end pair — net +4 controls per entry,
+	    which the IA already states. The label "Period" is kept on the group so
+	    the recovered catalog still maps.
+
+	    ICON IS NEW AND IT IS JUSTIFIED BY THE DATA, not by the recovered list:
+	    `experience[].logo` is null on all three entries and had no editor at all,
+	    so the value was unreachable. Rendered empty and editable, which is the
+	    same rule plan 13 established for absent EXIF — read-only surfaces omit,
+	    editable surfaces render the field. */}
+	{!isLoading && (
+		<section class="rs-section">
+			<Eyebrow size="sm" tone="muted">EXPERIENCE</Eyebrow>
+			<Text size="sm" tone="muted">
+				{fx.experience.length} entries, {fx.experience.reduce((n, e) => n + e.bullets.length, 0)}{" "}
+				bullets between them: {fx.experience.map((e) => e.bullets.length).join(", ")}.
+			</Text>
+
+			{fx.experience.map((entry) => {
+				const err = fx.roleError === entry.id;
+				return (
+					<Card surface="subtle" padding="md" radius="lg">
+						<div class="rs-entry">
+							<div class="rs-entry-head">
+								<Text size="sm" tone="secondary">{entry.company}</Text>
+								<code class="rs-key">{entry.id}</code>
+								<code class="rs-key">{formatPeriod(entry)}</code>
+							</div>
+
+							<div class="rs-grid">
+								<Field label="Company" wiring={wiring(`f-${entry.id}-company`)}>
+									<TextInput id={`f-${entry.id}-company`} defaultValue={entry.company} />
+								</Field>
+
+								{/* T-error-inline's instance. The message is UI-SPEC's verbatim
+								    lenient-draft warning, attached to the field it is about — on
+								    this screen the "title" IS the job title, and Role is the field
+								    that carries it. */}
+								<Field
+									label="Role"
+									wiring={wiring(`f-${entry.id}-role`)}
+									errorMessage={err ? INLINE_ERROR : undefined}
+								>
+									<TextInput id={`f-${entry.id}-role`} defaultValue={entry.role} error={err} />
+								</Field>
+
+								<Field label="Location" wiring={wiring(`f-${entry.id}-location`)}>
+									<TextInput id={`f-${entry.id}-location`} defaultValue={entry.location} />
+								</Field>
+
+								<Field
+									label="URL"
+									wiring={wiring(`f-${entry.id}-url`)}
+									hint={entry.url === null ? "Not set on this entry." : undefined}
+								>
+									<TextInput
+										id={`f-${entry.id}-url`}
+										defaultValue={entry.url ?? ""}
+										placeholder="https://..."
+									/>
+								</Field>
+
+								<Field
+									label="Icon"
+									wiring={wiring(`f-${entry.id}-icon`)}
+									hint="Null on every entry today, and the legacy admin had no field for it."
+								>
+									<TextInput
+										id={`f-${entry.id}-icon`}
+										defaultValue={entry.logo ?? ""}
+										placeholder="/assets/…"
+									/>
+								</Field>
+							</div>
+
+							{/* ── Period: the date-range control decision 5 forces ───────── */}
+							<Divider />
+							<Eyebrow size="sm" tone="muted">PERIOD</Eyebrow>
+							<div class="rs-dates">
+								<Field label="Start month" wiring={wiring(`f-${entry.id}-sm`)}>
+									<Select
+										value={entry.startMonth}
+										onChange={noop}
+										options={MONTH_OPTIONS}
+										ariaLabel="Start month"
+										searchable={false}
+										size="sm"
+									/>
+								</Field>
+								<Field label="Start year" wiring={wiring(`f-${entry.id}-sy`)}>
+									<TextInput id={`f-${entry.id}-sy`} defaultValue={entry.startYear} inputMode="numeric" />
+								</Field>
+								<Field label="End month" wiring={wiring(`f-${entry.id}-em`)}>
+									{/* NO em-dash placeholder. ADMIN-IA's omission rule is that an
+									    absent value is OMITTED, never rendered as an em dash, because a
+									    dash where a value belongs reads as a data bug rather than an
+									    absence — and this control had one until the audit counted em
+									    dashes in the built page and found it. An `isPresent` entry has
+									    no end month, so the trigger is empty and disabled. */}
+									<Select
+										value={entry.endMonth}
+										onChange={noop}
+										options={MONTH_OPTIONS}
+										ariaLabel="End month"
+										searchable={false}
+										size="sm"
+										disabled={entry.isPresent}
+									/>
+								</Field>
+								<Field label="End year" wiring={wiring(`f-${entry.id}-ey`)}>
+									<TextInput
+										id={`f-${entry.id}-ey`}
+										defaultValue={entry.endYear ?? ""}
+										inputMode="numeric"
+										disabled={entry.isPresent}
+									/>
+								</Field>
+								<div class="rs-present">
+									<Checkbox
+										label="Present"
+										defaultChecked={entry.isPresent}
+										hint="Disables the end pair and makes the derived string read Present."
+									/>
+								</div>
+							</div>
+							<Text size="sm" tone="muted">
+								Derived: <code class="rs-key">{formatPeriod(entry)}</code>. Stored: five fields,
+								no string.
+							</Text>
+
+							{/* ── Bullets ────────────────────────────────────────────────
+							    The live editor is on the 11-bullet entry only, and it is the
+							    island. Every entry's bullets are ordered here with the design
+							    system's Sortable, rendered static: the reorder interaction is
+							    already demonstrated running and keyboard-driven on
+							    /admin/photos, and spending 248 KB gzip to show it a second
+							    time is not what the budget is for. */}
+							<Divider />
+							<Eyebrow size="sm" tone="muted">BULLETS</Eyebrow>
+							<SortableStatic
+								items={bulletItems(entry)}
+								listId={`bullets-${entry.id}`}
+								className="rs-bullets"
+							/>
+							<div class="rs-actions">
+								<Button variant="secondary">Add bullet</Button>
+								<Text size="sm" tone="muted">
+									{entry.bullets.length} bullets, rendered from segments as React elements.
+									Dragging is static here.
+								</Text>
+							</div>
+						</div>
+					</Card>
+				);
+			})}
+		</section>
+	)}
+
+	{/* ── BULLETS: THE LIVE EDITOR, AND G-3 / G-4's EVIDENCE ────────────────
+	    THE ISLAND IS RENDERED UNCONDITIONALLY, AND IT HAS ITS OWN SECTION.
+	    check-no-js.sh fails an allowlisted route that ships ZERO script tags, and
+	    every state route of an allowlisted screen is allowlisted — so an island
+	    nested inside a section that only renders on some states turns a design
+	    decision into a gate failure. It did, on the first build of this file:
+	    `dist/admin/resume/loading/index.html` shipped no script and the gate
+	    named it. The component receives an empty bullet list on `loading` and
+	    returns null; Astro still emits the island element and the hydration
+	    script, so the budget gate keeps measuring something real on all seven
+	    routes.
+
+	    Its own section is also the better review shape: the editor plus the two
+	    serializer readouts are the two most consequential findings in the phase,
+	    and burying them inside the third field group of the first of three entry
+	    cards would make them look incidental.
+
+	    THE EDITOR IS ON THE ELEVEN-BULLET ENTRY, pinned by id. A three-bullet
+	    stand-in would hide exactly the density problem this screen exists to
+	    expose. */}
+	<section class="rs-section" data-artefact={state === "populated" ? "S-resume" : undefined}>
+		<Eyebrow size="sm" tone="muted">BULLETS — LIVE EDITOR / G-3 AND G-4 EVIDENCE</Eyebrow>
+		{isLoading ? (
+			<Text size="sm" tone="muted">
+				The editor has nothing to author while the entries are still arriving.
+			</Text>
+		) : (
+			<Text size="sm" tone="muted">
+				D-21 wants bold as the only mark and D-20 wants segments. Neither is reachable: there is
+				no marks prop, so italic, underline, highlight and headings stay live on their keyboard
+				shortcuts and a typed URL autolinks with no keystroke at all (G-3), and there is no
+				segment output format, so the serializer below adapts the document format instead
+				(G-4). The gap is left intact on purpose — the panels show what a save would keep and
+				what it would silently drop.
+			</Text>
+		)}
+		{/* ── THE TOOLBAR BELOW IS NOT A MISTAKE, IT IS THE FINDING ─────────
+			    `toolbar={null}` is passed, exactly as the prop's own docstring
+			    prescribes: "pass `null` to suppress the toolbar entirely". It does
+			    not suppress it. RichText renders `!readOnly && (toolbar ??
+			    defaultToolbar)` (dist/index.js:9143) and `??` falls through on
+			    null, so the documented suppression value selects the DEFAULT
+			    toolbar. Twelve buttons render, eleven of them for marks and nodes
+			    D-20's shape cannot store.
+
+			    Left in place rather than hidden with a CSS rule: hiding it would
+			    remove the evidence and would be exactly the local workaround Core
+			    Value forbids. Recorded, and said out loud on the page below so a
+		    reviewer does not read it as the sketch getting it wrong. */}
+		{!isLoading && (
+			<div class="rs-panel">
+				<Eyebrow size="sm" tone="muted">WHY A TOOLBAR IS VISIBLE HERE</Eyebrow>
+				<Text size="sm" tone="muted">
+					<code class="rs-key">{TOOLBAR_PROP}</code> is passed, which the prop documents as
+					suppressing the toolbar entirely. It does not: the component resolves the prop with a
+					nullish fallback, so null selects the default. Twelve buttons render — Bold, Italic,
+					Underline, Highlight, Strikethrough, Inline code, Heading style, Bulleted list,
+					Ordered list, Blockquote, Horizontal rule, Insert link — and eleven of them author
+					something the stored shape has no field for. Not hidden locally; that would delete the
+					evidence.
+				</Text>
+			</div>
+		)}
+		<RichTextBullets
+			client:load
+			entryId={editEntry?.id ?? "none"}
+			entryLabel={editEntry?.company ?? ""}
+			bullets={editBullets}
+			editIndex={1}
+			lossDoc={isLoading ? null : fx.lossDoc}
+		/>
+	</section>
+
+	{/* ── T-error-inline: the pointer plus the thing that makes it legible ──
+	    D-18's LENIENT half: the message is about publishing, saving still works,
+	    and it attaches to the field it is about. The treatment is plan 13's, so
+	    what is added here is the one fact a reviewer cannot otherwise see — the
+	    save control, enabled, beside the warning.
+
+	    AND THE COMPONENT CANNOT EXPRESS THE SEVERITY. UI-SPEC specifies
+	    "Field + FieldError at warning severity". FieldErrorProps is
+	    `{ message, className }` — no severity, no tone — and the markup is a
+	    fixed `role="alert"` span in --red-ink. So D-18's two severities render
+	    IDENTICALLY and both interrupt. Reported in the SUMMARY. Recolouring it
+	    locally would hide the gap, which is the workaround Core Value forbids. */}
+	{state === "error" && (
+		<div class="rs-panel" data-artefact="T-error-inline">
+			<Eyebrow size="sm" tone="muted">INHERITS T-error-inline</Eyebrow>
+			<Text size="sm" tone="muted">
+				What is specific to the résumé is the competition for attention: the warning sits on the
+				entry that also carries eleven bullets and a five-field date control, so the field it
+				attaches to has to be the one that is wrong rather than a summary at the top of the
+				section.
+			</Text>
+			<div class="rs-actions">
+				<Button variant="primary">Mark as ready</Button>
+				<Button variant="secondary">Preview</Button>
+				<Text size="sm" tone="muted">
+					Both controls are enabled. Nothing about this state is modal, and the draft saves.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── SKILLS ────────────────────────────────────────────────────────────
+	    legacy:PropertiesPanel.tsx lines 575-615. The panel is titled "Skill
+	    Group" and the field inside it is labelled "Category" — the same
+	    panel-title / field-label split as Home's Site Title / Name. Both labels
+	    are rendered so the recovered catalog maps either way.
+
+	    Skills are a Chip set with an add-on-Enter input, per ADMIN-IA. The input
+	    is inert here (D-02): it accepts focus and does nothing. */}
+	{!isLoading && (
+		<section class="rs-section">
+			<Eyebrow size="sm" tone="muted">SKILL GROUP</Eyebrow>
+			<Text size="sm" tone="muted">
+				{fx.skills.length} groups, {fx.skills.reduce((n, s) => n + s.items.length, 0)} skills
+				between them.
+			</Text>
+			{fx.skills.map((group, i) => (
+				<Card surface="subtle" padding="md" radius="lg">
+					<div class="rs-entry">
+						<div class="rs-grid">
+							<Field label="Skill Group" wiring={wiring(`f-skill-${i}-group`)}>
+								<TextInput id={`f-skill-${i}-group`} defaultValue={group.category} />
+							</Field>
+							<Field
+								label="Icon"
+								wiring={wiring(`f-skill-${i}-icon`)}
+								hint="In the data and on the public page; no editor existed for it."
+							>
+								<Select
+									value={group.icon}
+									onChange={noop}
+									options={ICON_OPTIONS}
+									ariaLabel="Icon"
+									searchable={false}
+									size="sm"
+								/>
+							</Field>
+						</div>
+						<Field label="Skills" wiring={wiring(`f-skill-${i}-items`)} group>
+							<div class="rs-chips">
+								{group.items.map((item) => (
+									<Chip>{item}</Chip>
+								))}
+								<TextInput
+									id={`f-skill-${i}-items`}
+									placeholder="Add skill..."
+									aria-label="Add skill"
+								/>
+							</div>
+						</Field>
+					</div>
+				</Card>
+			))}
+		</section>
+	)}
+
+	{/* ── EDUCATION, and E-resume-section ──────────────────────────────────
+	    legacy:PropertiesPanel.tsx lines 617-665: School, Degree, CGPA, Period,
+	    Leadership. Period becomes the same five-field control as experience.
+
+	    E-RESUME-SECTION IS THE ARTEFACT THIS SECTION EXISTS TO PROVE. Copy is
+	    verbatim from UI-SPEC's contract table, and the second clause is the part
+	    that matters: "the résumé page omits empty sections entirely" tells the
+	    reader that an empty section is a SUPPORTED OUTCOME rather than an error.
+	    It is a different design from a whole-screen empty state — the screen
+	    around it stays populated and publishable, which is exactly what makes an
+	    empty section distinguishable from a section still loading. */}
+	{!isLoading && (
+		<section class="rs-section">
+			<Eyebrow size="sm" tone="muted">EDUCATION</Eyebrow>
+
+			{fx.education.length === 0 ? (
+				<div class="rs-panel" data-artefact="E-resume-section">
+					<EmptyState title={SECTION_EMPTY_TITLE} description={SECTION_EMPTY_DESC}>
+						<Button variant="secondary">Add an education entry</Button>
+					</EmptyState>
+					<Text size="sm" tone="muted">
+						Experience and Skills above are untouched and still publishable. That is the whole
+						difference between an empty section and an empty screen: nothing here is broken, and
+						the public page simply renders one section fewer.
+					</Text>
+				</div>
+			) : (
+				fx.education.map((edu) => (
+					<Card surface="subtle" padding="md" radius="lg">
+						<div class="rs-entry">
+							<div class="rs-grid">
+								<Field label="School" wiring={wiring(`f-${edu.id}-school`)}>
+									<TextInput id={`f-${edu.id}-school`} defaultValue={edu.school} />
+								</Field>
+								<Field label="Degree" wiring={wiring(`f-${edu.id}-degree`)}>
+									<TextInput id={`f-${edu.id}-degree`} defaultValue={edu.degree} />
+								</Field>
+								<Field label="CGPA" wiring={wiring(`f-${edu.id}-cgpa`)}>
+									<TextInput id={`f-${edu.id}-cgpa`} defaultValue={edu.cgpa} inputMode="decimal" />
+								</Field>
+								<Field
+									label="URL"
+									wiring={wiring(`f-${edu.id}-url`)}
+									hint={edu.url === null ? "Not set." : undefined}
+								>
+									<TextInput id={`f-${edu.id}-url`} defaultValue={edu.url ?? ""} placeholder="https://..." />
+								</Field>
+							</div>
+
+							<Divider />
+							<Eyebrow size="sm" tone="muted">PERIOD</Eyebrow>
+							<div class="rs-dates">
+								<Field label="Start month" wiring={wiring(`f-${edu.id}-sm`)}>
+									<Select
+										value={edu.startMonth}
+										onChange={noop}
+										options={MONTH_OPTIONS}
+										ariaLabel="Start month"
+										searchable={false}
+										size="sm"
+									/>
+								</Field>
+								<Field label="Start year" wiring={wiring(`f-${edu.id}-sy`)}>
+									<TextInput id={`f-${edu.id}-sy`} defaultValue={edu.startYear} inputMode="numeric" />
+								</Field>
+								<Field label="End month" wiring={wiring(`f-${edu.id}-em`)}>
+									<Select
+										value={edu.endMonth}
+										onChange={noop}
+										options={MONTH_OPTIONS}
+										ariaLabel="End month"
+										searchable={false}
+										size="sm"
+									/>
+								</Field>
+								<Field label="End year" wiring={wiring(`f-${edu.id}-ey`)}>
+									<TextInput id={`f-${edu.id}-ey`} defaultValue={edu.endYear ?? ""} inputMode="numeric" />
+								</Field>
+								<div class="rs-present">
+									<Checkbox label="Present" defaultChecked={edu.isPresent} />
+								</div>
+							</div>
+							<Text size="sm" tone="muted">
+								Derived: <code class="rs-key">{formatPeriod(edu)}</code>.
+							</Text>
+
+							<Divider />
+							<Field label="Leadership" wiring={wiring(`f-${edu.id}-leadership`)} group>
+								<div class="rs-chips">
+									{edu.leadership.map((l) => (
+										<Chip>{l}</Chip>
+									))}
+									<TextInput id={`f-${edu.id}-leadership`} placeholder="Add..." aria-label="Add leadership entry" />
+								</div>
+							</Field>
+						</div>
+					</Card>
+				))
+			)}
+		</section>
+	)}
+
+	{/* ── RESUME PDF ────────────────────────────────────────────────────────
+	    legacy:PropertiesPanel.tsx lines 893-937: a "Current resume" link plus an
+	    "Upload New Resume" sub-heading over a file input.
+
+	    D-02 SCOPE FENCE: this input accepts a file and does nothing with it. No
+	    endpoint, no GitHub Contents API call, no size or MIME handling is
+	    depicted, so Phase 7 cannot inherit a validation shape from a sketch. The
+	    legacy route's real gates stay Phase 7's to build.
+
+	    `variant="button"` rather than the dropzone, per UI-SPEC — and worth
+	    recording, because the two variants are not equally themeable. The button
+	    variant renders a design-system Button and inherits charcoal correctly;
+	    the dropzone is one inline style object carrying a hardcoded hex plus
+	    three tokens charcoal does not redeclare (plan 13's F-13-6). So F-13-6 is
+	    dropzone-specific, which narrows it. What both share is that FileInput has
+	    NO `label` prop — only `ariaLabel` — so the visible label below is a
+	    plain Eyebrow rather than a Field label. */}
+	{!isLoading && (
+		<section class="rs-section">
+			<Eyebrow size="sm" tone="muted">RESUME PDF</Eyebrow>
+			<Text size="sm" tone="muted">
+				Resume PDF. Uploaded {fx.pdf.uploadedAt.slice(0, 10)}; the résumé data changed{" "}
+				{fx.pdf.dataChangedAt.slice(0, 10)}.
+			</Text>
+			{/* THE LINK IS ITS OWN ROW RATHER THAN A WORD INSIDE THE SENTENCE, and
+			    that is the touch floor rather than taste. An inline link in a
+			    paragraph measures the line box — 16px here, measured — and WCAG
+			    2.5.8's "in a sentence" exception would have let it stand. Taking it
+			    out of the sentence means the floor holds with NO exception claimed,
+			    which is the stronger position for a screen whose whole point is
+			    that the phone layout works. */}
+			<p class="rs-pdf-row">
+				<Link href={fx.pdf.path}>{fx.pdf.label}</Link>
+			</p>
+			<Eyebrow size="sm" tone="muted">UPLOAD NEW RESUME</Eyebrow>
+			<div class="rs-file">
+				<FileInput
+					variant="button"
+					accept="application/pdf"
+					ariaLabel="Upload New Resume"
+					onSelect={noop}
+				>
+					Choose PDF
+				</FileInput>
+				<Text size="sm" tone="muted">
+					Accepts a file and does nothing with it. There is no upload target in this playground
+					and none may be added.
+				</Text>
+			</div>
+		</section>
+	)}
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ───── */}
+	{isInherit && (
+		<div
+			class="rs-inherit"
+			data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}
+		>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to the résumé is that a bullet edit is a SEGMENT edit: the change list cannot show a diff of two strings, because there is no string — it has to name the bullet and the run, or a reviewer cannot tell an emphasis change from a text change."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all. What is specific to the résumé is that a conflicted bullet is an ARRAY OF SEGMENTS on both sides, so a line-oriented diff cannot render it — which makes this the file that most needs G-7's component and the one least served by a text diff."
+						: "The outcome is plan 12's. What is specific to the résumé is that publishing commits resume.json and NOT resume.pdf, so the D-26 drift warning above is still up after a successful publish. Copy that implied the PDF had been refreshed would be a lie the operator could not check."}
+			</Text>
+			{state === "dirty" && (
+				<div class="rs-badge-row">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Résumé, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+			{state === "conflict" && (
+				<AlertBanner
+					open
+					tone="warning"
+					title="resume.json changed after your draft started."
+					description="Your bullet edits and the remote skills change are both newer than the base. Resolving is per file; Home and Photos stay pending."
+					dismissible={false}
+				/>
+			)}
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ───────────────────────────── */}
+	<aside class="rs-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="rs-review-line">
+			{reviewStates.map((s) => (
+				<a class="rs-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+		</p>
+		<p class="rs-review-note">
+			No phone route here: D-09 keeps text editing on the phone (P-text-edit), so a résumé
+			refusal would contradict it. The two designed refusals are the crop picker and case-study
+			authoring.
+		</p>
+	</aside>
+</Admin>
+
+<style is:global>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+
+	   GLOBAL RATHER THAN SCOPED, AND THAT IS FORCED: Astro's scoped styles stamp
+	   a data-astro-cid attribute onto elements in the ASTRO TEMPLATE, and a
+	   framework island renders its own DOM which never receives it. Half of the
+	   classes below belong to RichTextBullets and SortableStatic. */
+
+	.rs-head,
+	.rs-panel,
+	.rs-inherit,
+	.rs-section {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.rs-section {
+		gap: var(--space-4);
+	}
+
+	.rs-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.rs-entry {
+		display: grid;
+		gap: var(--space-4);
+	}
+	.rs-entry-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.rs-key {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.rs-actions,
+	.rs-badge-row,
+	.rs-file {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.rs-pdf-row {
+		margin: 0;
+	}
+	.rs-pdf-row .ds-atom-link {
+		display: inline-flex;
+		align-items: center;
+	}
+
+	/* Two columns at >= 673px — the near-square foldable class is the first
+	   width where a second column of form fields is honest. One column below,
+	   which is REFLOW rather than hiding: every field is present at 344px. */
+	.rs-grid {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 673px) {
+		.rs-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	/* The five-field date control. Two-up from 375, five-up from 1024, and the
+	   Present checkbox spans the row below it at every width under 1024 so the
+	   thing that disables the end pair is never off to one side of it. */
+	.rs-dates {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 375px) {
+		.rs-dates {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.rs-present {
+			grid-column: 1 / -1;
+		}
+	}
+	@media (min-width: 1024px) {
+		.rs-dates {
+			grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+			align-items: end;
+		}
+		.rs-present {
+			grid-column: auto;
+		}
+	}
+	.rs-present {
+		display: flex;
+		align-items: center;
+		min-height: 30px;
+	}
+
+	.rs-chips {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.rs-chips .ds-atom-input-wrap,
+	.rs-chips .ds-atom-input {
+		max-width: 12rem;
+	}
+
+	/* == The period acceptance test ======================================== */
+	.rs-test {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+	.rs-test-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* == The bullet list ================================================== */
+	.ds-atom-sortable.rs-bullets {
+		display: grid;
+		gap: var(--space-2);
+	}
+	.sst-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: 4px var(--space-2);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.sst-index {
+		flex: 0 0 auto;
+		min-width: 20px;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-4);
+		text-align: right;
+	}
+	.sst-body {
+		flex: 1 1 auto;
+		display: grid;
+		gap: 0;
+		min-width: 0;
+	}
+	.sst-segments {
+		font-size: var(--text-sm);
+		color: var(--ink-2);
+		line-height: var(--lh-relaxed);
+	}
+	.sst-segments strong {
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.sst-meta {
+		flex: 0 0 auto;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	/* == The RichText island's chrome ====================================== */
+	.rtb-root {
+		display: grid;
+		gap: var(--space-4);
+	}
+	.rtb-editor {
+		max-width: 100%;
+	}
+	.rtb-panel {
+		display: grid;
+		gap: var(--space-2);
+		padding: var(--space-3);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.rtb-panel[data-evidence="g-4"] {
+		border-color: var(--wire);
+		border-left-width: 2px;
+	}
+	.rtb-code {
+		margin: 0;
+		padding: var(--space-2);
+		overflow-x: auto;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		line-height: 1.45;
+		color: var(--ink-2);
+		background: var(--cream-3);
+		border-radius: var(--radius-sm);
+		white-space: pre;
+	}
+	.rtb-two {
+		display: grid;
+		gap: var(--space-3);
+	}
+	@media (min-width: 673px) {
+		.rtb-two {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.rtb-half {
+		display: grid;
+		gap: var(--space-1);
+		min-width: 0;
+	}
+	.rtb-loss {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+	}
+	.rtb-rendered {
+		margin: 0;
+		font-size: var(--text-sm);
+		line-height: var(--lh-relaxed);
+		color: var(--ink-2);
+	}
+	.rtb-rendered strong {
+		font-weight: 600;
+		color: var(--ink);
+	}
+
+	/* == Review chrome ===================================================== */
+	.rs-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.rs-review-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.rs-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.rs-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+	.rs-review-note {
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	/* == The 44px floor, every coarse-pointer class ========================
+	   Five of the six device classes in the responsive contract are coarse
+	   pointer, so the floor is the common case, and it sits on the HIT AREA
+	   rather than the painted control. The design system's own inputs, selects
+	   and buttons are carried by density-compact.css; these are mine.
+
+	   `.ds-atom-sortable-item` is here because SortableItem spreads dnd-kit's
+	   listeners onto the item wrapper, so the ROW is the target. The RichText
+	   editing surface is a contenteditable textbox, which needs the floor for
+	   the same reason a textarea does — and richtext.css sets a min-height in a
+	   raw length, so nothing token-shaped reaches it. */
+	@media (pointer: coarse) {
+		.rs-review-link,
+		.sst-row,
+		.ds-atom-sortable-item,
+		.rs-present,
+		.rs-pdf-row .ds-atom-link {
+			min-height: 44px;
+		}
+		.ds-atom-richtext-editor,
+		.ds-atom-richtext .ProseMirror {
+			min-height: 44px;
+		}
+	}
+</style>

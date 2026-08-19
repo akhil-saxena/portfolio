@@ -1,0 +1,891 @@
+---
+// X-contact-sheet — the review surface for every Phase 0 artefact.
+//
+// BUILT FROM THE FIRST SKETCH, NEVER RETROFITTED (RESEARCH pitfall 5). This file
+// was created in plan 09 task 1, alongside the first public sketch, and it grows
+// one index line per artefact from here on. A contact sheet assembled at the end
+// is a table of contents; one assembled from the start is the thing that stops
+// ~35 artefacts becoming an unreviewable pile, because an artefact that nobody
+// could write a "what it proves" line for was never worth building.
+//
+// FOUR PARTS, TWO OF THEM DELIVERED HERE:
+//   Part 1  INDEX               - this plan (09), extended by 10-16
+//   Part 2  COVERAGE TABLE      - plan 16, once all seven admin routes exist
+//   Part 3  PHONE COVERAGE      - plan 16, same reason
+//   Part 4  MEASUREMENT READOUT - this plan (09)
+// Plan 12 made Part 1's ADMIN HALF glob-driven, so admin screens self-register
+// from their own SCREEN and STATES exports. The public entries stay written by
+// hand, which is correct: there are seven of them and they have no states axis.
+//
+// THE ONE RULE FOR AN INDEX LINE. It states what the artefact PROVES, not what
+// it shows. "X-photos: the photos page" is worthless. "X-photos: 39 real photos
+// with anchor filters and zero framework JS, proving PUB-04's crawlable
+// category routes need no radiogroup" is a claim a reviewer can disagree with.
+//
+// This page carries no hydration directive and imports the same public manifest
+// as the sketches, so it is itself an instance of the thing it indexes.
+
+import { Eyebrow, Heading, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+import { CANONICAL_IDS, CANONICAL_SCREENS, CANONICAL_STATES } from "../lib/artefacts.mjs";
+import { auditMatrix, buildMatrix, formatProblems } from "../lib/coverage.mjs";
+import { PHONE_ROUTES, REFUSALS } from "../lib/phone.mjs";
+
+// PART 1, ADMIN HALF — GLOB-DRIVEN FROM PLAN 12 ONWARD, so it can never be
+// retrofitted. Each admin screen is one file exporting its own SCREEN and
+// STATES, this page imports every one of them, and therefore A SCREEN CANNOT
+// EXIST WITHOUT APPEARING HERE. Plans 13 to 16 add six more route files and edit
+// nothing in this file; plan 16 fills Parts 2 and 3, which are the only things
+// still written by hand.
+//
+// The public half above stays hand-written and that is correct: there are seven
+// public entries, they have no states axis, and each needs a bespoke "what it
+// proves" paragraph that no glob could generate.
+//
+// THE MEASURED COST OF DOING THIS, so nobody is surprised by it later: importing
+// an admin route module pulls that module's SIDE EFFECTS, and one of those side
+// effects is `manifest-admin.css`. So this page now links the 123 KB admin
+// manifest alongside its own 41 KB public one, plus the admin layout's own 7 KB
+// chunk. `eager: false` was tried and DOES NOT HELP — Astro's stylesheet crawl
+// follows dynamic imports too, so all three sheets still land (only the order
+// changes). Accepted, for three reasons: the cost is bounded at ONE extra copy
+// however many admin screens are added, because they all import the same
+// manifest; this page is review chrome that plan 17 deletes; and no measurement
+// is affected, because check-css-size.mjs measures the two dedicated
+// probe/manifest-* routes rather than this one. The alternative — moving SCREEN
+// and STATES out of the route files into sibling metadata modules — would break
+// UI-SPEC's contract and put the declaration somewhere it can drift from the
+// screen it describes.
+const adminModules = import.meta.glob("./admin/**/*.astro", { eager: true });
+
+// Ordered by CANONICAL_SCREENS (D-05 order) rather than by filename, so the
+// index reads in the order the sidebar does. A screen whose id is not in the
+// registry sorts last and is visibly flagged rather than silently dropped —
+// silently dropping it is how a screen goes missing from a review.
+const adminScreens = Object.entries(adminModules)
+	.filter(([, m]) => m.SCREEN && m.STATES)
+	.map(([file, m]) => ({
+		file: file.replace("./", "src/pages/"),
+		screen: m.SCREEN,
+		states: m.STATES,
+		known: CANONICAL_SCREENS.includes(m.SCREEN.id),
+		rank: CANONICAL_SCREENS.indexOf(m.SCREEN.id),
+	}))
+	.sort((a, b) => (a.rank < 0 ? 1 : b.rank < 0 ? -1 : a.rank - b.rank));
+
+// Every `ref` a screen declares must be a real artefact id. Checked here rather
+// than in each screen because this is the one page that sees all of them, and a
+// mistyped ref would otherwise produce a coverage cell pointing at nothing —
+// which reads as covered and is not.
+// `n/a` IS THE THIRD PERMITTED COVERAGE VALUE, ADDED BY PLAN 15. UI-SPEC's
+// Review Convention and ADMIN-IA both specify every cell as exactly one of
+// `designed` (with an artefact ID), `inherits: T-n` (with the treatment ID) or
+// `n/a: <reason>` (with a one-clause reason). This file was written by plan 12
+// when no screen had yet needed the third, so it validated every cell as if it
+// carried a ref and threw on the first `n/a` — /admin/site declares two, for
+// `loading` and `empty`. The rule below keeps the guard's teeth rather than
+// widening it into a hole: an `n/a` cell carries NO ref and MUST carry a
+// non-empty reason, so `n/a` cannot be used to make an undesigned cell look
+// decided. A blank cell still fails review; so, now, does a reasonless one.
+// ═══ PLAN 16: THE GATE IS NOW IN THE BUILD, AND IT CHECKS SIX THINGS ══════
+// Plans 12 and 15 wrote two guards here by hand — a ref must be a canonical id,
+// and an `n/a` must carry a reason. Both survive, as conditions 4 and 5 of the
+// six in src/lib/coverage.mjs, and the four around them are what those two
+// could not see. The one that matters most is condition 6:
+//
+//   an `inherits` cell whose target NOBODY DESIGNED.
+//
+// The old ref guard passed exactly that, because it asked whether the ref was a
+// legal id — and `T-error-publish`, inherited by the dashboard since plan 12
+// and designed nowhere until plan 16, is a legal id. A cell like that reads as
+// covered, links to a real name and points at nothing. Plan 15 found it by
+// hand; from here the build finds it.
+//
+// THE THROW IS THE GATE. `astro build` fails on a blank cell rather than
+// printing a table with a hole in it, which is the difference between a
+// checkable property and a claim. check-coverage.mjs runs the same two
+// functions off the sources for fast feedback and for the case where the build
+// cannot complete at all.
+const matrix = buildMatrix(adminModules);
+const coverageProblems = auditMatrix(matrix);
+if (coverageProblems.length > 0) {
+	throw new Error(
+		"contact sheet: THE COVERAGE TABLE DOES NOT DESCRIBE THE SKETCHES.\n\n" +
+			formatProblems(coverageProblems) +
+			"\n\nA coverage table that lies is worse than no table: a later phase reads an unaccounted " +
+			"state as designed and never builds it. Run `node check-coverage.mjs` for the same report " +
+			"without a build.",
+	);
+}
+
+const COVERAGE_LABEL = { designed: "designed", inherits: "inherits", "n/a": "n/a" };
+
+const stateHref = (screen, state) =>
+	state === "populated" ? `${screen.route}/` : `${screen.route}/${state}/`;
+
+// PART 1 - the index. Grouped by artefact class, using the canonical ID scheme
+// from UI-SPEC's Review Convention. The planner may add IDs; it may not silently
+// rename them, because findings and review comments cite them and those citations
+// have to survive this directory's deletion.
+const publicArtefacts = [
+	// X-work-recolour and X-work are ADJACENT ON PURPOSE and must stay that way.
+	// The pair is the artefact: one variable changed between them, so a reviewer
+	// who dislikes the second can say whether the palette or the restructure did
+	// it. Split them across the list and the comparison stops being obvious,
+	// which is the only thing either of them is for.
+	{
+		id: "X-work-recolour",
+		href: "/work-recolour",
+		proves:
+			"The handoff's ivory Work page with its STRUCTURE UNTOUCHED and only colour resolved — four projects, 2×2, the trailing engineering strip, no status badges. It exists so that a dislike of X-work is attributable to the restructure rather than to the palette. Carries three of the nine not-a-straight-swap resolutions: ochre-as-small-text, the hued icon's per-icon ink, and card boundaries moving from fill to border.",
+	},
+	{
+		id: "X-work",
+		href: "/work",
+		proves:
+			"The same page with the same tokens and three structural decisions applied — D-44's two bands with employment first, D-45's status badges, D-38's five projects. Every difference from X-work-recolour is structural, which is what makes the pair reviewable. Also carries exception 8: the employment band is capped at 1080px inside a 1280px page, and that cap is a judgement open for review.",
+	},
+	{
+		id: "X-photos",
+		href: "/photos",
+		// The three findings this artefact is the evidence for are written into
+		// the index line itself, so a reviewer reads the finding beside the thing
+		// that produced it rather than correlating two documents.
+		evidence: [
+			"G-9 — the filter row is eight real anchors with href and aria-current, not a radiogroup. The design system's filter component has no navigable anchor semantics at all and uses hooks, so it would force hydration; PUB-04 needs crawlable, Back-button-capable /photos/[category] routes. This row is what the proposed sibling component has to emit.",
+			"G-10 — accepted, not filed. There is no masonry component; column-count: 3 with a 16px gap is plain layout CSS and QUAL-03 permits it. The 10px radius, break-inside avoidance and the 0.6s scale hover all port from the handoff unchanged.",
+			"G-14 — visible by its absence. The lightbox is the single hydrating public island in the roadmap and is deliberately NOT sketched: it lacks backdrop-click close, srcset, swipe and slide announcements, and is already scoped as DS-07. Tiles link to the full-size image instead, so this page keeps its zero-JS budget while the component is still upstream.",
+		],
+		proves:
+			"39 real photographs on charcoal dark with real dimensions, real base64 LQIP and zero framework JavaScript. Carries exceptions 5 and 6: the inset ring photographs need on dark and did not need on ivory, and the active filter pill flipping to filled LIGHT because its semantic is maximum contrast against the field rather than “dark”. Also surfaces D-25's category-case drift without fixing it.",
+	},
+	// X-home AND X-home-act2 ARE ADJACENT ON PURPOSE, and for a different reason
+	// than the recolour pair below. They are not two variants of one decision —
+	// they are one composition seen at two scopes, and since plan 00-22 they
+	// render the SAME Act-2 component. Reading them in sequence is what shows
+	// that the grid a reviewer approves inside X-home-act2's dashed framing is
+	// the identical grid that lands one viewport into X-home.
+	{
+		id: "X-home",
+		href: "/home",
+		proves:
+			"That a two-state landing holds from aspect 0.39 to 1.80 without a single aspect-ratio branch. State A is exactly one viewport of photographs with a real anchor as its scroll prompt, so one viewport of scroll clears it COMPLETELY by construction rather than by tuning — measured at all six device classes, and the 60svh negative control breaks it at all six. The mechanism is a plain document scroll: it names only a viewport-height unit and DOM order, neither of which is a function of aspect ratio, which is the whole answer to the near-square foldable that a scroll-driven or JS-pinned version would have had to special-case. It costs zero framework JavaScript, all six peek photographs render at every class, and nothing is hidden from assistive technology in either state — a screen-reader user reads photos, work, résumé linearly and never encounters the two-state framing at all.",
+	},
+	{
+		id: "X-home-act2",
+		href: "/home-act2",
+		proves:
+			"That OQ-1 has an answer. The handoff's Act-2 grid is a 2×2 for four projects and D-38 locks five; UI-SPEC recorded that this had no Phase 0 owner despite Phase 0 being the design phase. One resolution is rendered rather than a menu: the design system is promoted to a full-width flagship row and the handoff's approved 2×2 is kept intact beneath it, at its stated 40px × 56px gaps. It also proves the one-liner budget — 60–110 characters at 13px in a 380px column really does land on two lines.",
+	},
+	// THE FIVE CASE ROUTES ARE ADJACENT ON PURPOSE, for the same reason the
+	// recolour and the restructure are: the SET is the artefact. Each one alone
+	// proves only that a template renders a document. Read in sequence they prove
+	// the harder thing — that the differences between them are entirely their
+	// copy, because there is one template, one stylesheet, one loader, one
+	// component set and one 68ch measure behind all five, and nothing is tightened
+	// or loosened per study.
+	//
+	// These five REPLACE X-case-long and X-case-short, which stacked two and three
+	// studies on one scroll under D-39's tier split. 00-RESPONSIVE-CONTRACT.md §7
+	// supersedes D-39 and R-3 sets the route shape: /work/{id}, because a case
+	// study is evidence UNDER Work.
+	{
+		id: "X-case-design-system",
+		href: "/work/design-system/",
+		evidence: [
+			"NO FIGURE RENDERS AN IMAGE, including the two that exist. Only hued's assets are committed; the rest have to be captured from live listings or from this site. Rendering hued's for real would make one study look different from the other four for a reason that has nothing to do with the design. Every slot instead reserves space at its intended aspect ratio and states where the capture has to come from — D-42's CLS argument made visible before a single byte exists.",
+		],
+		proves:
+			"The flagship, and the one study whose outcome the reader is looking at while reading it — the page is built out of the library it describes, so the closing claim is checkable rather than rhetorical. Structurally it is the heavier of the two register-carrying studies: a three-entry numbered register and TWO inline figure slots, both attached to register ordinals rather than to the section. It is also the study this phase nearly shipped twice: a 1,943-word draft and a 597-word compression sat side by side in the corpus for a whole plan, neither owned by the length gate, which passed while printing “OVER band” on its own stdout. The 1,943-word one is retired and the gate now enforces all five.",
+	},
+	{
+		id: "X-case-cairn",
+		href: "/work/cairn/",
+		proves:
+			"The same composition with ONE inline figure instead of two, which is the D-41 budget's other end and the reason the budget is a range rather than a number. Its register is the corpus's tightest argument: ## Problem ends on a question — how do you make a refusal load-bearing — and all three decisions answer it, two of them with the same mechanism (a lint that fails the build, both running inside the same lint:all) at different stakes. It carries the corpus's only security decision, restored here over the compression rule that had cut it, because a job-search tracker holding personal data with no security entry in its register misrepresents the product.",
+	},
+	{
+		id: "X-case-hued",
+		href: "/work/hued/",
+		proves:
+			"The other structural shape: a running decision section with NO numbered register, rendering through the identical composition as the two that have one. Under D-39 that difference selected a different template; it now selects nothing, and the page reports its own register count so a reviewer can see which shape they are looking at without the template caring. Its inline figure attaches to a SECTION rather than to an ordinal, because there is no ordinal to attach it to — the one code path the register-carrying studies never exercise.",
+	},
+	{
+		id: "X-case-momentum",
+		href: "/work/momentum/",
+		proves:
+			"The only study whose inline figure sits under ## Problem rather than under the decision section, because its argument is the number on the goal card and that number IS the problem statement. That makes it the proof that the figure's position is read out of the draft's own asset plan rather than hard-coded to the middle section — the same claim every other route makes implicitly and this one makes checkable.",
+	},
+	{
+		id: "X-case-timeshift",
+		href: "/work/timeshift/",
+		proves:
+			"The shortest of the five at 647 words and the closest thing the set has to a control: no register, one inline figure, nothing unusual anywhere in it. Its value is negative evidence — if the template only looked right on the studies with something structurally interesting to carry, this is the route where that would show. It also carries the heading trap the whole loader is built around: the corpus was normalised to “## Decisions” (plural), and this is the file plan 00-20 flipped to the singular to prove the loader's either-branch still accepts it, since normalisation left that branch load-bearing and unexercised at the same time.",
+	},
+];
+
+// PART 4 - the measurement readout, inline, so a reviewer never has to correlate
+// two artefacts. Every number below was produced by a committed script in this
+// directory; the command that produces it is printed beside it so the number can
+// be re-derived rather than trusted. Re-run all five after any change and update
+// this block — a stale readout beside a live sketch is worse than no readout.
+const MEASURED_ON = "2026-08-17";
+const measurements = [
+	{
+		label: "Hydrated island chunk (DS-09 / G-15)",
+		value: "570,274 B raw · 176,798 B gzip · 97 modules",
+		note: "One `import { Chip }` in a hydrated island pulls 10 ProseMirror, 23 TipTap, 4 lowlight, 4 highlight.js and 3 dnd-kit modules. The barrel does not tree-shake. This is why no public sketch hydrates.",
+		cmd: "node check-bundle.mjs",
+		verdict: "FAIL — recorded as G-15, not breakage",
+	},
+	{
+		label: "Framework JS on static routes",
+		value: "0 script tags",
+		note: "Asserted on every built page except the three probe fixtures whose entire purpose is to hydrate, each excluded by exact name rather than by glob.",
+		cmd: "bash check-no-js.sh",
+		verdict: "PASS",
+	},
+	{
+		label: "Public manifest — component CSS (D-33)",
+		value: "41,179 B raw · 9,447 B gzip across 14 sheets",
+		note: "Against the whole primitives stylesheet at 181,861 B raw / 36,083 B gzip — 77.4% less raw, 73.8% less gzip. The public route ships 86,593 B / 33,867 B in total, of which ~65 KB is the design system's token layer.",
+		cmd: "node check-css-size.mjs",
+		verdict: "PASS",
+	},
+	{
+		label: "Charcoal exhaustiveness (DSGN-05)",
+		value: "37 / 37 tokens restated in the dark block",
+		note: "Every charcoal token resolves at (0,3,0) in dark mode, so the cascade is order-independent by construction — measured across four constructed import orders × two modes × two inlineStylesheets settings.",
+		cmd: "node check-theme-exhaustive.mjs",
+		verdict: "PASS",
+	},
+	{
+		label: "Contrast, three surfaces per mode",
+		value: "54 ratios, zero deviations from UI-SPEC",
+		note: "Tightest: 7.01 AAA (dark --ochre-d-strong on panel), 4.86 AA (light --ochre-d on panel), 3.20 non-text (--wire on panel). --ochre fails the text bar on 2 of 3 dark surfaces, asserted directionally so it cannot be quietly darkened.",
+		cmd: "node check-contrast.mjs",
+		verdict: "PASS",
+	},
+	{
+		label: "Font faces — charcoal layer",
+		value: "8 rules against the design system's 73",
+		note: "Correction from plan 07: a consumer importing the current tokens.css emits 81, because the design system's 73 come with it. D-36 must actually remove the faces upstream for the split to pay at the consumer.",
+		cmd: "node check-font-names.mjs",
+		verdict: "PASS",
+	},
+	{
+		label: "Ivory absence (DSGN-03)",
+		value: "0 ivory token values under src/",
+		note: "Proves the ABSENCE of ivory, not the presence of good. Rules 1–9 are reviewed by eye in plan 11; a green guard is not a design review.",
+		cmd: "bash check-no-ivory.sh",
+		verdict: "added in plan 09 task 3",
+	},
+];
+---
+
+<Public title="X-contact-sheet — Phase 0 review surface" maxWidth={1280}>
+	<header class="cs-head">
+		<Heading level={1} size="3xl" weight="bold">Phase 0 contact sheet</Heading>
+		<Text size="md" tone="muted" maxWidth={720}>
+			Every artefact this phase produced, what each one proves, and the measurements
+			taken alongside them. Walk it top to bottom in six passes, one question per
+			pass; six focused passes beat one unbounded scroll. The playground this renders
+			from is deleted at phase exit, so anything that must survive is either a
+			screenshot in <code>screenshots/</code> or a sentence in a committed document.
+		</Text>
+	</header>
+
+	<!-- ── PART 1 ────────────────────────────────────────────────────────── -->
+	<section class="cs-part">
+		<Eyebrow size="md" tone="muted">PART 1 — INDEX</Eyebrow>
+		<Heading level={2} size="xl" weight="bold">Artefacts, by class</Heading>
+		<Text size="base" tone="muted" maxWidth={720}>
+			Each line states what the artefact <strong>proves</strong>, not what it shows.
+			A line nobody could write is an artefact nobody needed.
+		</Text>
+
+		<h3 class="cs-class">Public — <code>X-</code></h3>
+		<ol class="cs-list">
+			{
+				publicArtefacts.map((a) => (
+					<li class="cs-item">
+						<a class="cs-id" href={a.href}>{a.id}</a>
+						<Text size="base" tone="muted">{a.proves}</Text>
+						{a.evidence && (
+							<ul class="cs-evidence">
+								{a.evidence.map((e) => (
+									<li><Text size="sm" tone="muted">{e}</Text></li>
+								))}
+							</ul>
+						)}
+					</li>
+				))
+			}
+		</ol>
+
+		<h3 class="cs-class">
+			Screens <code>S-</code> · Empty <code>E-</code> · Treatments <code>T-</code> ·
+			Overlays <code>O-</code> · Phone <code>P-</code> · Refusals <code>R-</code>
+		</h3>
+		<p class="cs-pending">
+			<strong>{adminScreens.length} of {CANONICAL_SCREENS.length} admin screens built.</strong>
+			This section is generated from the routes: each admin screen is one file
+			exporting its own <code>SCREEN</code> and <code>STATES</code>, and this page
+			imports every one of them, so a screen cannot exist without appearing here and
+			plans 13–16 add screens without editing this file.
+			<br />
+			<strong>The state axis is a route param, not a query string.</strong> Astro
+			strips the query string on any prerendered route — in <code>astro dev</code> as
+			well as in the build (<code>core/request.js</code> sets
+			<code>url.search = ""</code> when <code>isPrerendered</code>) — so
+			<code>?state=</code> could never have worked without an adapter. Each screen
+			emits one real route per state instead, which is why every state link below is a
+			plain crawlable URL that works with zero JavaScript.
+			<code>check-states.mjs</code> proves each one renders its own state.
+		</p>
+
+		<ol class="cs-list">
+			{
+				adminScreens.map((s) => (
+					<li class="cs-item">
+						<a class="cs-id" href={`${s.screen.route}/`}>S-{s.screen.id}</a>
+						<Text size="base" tone="muted">{s.screen.proves}</Text>
+						<p class="cs-states">
+							<span class="cs-states-label">entity</span>
+							<code>{s.screen.entity}</code>
+							<span class="cs-states-label">layouts</span>
+							<code>{s.screen.layouts.join(" + ")}</code>
+							{!s.known && (
+								<span class="cs-states-label">UNKNOWN SCREEN ID — not in CANONICAL_SCREENS</span>
+							)}
+						</p>
+						<p class="cs-states">
+							{s.states.map((st) => (
+								<a class="cs-state" href={stateHref(s.screen, st.state)} data-coverage={st.coverage}>
+									{st.state}
+									<span class="cs-state-ref">
+										{st.coverage === "designed"
+											? st.ref
+											: st.coverage === "n/a"
+												? `n/a: ${st.reason}`
+												: `inherits ${st.ref}`}
+									</span>
+								</a>
+							))}
+						</p>
+					</li>
+				))
+			}
+		</ol>
+
+		<h3 class="cs-class">Cross-cutting — routes with no coverage cell</h3>
+		<p class="cs-pending">
+			An <code>O-</code> or <code>T-</code> artefact is pointed AT by cells rather than
+			owning one, so it lives on a route with no <code>STATES</code> array and declares
+			itself through an <code>ARTEFACT</code> / <code>ARTEFACTS</code> export instead.
+			Those declarations are what Part 2's sixth condition resolves an
+			<code>inherits</code> against — which is the whole reason they are machine-readable
+			rather than prose.
+		</p>
+		<ol class="cs-list">
+			{
+				matrix.artefacts.map((a) => (
+					<li class="cs-item">
+						<a class="cs-id" href={`${a.route}/`}>{a.id}</a>
+						<Text size="base" tone="muted">{a.proves}</Text>
+					</li>
+				))
+			}
+		</ol>
+
+		<p class="cs-pending">
+			{
+				adminScreens.length === CANONICAL_SCREENS.length
+					? `All ${CANONICAL_SCREENS.length} admin screens are built, along with ${matrix.artefacts.length} cross-cutting artefacts, the four phone capabilities and the two refusals. Roughly 35 admin artefacts in total, which is the reduction Part 2 exists to justify.`
+					: `The remaining ${CANONICAL_SCREENS.length - adminScreens.length} screens (${CANONICAL_SCREENS.filter((id) => !adminScreens.some((s) => s.screen.id === id)).join(", ")}) arrive in plans 13–16, along with the overlays, the phone capabilities and the two refusals.`
+			}
+		</p>
+	</section>
+
+	<!-- ── PART 2 ────────────────────────────────────────────────────────── -->
+	<section class="cs-part">
+		<Eyebrow size="md" tone="muted">PART 2 — COVERAGE TABLE</Eyebrow>
+		<Heading level={2} size="xl" weight="bold">
+			{CANONICAL_SCREENS.length} screens × {CANONICAL_STATES.length} states = {matrix.counts.cells} cells
+		</Heading>
+		<Text size="base" tone="muted" maxWidth={720}>
+			<strong>Generated from the screens, not typed.</strong> Every cell below is read
+			out of a route's own <code>STATES</code> array through the same glob that builds
+			Part 1, so the table cannot drift from the sketches it describes. Each reads
+			exactly one of <code>designed</code> (with its artefact ID), <code>inherits</code>
+			(with the treatment ID) or <code>n/a</code> (with a one-clause reason).
+			<strong>A blank cell fails the build</strong> — that single rule is what turns
+			D-03's “exhaustively” from an aspiration into a checkable property.
+		</Text>
+		<Text size="base" tone="muted" maxWidth={720}>
+			Six conditions fail it, and the sixth is the one a table like this fails at
+			silently: <strong>an <code>inherits</code> whose target nobody designed</strong>.
+			<code>T-error-publish</code> was exactly that from plan 12 until plan 16 — a legal
+			artefact id, so every earlier guard passed it, pointing at a sketch that did not
+			exist. Every <code>inherits</code> cell below therefore carries the route where its
+			treatment is actually hosted, and the build fails if one of them resolves to
+			nothing.
+		</Text>
+
+		<div class="cs-matrix-scroll">
+			<table class="cs-matrix">
+				<thead>
+					<tr>
+						<th scope="col">screen</th>
+						{CANONICAL_STATES.map((s) => <th scope="col">{s}</th>)}
+					</tr>
+				</thead>
+				<tbody>
+					{
+						matrix.rows.map((row) => (
+							<tr>
+								<th scope="row">
+									{row.route ? (
+										<a class="cs-matrix-screen" href={`${row.route}/`}>{row.id}</a>
+									) : (
+										<span class="cs-matrix-screen">{row.id}</span>
+									)}
+									{row.populated?.ref && (
+										<span class="cs-matrix-srow">{row.populated.ref}</span>
+									)}
+								</th>
+								{row.cells.map((c) => (
+									<td data-coverage={c.coverage}>
+										<span class="cs-matrix-kind">{COVERAGE_LABEL[c.coverage]}</span>
+										{c.coverage === "n/a" ? (
+											<span class="cs-matrix-reason">{c.reason}</span>
+										) : (
+											<>
+												<a class="cs-matrix-cell" href={c.href}>{c.ref}</a>
+												{c.coverage === "inherits" && c.hostedAt && (
+													<a class="cs-matrix-host" href={c.hostedAt}>
+														designed at {c.hostedAt}
+													</a>
+												)}
+											</>
+										)}
+									</td>
+								))}
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+
+		<p class="cs-pending">
+			<strong>
+				{matrix.counts.cells} cells — {matrix.counts.designed} designed,
+				{" "}{matrix.counts.inherits} inherits, {matrix.counts.na} n/a, 0 blank.
+			</strong>
+			The 31 <code>inherits</code> cells are the reduction: nine screen-specific sketches
+			plus a small set of treatments, each sketched once on its most demanding host, cover
+			what ~108 naive combinations would otherwise have cost. Two <code>n/a</code> cells
+			are the honest end of the same argument — a state that cannot occur is not a state
+			somebody forgot. Re-run without a build: <code>node check-coverage.mjs</code>.
+		</p>
+	</section>
+
+	<!-- ── PART 3 ────────────────────────────────────────────────────────── -->
+	<section class="cs-part">
+		<Eyebrow size="md" tone="muted">PART 3 — PHONE COVERAGE</Eyebrow>
+		<Heading level={2} size="xl" weight="bold">Four capabilities, two refusals</Heading>
+		<Text size="base" tone="muted" maxWidth={720}>
+			D-09 permits exactly four things on a phone and requires two designed refusals, so
+			phone is a <strong>six-row list</strong> rather than a 7× multiplier on the matrix
+			above. That is the reduction that makes ~35 artefacts reviewable instead of ~108:
+			the permitted set is closed, so the phone axis is enumerable rather than crossed.
+			All six render at 390 × 844, charcoal <strong>light</strong>, at
+			<strong>comfortable</strong> density — never compact, whose 30px controls sit under
+			the 44px touch floor D-09 implies.
+		</Text>
+		<ol class="cs-phone">
+			{
+				PHONE_ROUTES.map((r) => (
+					<li class="cs-phone-row">
+						<a class="cs-id" href={`${r.route}/`}>{r.id}</a>
+						<span class="cs-phone-cap">{r.capability}</span>
+						<Text size="base" tone="muted">{r.what}</Text>
+					</li>
+				))
+			}
+			{
+				REFUSALS.map((r) => (
+					<li class="cs-phone-row" data-refusal="true">
+						<a class="cs-id" href={`${r.route}/`}>{r.id}</a>
+						<span class="cs-phone-cap">{r.capability} — refused</span>
+						<Text size="base" tone="muted">{r.what}</Text>
+					</li>
+				))
+			}
+		</ol>
+		<p class="cs-pending">
+			<strong>Both refusals are designed screens rather than missing ones</strong>, and
+			neither ends in a dead end: the crop refusal leaves every other field on Home
+			editable, and the case-study refusal leaves the project's card fields editable. That
+			is the difference between an honest refusal and a broken screen, and it is what
+			pass 6 of the review asks of these two.
+			<code>O-phone-sidebar</code> renders open on <code>P-dashboard</code>, because
+			<code>appshell.css</code> hides the sidebar outright below 768px and without the
+			Sheet there is no way off the screen.
+		</p>
+	</section>
+
+	<!-- ── PART 4 ────────────────────────────────────────────────────────── -->
+	<section class="cs-part">
+		<Eyebrow size="md" tone="muted">PART 4 — MEASUREMENT READOUT</Eyebrow>
+		<Heading level={2} size="xl" weight="bold">The numbers, beside the design</Heading>
+		<Text size="base" tone="muted" maxWidth={720}>
+			Measured {MEASURED_ON} in this directory. The evidence sits on the same page as
+			the design deliberately: a reviewer looking at a sketch should not have to go
+			and find the byte count that decides whether it is shippable.
+		</Text>
+
+		<div class="cs-measure">
+			{
+				measurements.map((m) => (
+					<div class="cs-measure-row">
+						<div class="cs-measure-head">
+							<strong>{m.label}</strong>
+							<code>{m.cmd}</code>
+						</div>
+						<div class="cs-measure-value">{m.value}</div>
+						<Text size="sm" tone="muted">{m.note}</Text>
+						<Eyebrow size="sm" tone="muted">{m.verdict}</Eyebrow>
+					</div>
+				))
+			}
+		</div>
+	</section>
+</Public>
+
+<style>
+	/* App LAYOUT css only. Colours are charcoal tokens throughout. */
+
+	.cs-head {
+		display: grid;
+		gap: var(--space-4);
+		padding-bottom: var(--space-12);
+	}
+
+	.cs-part {
+		display: grid;
+		gap: var(--space-3);
+		padding: var(--space-8) 0;
+		border-top: 1px solid var(--rule);
+	}
+
+	.cs-class {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-3);
+		font-weight: 500;
+		margin: var(--space-4) 0 0;
+	}
+
+	.cs-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-5);
+	}
+
+	.cs-item {
+		display: grid;
+		gap: var(--space-1);
+		padding-left: var(--space-4);
+		border-left: 2px solid var(--wire);
+	}
+
+	.cs-id {
+		font-family: var(--mono);
+		font-size: var(--text-base);
+		font-weight: 500;
+		letter-spacing: var(--ls-wide);
+		color: var(--ink);
+		text-decoration: none;
+		border-bottom: 1px solid var(--wire);
+		justify-self: start;
+	}
+	.cs-id:hover {
+		color: var(--ochre-d);
+		border-bottom-color: var(--ochre-d);
+	}
+
+	.cs-evidence {
+		list-style: none;
+		margin: var(--space-2) 0 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-2);
+	}
+
+	/* The per-screen state links. Each carries its coverage value as a data
+	   attribute so `designed` and `inherits` are distinguishable at a glance —
+	   pass 1 of the review walks exactly that distinction. */
+	.cs-states {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-2);
+		margin: var(--space-2) 0 0;
+	}
+
+	.cs-states-label {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+
+	.cs-state {
+		display: inline-flex;
+		flex-direction: column;
+		gap: 2px;
+		padding: var(--space-1) var(--space-2);
+		border: 1px solid var(--wire);
+		border-radius: var(--radius-sm);
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-2);
+		text-decoration: none;
+		/* The 44px floor applies to every coarse-pointer class, and these are
+		   real links. Padding carries the hit area; the drawn geometry is
+		   unchanged, because the floor is on the target and not on the paint. */
+		min-height: 30px;
+		justify-content: center;
+	}
+	.cs-state:hover {
+		border-color: var(--ochre-d);
+		color: var(--ink);
+	}
+	.cs-state:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.cs-state[data-coverage="inherits"] {
+		border-style: dashed;
+	}
+	.cs-state-ref {
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	@media (pointer: coarse) {
+		.cs-state {
+			min-height: 44px;
+		}
+	}
+	.cs-evidence > li {
+		padding-left: var(--space-3);
+		border-left: 1px solid var(--rule);
+	}
+
+	/* ══ THE 44px FLOOR ON THIS PAGE'S OWN LINKS ═══════════════════════════
+	   Found by a browser audit rather than by reading: `.cs-id` measured 18px
+	   and the three matrix link classes 14 / 15 / 39px at every coarse-pointer
+	   class. The floor is on the HIT AREA, not on the paint — the mono type
+	   and the underline are unchanged; the box grows around them. It costs the
+	   matrix real height, and that is the correct trade: the table is a set of
+	   real navigable links and R-6 does not exempt a review surface.
+
+	   Six targets on this page are NOT fixed here and are deliberately left
+	   alone: three `<a>` in the design system's AppBar and three in its Footer,
+	   both from Public.astro, both shared with every public sketch, and both
+	   measuring under the floor since plan 09. They are not this plan's change
+	   and are logged to deferred-items.md rather than reached into. */
+	@media (pointer: coarse) {
+		.cs-id,
+		.cs-matrix-screen,
+		.cs-matrix-cell,
+		.cs-matrix-host {
+			min-height: 44px;
+			display: flex;
+			align-items: center;
+		}
+	}
+
+	/* ══ PART 2 — THE 42-CELL MATRIX ═══════════════════════════════════════
+	   A real <table> with real headers, because the thing being reviewed is a
+	   grid of claims and a reviewer reads it by row and by column. It scrolls
+	   horizontally inside its own container rather than reflowing: R-6 says
+	   content must exist at 344px, not that a 7 × 6 table must become a list —
+	   and a coverage matrix reflowed into seven stacked lists stops being a
+	   matrix, which is the one thing it is for. The scroll container is
+	   focusable so it is reachable by keyboard. */
+	.cs-matrix-scroll {
+		overflow-x: auto;
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+	}
+	.cs-matrix {
+		border-collapse: collapse;
+		width: 100%;
+		min-width: 900px;
+		font-size: var(--text-xs);
+	}
+	.cs-matrix th,
+	.cs-matrix td {
+		border: 1px solid var(--rule);
+		padding: var(--space-2);
+		text-align: left;
+		vertical-align: top;
+	}
+	.cs-matrix thead th {
+		background: var(--cream-3);
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-3);
+		font-weight: 500;
+	}
+	.cs-matrix tbody th {
+		background: var(--cream-2);
+		display: table-cell;
+	}
+	.cs-matrix td {
+		display: table-cell;
+	}
+	.cs-matrix-screen,
+	.cs-matrix-cell,
+	.cs-matrix-host {
+		display: block;
+		font-family: var(--mono);
+		text-decoration: none;
+	}
+	.cs-matrix-screen {
+		font-size: var(--text-xs);
+		color: var(--ink);
+		border-bottom: 1px solid var(--wire);
+		width: fit-content;
+	}
+	.cs-matrix-screen:hover,
+	.cs-matrix-cell:hover,
+	.cs-matrix-host:hover {
+		color: var(--ochre-d);
+	}
+	.cs-matrix-srow,
+	.cs-matrix-kind {
+		display: block;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-4);
+	}
+	.cs-matrix-cell {
+		font-size: var(--text-2xs);
+		color: var(--ink-2);
+		border-bottom: 1px solid var(--rule);
+		width: fit-content;
+	}
+	.cs-matrix-host,
+	.cs-matrix-reason {
+		display: block;
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+		margin-top: 2px;
+	}
+	.cs-matrix-reason {
+		font-family: var(--font-body);
+		line-height: var(--lh-relaxed);
+	}
+	/* THREE COVERAGE VALUES, THREE VISUAL STATES — and never colour alone. The
+	   word is always printed; the border weight is the second signal. */
+	.cs-matrix td[data-coverage="designed"] {
+		background: var(--cream);
+		border-left: 3px solid var(--wire);
+	}
+	.cs-matrix td[data-coverage="inherits"] {
+		border-left: 3px dashed var(--rule);
+	}
+	.cs-matrix td[data-coverage="n/a"] {
+		border-left: 3px dotted var(--rule);
+		background: var(--cream-3);
+	}
+
+	/* ══ PART 3 — THE SIX-ROW PHONE LIST ═══════════════════════════════════ */
+	.cs-phone {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		gap: var(--space-4);
+	}
+	.cs-phone-row {
+		display: grid;
+		gap: var(--space-1);
+		padding-left: var(--space-4);
+		border-left: 2px solid var(--wire);
+	}
+	.cs-phone-row[data-refusal="true"] {
+		border-left-style: dashed;
+		border-left-color: var(--rule);
+	}
+	.cs-phone-cap {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		letter-spacing: var(--ls-wide);
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+
+	.cs-pending,
+	.cs-placeholder {
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+		padding: var(--space-4);
+		color: var(--ink-3);
+		font-family: var(--font-body);
+		font-size: var(--text-base);
+		line-height: var(--lh-relaxed);
+		display: grid;
+		gap: var(--space-2);
+	}
+
+	.cs-measure {
+		display: grid;
+		gap: var(--space-4);
+		padding-top: var(--space-2);
+	}
+
+	.cs-measure-row {
+		display: grid;
+		gap: var(--space-1);
+		padding: var(--space-4);
+		background: var(--cream-2);
+		border: 1px solid var(--wire);
+		border-radius: var(--radius-md);
+	}
+
+	.cs-measure-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--space-3);
+		font-size: var(--text-md);
+		color: var(--ink);
+	}
+
+	.cs-measure-value {
+		font-family: var(--mono);
+		font-size: var(--text-md);
+		color: var(--ochre-d-strong);
+	}
+
+	code {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+</style>

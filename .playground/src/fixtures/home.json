@@ -1,0 +1,861 @@
+{
+	"populated": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "Six peek slots, one of them cropped",
+		"headline": "Home",
+		"sub": "Six peek slots, one of them cropped, in one full-width column with no split pane.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"empty": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "The peek strip has nothing in it.",
+		"headline": "Home",
+		"sub": "The title block is populated. The peek strip has nothing in it.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"loading": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "Reading the peek strip.",
+		"headline": "Home",
+		"sub": "Reading the peek strip. The shell, the title block and Publish are already usable.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": true,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"error": {
+		"title": "",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "The site title is blank, and Home still saves.",
+		"headline": "Home",
+		"sub": "The site title is blank, and Home still saves. Nothing about this state is modal.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": true,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"dirty": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "Four edits to Home are not published yet",
+		"headline": "Home",
+		"sub": "Four edits to Home are not published yet, and are pending in three places at once.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"conflict": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "home_config.json changed after your draft started.",
+		"headline": "Home",
+		"sub": "One file is conflicted; the other screens stay pending.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"success": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "Home rebuilds in about a minute",
+		"headline": "Home",
+		"sub": "Committed. Home rebuilds in about a minute, and then it is simply live.",
+		"nav": {
+			"home": "published"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "compact",
+		"layout": "desktop"
+	},
+	"phone": {
+		"title": "Akhil Saxena",
+		"subtitle": "Interfaces & Imagery",
+		"intro": "Building for the web. Photographing everything else.",
+		"slots": [
+			{
+				"id": "architecture-singapore",
+				"title": "Singapore",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/singapore-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "abstract-intothemist",
+				"title": "Into The Mist",
+				"category": "abstract",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/abstract/intothemist-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "nature-acrossthetrees",
+				"title": "Across The Trees",
+				"category": "nature",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/nature/acrossthetrees-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-hawamahaldaytime",
+				"title": "Hawa Mahal Daytime",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/hawamahaldaytime-md.webp",
+				"width": 2000,
+				"height": 3000,
+				"orientation": "tall",
+				"position": "50% 25%"
+			},
+			{
+				"id": "wildlife-kingfisher",
+				"title": "Kingfisher",
+				"category": "wildlife",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/wildlife/kingfisher-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			},
+			{
+				"id": "architecture-eiffeljpg",
+				"title": "Eiffel",
+				"category": "architecture",
+				"src": "https://pub-2d90aedeebcf4142afe524930c3b6471.r2.dev/photos/architecture/eiffeljpg-md.webp",
+				"width": 2000,
+				"height": 1333,
+				"orientation": "wide",
+				"position": null
+			}
+		],
+		"socialLinks": [
+			{
+				"icon": "github",
+				"url": "https://github.com/akhil-saxena",
+				"label": "GitHub"
+			},
+			{
+				"icon": "linkedin",
+				"url": "https://www.linkedin.com/in/akhil-saxena",
+				"label": "LinkedIn"
+			},
+			{
+				"icon": "mail",
+				"url": "mailto:saxena.akhil42@gmail.com",
+				"label": "Email"
+			}
+		],
+		"ctas": [
+			{
+				"text": "View Portfolio →",
+				"link": "/portfolio",
+				"style": "primary"
+			},
+			{
+				"text": "View Resume",
+				"link": "/resume",
+				"style": "secondary"
+			}
+		],
+		"focalId": "architecture-hawamahaldaytime",
+		"marker": "Crop needs a bigger screen.",
+		"headline": "Home",
+		"sub": "Phone layout. Everything except the crop control is here and usable.",
+		"nav": {
+			"home": "draft"
+		},
+		"pipeline": {
+			"tone": "info",
+			"title": "Processing 3 photos.",
+			"description": "Resizing and reading EXIF. They appear in the gallery when processing finishes, not when you publish.",
+			"value": 1,
+			"max": 3,
+			"label": "1 of 3 processed"
+		},
+		"peekLoading": false,
+		"titleError": false,
+		"density": "comfortable",
+		"layout": "phone"
+	}
+}

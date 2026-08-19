@@ -1,0 +1,102 @@
+---
+// Zero-JS static-render probe — the NON-hydrated fixture (MEASURE-2).
+//
+// This page renders EIGHT design-system components imported from the barrel
+// into .astro frontmatter with NO hydration directive anywhere. Astro renders
+// every one to plain HTML at build time and ships no framework JS.
+//
+// NOTE TO ANYONE EDITING THIS FILE: the literal string "client" followed by a
+// colon must never appear here, in code OR in a comment. The acceptance check
+// is a plain `grep` for that token and it cannot tell a directive from prose,
+// so a well-meaning comment mentioning the directive by name silently turns
+// this fixture's own tripwire red. That is why the wording below says
+// "hydration directive" everywhere it means the obvious thing.
+//
+// The claim this settles is the load-bearing one for the whole project: the
+// PROJECT.md strategy "DS components everywhere + Lighthouse 95+" only works
+// if composing the design system is free on non-interactive pages.
+//
+// A correction research recorded and this fixture must not re-assert: the
+// reason is NOT "DS primitives are pure forwardRef with zero hooks" — a hook
+// audit found only 32 of 86 component files are hook-free (37%). Astro renders
+// ANY React component to static HTML without a hydration directive; useState
+// simply returns its initial value during SSR. The real residual risks are (a)
+// module-scope document/window access and (b) components whose correct
+// appearance depends on an effect that never runs. All eight below are from
+// the hook-free set, so neither applies here.
+//
+// Pitfall 2: this page passing tells you NOTHING about DS-09 tree-shaking.
+// That is `probe/island.astro`, deliberately a separate file with a separate
+// name. A DS-09 result reported without a byte count is the warning sign.
+
+import {
+	AppBar,
+	Card,
+	Chip,
+	Footer,
+	Heading,
+	StatCard,
+	Text,
+	Timeline,
+} from "@akhil-saxena/design-system";
+
+import "@akhil-saxena/design-system/tokens.css";
+import "@akhil-saxena/design-system/primitives.css";
+
+const events = [
+	{ id: 1, date: "2021-06-01", label: "Joined Brevo", description: "Frontend engineering" },
+	{ id: 2, date: "2024-02-01", label: "Design system v1", description: "80 components" },
+	{ id: 3, date: "2026-08-01", label: "Portfolio rebuild", description: "Astro + islands" },
+];
+
+const footerLinks = [
+	{ label: "GitHub", href: "https://github.com/akhil-saxena" },
+	{ label: "LinkedIn", href: "#" },
+];
+---
+
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/static — zero-JS static render fixture</title>
+	</head>
+	<body>
+		{/*
+		  NOTE: `nav` takes a ReactNode, but pass it a STRING, not JSX.
+		  .astro files are not JSX — `nav={<span>x</span>}` compiles to an Astro
+		  RenderTemplateResult ({htmlParts, expressions, error}), which React
+		  cannot render, and the build dies with "Objects are not valid as a
+		  React child". Astro-markup-into-a-React-PROP never works; only the
+		  default slot (children) is converted for you.
+		*/}
+		<AppBar nav="Work · Photos · Résumé" />
+
+		<main style="padding: 2rem; display: grid; gap: 1.5rem;">
+			<Heading level={1}>Zero-JS static render</Heading>
+
+			<Text>
+				Eight design-system components, imported from the barrel into .astro
+				frontmatter, rendered with no hydration directive. This page must emit
+				zero script tags.
+			</Text>
+
+			<div style="display: flex; gap: 0.5rem;">
+				<Chip tone="default">architecture</Chip>
+				<Chip tone="default">nature</Chip>
+				<Chip tone="default">wildlife</Chip>
+			</div>
+
+			<Card>
+				<Heading level={2}>Card</Heading>
+				<Text>A card rendered entirely at build time.</Text>
+			</Card>
+
+			<StatCard label="Photos" value={39} change="+7 categories" changeDir="up" />
+
+			<Timeline events={events} orientation="vertical" />
+		</main>
+
+		<Footer copyright="© 2026 Akhil Saxena" links={footerLinks} />
+	</body>
+</html>

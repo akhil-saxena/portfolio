@@ -1,0 +1,40 @@
+---
+// Cascade probe — VARIANT D (MEASURE-3, D-02 claim 3).
+//
+// Import shape: the exact reverse of variant C. `theme-charcoal.css` comes
+// from this frontmatter and the design system's `tokens.css` arrives from a
+// HYDRATED ISLAND (`TokensCssIsland.tsx`).
+//
+// This is the island-flavoured counterpart of variant B, and the same reason
+// applies: it is the ordering in which the design system's `:root.dark, .dark`
+// block lands LAST, so a charcoal token missing from the (0,3,0) dark block
+// loses the (0,2,0) tie on source order. Testing only C would test only the
+// forgiving half of the island case.
+//
+// The `client:load` directive is load-bearing — see casc-c.astro.
+//
+// The order of the two import lines below is load-bearing for the same reason
+// casc-c's is, and casc-c's header carries the measurement. Keep the component
+// import first here too: that is what makes this page emit tokens before
+// charcoal while casc-c emits charcoal before tokens, so the island half of
+// the matrix covers both orders rather than one order twice.
+//
+// See casc-a.astro for the full note on why the matrix is constructed.
+
+import TokensCssIsland from "../../components/TokensCssIsland.tsx";
+
+import "../../styles/theme-charcoal.css";
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/casc-d — theme in .astro, tokens from an island</title>
+	</head>
+	<body>
+		<h1>casc-d</h1>
+		<p>theme-charcoal.css from frontmatter; tokens.css hoisted out of a hydrated island.</p>
+		<TokensCssIsland client:load />
+	</body>
+</html>

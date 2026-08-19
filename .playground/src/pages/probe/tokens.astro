@@ -1,0 +1,113 @@
+---
+// Charcoal token smoke probe (DSGN-05).
+//
+// This page exists so the two charcoal stylesheets are exercised by a real
+// build rather than only by static greps: a stylesheet that parses is not the
+// same as a stylesheet the bundler can resolve, and the four font entry points
+// are bare package specifiers that only prove themselves at build time.
+//
+// Cascade order below is the contract stated in theme-charcoal.css's header:
+//   1. the design system's token layer      (the values charcoal overrides)
+//   2. fonts-charcoal.css                   (faces only, zero tokens)
+//   3. theme-charcoal.css                   (tokens only, zero faces)
+//   4. primitives.css                       (must come after the token layer)
+//
+// The order is deliberately NOT load-bearing for correctness - that is the
+// whole point of the exhaustiveness invariant. Every charcoal token is
+// restated in the dark block at (0,3,0), so it wins over :root.dark (0,2,0)
+// by arithmetic regardless of which sheet the bundler emitted last. Plan 07's
+// cascade probe is what proves that across four constructed orders; this page
+// only proves the sheets build and resolve.
+//
+// Components below are drawn from the hook-free set already verified by
+// probe/static.astro, and carry NO hydration directive, so this page emits no
+// client JS and the DS-09 island measurement is untouched by it.
+//
+// Do not pass Astro markup into a React PROP here (nav={<span/>} and friends).
+// .astro is not JSX - such an expression compiles to a RenderTemplateResult
+// that React cannot render and the build dies. Only the default slot is
+// converted for you. Pass a plain string.
+
+import { Card, Chip, Heading, Text } from "@akhil-saxena/design-system";
+
+import "@akhil-saxena/design-system/tokens.css";
+import "../../styles/fonts-charcoal.css";
+import "../../styles/theme-charcoal.css";
+import "@akhil-saxena/design-system/primitives.css";
+
+// One row per surface, so the three-surface contrast model the token contract
+// is measured against is visible rather than only asserted in a comment.
+const surfaces = [
+	{ name: "page", token: "--cream", role: "the field everything sits on" },
+	{ name: "paper", token: "--cream-2", role: "raised: cards, sidebar, chrome" },
+	{ name: "panel", token: "--cream-3", role: "inset: table zebra, wells" },
+];
+
+const inks = ["--ink", "--ink-2", "--ink-3", "--ink-4", "--ink-5"];
+---
+
+<html lang="en" class="dark" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/tokens — charcoal token smoke</title>
+	</head>
+	<body style="background: var(--cream); color: var(--ink); margin: 0;">
+		<main style="padding: 2rem; display: grid; gap: 1.5rem; max-width: 60rem;">
+			<Heading level={1}>Charcoal — dark</Heading>
+
+			<Text>
+				Playfair Display Variable for display, DM Sans Variable for body, IBM Plex
+				Mono for metadata. If this paragraph is rendering in a system serif, the
+				face layer did not resolve.
+			</Text>
+
+			<p
+				style="font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ochre-d-strong); margin: 0;"
+			>
+				+15% conversion · mono at the strong accent step
+			</p>
+
+			<div style="display: flex; gap: 0.5rem;">
+				<Chip tone="default">architecture</Chip>
+				<Chip tone="default">nature</Chip>
+				<Chip tone="default">wildlife</Chip>
+			</div>
+
+			{
+				surfaces.map((s) => (
+					<div
+						style={`background: var(${s.token}); border: 1px solid var(--rule); padding: 1rem; display: grid; gap: 0.35rem;`}
+					>
+						<span
+							style="font-family: var(--font-mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);"
+						>
+							{s.name} · {s.token} · {s.role}
+						</span>
+						{inks.map((ink) => (
+							<span style={`color: var(${ink}); font-family: var(--font-body); font-size: 13px;`}>
+								{ink} — the quick brown fox jumps over the lazy dog
+							</span>
+						))}
+					</div>
+				))
+			}
+
+			<Card>
+				<Heading level={2}>Elevation is surface plus hairline</Heading>
+				<Text>
+					In dark mode the design system's black-alpha shadows are invisible on
+					#161616, so charcoal restates shadow-1 as none and shadow-2 as a
+					one-pixel rule ring.
+				</Text>
+			</Card>
+
+			<a
+				href="#"
+				style="font-family: var(--font-serif); font-style: italic; font-size: 22px; color: var(--ochre-d-strong);"
+			>
+				See the photographs →
+			</a>
+		</main>
+	</body>
+</html>

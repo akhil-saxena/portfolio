@@ -1,0 +1,55 @@
+---
+// CaseSpans.astro — the inline renderer, shared by BOTH case-study tiers.
+//
+// Recursive by self-import, because emphasis nests: the corpus carries
+// `*"a quoted one-liner"*` and `**a bold lead-in with `code` inside it**`, and a
+// flat renderer would have to choose which one to drop.
+//
+// TWO SPAN TYPES ARE REVIEW SCAFFOLDING RATHER THAN PROSE, and both are rendered
+// VISIBLY on purpose:
+//
+//   source     [source: <file>] — every factual claim in the corpus carries one,
+//              asserted by plans 05 and 06. Rendering them makes provenance
+//              auditable ON THE PAGE rather than in the source file, which is
+//              what T-00-08 asks for. Phase 6 strips them.
+//   gapmarker  [NEEDS AKHIL] — the literal marker is kept inside the prose, not
+//              replaced by a label. A block that reads as provisional because of
+//              its styling alone stops reading that way the moment someone
+//              screenshots it into a slide; the words have to survive.
+//
+// The `[source:` text is emitted literally, brackets and all. That is deliberate
+// on two counts: it is unmistakably not prose, and it means the annotation can
+// be counted in the built HTML rather than trusted.
+
+import CaseSpans from "./CaseSpans.astro";
+
+interface Props {
+	spans: any[];
+}
+
+const { spans } = Astro.props;
+---
+
+{
+	spans.map((s) =>
+		s.t === "text" ? (
+			<Fragment set:text={s.v} />
+		) : s.t === "code" ? (
+			<code class="case-code" set:text={s.v} />
+		) : s.t === "strong" ? (
+			<strong>
+				<CaseSpans spans={s.spans} />
+			</strong>
+		) : s.t === "em" ? (
+			<em>
+				<CaseSpans spans={s.spans} />
+			</em>
+		) : s.t === "gapmarker" ? (
+			<span class="case-gap-marker" set:text={s.v} />
+		) : s.t === "source" ? (
+			<span class="case-src">
+				[source: <CaseSpans spans={s.spans} />]
+			</span>
+		) : null,
+	)
+}

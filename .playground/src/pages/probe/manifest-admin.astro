@@ -1,0 +1,71 @@
+---
+// D-33 manifest probe — the ADMIN set.
+//
+// The counterpart of probe/manifest-public.astro, importing the admin manifest
+// instead so `check-css-size.mjs` has one route per surface to measure. The
+// difference between the two measured numbers is the admin-only sheet set, and
+// that difference is the number D-33's tradeoff actually rests on.
+//
+// Deliberately renders PLAIN MARKUP rather than the admin components whose
+// sheets the manifest carries. Several of them (the rich-text editor, the
+// sortable list) need a DOM at construction time and cannot be server-rendered
+// without a hydration directive, and this route must ship zero framework JS to
+// stay inside `check-no-js.sh`'s protection. Rendering the real admin surfaces
+// is plans 12-16's job; this page's job is to make the manifest resolve, build
+// and be measurable. The CSS a page ships is decided by what it imports, not
+// by what it renders, so the byte count is unaffected by that choice.
+//
+// Light by default (D-08) — the admin's mode.
+
+import "../../styles/manifest-admin.css";
+
+const adminOnly = [
+	"appshell",
+	"datagrid",
+	"table",
+	"tabs",
+	"wizard",
+	"field",
+	"formvalidation",
+	"textinput",
+	"textarea",
+	"select",
+	"checkbox",
+	"radio",
+	"toggle",
+	"numberstepper",
+	"inlineedit",
+	"richtext",
+	"sortable",
+	"sheet",
+	"modal",
+	"alertbanner",
+	"emptystate",
+	"skeleton",
+	"progressbar",
+	"relativetime",
+];
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/manifest-admin — D-33 admin manifest</title>
+	</head>
+	<body style="background: var(--cream); color: var(--ink); margin: 0;">
+		<main style="padding: 2rem; display: grid; gap: 1rem; max-width: 60rem;">
+			<h1 style="font-family: var(--font-display); font-weight: var(--weight-bold);">
+				Admin manifest
+			</h1>
+			<p style="font-family: var(--font-body); color: var(--ink-2);">
+				The public set plus {adminOnly.length} admin-only sheets, one file, order preserved.
+			</p>
+			<ul
+				style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); columns: 4; list-style: none; padding: 0; margin: 0;"
+			>
+				{adminOnly.map((sheet) => <li>{sheet}</li>)}
+			</ul>
+		</main>
+	</body>
+</html>

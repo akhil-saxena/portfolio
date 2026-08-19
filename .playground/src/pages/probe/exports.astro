@@ -1,0 +1,57 @@
+---
+// D-35 packaging probe — the proposed `exports` map, proven by a build.
+//
+// The two imports below are the entire test. They are written in exactly the
+// shape D-35 specifies for the real package:
+//
+//     import "@akhil-saxena/design-system/themes/charcoal.css";
+//     import "@akhil-saxena/design-system/fonts/charcoal.css";
+//
+// against a local stub whose package.json carries nothing but the proposed
+// map. If this page builds, the map shape resolves. If the wildcard were
+// spelled `./themes/*` instead of `./themes/*.css`, the `*` would capture
+// `charcoal.css` rather than `charcoal`, the target would substitute to
+// `themes/charcoal.css.css`, and the build would fail — which is not a
+// hypothetical, it is the live defect in the design system's existing
+// per-component CSS entry, filed as G-12.
+//
+// WHY A STUB AND NOT THE REAL PACKAGE. `../design-system` is not throwaway and
+// Phase 0 has no authority to change it: adding these entries also means
+// extending `files` and the hard-coded copy loop in `scripts/postbuild.mjs`,
+// which is Phase 1's work in a repo with its own tests and release process.
+// The alternative — leaving the shape unverified until then — is how a spec
+// ships wrong. See fixtures/stub-theme-pkg/README.md.
+//
+// WHY `import.meta.resolve()` WOULD NOT HAVE BEEN ENOUGH. It performs pattern
+// substitution and hands back a URL without ever stat-ing the target, so it
+// reports the broken spelling as resolvable while the build fails on it. Only
+// a build is authoritative here, which is why this is a page and not a script.
+//
+// No hydration directive: this route ships zero framework JS and stays inside
+// check-no-js.sh's protection rather than its exclusion list.
+
+import "stub-theme-pkg/themes/charcoal.css";
+import "stub-theme-pkg/fonts/charcoal.css";
+---
+
+<html lang="en" data-brand="charcoal">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>probe/exports — D-35 exports-map shape</title>
+	</head>
+	<body>
+		<h1>D-35 exports map</h1>
+		<p>
+			Two subpaths resolved from a stub package carrying only the proposed map:
+			<code>themes/charcoal.css</code> and <code>fonts/charcoal.css</code>. The wildcard is
+			spelled with the extension — <code>./themes/*.css</code>, not <code>./themes/*</code>
+			— which is what makes the specifier D-35 names resolve instead of doubling its
+			suffix.
+		</p>
+		<p>
+			If this page built, the shape is proven. That is the whole assertion; nothing here
+			reads a token value.
+		</p>
+	</body>
+</html>

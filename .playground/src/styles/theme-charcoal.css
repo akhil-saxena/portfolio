@@ -1,0 +1,270 @@
+/* Charcoal brand - TOKEN layer (D-27, D-29, D-31).
+   Imported via:
+     import "../styles/theme-charcoal.css";
+   Load it after the design system's own token layer and before primitives.css.
+   Pair it with fonts-charcoal.css, which carries the face rules this file
+   deliberately does not - that split is D-29 and it is the whole reason this
+   file declares custom properties and nothing else.
+
+   SCOPE (D-27). Two flat blocks, no nesting:
+     [data-brand="charcoal"]        light, specificity (0,2,0)
+     [data-brand="charcoal"].dark   dark,  specificity (0,3,0)
+   The design system declares its dark values on the selector list
+   ":root.dark, .dark". Each selector in a list carries its own specificity, so
+   charcoal light at (0,2,0) beats bare ".dark" (0,1,0) outright, and ties only
+   with ":root.dark".
+
+   THE EXHAUSTIVENESS INVARIANT - the single load-bearing rule in this file.
+   The dark block MUST restate every custom property the light block declares:
+   same count, same names, no exceptions, including properties whose value does
+   not change between modes and properties that are pure aliases. A property
+   declared only in light ties ":root.dark" at (0,2,0), and the winner is then
+   decided by whichever stylesheet the bundler emitted last - measured across
+   four deliberately-constructed orders, one of which loses charcoal entirely
+   in dark mode while another applies the light value there. Light mode never
+   breaks, because (0,2,0) always beats ":root" at (0,1,0), which is exactly
+   why this class of bug ships. Hold the invariant and the cascade is
+   order-independent BY CONSTRUCTION: no dependence on cascade layers (deferred
+   to Phase 06.1 by D-28) and none on the manifest's import order. Enforced by
+   check-theme-exhaustive.mjs, and handed to Phase 1 as a tokens.test.ts case.
+
+   OWNERSHIP (D-31), written as an allowlist so it cannot erode one token at a
+   time. Charcoal owns colour, type identity and geometry accents. It declares
+   nothing from the sizing side of that line - no spacing scale, no type scale,
+   no line-height or letter-spacing steps, no sidebar width, no z-index, no
+   duration and no easing. Sizes express how big the system is; stacks and
+   weights express who you are. The one consequence worth naming out loud: the
+   52px display step the Work and Photos headers want does not exist in the
+   shared scale (it runs 44 then 60), and that is filed upstream as G-11 - a
+   new step available to every brand - never patched locally here.
+
+   BLOCK FORMATTING IS LOAD-BEARING. Both parsers find a block by locating the
+   selector, then the following brace, then the next newline-plus-brace at
+   column 0. Keep the blocks flat, keep each closing brace at column 0, and
+   never nest a rule or an at-rule inside one: an indented brace silently
+   truncates the parsed token set, and the exhaustiveness check then passes for
+   the wrong reason, which is worse than failing.
+
+   EDITING THIS FILE: the acceptance checks are plain greps that cannot tell
+   code from prose. This file must contain zero face-rule tokens and zero
+   at-rule inclusions (that is the point of the split), exactly two lines
+   beginning with a closing brace, and exactly two mentions of the strong
+   accent step - one declaration per block and none in a comment. Never write a
+   colon directly after a token name inside a comment either: the declaration
+   parsers read that as a real declaration and would invent a phantom token. */
+
+/* ─── Charcoal - LIGHT (admin default, D-08) ──────────────────────────── */
+:root[data-brand="charcoal"] {
+	/* Type identity. The Variable-suffixed name MUST come first in every
+	   stack. Fontsource registers the two variable families with "Variable"
+	   appended, so a stack whose head is the plain name matches no face and
+	   silently renders Georgia - the page looks almost right, which is why
+	   this needs a test rather than a review. The plain name follows as the
+	   fallback for a locally installed copy. IBM Plex Mono has no Variable
+	   alias, because no variable build of it is published, so its stack
+	   correctly names the plain family. Agreement between these stacks and the
+	   faces in fonts-charcoal.css is enforced by check-font-names.mjs. */
+	--font-serif: "Playfair Display Variable", "Playfair Display", Georgia, serif;
+	--font-display: var(--font-serif);
+	--font-body: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+	/* Back-compat aliases (published since v0.1.0). Restated rather than
+	   inherited - the invariant binds an alias exactly as it binds a value. */
+	--font: var(--font-body);
+	--mono: var(--font-mono);
+	--display: var(--font-display);
+	--serif: var(--font-serif);
+
+	/* Weights. Charcoal authors in 400 / 500 / 700. 600 stays because design
+	   system primitives reference it internally and DM Sans renders it
+	   correctly, but it is not used in authored copy. 800 and 900 have no place
+	   in an editorial serif identity and both families would synthesise or
+	   clamp them, so they alias to bold instead of being left at the design
+	   system's defaults. They are still DECLARED: retiring a token by omission
+	   is precisely the failure the exhaustiveness invariant exists to catch. */
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+	--weight-extrabold: var(--weight-bold);
+	--weight-black: var(--weight-bold);
+
+	/* Ink ramp. Every ratio below is measured against ALL THREE surfaces of
+	   this mode - page #F4F1EA, paper #FBF9F4, panel #EDE9E0 - never against
+	   the page alone. That method rule is not pedantry: page-only measurement
+	   is how two wrong values survived review, and admin table zebra, disabled
+	   fields and the pending dashboard all put muted text on the panel, the
+	   deepest surface of the three.
+	     --ink      primary text     15.71 / 16.84 / 14.62   AA
+	     --ink-2    secondary text    9.12 /  9.78 /  8.50   AA
+	     --ink-3    muted text        7.61 /  8.16 /  7.09   AAA, targeted
+	     --ink-4    alias of --ink-3, so the two cannot diverge by mode
+	     --ink-5    decorative only   3.17 /  3.40 /  2.95   NEVER text
+	   Muted text sits at AAA unconditionally - it is the single largest
+	   legibility risk in the admin and darkening it costs nothing
+	   stylistically. The earlier proposal of #6E6A5E measures 4.79 / 5.14 /
+	   4.46 and fails AA outright on the panel; check-contrast.mjs reproduces
+	   that rejection on demand as proof the gate bites. */
+	--ink: #1A1815;
+	--ink-2: #44403A;
+	--ink-3: #4F4C42;
+	--ink-4: var(--ink-3);
+	--ink-5: #8D8779;
+
+	/* Surfaces, the 60 / 30 / 10 split. --cream is the field everything sits
+	   on; --cream-2 is raised (cards, sidebar, admin chrome) and --cream-3 is
+	   inset (table zebra, wells). --page-bg, --paper and --panel2 are the
+	   design system's own spellings of the same three stops, aliased rather
+	   than duplicated so they cannot drift apart. --ink-inverse is the ink that
+	   goes ON a filled accent and it is charcoal in BOTH modes: on --ochre it
+	   measures 4.56 against charcoal and only 3.52 against cream, so the
+	   handoff's white glyph on an ochre square is wrong in both themes. */
+	--ink-inverse: #161616;
+	--cream: #F4F1EA;
+	--page-bg: var(--cream);
+	--cream-2: #FBF9F4;
+	--paper: var(--cream-2);
+	--cream-3: #EDE9E0;
+	--panel2: var(--cream-3);
+
+	/* Accent, and the rule that stops the two accent-text steps eroding into
+	   each other. --ochre is a FILL, never text: 3.52 on the page here, and in
+	   dark mode it drops to 3.91 on an inset panel, so "dark mode is already
+	   clean" does not survive contact with elevation. --ochre-d is accent text
+	   at 5.22 / 5.60 / 4.86 and it also feeds --focus, which is non-text and
+	   governed by the 3:1 floor of SC 1.4.11 rather than by any AAA target. The
+	   strong step below it measures 7.55 / 8.10 / 7.03 and is reserved for
+	   accent TEXT at or below 22px: never a fill, never the focus ring, never
+	   display type, where the darker value reads brown rather than ochre. The
+	   accent is reserved for exactly seven named places on this site - one that
+	   turns up in forty is a theme, not an accent. */
+	--ochre: #B0722A;
+	--ochre-d: #8C591F;
+	--ochre-d-strong: #6B4417;
+
+	/* Borders are two tokens with two different jobs. If the border is the ONLY
+	   thing telling you where a control starts, it is --wire and it must clear
+	   the 3:1 non-text floor: 3.44 / 3.68 / 3.20 here. If a fill or a heading
+	   already does that job, it is --rule, a decorative hairline at 1.38 that
+	   would be illegal as a control's sole boundary. This mode is the admin,
+	   which is nothing but interactive controls, which is why both exist rather
+	   than one border colour per theme. --rule-s is the design system's older
+	   spelling of --rule-strong and is aliased to it. */
+	--wire: #878173;
+	--rule: #D5CFC2;
+	--rule-strong: #C4BDAD;
+	--rule-s: var(--rule-strong);
+
+	/* Focus. Bound to --ochre-d and deliberately NOT to the strong step:
+	   SC 1.4.11 is a 3:1 non-text criterion, so darkening the ring buys nothing
+	   and would make the indicator muddier against --wire. The design system
+	   derives --focus-ring and --focus-ring-offset from this one token, so
+	   repointing it here repoints every focus treatment in the system. */
+	--focus: var(--ochre-d);
+
+	/* Elevation. Geometry accents sit on the theme side of the ownership line,
+	   so charcoal owns them. Light mode keeps the design system's black-alpha
+	   geometry, which reads correctly on a cream page - but it is RESTATED here
+	   rather than inherited, so the dark block's override has a stated
+	   counterpart and the theme is exhaustive in both directions, not just the
+	   light-to-dark one the invariant checks. */
+	--shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-2: 0 4px 12px rgba(0, 0, 0, 0.08);
+	--shadow-3: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ─── Charcoal - DARK (public default, DSGN-03) ────────────────────────
+   Specificity (0,3,0), which outranks ":root.dark" at (0,2,0) by arithmetic
+   rather than by source order. Every property the light block declares is
+   restated below - same count, same names - including the aliases and the
+   values that do not change between modes. That is the invariant, not a
+   formatting preference: see the file header for what an omission actually
+   costs. Ratios below are against page #161616, paper #1E1E1D, panel #242423,
+   the three surfaces of THIS mode. */
+:root[data-brand="charcoal"].dark {
+	/* Type identity does not change between modes - restated because the
+	   invariant admits no exceptions, including for identical values. */
+	--font-serif: "Playfair Display Variable", "Playfair Display", Georgia, serif;
+	--font-display: var(--font-serif);
+	--font-body: "DM Sans Variable", "DM Sans", system-ui, sans-serif;
+	--font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+	--font: var(--font-body);
+	--mono: var(--font-mono);
+	--display: var(--font-display);
+	--serif: var(--font-serif);
+
+	--weight-regular: 400;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
+	--weight-extrabold: var(--weight-bold);
+	--weight-black: var(--weight-bold);
+
+	/* Ink ramp, dark.
+	     --ink      primary text     14.65 / 13.51 / 12.58   AA
+	     --ink-2    secondary text   10.51 /  9.69 /  9.02   AA
+	     --ink-3    muted text        8.18 /  7.54 /  7.02   AAA, targeted
+	     --ink-4    alias of --ink-3, held together the same way as in light
+	     --ink-5    decorative only   3.52 /  3.25 /  3.02   NEVER text
+	   One anti-aliasing consequence worth recording next to these values,
+	   because it is a typography rule that falls out of a colour decision:
+	   both prototypes set antialiased smoothing, so Playfair at weight 400
+	   must not carry a body role below 15px on a dark surface. Thinned
+	   light-on-dark serif stems lose legibility there; below 15px, body is
+	   DM Sans. */
+	--ink: #EAE7E0;
+	--ink-2: #C9C5BC;
+	--ink-3: #B1AEA8;
+	--ink-4: var(--ink-3);
+	--ink-5: #6E6E66;
+
+	/* Surfaces, dark. Three distinct stops so page, card and inset panel do
+	   not collapse into one slab - that separation is what carries elevation
+	   here, since shadow cannot (see the elevation note below).
+	   --ink-inverse stays charcoal: it is the ink on an --ochre fill, and
+	   --ochre does not change between modes. */
+	--ink-inverse: #161616;
+	--cream: #161616;
+	--page-bg: var(--cream);
+	--cream-2: #1E1E1D;
+	--paper: var(--cream-2);
+	--cream-3: #242423;
+	--panel2: var(--cream-3);
+
+	/* Accent, dark. --ochre is UNCHANGED across modes and this is where its
+	   fill-only role is proven rather than asserted: 4.56 on the page, but
+	   4.20 on a raised card and 3.91 on an inset panel, both below the 4.5:1
+	   text floor. Work's project cards, the case-study screenshots and the
+	   whole admin sit on raised surfaces, so an ochre text colour would fail
+	   almost everywhere it actually appears. check-contrast.mjs asserts that
+	   failure DIRECTIONALLY - if --ochre ever starts passing the text bar
+	   everywhere, the check fails and says so, because that would mean someone
+	   darkened the identity to make a lint pass. --ochre-d is 6.02 / 5.55 /
+	   5.17; the strong step is 8.16 / 7.53 / 7.01. */
+	--ochre: #B0722A;
+	--ochre-d: #C6883A;
+	--ochre-d-strong: #D4A66D;
+
+	/* Borders, dark. --wire clears the non-text floor at 3.72 / 3.43 / 3.20;
+	   --rule is decorative at 1.43 and is a hairline only. */
+	--wire: #727268;
+	--rule: #33332F;
+	--rule-strong: #3E3E39;
+	--rule-s: var(--rule-strong);
+
+	--focus: var(--ochre-d);
+
+	/* Elevation, dark - surface plus hairline, never shadow. The design
+	   system's --shadow-1/2/3 are black-alpha and are therefore INVISIBLE on
+	   #161616, so every card below overlay level would read as flat. Shadow is
+	   a geometry accent, which D-31 puts on the theme side of the line, so this
+	   is a charcoal deliverable rather than an upstream gap. --shadow-3 keeps a
+	   real drop shadow because modals and the lightbox sit over a scrim, where
+	   a black shadow does read; everything below overlay level expresses
+	   elevation as --cream-2 / --cream-3 plus a hairline ring. */
+	--shadow-1: none;
+	--shadow-2: 0 0 0 1px var(--rule);
+	--shadow-3: 0 0 0 1px var(--rule-strong), 0 16px 40px rgba(0, 0, 0, 0.55);
+}

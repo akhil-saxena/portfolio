@@ -1,0 +1,20 @@
+/* stub-theme-pkg — themes/charcoal.css
+
+   A near-empty stand-in for what D-35 says the design system will publish at
+   @akhil-saxena/design-system/themes/charcoal.css: the charcoal TOKEN layer,
+   custom properties only, zero face rules (that split is D-29).
+
+   The real file's content is prototyped in the playground at
+   src/styles/theme-charcoal.css and is 37 tokens across a light block and an
+   exhaustive dark block. None of it is duplicated here on purpose. This
+   fixture tests one thing - whether the exports-map pattern resolves - and
+   copying the real theme in would mean two copies of a token contract that
+   must not drift, in service of a build that does not read the values.
+
+   The single declaration below exists so the file is not zero-length: an empty
+   stylesheet can be optimised away, and "it built" would then prove nothing
+   about whether the specifier resolved. */
+
+:root[data-brand="charcoal"] {
+	--stub-theme-resolved: 1;
+}

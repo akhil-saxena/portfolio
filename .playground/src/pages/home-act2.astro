@@ -1,0 +1,155 @@
+---
+// X-home-act2 — OQ-1, resolved rather than deferred.
+//
+// THE QUESTION. The handoff's Home Act 2 is a 2x2 grid for four projects and
+// omits Cairn entirely. D-38 locks five. UI-SPEC flagged this as having NO owner
+// in Phase 0 despite Phase 0 being the design phase, and required the planner to
+// do one of exactly two things: scope a single Act-2 sketch, or record an
+// explicit Phase 5 deferral citing OQ-1. Leaving it implicit was named as the
+// failure mode, because Phase 5 would then improvise a layout the handoff never
+// specified, under build pressure, with no reviewer looking at it.
+//
+// THIS PLAN SCOPED THE SKETCH. One resolution, rendered, not a menu of options —
+// a menu is a decision postponed with extra steps.
+//
+// THE RESOLUTION. The 2x2 is kept intact for the four projects the handoff
+// actually drew, and the design system is promoted to a full-width row above it.
+// Three reasons, in order of weight:
+//   1. D-38 already names the design system the flagship, and gives a reason no
+//      other project has: it is the only one whose outcome the reader is looking
+//      at while reading about it. A layout that says so costs nothing extra.
+//   2. It adds the fifth project without leaving a hole. A 2x3 grid with five
+//      entries has an empty cell, and an empty cell in a 2x2-derived layout reads
+//      as a missing project rather than as a composition.
+//   3. It is the smallest possible change to an approved design. Every other
+//      resolution — 3+2, a 5-column row, a scrolling strip — restyles Act 2
+//      wholesale, and Act 2 is the one part of Home the handoff got signed off.
+//
+// SCOPE, DELIBERATELY NARROW. This sketch resolves the five-into-four problem
+// and nothing else. Act 1, the name treatment and the peek gallery are PUB-01's
+// in Phase 5 and are out of DSGN-03's scope; restyling them here would quietly
+// annex Home into a phase that does not own it. The surrounding context is drawn
+// in outline only, so the grid can be judged in place rather than in a vacuum.
+//
+// PLAN 00-22 MOVED ACT 2 INTO A COMPONENT AND CHANGED NOTHING ELSE HERE. The
+// composition below is `../components/HomeAct2.astro`, and /home renders the
+// same component. That is a refactor, not a redesign: the two routes could
+// otherwise hold two copies of one APPROVED composition in the screenshot
+// record, and two copies disagree the first time either is touched. The
+// extraction was proved visually neutral rather than assumed — snap22.mjs
+// compared every box's position, size, colour, font and text at all six device
+// classes before and after, and the two snapshots are identical.
+//
+// Note that this artefact's Act 1 outline stayed here and is NOT what /home
+// renders. /home builds the real state A — the name treatment, the six-photo
+// peek grid and the scroll prompt, inside one viewport. The dashed outline below
+// is this artefact's framing, kept so the grid can still be judged at the fold.
+
+import { Eyebrow, Text } from "@akhil-saxena/design-system";
+import Public from "../layouts/Public.astro";
+import HomeAct2 from "../components/HomeAct2.astro";
+import home from "../data/home_config.json";
+
+const OCHRE_D_STRONG = "var(--ochre-d-strong)";
+---
+
+<Public title="X-home-act2 — OQ-1 resolved, five projects" active="home" maxWidth={1080}>
+	<!--
+	  Act 1 in outline only. Not designed here, not restyled here — /home is where
+	  the real one lives, and PUB-01 owns it in Phase 5. It is drawn so the grid
+	  below can be judged where it actually sits, at the fold, rather than
+	  floating at the top of an empty page.
+	-->
+	<section class="ha-act1">
+		<Eyebrow size="sm" tone="muted">ACT 1 — OUT OF SCOPE, PUB-01 / PHASE 5</Eyebrow>
+		<div class="ha-act1-body">
+			<div class="ha-act1-name">{home.title}</div>
+			<div class="ha-act1-sub">{home.subtitle}</div>
+			<div class="ha-act1-tag">{home.intro}</div>
+			<div class="ha-act1-grid">
+				{home.peekIds.map(() => <span class="ha-act1-tile" />)}
+			</div>
+			<Text size="sm" tone="muted" maxWidth={560}>
+				The name treatment, the 3×2 peek gallery and its single stored
+				<code>peekPosition</code> are Phase 5's. Outlined, not designed.
+			</Text>
+		</div>
+	</section>
+
+	<HomeAct2 />
+
+	<Fragment slot="crosslink">
+		<a class="ha-xlink" href="/work" style={{ color: OCHRE_D_STRONG }}>
+			see the work →
+		</a>
+	</Fragment>
+</Public>
+
+<style>
+	/* App LAYOUT css. Act 2's own geometry moved to components/HomeAct2.astro
+	   with plan 00-22; what is left here is this artefact's framing. */
+
+	.ha-act1 {
+		display: grid;
+		gap: var(--space-3);
+		padding-bottom: var(--space-16);
+		opacity: 0.55;
+	}
+
+	.ha-act1-body {
+		display: grid;
+		gap: var(--space-3);
+		justify-items: center;
+		text-align: center;
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+		padding: var(--space-8);
+	}
+
+	.ha-act1-name {
+		font-family: var(--display);
+		font-weight: 700;
+		font-size: var(--text-5xl);
+		line-height: var(--lh-tight);
+		letter-spacing: var(--ls-tighter);
+		color: var(--ink);
+	}
+
+	.ha-act1-sub {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		color: var(--ink-3);
+	}
+
+	.ha-act1-tag {
+		font-family: var(--display);
+		font-size: var(--text-xl);
+		color: var(--ink-2);
+	}
+
+	.ha-act1-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		/* The handoff's 14px is not on the 4px grid. Snapped to --space-4 (16px)
+		   and the 2px delta recorded rather than introducing a 14px token — a 2px
+		   gap delta on a 3x2 grid is below the threshold a reviewer can see. */
+		gap: var(--space-4);
+		width: 100%;
+		max-width: 720px;
+	}
+
+	.ha-act1-tile {
+		aspect-ratio: 3 / 2;
+		border-radius: var(--radius-sm);
+		background: var(--cream-2);
+		border: 1px solid var(--rule);
+	}
+
+	.ha-xlink {
+		font-family: var(--display);
+		font-style: italic;
+		font-size: var(--text-xl);
+		text-decoration: none;
+	}
+</style>

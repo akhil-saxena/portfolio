@@ -1,0 +1,69 @@
+---
+// CaseSection.astro — one H2 section, shared by BOTH case-study tiers.
+//
+// THE TWO-COLUMN SHAPE COMES FROM THE HANDOFF, NOT FROM TASTE. There is no
+// design for a case-study page anywhere — not in the handoff, not on the legacy
+// branch, not in the design system — which is exactly why DSGN-02 exists. The
+// nearest structural cousin is Resume.dc.html, the only long-scroll editorial
+// page the handoff drew, and it runs a 200px mono rail beside a 1fr column at a
+// 48px gap inside a 980px page. Same rail, same gap, same page width. 48px is
+// --space-12 and 200px is declared once in case.css.
+//
+// WHAT THE RAIL CARRIES, AND WHY IT IS NOT THE SECTION NAME. Repeating the
+// heading in the rail would be furniture. It carries the section's position in
+// the four-part spine and the section's REAL LENGTH instead — the word count and
+// the number of provenance markers, measured from the committed draft at build
+// time. DSGN-02's success criterion is a template laid out against real text
+// lengths, and the cheapest way to let a reviewer check that by eye is to print
+// the length beside the layout it is testing. It is the same argument the
+// contact sheet's measurement readout makes for the byte counts.
+//
+// The four-part spine being visible in the rendered page — problem, then
+// decisions, then outcome — is the second of this plan's stated truths. The
+// ordinals are what make it visible without a table of contents.
+
+import { Divider, Heading } from "@akhil-saxena/design-system";
+import { countBlocks } from "../lib/copy.mjs";
+import CaseProse from "./CaseProse.astro";
+
+interface Props {
+	index: number;
+	total: number;
+	heading: string;
+	blocks: any[];
+	measure: string;
+	figures?: any[];
+	where: string;
+	last?: boolean;
+}
+
+const { index, total, heading, blocks, measure, figures = [], where, last = false } = Astro.props;
+
+const counts = countBlocks(blocks);
+const pad = (n: number) => String(n).padStart(2, "0");
+
+// Register entries are a long-form-only structure — the short tier has one
+// running ## Decision section and no numbered register at all. The rail reports
+// the count rather than assuming it, so the same component states the truth for
+// either tier.
+const entries = blocks.filter((b) => b.kind === "h3" && b.ordinal).length;
+---
+
+<section class="case-section">
+	<div class="case-rail">
+		<span class="case-rail-ord">{pad(index)} / {pad(total)}</span>
+		<span>{counts.words.toLocaleString("en-US")} words</span>
+		{entries > 0 && <span>{entries} decisions</span>}
+		{counts.sources > 0 && <span>{counts.sources} sourced</span>}
+		{counts.gaps > 0 && <span>{counts.gaps} gap</span>}
+	</div>
+
+	<div class="case-col">
+		<Heading level={2} size="3xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+			{heading}
+		</Heading>
+		<CaseProse blocks={blocks} measure={measure} figures={figures} where={where} />
+	</div>
+</section>
+
+{!last && <Divider spacing="md" />}

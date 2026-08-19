@@ -1,0 +1,752 @@
+---
+// ═══ S-home — the title block, the peek strip, and the crop the DS cannot make ═
+//
+// TWO ARTEFACTS FROM ONE FILE: S-home (populated) and R-crop-picker (phone).
+// The other six states declare `coverage: "inherits"` and point at the
+// treatments plans 12 and 13 sketched on their most demanding hosts.
+//
+// ═══ THE STATE AXIS IS A ROUTE PARAM. `?state=` DOES NOT WORK ══════════════
+// Under `output: 'static'` Astro strips the query string in DEV as well as at
+// build (astro/dist/core/request.js:20 — `if (isPrerendered) url.search = "";`),
+// which plan 12 proved by getting seven byte-identical bodies from seven
+// `?state=` URLs. UI-SPEC is wrong on this point and plan 13's corrected idiom
+// is followed instead: ONE FILE PER SCREEN at
+// src/pages/admin/<screen>/[...state].astro exporting getStaticPaths, SCREEN and
+// STATES. This plan's own frontmatter names `src/pages/admin/home.astro`; that
+// path would have produced a screen with no state axis at all, so the idiom
+// wins and the deviation is recorded in the SUMMARY.
+//
+// ═══ WHY THIS ROUTE EMITS EIGHT PATHS, NOT SEVEN ═══════════════════════════
+// `phone` is D-09's LAYOUT variant, not a point in the draft lifecycle. It gets
+// a getStaticPaths entry and no STATES row, exactly as plan 13 did for
+// `filtered-empty`, because adding it to CANONICAL_STATES would silently make
+// the coverage table 7 x 7 = 49 cells while every check that counts non-blank
+// cells kept passing. The plan suggests reaching the refusal with a
+// `?layout=phone` query variant; that mechanism does not exist here for the
+// same reason `?state=` does not, so it is a route segment instead.
+//
+// ═══ THE DATA IS REAL AND WAS COUNTED, NOT QUOTED ══════════════════════════
+// Counted out of data/home_config.json this session: 6 peekIds, ONE
+// peekPositions entry, 3 socialLinks, 2 ctas. And the measurement that makes
+// D-23's argument concrete rather than rhetorical — the six peek photos were
+// looked up in portfolio_images.json and measured:
+//
+//     architecture-singapore          2000x1333   3:2      no crop stored
+//     abstract-intothemist            2000x1333   3:2      no crop stored
+//     nature-acrossthetrees           2000x1333   3:2      no crop stored
+//     architecture-hawamahaldaytime   2000x3000   2:3      "50% 25%"
+//     wildlife-kingfisher             2000x1333   3:2      no crop stored
+//     architecture-eiffeljpg          2000x1333   3:2      no crop stored
+//
+// FIVE OF SIX ARE ALREADY THE FRAME'S OWN RATIO, so `object-fit: cover` shows
+// essentially all of them and no crop value would change anything. The one
+// photo that carries a crop is the one photo that is PORTRAIT in a landscape
+// frame. The feature exists for the outlier — which is exactly why a preset
+// grid is the wrong shape: it would offer nine choices on the five photos where
+// every choice is identical, and fail to express the one value that matters.
+//
+// ═══ ONE HYDRATION DIRECTIVE, ON ONE LINE ══════════════════════════════════
+// This route spends sanctioned island 2 of 3. The acceptance grep counts LINES
+// carrying the directive prefix and requires exactly one, so the prefix appears
+// nowhere else in this file, not even in prose. `Sortable` for the peek order is
+// rendered WITHOUT hydration through SortableStatic — reordering itself is
+// demonstrated running, and keyboard-driven, on /admin/photos.
+
+import {
+	AlertBanner,
+	Badge,
+	Button,
+	Card,
+	Chip,
+	Divider,
+	EmptyState,
+	Eyebrow,
+	Field,
+	Heading,
+	Select,
+	Skeleton,
+	Text,
+	TextInput,
+	Textarea,
+} from "@akhil-saxena/design-system";
+import Admin from "../../../layouts/Admin.astro";
+import FocalPointSketch from "../../../components/FocalPointSketch";
+import SortableStatic from "../../../components/SortableStatic";
+import { CANONICAL_STATES } from "../../../lib/artefacts.mjs";
+import fixtures from "../../../fixtures/home.json";
+
+export const SCREEN = {
+	id: "home",
+	route: "/admin/home",
+	entity: "home_config.json",
+	layouts: ["desktop", "phone"],
+	proves:
+		"That six peek slots plus a focal position fit ONE full-width column with no split pane (D-07), and that the missing crop picker (G-1) is a blocker rather than a nicety. The argument is measured rather than asserted: five of the six peek photos are already 3:2, so a crop changes nothing on them, and the single stored value 50% 25% belongs to the one photo that is 2000x3000 in a 3:2 frame. 25 is not a stop on the nine-point preset lattice, so a preset picker would have had to change the only crop the site has. It also carries R-crop-picker, D-09's designed refusal, at comfortable density on its own route.",
+};
+
+// Eight paths from one file. `state: undefined` produces the base path, so the
+// populated state is `/admin/home/` and `dist/admin/home/index.html` exists,
+// which is what the artefact contract and the acceptance criteria both name.
+export function getStaticPaths() {
+	return [
+		{ params: { state: undefined } },
+		...CANONICAL_STATES.map((s) => ({ params: { state: s } })),
+		{ params: { state: "phone" } },
+	];
+}
+
+export const STATES = [
+	{ state: "populated", coverage: "designed", ref: "S-home" },
+	// INHERITS, not designed. home_config.json always carries a title, a
+	// subtitle and an intro — there is no empty Home screen. The one thing on it
+	// that can genuinely be empty is a SECTION: the peek strip with zero slots.
+	// That is precisely what E-resume-section proves ("an empty section inside an
+	// otherwise populated screen"), and it is designed on /admin/resume in the
+	// same plan, so the pointer resolves. Inventing an E-home would put a second
+	// design in the review for one decision and take the E- set past the five
+	// ADMIN-IA enumerates.
+	{ state: "empty", coverage: "inherits", ref: "E-resume-section" },
+	// INHERITS. Plan 13 claimed T-loading-list on /admin/photos, where the list
+	// is 39 rows. Six slots is not a more demanding host.
+	{ state: "loading", coverage: "inherits", ref: "T-loading-list" },
+	// INHERITS. Plan 13 claimed T-error-inline on /admin/photos on the argument
+	// that an inline warning is hard to find in a 39-row list and unmissable on a
+	// short form. This screen is the short form, so it renders an INSTANCE of the
+	// treatment rather than a second design of it.
+	{ state: "error", coverage: "inherits", ref: "T-error-inline" },
+	// INHERITS. Plan 12 designed the badge triple on the dashboard.
+	{ state: "dirty", coverage: "inherits", ref: "T-dirty-badge" },
+	// INHERITS. D-16's per-file diff has ZERO design-system coverage (G-7) and is
+	// its own screen.
+	{ state: "conflict", coverage: "inherits", ref: "O-conflict-diff" },
+	// INHERITS. The publish outcome is one treatment sketched once.
+	{ state: "success", coverage: "inherits", ref: "T-success-published" },
+];
+
+// THE READ THE STATE AXIS DEPENDS ON. Replacing it with a constant is the
+// negative control for check-states.mjs: all seven bodies become identical and
+// the gate fails naming this screen.
+const state = Astro.params.state ?? "populated";
+const fx = fixtures[state];
+if (!fx) {
+	throw new Error(
+		`admin/home/[...state]: no fixture for state "${state}". getStaticPaths emits ` +
+			"`undefined`, CANONICAL_STATES and `phone`, and src/fixtures/home.json must carry a " +
+			"key for each. A state declared in STATES with no fixture is a fake artefact: the " +
+			"route would answer 200, render a plausible page, and be screenshotted under a state " +
+			"name it is not in.",
+	);
+}
+
+// Field takes `wiring` from the useField HOOK, and an Astro page cannot call a
+// hook. FieldWiring is a plain data interface, so the object is built by hand —
+// plan 13's idiom, unchanged. Ids are unique across the page.
+const wiring = (id) => ({
+	controlId: id,
+	hintId: undefined,
+	errorId: undefined,
+	describedBy: undefined,
+	invalid: false,
+});
+
+const noop = () => {};
+
+// UI-SPEC's contract table, verbatim, held in named constants so the exact
+// strings are greppable in one place and cannot drift as the markup moves.
+const REFUSAL_TITLE = "Crop needs a bigger screen.";
+const REFUSAL_DESC =
+	"Setting a focal point means dragging inside a 3:2 frame, which doesn't work on a phone. Everything else on this screen does.";
+const INLINE_ERROR = "Needs a title before this can be published.";
+const SECTION_EMPTY_TITLE = "No photos in the peek strip.";
+const SECTION_EMPTY_DESC =
+	"Add one, or leave the strip out — Act 1 renders no gallery row when it is empty.";
+
+// The legacy icon set for a social link, recovered from SOCIAL_ICONS in
+// legacy:PropertiesPanel.tsx. Three are in use; the select offers all of them.
+const SOCIAL_ICONS = [
+	{ value: "github", label: "GitHub" },
+	{ value: "linkedin", label: "LinkedIn" },
+	{ value: "twitter", label: "Twitter" },
+	{ value: "instagram", label: "Instagram" },
+	{ value: "mail", label: "Email" },
+];
+
+// Verbatim from legacy:PropertiesPanel.tsx's homeCta branch — the option LABELS
+// carry the parenthetical, and dropping it would lose the only place the admin
+// says what the two styles look like.
+const CTA_STYLES = [
+	{ value: "primary", label: "Primary (filled)" },
+	{ value: "secondary", label: "Secondary (outlined)" },
+];
+
+const isPhone = fx.layout === "phone";
+const isInherit = ["dirty", "conflict", "success"].includes(state);
+const showPeek = !["empty", "loading"].includes(state);
+const showFocal = ["populated", "error", "dirty", "conflict", "success"].includes(state);
+
+// The one photo that carries a crop, pinned BY ID so the focal frame cannot
+// drift onto a photo whose value is a default. Null everywhere the control has
+// nothing to do — the island renders unconditionally and returns null there,
+// because check-no-js.sh fails an allowlisted route that ships zero script tags.
+const focalSlot = showFocal ? (fx.slots.find((s) => s.id === fx.focalId) ?? null) : null;
+
+const peekItems = fx.slots.map((s, i) => ({
+	id: s.id,
+	index: `${i + 1}`,
+	primary: s.title,
+	secondary: `Gallery Photo ${i + 1}`,
+	thumb: s.src,
+	meta: s.position ?? "50% 50% (default)",
+	badge: s.position ? { label: "cropped", tone: "info" } : null,
+}));
+
+const cropped = fx.slots.filter((s) => s.position).length;
+const alreadyFramed = fx.slots.filter((s) => s.orientation === "wide").length;
+
+const reviewStates = ["populated", ...CANONICAL_STATES, "phone"];
+const hrefFor = (s) => (s === "populated" ? "/admin/home/" : `/admin/home/${s}/`);
+---
+
+<Admin
+	title={`S-home / ${state}`}
+	active="home"
+	route="/admin/home"
+	navStates={fx.nav}
+	pipeline={fx.pipeline}
+	density={fx.density}
+>
+	<div class="hm-head" data-artefact={state === "populated" ? "S-home" : undefined}>
+		<Eyebrow size="sm" tone="muted">HOME</Eyebrow>
+		<Heading level={2} size="lg" weight="bold">{fx.headline}</Heading>
+		<Text size="sm" tone="muted">{fx.sub}</Text>
+	</div>
+
+	{/* ── R-crop-picker ─────────────────────────────────────────────────────
+	    D-09's DESIGNED REFUSAL, reached at its own URL. Copy is verbatim from
+	    UI-SPEC's contract table and the last sentence is the part that does the
+	    work: without "Everything else on this screen does." the panel reads as a
+	    broken control rather than as a decision, which is threat T-00-35.
+
+	    THE REFUSAL IS TRUE, NOT DECORATIVE. The legacy control is mouse-only —
+	    one mouse-down handler, no pointer and no touch events
+	    (legacy:PropertiesPanel.tsx:739-786) — so on a phone it does not respond
+	    at all. This route renders the whole rest of the screen underneath, at
+	    COMFORTABLE density per UI-SPEC's viewport contract, so the claim in the
+	    last sentence is something a reviewer can check rather than take on
+	    trust.
+
+	    IN PRODUCTION this is a media query, not a URL: the refusal fires on a
+	    coarse pointer at phone width. The sketch gives it a route because plan
+	    16 reviews URLs and plan 17 screenshots them at 390x844. */}
+	{isPhone && (
+		<div class="hm-panel" data-artefact="R-crop-picker">
+			<EmptyState title={REFUSAL_TITLE} description={REFUSAL_DESC} />
+			<Text size="sm" tone="muted">
+				Rendered at comfortable density, not compact: compact drops a text field to 30px, and
+				five of the six device classes in the responsive contract are coarse pointer with a
+				44px floor.
+			</Text>
+		</div>
+	)}
+
+	{/* ── The title block. D-07's one full-width column, no split pane ───────
+	    The legacy panel titles become section headings and the legacy FIELD
+	    labels are kept verbatim underneath them, which is why the first field is
+	    "Name" rather than "Site Title": the panel was titled Site Title and the
+	    input inside it was labelled Name (legacy:PropertiesPanel.tsx:669-684).
+	    ADMIN-IA records two label drifts of this kind and this is a third.
+
+	    Field supplies the label; TextInput does not. Both have a `label` prop and
+	    using both renders it twice. defaultValue, never value — a static sketch
+	    has no change handler and React's controlled-input warning is not
+	    something to ship into a reviewer's console. */}
+	<section class="hm-section">
+		<Eyebrow size="sm" tone="muted">SITE TITLE</Eyebrow>
+		<Field
+			label="Name"
+			wiring={wiring("f-home-title")}
+			hint="Act 1's headline. It is also the browser tab title."
+			errorMessage={fx.titleError ? INLINE_ERROR : undefined}
+		>
+			<TextInput id="f-home-title" defaultValue={fx.title} error={fx.titleError} />
+		</Field>
+
+		<Eyebrow size="sm" tone="muted">TAGLINE</Eyebrow>
+		<Field label="Subtitle" wiring={wiring("f-home-subtitle")}>
+			<TextInput id="f-home-subtitle" defaultValue={fx.subtitle} />
+		</Field>
+
+		<Eyebrow size="sm" tone="muted">INTRO TEXT</Eyebrow>
+		<Field label="Introduction" wiring={wiring("f-home-intro")}>
+			<Textarea id="f-home-intro" rows={3} defaultValue={fx.intro} />
+		</Field>
+	</section>
+
+	{/* ── T-error-inline, INHERITED and instantiated ────────────────────────
+	    D-18's lenient half: the message is about PUBLISHING, saving still works,
+	    and it attaches to the field it is about. The treatment is plan 13's, so
+	    this is an instance rather than a second design — but the instance has to
+	    exist, because "saving still works" is invisible unless the save control
+	    is on screen and demonstrably enabled.
+
+	    AND THE COMPONENT CANNOT SAY WHICH SEVERITY THIS IS. UI-SPEC specifies
+	    "Field + FieldError at warning severity". FieldErrorProps is
+	    `{ message, className }` — there is no severity, no tone, and the markup
+	    is a fixed `role="alert"` span in --red-ink. D-18's two severities render
+	    identically and both interrupt. Reported in the SUMMARY, not worked
+	    around: recolouring it locally would hide the gap. */}
+	{state === "error" && (
+		<div class="hm-panel" data-artefact="T-error-inline">
+			<Eyebrow size="sm" tone="muted">INHERITS T-error-inline</Eyebrow>
+			<Text size="sm" tone="muted">
+				The treatment is plan 13's, sketched on the 39-row list where an inline warning is
+				hardest to find. What is specific to Home is that the incomplete field is the SITE
+				TITLE — the one string every public page renders — so the draft is still saveable and
+				the site simply keeps the published title until it is filled in.
+			</Text>
+			<div class="hm-actions">
+				<Button variant="primary">Mark as ready</Button>
+				<Text size="sm" tone="muted">
+					Save is enabled. This is a warning about publishing, not a rejected edit.
+				</Text>
+			</div>
+		</div>
+	)}
+
+	{/* ── The peek strip. Six slots, one crop ───────────────────────────────
+	    Sortable, rendered WITHOUT hydration: the reorder interaction is already
+	    demonstrated running and keyboard-driven on /admin/photos, and the whole
+	    budget is spent on the two controls that exist to file findings. */}
+	<section class="hm-section">
+		<Eyebrow size="sm" tone="muted">GALLERY PEEK / ORDER</Eyebrow>
+
+		{state === "loading" ? (
+			<div class="hm-skeleton" data-artefact="T-loading-list">
+				<Text size="sm" tone="muted">
+					Waiting for the peek strip. The shell, the title block and Publish already work.
+				</Text>
+				<Skeleton shape="text" />
+				<Skeleton shape="text" />
+				<Skeleton shape="text" />
+				<Skeleton shape="text" />
+				<Skeleton shape="text" />
+				<Skeleton shape="text" />
+				<Text size="sm" tone="muted">
+					INHERITS T-loading-list. Six Skeleton lines rather than the component's own loading
+					state, because Sortable has no loading prop — the one place on this screen where the
+					rule "use the component's loading prop, never a bespoke skeleton" has nothing to
+					reach for.
+				</Text>
+			</div>
+		) : null}
+
+		{state === "empty" && (
+			<div class="hm-panel" data-artefact="E-resume-section">
+				<Eyebrow size="sm" tone="muted">INHERITS E-resume-section</Eyebrow>
+				<EmptyState title={SECTION_EMPTY_TITLE} description={SECTION_EMPTY_DESC}>
+					<Button variant="secondary">Add Photo to Gallery</Button>
+				</EmptyState>
+				<Text size="sm" tone="muted">
+					The design is the résumé screen's, because this is the same fact: a section that is
+					empty inside a screen that is not. What is specific to Home is that the title block
+					above is still complete and still publishable, so the empty strip is a choice rather
+					than an unfinished screen.
+				</Text>
+			</div>
+		)}
+
+		{showPeek && (
+			<>
+				<Text size="sm" tone="muted">
+					{fx.slots.length} slots. {cropped} carries a stored focal position; the other{" "}
+					{fx.slots.length - cropped} fall back to <code class="hm-key">50% 50%</code>.{" "}
+					{alreadyFramed} of {fx.slots.length} are already 3:2, so a crop would change nothing
+					on them.
+				</Text>
+				<SortableStatic items={peekItems} listId="peek-order" className="hm-peek" />
+				<div class="hm-actions">
+					<Button variant="secondary">Add Photo to Gallery</Button>
+					<Text size="sm" tone="muted">
+						Reordering is static here. It runs, keyboard-driven, on /admin/photos — the two
+						screens share the component and the budget is one island per route.
+					</Text>
+				</div>
+			</>
+		)}
+	</section>
+
+	{/* ── Gallery Photo N: the focal control ────────────────────────────────
+	    The legacy panel is titled "Gallery Photo {N}" and the field inside it
+	    "Position (drag to adjust)", both kept verbatim. "Replace with" is the
+	    legacy sub-heading over a photo picker; the picker itself is a Modal +
+	    Card grid per ADMIN-IA and is out of this plan's scope, so the heading
+	    names the affordance and the button below it is inert.
+
+	    THE ISLAND IS UNCONDITIONAL. It receives `slot={null}` on the states
+	    where the control has nothing to do and returns null there. Astro still
+	    emits the island element and the hydration script, so the budget gate
+	    keeps measuring something real on all eight routes. */}
+	<section class="hm-section">
+		<Eyebrow size="sm" tone="muted">GALLERY PHOTO 4 / POSITION (DRAG TO ADJUST)</Eyebrow>
+		{showFocal ? (
+			<Text size="sm" tone="muted">
+				G-1: the design system has no crop or focal-point component, so the control below is
+				composed from primitives. It fixes two of the legacy control's three defects — it is
+				pointer-aware rather than mouse-only, and the keyboard reaches the value — and cleans
+				up its listeners, which the legacy control never did.
+			</Text>
+		) : (
+			<Text size="sm" tone="muted">
+				No slot is selected in this state, so the crop control has nothing to point at.
+			</Text>
+		)}
+		<FocalPointSketch client:load slot={focalSlot} frameRatioW={3} frameRatioH={2} />
+		{showFocal && (
+			<div class="hm-actions">
+				<Eyebrow size="sm" tone="muted">REPLACE WITH</Eyebrow>
+				<Button variant="secondary">Choose another photo</Button>
+			</div>
+		)}
+	</section>
+
+	{/* ── Social Links: three rows, three fields each ───────────────────────
+	    Field + Select needs `ariaLabel` as well, duplicating the visible label.
+	    Field renders `<label for>` with no id of its own and Select's trigger is
+	    a role="combobox" button, which is not a labelable element — so the label
+	    points at nothing and there is no id to feed ariaLabelledBy. Plan 13
+	    recorded this as F-13-7; it is composed as prescribed rather than
+	    dropped. */}
+	<section class="hm-section">
+		<Eyebrow size="sm" tone="muted">SOCIAL LINKS</Eyebrow>
+		<div class="hm-rows">
+			{fx.socialLinks.map((link, i) => (
+				<Card surface="subtle" padding="md" radius="lg">
+					<div class="hm-row">
+						<Field label="Icon" wiring={wiring(`f-social-${i}-icon`)}>
+							<Select
+								value={link.icon}
+								onChange={noop}
+								options={SOCIAL_ICONS}
+								ariaLabel="Icon"
+								searchable={false}
+								size="sm"
+							/>
+						</Field>
+						<Field label="Label" wiring={wiring(`f-social-${i}-label`)}>
+							<TextInput id={`f-social-${i}-label`} defaultValue={link.label} />
+						</Field>
+						<Field label="URL" wiring={wiring(`f-social-${i}-url`)}>
+							<TextInput id={`f-social-${i}-url`} defaultValue={link.url} placeholder="https://..." />
+						</Field>
+					</div>
+				</Card>
+			))}
+		</div>
+	</section>
+
+	{/* ── Button: the two CTAs ──────────────────────────────────────────────
+	    The legacy panel is titled "Button" and its three fields are Text, Link
+	    and Style. ADMIN-IA's recovered list calls the second "Link URL"; the
+	    rendered source calls it "Link", and ADMIN-IA already records that drift.
+	    The rendered label wins. */}
+	<section class="hm-section">
+		<Eyebrow size="sm" tone="muted">BUTTON</Eyebrow>
+		<div class="hm-rows">
+			{fx.ctas.map((cta, i) => (
+				<Card surface="subtle" padding="md" radius="lg">
+					<div class="hm-row">
+						<Field label="Text" wiring={wiring(`f-cta-${i}-text`)}>
+							<TextInput id={`f-cta-${i}-text`} defaultValue={cta.text} />
+						</Field>
+						<Field label="Link" wiring={wiring(`f-cta-${i}-link`)}>
+							<TextInput id={`f-cta-${i}-link`} defaultValue={cta.link} placeholder="/photography" />
+						</Field>
+						<Field label="Style" wiring={wiring(`f-cta-${i}-style`)}>
+							<Select
+								value={cta.style}
+								onChange={noop}
+								options={CTA_STYLES}
+								ariaLabel="Style"
+								searchable={false}
+								size="sm"
+							/>
+						</Field>
+					</div>
+					<div class="hm-cta-preview">
+						<Chip>{cta.text}</Chip>
+						<code class="hm-key">{cta.style}</code>
+					</div>
+				</Card>
+			))}
+		</div>
+	</section>
+
+	{/* ── dirty, conflict and success: the pointer, not a new treatment ─────
+	    All three are declared `inherits` above. Plan 12 sketched them on the
+	    dashboard, their most demanding host, and inventing a home-local variant
+	    would put two designs in the review for one decision. What is rendered is
+	    the coverage decision plus the one thing that is genuinely Home-specific,
+	    so a reviewer walking the coverage table can check the `inherits` cell
+	    without opening a second document. */}
+	{isInherit && (
+		<div
+			class="hm-inherit"
+			data-artefact={state === "dirty" ? "T-dirty-badge" : state === "conflict" ? "O-conflict-diff" : "T-success-published"}
+		>
+			<Eyebrow size="sm" tone="muted">
+				{state === "dirty"
+					? "INHERITS T-dirty-badge"
+					: state === "conflict"
+						? "INHERITS O-conflict-diff"
+						: "INHERITS T-success-published"}
+			</Eyebrow>
+			<Text size="sm" tone="muted">
+				{state === "dirty"
+					? "The badge is plan 12's. What is specific to Home is that a crop is an edit: nudging the focal point by one percent makes home_config.json pending, and the change list has to name the photo and the value or the operator cannot tell an intentional nudge from a lost one."
+					: state === "conflict"
+						? "The diff is plan 12's pointer and the design system has no diff component at all. What is specific to Home is that home_config.json is the smallest file in the set — a conflict here is two or three lines, so the per-file diff must read well at tiny sizes as well as at the photo file's length."
+						: "The outcome is plan 12's. What is specific to Home is that nothing on this screen is asynchronous: unlike Photos, a published Home is fully live as soon as the build finishes, so the copy must not borrow the photo pipeline's hedging."}
+			</Text>
+			{state === "dirty" && (
+				<div class="hm-badge-row">
+					<Badge tone="pending" dot>Draft</Badge>
+					<Text size="sm" tone="muted">Home, in the sidebar, in the topbar count, and here.</Text>
+				</div>
+			)}
+			{state === "conflict" && (
+				<AlertBanner
+					open
+					tone="warning"
+					title="home_config.json changed after your draft started."
+					description="Your peek order and the remote intro text are both newer than the base. Resolving is per file; Photos and Résumé stay pending."
+					dismissible={false}
+				/>
+			)}
+		</div>
+	)}
+
+	{/* ── Review band. NOT part of the design. ─────────────────────────────
+	    State names only, never a state's marker copy: check-states.mjs asserts
+	    each marker appears on its own page and no other, and a legend carrying
+	    every state's copy would make that assertion pass vacuously. */}
+	<aside class="hm-review">
+		<Eyebrow size="sm" tone="muted">REVIEW CHROME / NOT PART OF THE DESIGN</Eyebrow>
+		<p class="hm-review-line">
+			{reviewStates.map((s) => (
+				<a class="hm-review-link" href={hrefFor(s)} data-on={s === state ? "true" : undefined}>{s}</a>
+			))}
+		</p>
+		<p class="hm-review-note">
+			`phone` is a layout, not a state: it has a route so the refusal can be reviewed and
+			screenshotted, and no row in STATES.
+		</p>
+	</aside>
+</Admin>
+
+<style is:global>
+	/* App layout CSS only, per QUAL-03. Every colour is a charcoal token.
+
+	   THIS BLOCK IS GLOBAL RATHER THAN SCOPED, AND THAT IS FORCED. Astro's scoped
+	   styles work by stamping a data-astro-cid attribute onto every element in
+	   the ASTRO TEMPLATE and appending an attribute selector to every rule. A
+	   framework island renders its own DOM, which never receives the attribute,
+	   so a scoped rule cannot reach a single node inside FocalPointSketch or
+	   SortableStatic. Plan 13 hit this and recorded it prescriptively; this file
+	   follows it rather than rediscovering it.
+
+	   The focal control's OWN geometry is not here — it ships inside
+	   FocalPointSketch.tsx, because an upstream FocalPointPicker would ship it
+	   and no consumer would ever type it. What is here is page chrome. */
+
+	.hm-head,
+	.hm-panel,
+	.hm-inherit,
+	.hm-section,
+	.hm-skeleton {
+		display: grid;
+		gap: var(--space-3);
+	}
+
+	.hm-section {
+		gap: var(--space-4);
+	}
+
+	.hm-inherit {
+		border-left: 2px solid var(--wire);
+		padding-left: var(--space-4);
+	}
+
+	.hm-key {
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+
+	.hm-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	.hm-badge-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+
+	/* == The peek strip ==================================================== */
+	.sst-row {
+		display: flex;
+		align-items: center;
+		gap: var(--space-3);
+		padding: 4px var(--space-2);
+		border: 1px solid var(--rule);
+		border-radius: var(--radius-md);
+		background: var(--cream-2);
+	}
+	.sst-index {
+		flex: 0 0 auto;
+		min-width: 20px;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-4);
+		text-align: right;
+	}
+	.sst-thumb {
+		flex: 0 0 auto;
+		width: 54px;
+		height: 36px;
+		object-fit: cover;
+		border-radius: var(--radius-sm);
+		background: var(--cream-3);
+	}
+	.sst-body {
+		flex: 1 1 auto;
+		display: grid;
+		gap: 0;
+		min-width: 0;
+	}
+	.sst-meta {
+		flex: 0 0 auto;
+		font-family: var(--mono);
+		font-size: var(--text-2xs);
+		color: var(--ink-3);
+	}
+	.ds-atom-sortable.hm-peek {
+		display: grid;
+		gap: var(--space-2);
+	}
+
+	/* == The focal control's page chrome =================================== */
+	.fp-root {
+		display: grid;
+		gap: var(--space-3);
+	}
+	.fp-frame-wrap {
+		display: grid;
+		gap: var(--space-4);
+	}
+	@media (min-width: 673px) {
+		.fp-frame-wrap {
+			grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+			align-items: start;
+		}
+	}
+	.fp-side {
+		display: grid;
+		gap: var(--space-2);
+		align-content: start;
+	}
+	.fp-readout-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--space-3);
+	}
+	.fp-flags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-2);
+	}
+
+	/* == Repeated row groups: socials and CTAs ============================= */
+	.hm-rows {
+		display: grid;
+		gap: var(--space-4);
+	}
+	.hm-row {
+		display: grid;
+		gap: var(--space-4);
+	}
+	/* Two columns at >= 673px, one below — the responsive contract's near-square
+	   foldable class is the first width where a second column is honest. */
+	@media (min-width: 673px) {
+		.hm-row {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	@media (min-width: 1024px) {
+		.hm-row {
+			grid-template-columns: minmax(0, 12rem) minmax(0, 1fr) minmax(0, 1.4fr);
+		}
+	}
+	.hm-cta-preview {
+		display: flex;
+		align-items: center;
+		gap: var(--space-2);
+		margin-top: var(--space-3);
+	}
+
+	/* == Review chrome ===================================================== */
+	.hm-review {
+		display: grid;
+		gap: var(--space-2);
+		margin-top: var(--space-8);
+		padding: var(--space-3) var(--space-4);
+		border: 1px dashed var(--wire);
+		border-radius: var(--radius-md);
+	}
+	.hm-review-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--space-3);
+		margin: 0;
+	}
+	.hm-review-link {
+		font-family: var(--mono);
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+		text-decoration: none;
+		border-bottom: 1px solid var(--rule);
+		display: inline-flex;
+		align-items: center;
+	}
+	.hm-review-link[data-on="true"] {
+		color: var(--ink);
+		border-bottom-color: var(--wire);
+	}
+	.hm-review-note {
+		margin: 0;
+		font-size: var(--text-xs);
+		color: var(--ink-3);
+	}
+
+	/* == The 44px floor, every coarse-pointer class ========================
+	   Five of the six device classes in the responsive contract are coarse
+	   pointer, so the floor is the common case rather than the exception, and it
+	   sits on the HIT AREA rather than on the painted control. The design
+	   system's own inputs, selects and buttons are carried by
+	   density-compact.css; these are the rows and links that are mine.
+
+	   `.ds-atom-sortable-item` is here because SortableItem spreads dnd-kit's
+	   listeners onto the item wrapper, so the ROW is the target. */
+	@media (pointer: coarse) {
+		.hm-review-link,
+		.sst-row,
+		.ds-atom-sortable-item {
+			min-height: 44px;
+		}
+	}
+</style>

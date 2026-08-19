@@ -1,0 +1,79 @@
+---
+// CaseHeader.astro — the study header, shared by BOTH case-study tiers.
+//
+// THE OPENING SENTENCE COMES FROM one-liners.md, NOT FROM THE DRAFT. Both
+// long-form drafts open by saying so in as many words — "Opens consistently with
+// the one-liner already drafted for this project" — and then quote it. That is
+// an INSTRUCTION to the template, so the template carries it out rather than
+// rendering it: the header shows the one-liner, character for character, and the
+// instruction itself renders below as a drafting note like every other piece of
+// scaffolding.
+//
+// one-liners.md is canonical for the one-liner and for the D-45 badge because it
+// is the only file in the corpus with a MEASURED character budget —
+// check-copy-length.mjs enforces 60-110 characters — and because X-home-act2 and
+// X-work were both laid out against those exact strings in plan 09. A header
+// that paraphrased would silently change a length two other artefacts depend on.
+//
+// THE PAGE HEADER IS --text-4xl 44px, NOT 52px. G-11 is the open scale hole: the
+// handoff authors its page headers at 52px and the shared scale runs 44 then 60.
+// UI-SPEC's ruling is that --text-* is design-system-owned sizing, so a Phase 0
+// sketch uses 44 and files the hole upstream rather than hardcoding 52. X-work
+// and X-photos already carry a labelled 52px reference for the eye review; there
+// is no reason to carry a third.
+//
+// THE INLINE LINE-HEIGHT OVERRIDE IS A RECORDED GAP, NOT A PREFERENCE. Heading's
+// token size path binds line-height to the size: data-size="4xl" carries
+// --lh-tight 0.94, while UI-SPEC assigns --lh-snug 1.08 to page headers at
+// 40-44px and reserves 0.94 for the 60px Home name. Size and line-height cannot
+// be chosen independently through the declarative path. Same override as every
+// 44px header in plan 09's sketches; it is observation 6 in that plan's summary.
+
+import { Badge, Eyebrow, Heading, Text } from "@akhil-saxena/design-system";
+
+interface Props {
+	anchor: string;
+	tierLabel: string;
+	title: string;
+	badge: string;
+	oneLiner: string;
+	meta: string[];
+}
+
+const { anchor, tierLabel, title, badge, oneLiner, meta } = Astro.props;
+
+// D-45's three statuses, mapped to the tones plan 09 already used on X-work.
+// Only Live and Maintained occur across the five projects; Archived is real
+// vocabulary with no current instance, and pinning it to a project to fill a
+// swatch would be inventing a fact.
+const statusTones: Record<string, "success" | "count" | "pending"> = {
+	Live: "success",
+	Maintained: "count",
+	Archived: "pending",
+};
+
+const tone = statusTones[badge];
+if (!tone) {
+	throw new Error(
+		`CaseHeader: "${title}" carries the status "${badge}", which is not one of D-45's three ` +
+			`values (${Object.keys(statusTones).join(" / ")}). Statuses come from 00-COPY/one-liners.md.`,
+	);
+}
+---
+
+<header class="case-head" id={anchor}>
+	<div class="case-head-top">
+		<Eyebrow size="md" tone="muted">{tierLabel}</Eyebrow>
+		<Badge tone={tone}>{badge}</Badge>
+	</div>
+
+	<Heading level={1} size="4xl" weight="bold" style={{ lineHeight: "var(--lh-snug)" }}>
+		{title}
+	</Heading>
+
+	<Text size="md" tone="secondary" leading="relaxed">{oneLiner}</Text>
+
+	<div class="case-meta">
+		{meta.map((m) => <span>{m}</span>)}
+	</div>
+</header>

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 COMPLETE (10/10). Phase 1 executing. 00-11 and 00-17 are open human gates.
+stopped_at: PAUSED after 01-16 by developer request, pending a decision on admin scope. 01-17 is the RichText plan and is moot if the admin narrows.
 last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-19 -- Phase 2 closed: five 401s proven with the edge layer removed
+last_activity: 2026-08-19 -- 01-16 complete (overlay SSR); Phase 1 paused at 16/21
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 56
-  completed_plans: 46
-  percent: 82
+  completed_plans: 50
+  percent: 89
 ---
 
 # Project State

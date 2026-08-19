@@ -204,8 +204,12 @@ Not verification; a queue. Tick when handed over or filed.
       *"Draggable item abstract-intothemist was moved over droppable area abstract-intothemist"*
       → *"Picked up Into the Mist. Position 1 of 5. Use the arrow keys to move it, then press
       space to drop."*
-- [ ] **E9 ·** `Modal` / `ConfirmDialog` / `Sheet` **server-render to 0 B**; `Modal` also renders
+- [x] **E9 ·** `Modal` / `ConfirmDialog` / `Sheet` **server-render to 0 B**; `Modal` also renders
       an unremovable Close button, so it cannot express a fail-closed re-auth.
+      **CLOSED by 01-16.** With the new `inline` mode they server-render 1,065 / 1,902 / 1,075 B
+      (`TypeToConfirm` 1,707 B); default stays 0 B so nothing existing changed. `Tabs` went from
+      **1 of 3 panels' children** to **3 of 3**. `closable={false}` now suppresses the button,
+      Escape **and** the backdrop together — so a fail-closed re-auth is expressible.
 - [ ] **E10 ·** `RichText`: `toolbar={null}` **does not suppress the toolbar**
       (`??` falls through only on null/undefined); ⌘K never bound though `autolink` is hardcoded;
       it downloads a **six-language grammar set (12,718 B gzip)** to edit a prose bullet.
@@ -287,6 +291,21 @@ Not verification; a queue. Tick when handed over or filed.
       attributes the bad utterance to the pick-up event, but the string comes from `onDragOver`,
       which fires immediately and overwrites the pick-up announcement. Fixing only what the finding
       named would have type-checked, passed every gate, and changed nothing audible.
+
+- [ ] **E29 · READ THIS BEFORE 01-20 — it can invalidate captures.** **67 story files hardcode
+      `className="dark"`.** `tokens.css` matches `:root.dark, .dark`, so a scoped wrapper
+      re-declares ~50 neutral dark tokens — but `charcoal.css` is **root-scoped only**. Net effect:
+      **a charcoal-dark baseline of any such story pins the wrong brand.** Measured — the probe read
+      `31,31,31` where charcoal declares `30,30,29`. `preview.tsx` guards its own wrapper but
+      cannot guard per-story decorators.
+- [ ] **E30 · ONE MORE FOR YOU — two by-eye checks on the new overlay stories.** 01-16 raised a
+      `<human-check>` it could not perform: does the charcoal `ConfirmDialog` panel *look* like a
+      surface (not a white glass sheet), and does the not-closable trap dialog *visibly* contain
+      its exit? Pairs with **E26**'s VoiceOver pass — both are five-minute jobs.
+- [ ] **E31 ·** `test:a11y` genuinely scans **no portaled content** — now measured, not assumed:
+      `checkA11y` is scoped to `#storybook-root` and the portal target is `document.body`
+      (`insideStorybookRoot: false` for three existing dialog stories). Consequence worth
+      recording: **the threat model's T-16-02 mitigation was vacuous** until `inline` existed.
 
 ## F. Known-open, already recorded — do NOT re-report
 

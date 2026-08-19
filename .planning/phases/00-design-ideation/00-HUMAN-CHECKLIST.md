@@ -198,8 +198,12 @@ Not verification; a queue. Tick when handed over or filed.
       off: default paints **40px** with a 22px checkbox label as the content floor. `density`
       alone would not have got there, because `height` on a `<tr>` is a minimum. Note the real
       value is **`cozy`** — there is no `"compact"` in the API.
-- [ ] **E8 ·** `Sortable` has **no accessibility passthrough** — announces raw slugs, never a
+- [x] **E8 ·** `Sortable` has **no accessibility passthrough** — announces raw slugs, never a
       title, never a position. Fix is *expose* an announcer, not pass one.
+      **CLOSED by 01-15.** Measured by keyboard in Chromium, before → after:
+      *"Draggable item abstract-intothemist was moved over droppable area abstract-intothemist"*
+      → *"Picked up Into the Mist. Position 1 of 5. Use the arrow keys to move it, then press
+      space to drop."*
 - [ ] **E9 ·** `Modal` / `ConfirmDialog` / `Sheet` **server-render to 0 B**; `Modal` also renders
       an unremovable Close button, so it cannot express a fail-closed re-auth.
 - [ ] **E10 ·** `RichText`: `toolbar={null}` **does not suppress the toolbar**
@@ -269,6 +273,20 @@ Not verification; a queue. Tick when handed over or filed.
 - [ ] **E25 ·** `DataGrid`'s bulk bar still **hardcodes Export / Archive / Clear and wires none of
       them.** Same class as the hardcoded accessible name, out of 01-14's scope. Relevant when the
       admin's photo grid needs real bulk actions.
+
+- [ ] **E26 · ONE THING FOR YOU TO DO — a VoiceOver pass.** 01-15 raised an explicit
+      `<human-check>`: the announcer was verified by reading the live-region DOM in Chromium, but
+      **no screen reader was ever driven.** Worth five minutes with VoiceOver (⌘F5) on the Sortable
+      story — pick up a tile with Space, move with ArrowDown, drop with Space, and confirm you hear
+      the title and position rather than a slug. This is the only Phase 1 claim resting on DOM
+      inspection instead of the actual assistive tech.
+- [ ] **E27 ·** dnd-kit **hardcodes `assertive`** live-region politeness, which is now inconsistent
+      with 01-07's Lightbox using `polite`. Two announcement surfaces, two politeness levels, no
+      way to align them without patching dnd-kit. Recorded, not fixed.
+- [ ] **E28 ·** **G-13's own finding text is wrong** and needs correcting in `00-FINDINGS.md`: it
+      attributes the bad utterance to the pick-up event, but the string comes from `onDragOver`,
+      which fires immediately and overwrites the pick-up announcement. Fixing only what the finding
+      named would have type-checked, passed every gate, and changed nothing audible.
 
 ## F. Known-open, already recorded — do NOT re-report
 

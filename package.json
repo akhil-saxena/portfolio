@@ -9,7 +9,11 @@
   },
   "scripts": {
     "dev": "npm run bootstrap:local && wrangler types && astro dev",
-    "build": "wrangler types && astro check && astro build",
+    "build": "wrangler types && astro check && astro build && npm run gate:routes",
+    "gate:routes": "node scripts/assert-no-prerendered-protected-routes.mjs",
+    "gate:deps": "node scripts/assert-no-local-dep-specs.mjs",
+    "gate:deps:advisory": "node scripts/assert-no-local-dep-specs.mjs --advisory",
+    "deploy": "npm run gate:deps && npm run build && npm test && npm run gate:routes && wrangler deploy",
     "preview": "wrangler types && astro preview",
     "check": "biome check . && prettier --check \"**/*.astro\"",
     "format": "biome check --write . && prettier --write \"**/*.astro\"",

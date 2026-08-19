@@ -395,7 +395,7 @@ and 6.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Design & Ideation | 24/25 | In Progress|  |
-| 1. Design System — Charcoal Theme | 9/21 | In Progress|  |
+| 1. Design System — Charcoal Theme | 10/21 | In Progress|  |
 | 2. Astro Foundation & Fail-Closed Auth | 8/10 | In Progress|  |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |
 | 4. Photo Pipeline (Actions half) | 0/TBD | Not started | - |

@@ -191,6 +191,10 @@ so the job's `if:` guard re-evaluated against the same green CI run for the same
 push deployed" are different claims and the run timestamps show the difference
 (`created 06:27:23`, `updated 06:57:11`).
 
+Committing this summary then produced a chain with **no re-run in it** — CI `32226174187` success
+on `41de8e3`, Deploy `32226248052` success on `41de8e3`, created 2s after CI completed, green on
+the first attempt — so the caveat above is retired rather than merely disclosed.
+
 **4. `REQUIREMENTS.md` deliberately untouched**
 
 FND-01 and FND-07 are now evidenced by a live deployment. **AUTH-01 is not** — it is about auth

@@ -86,6 +86,23 @@ a hardened variant used alongside the plan's own:
 
 Hardened variant: 8 further fixtures, all as predicted (1 positive, 7 negatives).
 
+### A second, fully push-triggered chain — no re-run in it
+
+The deploy above reached success as a **re-run** of a `workflow_run`-triggered job (see this plan's
+summary, deviation 3). Committing this evidence file then produced a chain with no re-run anywhere
+in it, which is the cleanest possible form of the claim *a push to `main` produced a deployed
+Worker*:
+
+| Workflow | Run ID | Conclusion | Commit | Created | Completed |
+| --- | --- | --- | --- | --- | --- |
+| CI | `32226174187` | success | `41de8e3` | 2026-08-19T07:04:47Z | 2026-08-19T07:05:41Z |
+| Deploy | `32226248052` | success | `41de8e3` | 2026-08-19T07:05:43Z | 2026-08-19T07:06:39Z |
+
+Deploy created **2s after** CI completed, same commit, both green, first attempt. The hardened
+ordering assertion passes against this chain with `PUSHED_SHA` pinned to `41de8e3`, and the plan's
+own verify block re-run verbatim against the live deployment returned
+`PRODUCTION_EDGE_PROBES_OK`, exit 0.
+
 ### Two failed deploys preceded the successful one
 
 Recorded because "it deployed" is a much weaker claim than the sequence that produced it, and both

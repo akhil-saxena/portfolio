@@ -47,8 +47,20 @@ on the same page is item B1.
 | Tablet landscape | **1024** × 768 | density flip vs laptop at same width |
 | Laptop | **1440** × 900 | A1–A3, all S-/E-/T-/O- artefacts |
 
-**Modes.** Admin (`/admin/**`) is charcoal **light** — never judge it in dark. Public routes
-(`/`, `/work*`, `/photos`, `/home`) are charcoal **dark**.
+**Modes — you cannot get this wrong, and the contact sheet being dark is correct.** The mode is
+baked into the layout, not a toggle you set:
+
+| Route | Mode | How |
+|---|---|---|
+| `/` (contact sheet), `/work*`, `/photos`, `/home*` | charcoal **DARK** | `Public.astro` puts `class="dark"` on `<html>` |
+| `/admin/**` | charcoal **LIGHT** | `Admin.astro` omits it; `data-brand="charcoal"` alone selects the light block at (0,2,0) |
+
+So **the index page is dark on purpose** — it is a public route. Clicking from it into any `/admin/**`
+artefact switches you to light automatically. Whatever is on screen is already in its intended mode;
+there is nothing to set and no way to review a screen in the wrong one.
+
+*(Earlier wording said "Admin is charcoal light — never judge it in dark," which read as a global
+instruction and made the dark contact sheet look like a bug. It is not.)*
 
 **No dev server? Use the committed record:** `screenshots/` in this directory holds all 88
 PNGs, named `00-{class}-{id}-{state}-{mode}-{viewport}.png` — e.g.

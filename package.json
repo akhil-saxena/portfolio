@@ -14,7 +14,10 @@
     "check": "biome check . && prettier --check \"**/*.astro\"",
     "format": "biome check --write . && prettier --write \"**/*.astro\"",
     "typecheck": "astro check",
-    "bootstrap:local": "node scripts/bootstrap-local-env.mjs"
+    "bootstrap:local": "node scripts/bootstrap-local-env.mjs",
+    "test": "vitest run",
+    "test:workers": "vitest run --project workers",
+    "test:integration": "vitest run --project integration"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.2.1",

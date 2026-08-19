@@ -192,8 +192,12 @@ Not verification; a queue. Tick when handed over or filed.
 - [ ] **E5 ·** A page cannot recolour a `Text` — it inlines its variant colour; only `tone` works.
 - [ ] **E6 ·** No control uses `--wire` (3.44:1) despite it existing for exactly the boundary job;
       a charcoal-light `TextInput` has a **1.000:1 fill delta** against the page.
-- [ ] **E7 ·** `DataGrid` pins `density="comfortable"` at (0,3,0); its selection cell has no
+- [x] **E7 ·** `DataGrid` pins `density="comfortable"` at (0,3,0); its selection cell has no
       removal prop, so compact's 32px row is unreachable.
+      **CLOSED by 01-14** — and the row is **32px measured**, but only with the selection column
+      off: default paints **40px** with a 22px checkbox label as the content floor. `density`
+      alone would not have got there, because `height` on a `<tr>` is a minimum. Note the real
+      value is **`cozy`** — there is no `"compact"` in the API.
 - [ ] **E8 ·** `Sortable` has **no accessibility passthrough** — announces raw slugs, never a
       title, never a position. Fix is *expose* an announcer, not pass one.
 - [ ] **E9 ·** `Modal` / `ConfirmDialog` / `Sheet` **server-render to 0 B**; `Modal` also renders
@@ -253,6 +257,18 @@ Not verification; a queue. Tick when handed over or filed.
       inserted — `footerTop` 92 vs `mainBottom` 2064.73, **with all 40 unit tests green**. Fixed by
       switching to named `grid-area`. Recorded because it is the clearest example of why the visual
       baselines matter more than the unit suite in this repo.
+
+- [ ] **E23 ·** The badge/dot auto-render was keyed on **`priority` as well as `status`** — the
+      finding named only `status`, so fixing that alone would have closed half of it. Both are now
+      opt-in via `render: dataGridPresets.statusBadge`. **Behaviour change:** a column keyed
+      `status` or `priority` no longer auto-renders a badge.
+- [ ] **E24 ·** The pager's touch target is **24px, not the 40px recorded** — a **20px** shortfall,
+      not 4px. `Pagination` renders `IconButton` at `data-size="sm"`; the recorded figure described
+      the *ceiling*, not the live value. Needs both the scale rebase and a call-site bump →
+      Phase 06.1.
+- [ ] **E25 ·** `DataGrid`'s bulk bar still **hardcodes Export / Archive / Clear and wires none of
+      them.** Same class as the hardcoded accessible name, out of 01-14's scope. Relevant when the
+      admin's photo grid needs real bulk actions.
 
 ## F. Known-open, already recorded — do NOT re-report
 

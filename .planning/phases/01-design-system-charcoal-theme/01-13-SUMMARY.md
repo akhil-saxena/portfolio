@@ -69,19 +69,19 @@ patterns-established:
 requirements-completed: [DS-01]
 
 # Metrics
-duration: 95min
+duration: 35min
 completed: 2026-08-19
 ---
 
 # Phase 01 Plan 13: AppShell's collapse, sidebar width, breakpoint and banner slot Summary
 
-**`collapsed` became an input with a written-down precedence order, `--ds-sidebar-w` moved off the inline style onto `.ds-atom-appshell` so a media query now paints UI-SPEC's 208px sidebar, the 767px rule that bisected device class 3 is gone, and a labelled `<section>` banner row landed between topbar and main — with three of the plan's premises falsified in the browser, one unfailable gate repaired, and a latent footer/grid collision found by geometry that no unit test could see.**
+**`collapsed` became an input with a written-down precedence order, `--ds-sidebar-w` moved off the inline style onto `.ds-atom-appshell` so a media query now paints UI-SPEC's 208px sidebar, the 767px rule that bisected device class 3 is gone, and a labelled `<section>` banner row landed between topbar and main — with three of the plan's premises falsified in the browser, three gates repaired, and a latent footer/grid collision found by geometry that no unit test could see.**
 
 ## Performance
 
-- **Duration:** 95 min
+- **Duration:** 35 min
 - **Started:** 2026-08-19 14:50 IST
-- **Completed:** 2026-08-19 16:25 IST
+- **Completed:** 2026-08-19 15:25 IST
 - **Tasks:** 2 of 2
 - **Files modified:** 6 (5 modified, 1 created) — 1,511 insertions, 37 deletions
 - **Tests:** unit 10 → 40 on this component; 18 new Chromium cases; `npm test` 1,625 → **1,655**
@@ -333,6 +333,41 @@ n=$(node -e 'const s=require("node:fs").readFileSync(process.env.DS+"/src/primit
 The gate's `test -s` guard and its `grep -o … | wc -l` (not `grep -c`) were both already
 right; only the comment filter was missing.
 
+### Task 2, gate 2 — fails on the documentation the same task demands
+
+```bash
+if grep -qE 'role="banner"' "$DS/src/layout/AppShell/index.tsx"; then echo "FAIL: role=banner means the page header and must be unique — the topbar already is"; exit 1; fi
+```
+
+The gate's intent is right and its mechanism cannot distinguish a **usage** from a **mention**.
+The plan's action says *"`role="banner"` is **wrong** — that role means the page header and
+there must be only one"* and *"Document that pairing"*, so the docstring records the decision:
+
+```
+index.tsx:109:  * `role="banner"` is deliberately NOT used: that role means the page header and
+```
+
+— which is the only match in the file, and it makes the gate red. **This is 01-12's task-1
+gate-2 defect exactly, on a different string**: a source grep for a name cannot tell prose
+from code. Repaired by stripping JSX, block and line comments first — the same `code()`
+transform `src/primitive-composition.test.ts` already uses for the same reason:
+
+```bash
+node -e '
+const s = require("node:fs").readFileSync(process.env.DS+"/src/layout/AppShell/index.tsx","utf8")
+  .replace(/\{\/\*[\s\S]*?\*\//g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+process.exit([...s.matchAll(/role="banner"/g)].length === 0 ? 0 : 1);'
+```
+
+Negative-controlled **both ways**: `0` usages on the shipped file (exit 0), and `1` when
+`role="banner"` is injected into the real `<section>` (exit 1). File restored byte-identical,
+sha `a0f604e6…` before and after.
+
+Two *live* guarantees back the static one up, so this is a tripwire rather than the only
+defence: axe would fire `landmark-unique` on a duplicate page-header landmark and
+`npm run test:a11y` is clean, and *the banner is reachable as its own landmark* asserts
+`getByRole("banner")` has count **1**.
+
 ### Task 2, gate 4 — a stale line number in its echo
 
 The gate prints *"baseline 1, at line 5026"*. `5026` is correct **against `main`** and stale
@@ -447,7 +482,7 @@ grid placement that was only ever correct by coincidence.
 
 ## Negative controls run
 
-Six. Every mutation restored from a `cp` backup and verified byte-identical by
+Seven. Every mutation restored from a `cp` backup and verified byte-identical by
 `shasum -a 256`. No `git checkout --`, no `git stash`, no `git reset`, no `git worktree`.
 
 | # | What was broken | Result |
@@ -458,6 +493,7 @@ Six. Every mutation restored from a `cp` backup and verified byte-identical by
 | **NC-3** | `.ds-atom-appshell-footer` reverted to `grid-column: 2; grid-row: 3` | browser **1 failed**, *banner and footer: all four edges line up*, `footerTop` **92** against `mainBottom` **2064.73**. This is the bug as originally found, re-run deliberately so the probe is proven to bite. Restored: primitives sha `713c3870…` |
 | **NC-4** | The `:has()` switch removed — banner row declared unconditionally | **all 17 passed.** The plan's stated reason for switching is false; see premise #2. Restored |
 | **NC-5** | The same always-declared template, measured with a consumer `row-gap: 16px` | shipped **16px** above main (`49px 819px 0px`); always-declared **32px** (`49px 0px 803px 0px`). The real justification, now a permanent case. Temporary probe spec deleted; `tests/visual/` has no `tmp-*` left |
+| **NC-6** | `role="banner"` injected into the real `<section>`, to prove the **repaired** gate 2 still bites | repaired gate exits **1** on the injected usage and **0** on the shipped file, where the only match is the docstring. Restored: sha `a0f604e6…` |
 
 **NC-3 and NC-5 are the two that changed the shipped implementation.** NC-1 and NC-2 confirm
 the two headline claims have teeth. NC-4 is the one worth copying: it asked whether my own
@@ -481,8 +517,9 @@ grid collision is the opposite: entirely invisible to jsdom.
 | `npm run css:check` passes; the grid is correct in all four banner × footer combinations | **PASS** — 75 files, round-trip byte-exact; four combinations measured in the browser and in jsdom |
 | All four sibling gates | **PASS** — `npm test` **1655/1655** in 116 files; `npm run check` 352 files clean; `npm run typecheck` clean; `npm run css:check` byte-exact |
 | Task 1 gate 2 (repaired) | **PASS** — declaration present at lines 5084 and 5103; `onCollapsedChange` present |
-| Task 2 gate 2 — `banner` present, `role="banner"` absent | **PASS** as written |
+| Task 2 gate 2 — `banner` present, `role="banner"` absent | **PASS** — first half as written; second half **repaired** (it fired on the docstring the same task requires) and negative-controlled both ways |
 | Task 2 gate 4 (repaired) — 767 count | **PASS** — 0 outside comments |
+| No existing visual baseline moved (not in the plan; checked anyway) | **PASS** — 485 stories captured, **0** pixel-mismatch failures, 8 missing-baseline errors only. The 8 PNGs the run wrote were untracked and were removed by explicit path; the snapshot inventory is byte-identical to pre-run |
 
 ### Human-check items (from the plan's `<human-check>`)
 
@@ -500,25 +537,50 @@ Two of the three are now automated, and the third is genuinely for a human:
 
 ---
 
-## Storybook baselines 01-20 must record
+## Storybook baselines 01-20 must record — the measured list is EIGHT
 
-**Four**, not two. 01-12 already owed two; this plan adds two more. All four are absent from
-`tests/visual/storybook.spec.ts-snapshots/` (488 files there today):
+01-12 asked for "a complete list", so I ran the visual suite rather than counting from the
+SUMMARYs. **Eight** baselines are missing, not the two 01-12 knew about and not the four
+01-11 knew about. `tests/visual/storybook.spec.ts-snapshots/` holds 488 files today:
 
-| Story id | From |
-|---|---|
-| `layout-appbar--anchor-navigation` | 01-12 |
-| `layout-footer--compact-with-links` | 01-12 |
-| **`layout-appshell--with-banner`** | 01-13 |
-| **`layout-appshell--with-banner-and-footer`** | 01-13 |
+| Story id | Owed by | Introduced in |
+|---|---|---|
+| `overlays-lightbox--responsive-gallery` | 01-11 (flagged), story from 01-07 | `c198985` |
+| `patterns-formvalidation--field-required-marker` | 01-11 (flagged) | `e24f865` |
+| `patterns-formvalidation--field-error-severity` | 01-11 (flagged) | `e24f865` |
+| `patterns-formvalidation--anchored-error-summary` | 01-11 (flagged) | `e24f865` |
+| `layout-appbar--anchor-navigation` | 01-12 (flagged) | `82a61f9`…`ae3d50c` |
+| `layout-footer--compact-with-links` | 01-12 (flagged) | `ae3d50c` |
+| **`layout-appshell--with-banner`** | **01-13** | `3f69b6d` |
+| **`layout-appshell--with-banner-and-footer`** | **01-13** | `3f69b6d` |
 
-Both new ones render `PipelineStrip` (composed from `ProgressBar` + `Button`) and a
-`TallMain` of 24 fixed-height rows so the scroll assertions are real. `storybook.spec.ts`
-captures **every** story, so `npm run test:visual` reports these four as missing until 01-20
-records them; none of the four sibling gates covers the visual suite, so nothing here is red.
+Both of mine render `PipelineStrip` (composed from `ProgressBar` + `Button`) and a `TallMain`
+of 24 fixed-height rows so the scroll assertions are real. `storybook.spec.ts` captures
+**every** story, so `npm run test:visual` reports all eight as missing until 01-20 records
+them; none of the four sibling gates covers the visual suite, so nothing here is red.
 
-The four **existing** AppShell baselines were checked for drift rather than assumed
-unchanged — see *Existing visual baselines* below.
+### No existing baseline moved — measured, not assumed
+
+`npx playwright test tests/visual/storybook.spec.ts` on the finished tree:
+
+```
+visual baselines: captured 485, skipped 4 time-dependent
+8 x  "A snapshot doesn't exist at …, writing actual."
+0 x  pixel-mismatch failures
+```
+
+Zero comparison failures across all 485 captured stories, including the four existing AppShell
+baselines (`--default`, `--with-footer`, `--collapsed-default`, `--dark`). That is the direct
+answer to "did removing the 767px rule or renaming the footer's grid placement move a
+baseline": no. It is consistent with the mechanism — `storybook.spec.ts` captures at Desktop
+Chrome's 1280×720, where `max-width: 767px` never applied, and `grid-area: footer` resolves to
+the same cell the old `grid-row: 3` did.
+
+**The run wrote the 8 missing PNGs** (Playwright writes on first miss and fails once). All 8
+were untracked, and all 8 were removed by explicit path — each one checked against
+`git ls-files --error-unmatch` first so a tracked file could not be deleted by mistake. **No
+`git clean`.** The snapshot directory is byte-identical to its pre-run inventory (488 files,
+`diff` clean), so 01-20 records them on its own terms.
 
 ---
 
@@ -550,13 +612,22 @@ Per protocol §10 — recorded here, **not** added to `00-FINDINGS.md`.
    `storageKey={null}` renders identically on both sides, asserted by name and documented on
    the prop.
 
-4. **`.ds-atom-appshell-sidebar` declares `transition: width 0.25s ease`, but its width comes
-   from the grid column.** The element's own `width` computes to `auto`; the used width
-   changes because `grid-template-columns` changed on the parent. A `transition` on `width`
-   has nothing to interpolate, so the collapse animation is very likely inert. **Not
-   measured** — flagged for Phase 06.1, which will drive `--ds-sidebar-w` from a density axis
-   and will care whether that transition works. The animated property would have to be
-   `grid-template-columns` on `.ds-atom-appshell`.
+4. **`.ds-atom-appshell-sidebar` declares `transition: width 0.25s ease` and the sidebar
+   collapse is NOT animated. Measured, pre-existing, untouched.** Sampling the painted width
+   every 40ms for 300ms after clicking the toggle:
+
+   ```
+   transition="width 0.25s"  painted-before=240
+   samples=[48,48,48,48,48,48,48,48]   distinct=1
+   ```
+
+   It jumps in a single frame. The element's width is determined by the grid **track**
+   (`grid-template-columns` on `.ds-atom-appshell`, i.e. `--ds-sidebar-w`), not by its own
+   specified `width`, so a `transition` on `width` has nothing to interpolate — the animatable
+   property is `grid-template-columns` on the parent. Not fixed here: it is cosmetic,
+   pre-existing, outside E2 and G-8, and adding an animation immediately before 01-20 records
+   baselines is the same risk 01-11 declined for the same reason. It matters to **Phase 06.1**,
+   which will drive `--ds-sidebar-w` from a density axis and may want the change animated.
 
 5. **`var(--ds-sidebar-w, 240px)`'s fallback is now dead.** The property is declared on the
    class, so the fallback can only fire if a consumer makes the value
@@ -568,7 +639,20 @@ Per protocol §10 — recorded here, **not** added to `00-FINDINGS.md`.
    `[data-density="compact"] .ds-atom-appshell` is (0,2,0) and wins on specificity, so the
    density axis will not have this problem.
 
-7. **The husky pre-commit hook is load-bearing, and `npm run format` is not a substitute for
+7. **A concurrent agent in the PORTFOLIO repo swept this SUMMARY into its own commit while
+   it was still being written.** Protocol §3(d) — *"One git index. A plain `git commit`
+   commits the whole index"* — observed live, in the planning repo rather than in `$DS`. At
+   15:24:20 another session committed
+   `829817f docs(00): record J1-J3 verdicts and rescope D-02's fence to main`, and a
+   662-line intermediate draft of `01-13-SUMMARY.md` landed inside it. Nothing was lost —
+   the working copy held the newer content and is committed properly below — and
+   `829817f` was **not** amended or rebased, because it is another agent's commit. Worth
+   recording because §3(d) is written as a reason the `$DS` plans must be sequential, and
+   the same hazard applies to `.planning/` whenever phases run concurrently: a
+   specific-path `git add` protects staging but not somebody else's `git commit -a` or
+   `git add .`.
+
+8. **The husky pre-commit hook is load-bearing, and `npm run format` is not a substitute for
    `npm run check`.** The hook caught a real `lint/suspicious/noArrayIndexKey` error in a new
    story that `biome format --write` does not see. It also transiently runs `git stash` on
    every commit (01-12 recorded this); `git stash list` was verified empty before and after
@@ -587,44 +671,48 @@ Per protocol §10 — recorded here, **not** added to `00-FINDINGS.md`.
    Repaired to require a declaration; demonstrated against the pre-plan file both ways.
 2. **[Rule 1 — plan gate self-invalidating] Task 2 gate 4 counts `767` in comments.**
    Repaired per protocol §7a to strip comments first. Intent preserved, mechanism fixed.
-3. **[Rule 1 — plan premise wrong] "main is the scroll container, which the existing layout
+3. **[Rule 1 — plan gate fires on required documentation] Task 2 gate 2's `role="banner"`
+   check.** The same task orders the decision documented; the docstring sentence recording it
+   is the gate's only match. Repaired by stripping comments first, mirroring
+   `primitive-composition.test.ts`'s own `code()` helper, and negative-controlled both ways.
+4. **[Rule 1 — plan premise wrong] "main is the scroll container, which the existing layout
    already establishes."** Falsified in Chromium. The persistence behaviour is delivered
    conditionally and the false premise is pinned as an assertion. Documented at length above.
-4. **[Rule 1 — plan premise wrong] "a naive fixed template leaves a gap."** Falsified by
+5. **[Rule 1 — plan premise wrong] "a naive fixed template leaves a gap."** Falsified by
    NC-4. The `:has()` switch is kept on a measured reason (row-gap) instead.
-5. **[Rule 1 — bug found during the task] `.ds-atom-appshell-footer`'s line-based placement
+6. **[Rule 1 — bug found during the task] `.ds-atom-appshell-footer`'s line-based placement
    collided with the banner row and painted the footer on top of main.** Fixed with
    `grid-area: footer` plus an explicit `". footer" auto` row in both templates. Not in the
    plan; found by geometry; re-run as NC-3.
-6. **[Rule 2 — missing critical functionality] The precedence list gained a fifth level for
+7. **[Rule 2 — missing critical functionality] The precedence list gained a fifth level for
    the sidebar child's own `collapsed`.** The plan's list has four, but the plan separately
    requires the child's value to win when AppShell is not controlling, and that requirement
    needs a documented position. Placed above `defaultCollapsed`: an explicit render-time
    value, not a seed.
-7. **[Rule 2] The shell adopts the child's `collapsed` for `data-sidebar-collapsed`.**
+8. **[Rule 2] The shell adopts the child's `collapsed` for `data-sidebar-collapsed`.**
    Leaving the child alone without adopting its value would paint a 48px rail inside a 240px
    grid column.
-8. **[Rule 2] Persistence is skipped while controlled.** Writing a caller-owned value would
+9. **[Rule 2] Persistence is skipped while controlled.** Writing a caller-owned value would
    fight the caller on the next mount.
-9. **[Rule 2] `style` is `undefined` rather than `{}` when nothing needs writing**, so the
+10. **[Rule 2] `style` is `undefined` rather than `{}` when nothing needs writing**, so the
    default render emits no `style` attribute at all rather than an empty one.
-10. **[Rule 2] Two stories rather than the plan's one.** All four banner × footer
+11. **[Rule 2] Two stories rather than the plan's one.** All four banner × footer
     combinations were required to be tested; two of the four had no story, and injecting DOM
     would have measured the probe's markup instead of the library's.
-11. **[Rule 2] The `COMPONENT_SCOPED` docstring reordered, not just corrected.** 01-12 left
+12. **[Rule 2] The `COMPONENT_SCOPED` docstring reordered, not just corrected.** 01-12 left
     it saying `--ds-sidebar-w`'s 208px "is unreachable", which this plan made false.
     Class-level is now listed first as the pattern, and `--ds-snackbar-offset` is named as
     the last inline holdout.
-12. **[Rule 2] The meta description on the stories updated** — it enumerated the old slot
+13. **[Rule 2] The meta description on the stories updated** — it enumerated the old slot
     list and claimed persistence unconditionally, and it feeds the autodocs page 01-20 reads.
-13. **My own RED test contradicted the plan and was changed to match the plan, not the
+14. **My own RED test contradicted the plan and was changed to match the plan, not the
     reverse.** I first wrote "a stored value beats `defaultCollapsed`", which is the opposite
     of the plan's stated precedence. With no measurement on either side, the plan's explicit
     decision stands; my dissent is recorded as Findings #2 rather than shipped.
-14. **Three commits instead of the plan's single prescribed message**, and the task-1 message
+15. **Three commits instead of the plan's single prescribed message**, and the task-1 message
     amended once (content untouched) so both breaking changes are named in footers.
     Atomicity per the standing rules.
-15. **`CHANGELOG.md` deliberately not touched** — 01-20 owns it. The exact wording is
+16. **`CHANGELOG.md` deliberately not touched** — 01-20 owns it. The exact wording is
     supplied above instead.
 
 ### Not done
@@ -642,17 +730,19 @@ Per protocol §10 — recorded here, **not** added to `00-FINDINGS.md`.
 
 ## What a later plan needs
 
-- **01-20** records **four** visual baselines (two owed by 01-12, two by this plan), and
-  writes the v2.0.0 changelog entry — the wording for AppShell's two breaks is given verbatim
-  above, ready to place beside the font relocation. Both belong under the same
-  `BREAKING CHANGES` heading; there are now at least three breaks in this release
-  (`@font-face` relocation, the inline `--ds-sidebar-w`, the 767px rule).
+- **01-20** records **eight** visual baselines, not two — the measured list, with the plan
+  that owes each, is in the table above. It also writes the v2.0.0 changelog entry; the
+  wording for AppShell's two breaks is given verbatim above, ready to place beside the font
+  relocation. Both belong under the same `BREAKING CHANGES` heading; there are now at least
+  three breaks in this release (`@font-face` relocation, the inline `--ds-sidebar-w`, the
+  767px rule).
 - **01-21** publishes. Nothing here touches `package.json`, `dist/`, or any version string.
 - **Phase 06.1** inherits `--ds-sidebar-w` at class level as the density axis's hook. Two
   things to know: a `[data-density] .ds-atom-appshell` selector is (0,2,0) and wins on
   specificity, so it does not have the source-order problem a bare `.ds-atom-appshell` rule
-  has; and the sidebar's `transition: width` is probably inert (Findings #4), so animating a
-  density change will need `grid-template-columns` on the parent.
+  has; and the sidebar's `transition: width` is **measured inert** (Findings #4 — the collapse
+  jumps in one frame), so animating a density change needs `grid-template-columns` on the
+  parent, not `width` on the child.
 - **Phase 4/5, the admin shell** — the banner slot is `banner` + `bannerLabel`, the strip is
   the consumer's own markup, and D-15's pipeline strip should move out of `AdminTopbar.tsx`
   into it. There is **no** built-in breakpoint any more: the admin must write its own
@@ -660,3 +750,22 @@ Per protocol §10 — recorded here, **not** added to `00-FINDINGS.md`.
   one declaration instead of by re-declaring the component's grid. If the admin wants the
   strip pinned while a photo list scrolls, it also needs
   `.ds-atom-appshell { height: 100dvh; }` — see Findings #1.
+
+## Self-Check: PASSED
+
+Every artefact and hash claimed above was re-verified on disk after the SUMMARY was written.
+
+| Claim | Check | Result |
+|---|---|---|
+| 6 files created/modified | `test -f` each | all **FOUND** |
+| 3 commits | `git log --oneline --all \| grep` each | `c286d4b`, `9eab3bd`, `3f69b6d` all **FOUND** |
+| `charcoal-theme` 33 commits ahead of `main` | `git rev-list --count` | **33** |
+| `--ds-sidebar-w` declared at 5084 and 5103 | `grep -nE '^\s*--ds-sidebar-w\s*:'` | both **FOUND** |
+| `767` count 0 outside comments | comment-stripped count | **0** |
+| `onCollapsedChange` present | `grep -c` | **4** |
+| `role="banner"` not used | comment-stripped grep | **0 usages**; 1 docstring mention |
+| snapshot inventory unchanged | `diff` against the pre-run listing | **488 files, identical** |
+| no temporary probe spec left behind | `ls tests/visual/ \| grep tmp` | **none** |
+| all four sibling gates, re-run last | `npm test` / `check` / `typecheck` / `css:check` | **1655/1655**, 352 files clean, clean, 75 files byte-exact |
+| the browser spec, re-run last | `npx playwright test tests/visual/appshell-cascade.spec.ts` | **18 passed** |
+| `$DS` tracked-clean on `charcoal-theme`, stash empty | protocol §1 gate | clean; only `?? design_handoff/design_handoff_ds_overview/`; `git stash list` empty |

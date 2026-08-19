@@ -1,0 +1,58 @@
+---
+// No `prerender` export. Static is the default in Astro 7, and the Cloudflare adapter
+// does not change that — it only unlocks `export const prerender = false` on the routes
+// that need it. This page is built to HTML and served straight off the CDN.
+//
+// StackProof is imported and rendered with NO client:* directive. That is the whole
+// point of this route: it proves a React 19 component becomes static HTML.
+import { StackProof } from '../components/StackProof';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- A real device-width viewport, not a desktop assumption. Phase 5 implements the
+         six-class responsive contract (344px folded cover screen through 1440px+
+         desktop); this placeholder's only obligation to it is to not require a
+         retrofit, so there are no fixed pixel widths and no media queries below. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>akhilsaxena.com — rebuild in progress</title>
+    <meta
+      name="description"
+      content="Portfolio rebuild in progress. Astro, React and Cloudflare Workers."
+    />
+  </head>
+  <body>
+    <main>
+      <h1>akhilsaxena.com</h1>
+      <p>
+        The site is being rebuilt from scratch on Astro with React islands, consuming its own
+        published design system. This page is the scaffold that proves the build works end to end;
+        the real Home arrives with the public pages.
+      </p>
+      <StackProof />
+    </main>
+  </body>
+</html>
+
+<style>
+  /* Layout only, and intentionally tiny. No design-system import in Phase 2 (public
+     pages are Phase 5's), no fixed widths, no media queries — `ch` and `rem` are
+     intrinsic units, so this reads correctly from a folded cover screen upward. */
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  main {
+    max-inline-size: 68ch;
+    margin-inline: auto;
+    padding: 2rem 1rem;
+  }
+
+  dt {
+    font-weight: 600;
+  }
+</style>

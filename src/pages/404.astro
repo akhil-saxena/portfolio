@@ -1,0 +1,36 @@
+---
+// Static, like every other public route. This page exists because wrangler.jsonc sets
+// assets.not_found_handling to "404-page", which needs a dist/404.html to serve — with
+// no such file the Workers asset handler falls back to a bare platform response.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Not found — akhilsaxena.com</title>
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main>
+      <h1>Not found</h1>
+      <p>There is nothing at this address.</p>
+      <p><a href="/">Go to the home page</a></p>
+    </main>
+  </body>
+</html>
+
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    line-height: 1.5;
+  }
+
+  main {
+    max-inline-size: 68ch;
+    margin-inline: auto;
+    padding: 2rem 1rem;
+  }
+</style>

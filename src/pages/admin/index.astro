@@ -1,0 +1,36 @@
+---
+export const prerender = false;
+
+// Not stylistic — structurally required, and it must never be relaxed.
+//
+// Under output: 'static' this export is the only thing that lets the page run
+// server-side logic before any HTML is emitted, which is the only way it can refuse a
+// request at the server. A prerendered shell plus a client:only island would render
+// perfectly well, but it could never fail closed.
+//
+// The hard part: a prerendered Astro route cannot read a query string or request
+// headers at all. Astro strips them in both dev and build (astro/dist/core/request.js,
+// `if (isPrerendered) url.search = ""`). Anything that has to see the
+// Cf-Access-Jwt-Assertion header therefore MUST be prerender = false. Auth cannot live
+// on a prerendered page, not even temporarily. (FND-02, threat T-02-14)
+//
+// Protection is prefix-shaped rather than per-file: run_worker_first in wrangler.jsonc
+// covers "/admin" and "/admin/*", so the five D-05 sub-routes arriving in Phase 7
+// (/admin/home, /admin/photos, /admin/resume, /admin/projects, /admin/site) are covered
+// by construction instead of by each author remembering a guard. (threat T-02-18)
+
+// TODO(02-07): plan 02-07 replaces this unconditional 503 with middleware calling
+// requireAccess() — a 401 when the signed Cloudflare Access JWT is absent or invalid,
+// and the real admin shell once it verifies. Phase 7 owns what goes behind the door;
+// this is a guarded doorway with nothing behind it yet, so no admin UI, no design-system
+// import and nothing from .playground/ appears here.
+//
+// 503 and not 401, deliberately: 02-07 needs a genuinely failing test asserting 401, and
+// a stub that already answered 401 would satisfy it with no auth code behind it. 503 is
+// still a refusal — this route returns no success status to an unauthenticated caller at
+// any point. (threat T-02-15)
+return new Response(
+  'Admin authentication is not yet wired. This surface refuses every request until plan 02-07 lands Cloudflare Access JWT verification.\n',
+  { status: 503, headers: { 'content-type': 'text/plain; charset=utf-8' } },
+);
+---

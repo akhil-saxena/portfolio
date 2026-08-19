@@ -1,0 +1,118 @@
+name: Deploy
+
+# WHY THIS IS NOT CLOUDFLARE WORKERS BUILDS — read before "correcting" it.
+#
+# .planning/research/STACK.md recommends Cloudflare Workers Builds, the git integration
+# that replaced the Pages build service, and for most projects that is the right call:
+# it needs no token in GitHub, no runner, and no YAML.
+#
+# It is wrong for THIS project for one structural reason. Workers Builds triggers on its
+# own git event and builds and deploys independently of GitHub Actions. It cannot be made
+# to depend on an Actions check, so a red test suite would not stop it — it would deploy
+# the broken commit and the failing CI run would sit next to it as a comment on history.
+# Phase 2's Criterion 1 says a push to main deploys "gated by CI", and "gated" is only a
+# true statement if a failing gate prevents the thing. So the deploy runs from Actions,
+# triggered by the CI workflow's success and by nothing else.
+#
+# COROLLARY, AND IT IS EASY TO GET WRONG: Workers Builds must NOT also be connected to
+# this repository. Connecting it does not add a second safety net, it adds a second deploy
+# path — and only one of the two is gated. Plan 02-09 verifies the disconnection as part of
+# its Cloudflare checkpoint.
+
+on:
+  # The CI-completion trigger below is the gate. This workflow has no push trigger and
+  # deliberately no manual-dispatch trigger, because either would be a way to reach the
+  # publish without a green CI run — the whole thing this file exists to prevent.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+# Least privilege. The deploy publishes to Cloudflare; it has no reason to write here.
+permissions:
+  contents: read
+
+# Deploys QUEUE, they do not cancel. This is the opposite of the CI workflow's setting and
+# the difference is deliberate: cancelling a run mid-publish is the specific way a Worker
+# and its static assets end up at different versions, because the assets upload and the
+# script upload are not one atomic operation. A superseded CI run is waste; a superseded
+# deploy is a half-deployed site.
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy to Cloudflare Workers
+    runs-on: ubuntu-latest
+
+    # Four conditions, none of them redundant.
+    #
+    # 1. DEPLOY_ENABLED — a repository VARIABLE, not a secret, because the vars context is
+    #    readable in a job-level if: and the secrets context is not. This file lands on
+    #    main a full wave before the Cloudflare API token, the Access application and the
+    #    Worker secrets exist, and the branching strategy is none, so it is live the moment
+    #    it merges. Unset means SKIP, not fail: a skipped job keeps the run history clean
+    #    for the gate-ordering evidence plan 02-09 collects, and it means nobody deploys a
+    #    site whose /admin has no Access application in front of it yet. Plan 02-09 sets the
+    #    variable to true as the last step of its credentials checkpoint, which makes
+    #    turning deployment on an explicit dated act rather than a side effect of a merge.
+    # 2. conclusion — the gate itself. The trigger fires on completion, failure included.
+    # 3. event == push — NOT redundant with the branches: filter above, and removing it
+    #    opens a real hole. That filter matches on the triggering run's HEAD branch, and for
+    #    a pull_request-triggered CI run the head branch is the contributor's branch. Anyone
+    #    who opens a pull request from a fork branch named main would otherwise satisfy it.
+    # 4. head_repository — belt and braces on the same fork vector.
+    if: >-
+      ${{ vars.DEPLOY_ENABLED == 'true'
+      && github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_branch == 'main'
+      && github.event.workflow_run.head_repository.full_name == github.repository }}
+
+    steps:
+      # ref: is load-bearing. A job triggered by another workflow checks out the default
+      # branch's tip by default, NOT the commit whose CI run triggered it — so on a busy
+      # push sequence the gate asserts "commit A is green" while the job ships commit B,
+      # which no gate has ever seen. Pinning to the triggering run's head_sha is what makes
+      # "the thing that was tested is the thing that ships" true rather than usually true.
+      - name: Checkout the exact commit CI approved
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      # Seeds the committed placeholder Access values. The deploy build uses the fake ones
+      # for the same reason CI does: astro:env server secrets are read at runtime from the
+      # Cloudflare environment, so the real values belong in `wrangler secret put` and
+      # nowhere else. See the CI workflow's header for the measurement behind this.
+      - name: Seed the placeholder Access values
+        run: npm run bootstrap:local
+
+      # The chain lives in package.json, not here, so a developer running it from a laptop
+      # gets exactly the same sequence: the enforcing dependency gate, then the build (which
+      # ends in the route gate), then both test projects, then the route gate a second time,
+      # then publish. The second route-gate run is not a duplicate — the integration suite's
+      # global setup rebuilds the artifact, so without it the bytes actually being uploaded
+      # would never have been inspected.
+      #
+      # Re-running build and test here, after CI already ran them, is also deliberate: the
+      # artifact that ships was produced by the job that shipped it. Do not optimise this
+      # into passing dist/ between jobs as an artifact — publishing needs node_modules
+      # anyway to resolve the adapter entrypoint named as the Worker's main.
+      #
+      # The two credentials are scoped to this single step. Not the job, not the workflow:
+      # no other step, and no action invoked by another step, can read them.
+      - name: Build, test and publish
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

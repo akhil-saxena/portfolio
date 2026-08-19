@@ -398,6 +398,75 @@ alt-svc: h3=":443"; ma=86400
 
 ## Authenticated confirmation (Criteria 2 and 4)
 
+The positive path, which no automated test in this phase can reach. Locally both Access secrets are
+placeholders on the non-resolving `.invalid` TLD, so no token can ever verify and **only the deny
+path is testable outside production**. A browser session is the only source of a real Access JWT, so
+this section is developer-confirmed by construction.
+
+### `/admin` renders for an authenticated principal
+
+Confirmed by the developer: the Access login was presented, authentication with the policy email
+succeeded, and the admin placeholder **rendered** — not a 401, not an error. The page returned its
+own copy:
+
+> The editor itself arrives in Phase 7 — this page exists so the door can be locked before there is
+> anything behind it.
+
+Which is the point of the criterion: the gate is provably correct *before* there is anything of value
+behind it, rather than being retrofitted around a live editor.
+
+### `/api/health` returns 200 with the binding reachable (FND-03, production half)
+
+```json
+{"status":"ok","r2":"reachable"}
+```
+
+This is the production half of FND-03. It proves `env.PORTFOLIO_BUCKET` resolved from
+`cloudflare:workers` **in the deployed Worker, through a code path with no absence-guard in it** —
+which CLAUDE.md requires, because a guard would trade a loud failure for a silent one. The same
+endpoint returned `401` with a 24-byte body and no `"r2"` key when probed unauthenticated during the
+Access-disabled window above, so the route is both reachable to a verified principal and closed to
+everyone else.
+
+### No additional dashboard step was needed for the binding
+
+Confirmed: the `200` came back on the first attempt.
+
+One nuance worth recording, because it looks like a counterexample and is not. An **R2 scope did have
+to be added to the deploy API token** earlier in this phase, after a `wrangler deploy` failed. That
+was a **deploy-time** requirement — `wrangler deploy` validates every declared binding on each
+deploy — and not a runtime one. It also falsified plan 02-08's guess that the scope was *"probably
+not needed."* The binding itself required no dashboard configuration to resolve at request time.
+
+### No second, ungated deploy path (T-02-48)
+
+**Machine-verified rather than eyeballed.** `wrangler deployments list` reports **7 deployments**,
+and every one of their sources is accounted for:
+
+| Source | Count | What it is |
+|---|---:|---|
+| `Unknown (deployment)` | 3 | `wrangler deploy` runs via the CI API token |
+| `Secret Change` | 3 | the `wrangler secret put` calls from setup |
+| `Upload` | 1 | the first deploy |
+
+**No deployment carries a Workers Builds source**, and a grep of the full listing for
+`workers build`, `github` and `ci/cd` returns nothing. So GitHub Actions' `deploy.yml` — which is
+gated behind the test suite — remains the only path to production. This was the one remaining way a
+red test suite could still have reached the deployed Worker.
+
+### Apex — a plan premise corrected
+
+Task 3 asked to confirm the apex `akhilsaxena.com` is *"still pointing at the legacy Pages project
+and was not attached to the Worker."* The second half holds; **the first half is false.**
+
+`akhilsaxena.com` has **no DNS record at all** — no `A`, no `CNAME`, and `curl` cannot resolve it
+(`status=000`). So the apex is attached to neither the Worker nor legacy Pages. The
+security-relevant half of the assertion is satisfied and then some: an unattached apex cannot route
+to the Worker. And this is already an accepted condition rather than a new finding — CLAUDE.md states
+plainly that the **live site is down until cutover**, and calls that "a clock on the project" rather
+than a defect. Cutover owns attaching it.
+
+
 ---
 
 ## Apex

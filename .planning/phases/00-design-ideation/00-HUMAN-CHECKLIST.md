@@ -307,6 +307,27 @@ Not verification; a queue. Tick when handed over or filed.
       (`insideStorybookRoot: false` for three existing dialog stories). Consequence worth
       recording: **the threat model's T-16-02 mitigation was vacuous** until `inline` existed.
 
+- [ ] **E32 · The three project status badges are indistinguishable, and dark is worse than light.**
+      01-18 measured D-45's `Live` / `Maintained` / `Archived` fills with the brand asserted, and
+      composited the alpha properly (a raw `getComputedStyle` read said 2.020:1 where the truth is
+      **1.114:1** — a factor-of-two error):
+      · **charcoal light** — pairwise **1.021** / 1.194 / 1.219. Reproduces `00-15-SUMMARY` to three
+      decimals, independently.
+      · **charcoal dark** — never measured before — pairwise **1.097 / 1.158 / 1.056**, and
+      `Archived` sits at **1.074 against the panel: invisible on a raised card.**
+      Dark is D-45's primary mode, because these render on the **public** Work page.
+      **Fixed by moving the ladder onto the ink ramp** — the only token family that is monotone in
+      every brand × mode cell. The finding's own proposed fix ("pick tones far enough apart") was
+      proven **unachievable**: no hue-derived triad clears 1.2:1 in all four cells, because
+      `--green` inverts between modes and `--ochre` is static.
+- [ ] **E33 ·** Two stories — `inputs-badge--dark-mode` and `inputs-statuspill--dark-mode` — set
+      `className="dark"` **and** a hardcoded `#1c1917` page colour. Concrete instances of
+      **[E29](#)**, and they are exactly the stories a badge-colour review would reach for. 01-18
+      avoided them and probed decorator-free stories instead.
+- [ ] **F-15-5 caveat ·** The badge ladder is fixed in the design system, but the finding **only
+      closes on the public Work page once Phase 7 switches D-45 from `Badge` to `StatusPill`** —
+      which is the point of closing G-5. Don't read it as fully done at 01-20.
+
 ## F. Known-open, already recorded — do NOT re-report
 
 - **D-15-1** dashboard `.adm-group-link` 23px at every coarse class *(closed by 00-24 — confirm)*

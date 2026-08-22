@@ -120,7 +120,7 @@ own colour, type and geometry but not spacing.
 
 ### Admin
 
-- [ ] **ADMIN-01**: Akhil can edit photo metadata and home config through form editors built from design-system components. *(Reworded by [ADR-001](ADR-001-admin-scope.md): résumé, projects and site config are edited as JSON in git, so the admin covers what is visual or pipeline-bound.)*
+- [ ] **ADMIN-01**: Akhil can edit the résumé, home config, project cards and photo metadata through form editors built from design-system components. **Site config is explicitly excluded** — its integrity is enforced by a Phase 3 schema rule instead of a screen. *(Reworded by [ADR-002](ADR-002-admin-scope-revised.md), superseding ADR-001.)*
 - [ ] **ADMIN-02**: Changes can be previewed before publishing
 - [ ] **ADMIN-03**: Publishing commits to the repository and triggers a rebuild
 - [ ] **ADMIN-04**: A concurrent edit is detected per-file by blob SHA and surfaced as a recoverable reload, not a dead-end error and not a silent overwrite
@@ -129,7 +129,7 @@ own colour, type and geometry but not spacing.
 - [ ] **ADMIN-07**: Photos can be uploaded through the admin, with the job's completion reported back
 - [ ] **ADMIN-08**: Per-photo `object-position` for the home hero crops is editable rather than left to rot
 - [ ] **ADMIN-09**: Navigating away with unsaved changes warns first
-- [ ] **ADMIN-10**: The whole round trip — edit, publish, see it live — works without touching a terminal **for photos and home config**. *(Qualified by [ADR-001](ADR-001-admin-scope.md).)*
+- [ ] **ADMIN-10**: The whole round trip — edit, publish, see it live — works without touching a terminal, **except for case-study prose and site config**. *(Qualified by [ADR-002](ADR-002-admin-scope-revised.md).)*
 
 ### SEO and Cutover
 

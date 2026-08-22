@@ -1,6 +1,13 @@
 # ADR-001 · The admin edits photos and the Home landing, not prose
 
-**Date:** 2026-08-19 · **Status:** ACCEPTED · **Decided by:** Akhil
+**Date:** 2026-08-19 · **Status:** SUPERSEDED by [ADR-002](ADR-002-admin-scope-revised.md) · **Decided by:** Akhil
+
+> **Superseded the same day, before anything was built.** Reviewing the real screens at 00-17 showed
+> this decision applied the right argument at the wrong granularity: *a form is worse than an editor
+> for text* holds for long-form prose, not for short structured records. ADR-002 moves the line from
+> "which entities" to "which kind of content" — five routes, with only case-study authoring and site
+> config leaving. **Its storage decisions survive** (bold-only markdown bullets, the referential
+> integrity rule, the PDF drift check); its route list and the 01-17 skip do not.
 **Supersedes:** D-05 (route-per-entity, six routes), D-20, D-21, D-24, D-26 in part
 **Reached at:** Phase 1 plan 16 of 21, before Phase 3 drafts schemas and before Phase 7 is planned
 

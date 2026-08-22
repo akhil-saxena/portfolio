@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: 01-19 complete. 01-19.1 INSERTED (E29 + baseline reconciliation) and must land before the 01-20 capture gate.
+stopped_at: PHASE 0 COMPLETE (25/25). ADR-002 revised the admin to five routes, un-skipping 01-17, which is now executing.
 last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-22 -- 01-19 complete (FocalPointPicker); 01-19.1 inserted
+last_activity: 2026-08-22 -- Phase 0 closed; playground deleted; 01-17 un-skipped and executing
 progress:
   total_phases: 10
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 56
-  completed_plans: 53
-  percent: 93
+  completed_plans: 56
+  percent: 96
 ---
 
 # Project State
@@ -29,7 +29,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 
 | Phase | Plans | Status |
 |---|---|---|
-| 00 design-ideation | 23 / 25 | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
+| 00 design-ideation | **25 / 25 COMPLETE** | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
 | 01 charcoal theme | 12 / 21 | 01-13 next. Sibling `charcoal-theme` at 30 commits, tracked-clean. 01-20 (capture review) and 01-21 (`npm publish` v2.0.0) are human gates at the end. **01-12 left two new stories without visual baselines — 01-20 must record them.** |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
 
@@ -47,7 +47,7 @@ Progress: [████████░░] 80% of planned plans (phases 3–9 no
 
 | Phase | Plans done | Notes |
 |-------|-----------|-------|
-| 00 | 23 / 25 | 2 human gates open |
+| 00 | 25 / 25 | **complete** |
 | 01 | 12 / 21 | cross-repo, sibling branch |
 | 02 | 10 / 10 | **complete** |
 

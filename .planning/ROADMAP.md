@@ -30,7 +30,7 @@ front-loaded into Phase 2 rather than left to Phase 8.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the charcoal identity against real components — no production code
+- [x] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the charcoal identity against real components — no production code
 - [ ] **Phase 1: Design System — Charcoal Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
 - [ ] **Phase 2: Astro Foundation & Fail-Closed Auth** - A deployed Worker that denies every unauthenticated request before any admin surface exists
 - [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`
@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Public Site** - Home, Work, Photos, Résumé on the charcoal identity, four of five routes shipping zero framework JS
 - [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected. One route per study (`/work/{id}`) — the long/short tiering was dropped mid-Phase-0
 - [ ] **Phase 06.1: Design System — Cascade Layers & Density Axis** (INSERTED) - CROSS-REPO (`../design-system`): declared layer order replaces specificity arithmetic, and a density axis lets the admin be compact without portfolio overrides
-- [ ] **Phase 7: Admin CMS** - Three routes (dashboard, photos, home): upload, crop, reorder and publish from a browser, with concurrency caught and deploy status told truthfully. Prose and config stay JSON in git — see ADR-001
+- [ ] **Phase 7: Admin CMS** - Five routes (dashboard, photos, home, résumé, projects): edit records, upload, crop, reorder and publish from a browser, with concurrency caught and deploy status told truthfully. Case-study prose and site config stay JSON in git — see ADR-002
 - [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving
 
 ### Parallel Tracks

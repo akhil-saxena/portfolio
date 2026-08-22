@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: PAUSED after 01-16 by developer request, pending a decision on admin scope. 01-17 is the RichText plan and is moot if the admin narrows.
+stopped_at: Admin narrowed to three routes (ADR-001). 01-17 SKIPPED — RichText retired. 01-18 executing; an E29 wrapper-fix plan is owed before 01-20.
 last_updated: "2026-08-19T09:08:43.928Z"
 last_activity: 2026-08-19 -- 01-16 complete (overlay SSR); Phase 1 paused at 16/21
 progress:

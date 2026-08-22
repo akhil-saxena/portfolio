@@ -36,9 +36,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`
 - [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
 - [ ] **Phase 5: Public Site** - Home, Work, Photos, Résumé on the charcoal identity, four of five routes shipping zero framework JS
-- [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected
+- [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected. One route per study (`/work/{id}`) — the long/short tiering was dropped mid-Phase-0
 - [ ] **Phase 06.1: Design System — Cascade Layers & Density Axis** (INSERTED) - CROSS-REPO (`../design-system`): declared layer order replaces specificity arithmetic, and a density axis lets the admin be compact without portfolio overrides
-- [ ] **Phase 7: Admin CMS** - Edit, preview, publish and upload from a browser, with concurrency caught and deploy status told truthfully
+- [ ] **Phase 7: Admin CMS** - Three routes (dashboard, photos, home): upload, crop, reorder and publish from a browser, with concurrency caught and deploy status told truthfully. Prose and config stay JSON in git — see ADR-001
 - [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving
 
 ### Parallel Tracks
@@ -349,7 +349,7 @@ are doc-only.
 **Requirements**: ADMIN-01, ADMIN-02, ADMIN-03, ADMIN-04, ADMIN-05, ADMIN-06, ADMIN-07, ADMIN-08, ADMIN-09, ADMIN-10
 **Success Criteria** (what must be TRUE):
 
-  1. The whole round trip works without touching a terminal — open `/admin`, edit the résumé, home config and site config through design-system form editors, preview the change, publish it, and see it live
+  1. The whole round trip works without touching a terminal for photos and home config — open `/admin`, edit photo metadata and the Home landing through design-system form editors, preview the change, publish it, and see it live. **ADR-001 moved résumé, projects and site config out of the admin**; their round trip is an editor plus git
   2. Editing a file that changed underneath surfaces a recoverable "reload and re-apply" prompt, detected per-file by blob SHA — not a dead-end error, and never a silent overwrite
   3. The admin reports "deployed" only once the build actually succeeded, and the last publish can be reverted in one click
   4. Photos upload through the admin and the processing job's completion is reported back in the UI

@@ -2303,10 +2303,51 @@ Verdict: *"it's fine."* The employment band capped at 1080px reads as one row pe
 serif title and a mono metric floating apart, and the two bands read as two different kinds of
 evidence. Phase 5 keeps the cap.
 
-### Still open on 00-11
+### The remaining review passes — completed 2026-08-22
 
-The three flagged judgements are answered; the surrounding review passes are not yet. Outstanding:
-the project-card `--wire` treatment on `/work-recolour`, `/photos` at 1440 and 390 (tile ring and the
-LIGHT-filled active pill), the five-project `/home-act2` grid, and the five `/work/{id}` case pages
-(68ch measure, `[NEEDS AKHIL]` block lengths, `[source:]` claims). The tier-split question from the
-plan's Task 2 is **void** — that redirection removed the long/short tiering.
+Walked with Akhil against the live sketches at 1440×900 and 390×844.
+
+| Item | Route | Verdict |
+|---|---|---|
+| `--wire` project cards on dark | `/work-recolour` | **PASS** — cards hold their edges; the `--wire` treatment took. Borders carry the boundary rather than the fill, as the charcoal resolution intended. |
+| Photo tiles + active filter pill | `/photos` @ 1440 and 390 | **PASS** on both. Dark-toned photographs do not bleed — the inset 1px `--rule` ring gives each tile the edge it did not need on ivory — and the active pill reads as filled LIGHT, avoiding the literal-colour-mapping trap that made it invisible. |
+| 68ch prose measure | the five `/work/{id}` pages | **CONFIRMED at 68ch.** This is now a reviewed number rather than a derived one, and it is what **Phase 6 builds against**. |
+| Act-2 project grid | `/home-act2` | **REWORK** — see below. |
+| `[NEEDS AKHIL]` block lengths | the five case pages | **TOO LONG.** They overstate how much prose each section needs, so a template judged against them is being judged against padded text and the real copy will read thin beside it. Shorten to realistic finished lengths **when the real copy is written in Phase 6** (copy approval was deliberately deferred there). |
+| `[source:]` annotations | the five case pages | **NOT CHECKED — recorded as unverified, not as passed.** Must resurface before Phase 6 consumes the copy. Note the corpus has already caught one self-contradiction unaided: hued's colour-name count is 18,000+ in its README, 31,000+ in its store listing, and **31,898** in the actual JSON. |
+
+#### Act-2 grid — the arrangement, and the constraint that decided it
+
+The five-project 2×2-plus-one arrangement is rejected. Akhil intends to **add more projects** and wants
+**every project to carry equal weight**, which rules out a featured-first layout and rules out any
+fixed arrangement that has to be redesigned each time the count changes.
+
+**The deciding constraint is the two-act Home's own mechanism.** Act 2 must hold work *and* résumé
+within one viewport after a single scroll. A grid that grows with the project count eventually pushes
+the résumé below the fold and breaks the thing it lives inside — so the layout has to be
+**count-independent**, not merely larger.
+
+**Chosen: an auto-fitting grid, capped at six, with a link to `/work` for the remainder.**
+
+```css
+grid-template-columns: repeat(auto-fit, minmax(~300px, 1fr));
+```
+
+- **Equal weight by construction** — identical cards, no featured slot, so nothing reads as ranked.
+- **Adding a project changes no layout code.** Three columns at 1440, two at 768, one at phone, all
+  from one rule.
+- **Act 2's height is bounded** regardless of how many projects exist, so the single-scroll two-act
+  Home keeps working. This is the property the other candidates lost.
+- **The cap is deliberate, not a limitation.** `/work` is already the complete two-band list (D-44),
+  so the Home grid is a *teaser* by design; a seventh project appears there and needs no Home change.
+
+Phase 5 builds this. The exact `minmax()` minimum and the cap's overflow behaviour (most recent first,
+or a curated order) are Phase 5's to settle — the shape and the height-boundedness are fixed here.
+
+### 00-11 is CLOSED
+
+All three flagged judgements answered, all remaining review passes walked. Two items carry forward as
+work rather than as open review: **shorten the `[NEEDS AKHIL]` blocks** and **verify the `[source:]`
+claims**, both when Phase 6 writes the real copy. The Act-2 grid is respecified above. The tier-split
+question from the plan's Task 2 is **void** — the mid-phase redirection removed the long/short
+tiering.

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Admin narrowed to three routes (ADR-001). 01-17 SKIPPED — RichText retired. 01-18 executing; an E29 wrapper-fix plan is owed before 01-20.
+stopped_at: 01-19 complete. 01-19.1 INSERTED (E29 + baseline reconciliation) and must land before the 01-20 capture gate.
 last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-19 -- 01-16 complete (overlay SSR); Phase 1 paused at 16/21
+last_activity: 2026-08-22 -- 01-19 complete (FocalPointPicker); 01-19.1 inserted
 progress:
   total_phases: 10
   completed_phases: 0
   total_plans: 56
-  completed_plans: 50
-  percent: 89
+  completed_plans: 53
+  percent: 93
 ---
 
 # Project State

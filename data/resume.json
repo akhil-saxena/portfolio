@@ -166,7 +166,7 @@
         "text": "Web",
         "icon": "code"
       },
-      "description": "80-component React library with semantic tokens, dark mode, and live Storybook docs.",
+      "description": "79-component React library with semantic tokens, dark mode, and live Storybook docs.",
       "tech": [
         "React",
         "TypeScript",

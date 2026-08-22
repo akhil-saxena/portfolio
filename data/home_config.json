@@ -33,7 +33,7 @@
   "ctas": [
     {
       "text": "View Portfolio →",
-      "link": "/portfolio",
+      "link": "/photos",
       "style": "primary"
     },
     {

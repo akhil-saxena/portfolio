@@ -33,13 +33,25 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the charcoal identity against real components — no production code
 - [ ] **Phase 1: Design System — Charcoal Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
 - [ ] **Phase 2: Astro Foundation & Fail-Closed Auth** - A deployed Worker that denies every unauthenticated request before any admin surface exists
-- [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`
+
+### Release 1 — the public site, live
+
+**Ordered by decision 2026-08-22: the public site ships complete and live before any admin
+work begins.** Phase numbers are unchanged so the many existing cross-references to "Phase 7"
+and "Phase 06.1" keep resolving; only the execution order moved.
+
+- [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`. **Now also owns the `site_config` referential-integrity rule** (ADR-002) — every `photo.category` must exist in `site_config`'s ids, since there is no `/admin/site` screen to guard it
 - [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
-- [ ] **Phase 5: Public Site** - Home, Work, Photos, Résumé on the charcoal identity, four of five routes shipping zero framework JS
-- [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected. One route per study (`/work/{id}`) — the long/short tiering was dropped mid-Phase-0
-- [ ] **Phase 06.1: Design System — Cascade Layers & Density Axis** (INSERTED) - CROSS-REPO (`../design-system`): declared layer order replaces specificity arithmetic, and a density axis lets the admin be compact without portfolio overrides
+- [ ] **Phase 5: Public Site** - Home, Work, Photos and **Résumé** on the charcoal identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
+- [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving. **★ THIS IS THE LIVE MILESTONE.** The accepted-downtime clock stops here
+
+### Release 2 — depth, then the admin
+
+- [ ] **Phase 6: Case Studies** - Each project told as problem → decisions → outcome, including what was rejected. One route per study (`/work/{id}`). **Deliberately after launch** — this is the only content that needs Akhil writing prose, so it must not gate going live
+- [ ] **Phase 9: Host the Storybook at `/design-system`** (NEW) - Serve the design system's own Storybook from this domain. Distinct from `/work/design-system`, which is the case study *about* it: one is the artefact, the other is the argument. Adds the project's first deliberate cross-repo build coupling, which is why it lands after cutover rather than before
+- [ ] **Phase 06.1: Design System — Cascade Layers & Density Axis** - CROSS-REPO (`../design-system`): declared layer order replaces specificity arithmetic, and a density axis lets the admin be compact without portfolio overrides. **Moved off the critical path** — the density axis and its remaining touch-target floors (Checkbox, InlineEdit, NumberStepper, IconButton) are all admin controls; plan 01-12 already fixed the public `AppBar` and `Footer`
 - [ ] **Phase 7: Admin CMS** - Five routes (dashboard, photos, home, résumé, projects): edit records, upload, crop, reorder and publish from a browser, with concurrency caught and deploy status told truthfully. Case-study prose and site config stay JSON in git — see ADR-002
-- [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving
+
 
 ### Parallel Tracks
 
@@ -49,10 +61,10 @@ simultaneous. The value is knowing a stall in one track does not stall another.
 | Track | Phases | Independence |
 |-------|--------|--------------|
 | Design | 0 | Pure design artefact. Zero code dependency. Blocks only Phases 6 and 7. |
-| Design system | 1 → 06.1 | **Separate repo** (`../design-system`), separate releases. Zero shared code or build with Phase 2/3. Phase 06.1 needs Phase 1 shipped, is otherwise interleavable with 2–6, and must land before Phase 7. |
+| Design system | 1 → 06.1 → 9 | **Separate repo** (`../design-system`), separate releases. Zero shared code or build with Phase 2/3 — until Phase 9, which introduces the first deliberate coupling. Phase 06.1 needs Phase 1 shipped and must land before Phase 7; it is **no longer on the path to live**. |
 | Platform | 2 → 3 | This repo. Blocks everything downstream — start immediately. |
 | Pipeline | 4 | Unblocked the moment Phase 3 lands. Drivable with `gh workflow run`, no UI. Can absorb slack whenever Phase 5/6 stall on a design question. |
-| Product | 5 → 6 → 7 | The serial spine. Needs Phases 1 + 3. |
+| Product | 5 → 8 → 6 → 9 → 7 | The serial spine. Needs Phases 1 + 3. **Cutover (8) now sits between the public site and the case studies**, so Release 1 is 3 → 4 → 5 → 8. |
 
 **Phase 1 ∥ Phase 2 is the load-bearing parallelism.** Phase 1 is the project's declared
 blocker and Phase 2 is the longest-lead-time item. Neither should wait on the other.
@@ -276,6 +288,19 @@ are doc-only.
 
 ### Phase 5: Public Site
 
+> **Amended 2026-08-22.** The **Résumé page stays** and is not deferred. Two reasons: the two-act
+> Home's Act 2 holds work *and* résumé in one viewport, so removing the page empties half the
+> mechanism; and an HTML résumé is crawlable and linkable where a PDF is neither. `resume.json`
+> already holds all three experience entries, three skill groups and the education record, and the
+> page is one static route with zero framework JS — the cost is near nil. The PDF download button
+> lives **on** that page, for the recruiter who wants the file.
+>
+> **At launch there are no `/work/{id}` case studies** — Phase 6 moved after cutover. So every
+> project card links straight out to the real thing: `cairn.co.in`, two Google Play listings, the
+> Chrome Web Store, and the Storybook. All five hrefs and their badges are already in
+> `data/resume.json`; this is a rendering job, not a content one.
+
+
 **Goal**: Visitors get the whole public site — Home, Work, Photos, Résumé — on the charcoal identity, at Lighthouse-grade weight, with four of the five routes shipping no framework JavaScript
 **Depends on**: Phase 1 (published theme), Phase 3 (content layer)
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08, PUB-09, PUB-10, PUB-11, PUB-12, PUB-13, PUB-14, SEO-01, SEO-02, SEO-03, SEO-05
@@ -341,6 +366,32 @@ are doc-only.
 > migrates that arithmetic to declared layer order and adds density as a fourth axis
 > (brand × mode × density) — the combinatorial pressure that justifies layers in the first
 > place.
+
+### Phase 9: Host the Storybook at `/design-system`
+
+**Goal**: The design system's own Storybook is served from `akhilsaxena.com/design-system`, so the
+strongest argument for the library lives on the site the library built
+**Depends on**: Phase 8 (cutover — this must not delay going live), Phase 1 (published release)
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+
+  1. `/design-system` serves the Storybook, and `/work/design-system` — the case study — links to it
+     rather than to the CF Pages URL
+  2. Publishing a new design-system version does not require a manual copy step in this repo
+  3. The Storybook's assets do not regress the public pages' Lighthouse budget, because they are not
+     loaded by any public route
+  4. The CF Pages deployment can be retired, or is deliberately kept as a fallback with that stated
+
+**Plans**: TBD
+**UI hint**: no
+
+> **Why this is separate, and after cutover.** `/design-system` is the artefact; `/work/design-system`
+> is the argument about it. Both are worth having and they are not the same page. Hosting introduces
+> the project's **first deliberate cross-repo build coupling** — a Storybook static build has to be
+> produced in one repo and served by another — and the constraints file has so far treated cross-repo
+> coupling as a hazard to be avoided (the packed-tarball rule exists for exactly that reason). That
+> is a fair thing to take on, but not while it can delay the live milestone. At launch the link
+> already works: `data/resume.json` carries `href: "https://design-system-ed1.pages.dev"` today.
 
 ### Phase 7: Admin CMS
 

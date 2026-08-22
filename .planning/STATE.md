@@ -3,11 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: PHASE 0 COMPLETE (25/25). ADR-002 revised the admin to five routes, un-skipping 01-17, which is now executing.
+stopped_at: PHASE 0 COMPLETE. Roadmap restructured into two releases — public site live before any admin work. 01-17 executing.
 last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-22 -- Phase 0 closed; playground deleted; 01-17 un-skipped and executing
+last_activity: 2026-08-22 -- roadmap resequenced: Release 1 is 3-4-5-8 (live), Release 2 is 6-9-06.1-7
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 1
   total_plans: 56
   completed_plans: 56

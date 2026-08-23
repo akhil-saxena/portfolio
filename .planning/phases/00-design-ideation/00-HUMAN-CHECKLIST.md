@@ -24,6 +24,17 @@ unhosted cell), and all five case studies inside the 500–700 band.
 > the three by-eye judgements (00-11) and the six review passes (00-17). It explains *why* each
 > exists and what happens when you reply. **That doc is the procedure; this one is the record.**
 
+> **Reconciled 2026-08-23.** Sections **A** and **B** are complete — every judgement and all six
+> review passes were walked and their verdicts recorded in `00-PUBLIC-DESIGN-NOTES.md` and
+> `00-17-SUMMARY.md`. The boxes were ticked late, so if you remember answering something and it
+> still looked open, that was bookkeeping rather than a real gap.
+>
+> **Genuinely still open:** `C1`/`C2` (case-study copy — deliberately deferred to Phase 6),
+> `C4`/`C5` (admin photo positioning — Release 2, and reviewable only from the captures now),
+> `C6`/`C7` (screenshot spot-check — optional), `D4` (an `alt={title}` pattern to avoid in Phase 5),
+> and the `E` queue, which is Phase 1 and 06.1 work rather than yours. The two items needing you
+> personally are **E26** (a VoiceOver pass) and **E30** (two overlay looks).
+
 ## Where to look — the exact map
 
 **Start the sketches:**
@@ -98,33 +109,42 @@ Evidence for every §E claim is in the plan SUMMARYs beside this file (file:line
 These were deferred once already because the artefacts changed underneath them. They are now
 final, so these verdicts stick.
 
-- [ ] **A1 · 44px vs 52px page header.** Open `/work-recolour` at 1440×900 with the two headers
+- [x] **A1 · 44px vs 52px page header.** Open `/work-recolour` at 1440×900 with the two headers
+      **→ ANSWERED — 44px confirmed. The 52px step still ships from 01-12 (G-11 was a design-system gap under D-31); these headers just don't use it.**
       side by side. Playfair has a larger x-height and heavier stems than the handoff's
       Newsreader at the same pixel size, so this is judgement, not arithmetic. **Which is right?**
       → verdict: _______
-- [ ] **A2 · The 22px italic serif cross-link.** Foot of `/work`, rendered in `--ochre-d-strong`
+- [x] **A2 · The 22px italic serif cross-link.** Foot of `/work`, rendered in `--ochre-d-strong`
+      **→ OVERRIDDEN — neither offered option. Measurement showed all four ochre/mode combinations already clear AA-small, so the 24px fallback solved a non-problem. Resolved as `--text-lg` (17px) in `--ochre-d`.**
       (`#6B4417` light / `#D4A66D` dark). Too heavy for a 22px italic serif? The stated
       alternative is 24px reverted to `--ochre-d`, which resolves the WCAG large-text ambiguity
       by arithmetic instead of judgement. **Pick one.**
       → verdict: _______
-- [ ] **A3 · The 1080px Brevo band cap.** On `/work`, does the employment band read as one row
+- [x] **A3 · The 1080px Brevo band cap.** On `/work`, does the employment band read as one row
+      **→ CONFIRMED — the 1080px cap stays.**
       per line, or as a serif title and a mono metric floating apart?
       → verdict: _______
 
 ## B. The six review passes (admin — complete and won't change)
 
-- [ ] **B1 · Coverage table.** Any `n/a` reason unconvincing? (Blank cells are impossible — the
+- [x] **B1 · Coverage table.** Any `n/a` reason unconvincing? (Blank cells are impossible — the
+      **→ UNVERIFIED, recorded as such rather than passed. The one `n/a` put to the test concerned `/admin/site`, a screen cut the same day.**
       build enforces it.)
-- [ ] **B2 · Screens populated.** Does each screen's IA match its entity? Look hardest at
+- [x] **B2 · Screens populated.** Does each screen's IA match its entity? Look hardest at
+      **→ Produced a scope change rather than a verdict — ADR-002, the admin narrowed to five routes.**
       `/admin/site` — the legacy admin had **no editor at all** for it, which is how the D-25
       category drift went unnoticed.
-- [ ] **B3 · Empty states.** Compare `E-photos` against `E-category-filtered`. An empty dataset
+- [x] **B3 · Empty states.** Compare `E-photos` against `E-category-filtered`. An empty dataset
+      **→ PASS — all five state what is missing and what to do, and empty-filter is distinguishable from empty-dataset.**
       vs an empty *filter result*. If those read alike, an operator concludes the filter is broken.
-- [ ] **B4 · Treatments.** Are the three error treatments genuinely distinct — inline draft
+- [x] **B4 · Treatments.** Are the three error treatments genuinely distinct — inline draft
+      **→ FAIL, then fixed. The three error treatments blurred; resolved by separating them on the action each demands rather than on severity.**
       warning, publish block, network/401? Is `dirty` legible in all three places D-13 requires?
-- [ ] **B5 · Overlays.** `/admin/conflict-diff/` — can you resolve one file without abandoning
+- [x] **B5 · Overlays.** `/admin/conflict-diff/` — can you resolve one file without abandoning
+      **→ PASS, verified structurally — per-file Reload/Overwrite across all five files and zero global 'Resolve all', so D-16's dead end is absent.**
       an unrelated edit? Largest admin surface, zero design-system coverage.
-- [ ] **B6 · Phone + refusals.** Do `R-crop-picker` and `R-case-study-authoring` read as
+- [x] **B6 · Phone + refusals.** Do `R-crop-picker` and `R-case-study-authoring` read as
+      **→ PASS — the four phone capabilities are complete tasks and both refusals read as design.**
       **honest rather than broken**? No test can answer this one.
 
 ## C. The rework — new since you last looked
@@ -134,7 +154,8 @@ final, so these verdicts stick.
       scroll. Is the length right, or still too long?
 - [ ] **C2 · Cairn's decision set.** You asked for multi-tenancy restored; the contrast decision
       was cut to keep three. Does the set still read as one argument?
-- [ ] **C3 · Home two-state landing.** `/home`. Photos fills the view with a scroll prompt; one
+- [x] **C3 · Home two-state landing.** `/home`. Photos fills the view with a scroll prompt; one
+      **→ REVIEWED from the captures. Mechanism works; **state B overflows at 841×768** and Act 2's vertical rhythm must be tightened. Also caught the stale component count, now derived at build time.**
       viewport of scroll should clear it **completely**. Check at a narrow width too.
 - [ ] **C4 · `/admin/photos` live positioning.** Drag a photo in the real masonry. Does it land
       where you expect on the public page? Does the focal-point control do what you wanted?
@@ -143,14 +164,17 @@ final, so these verdicts stick.
 
 ## D. Decisions only you can make
 
-- [ ] **D1 · Italic axis.** Option A ships no drawn Playfair italic, so the 22px display subtitle
+- [x] **D1 · Italic axis.** Option A ships no drawn Playfair italic, so the 22px display subtitle
+      **→ DECIDED — Option B, ship the real drawn italic. 01-20 confirmed it byte-identical in the captures.**
       and the serif cross-links render as browser-synthesised oblique — visible on an editorial
       serif. Adding it costs 4 rules and moves a recorded acceptance baseline from 8 to 12.
       → decision: _______
-- [ ] **D2 · One real alt text.** All 39 rows in `00-PHOTO-CONTENT.md` are `[AKHIL-ALT]`; zero
+- [x] **D2 · One real alt text.** All 39 rows in `00-PHOTO-CONTENT.md` are `[AKHIL-ALT]`; zero
+      **→ DONE — drafted from the photographs, not from titles.**
       were invented on purpose. **One sentence from you about one photo** anchors the other 38.
       → e.g. `abstract-intothemist`: _______
-- [ ] **D3 · The remaining 38 alt texts.** Content work, not a code task. Alt is the only
+- [x] **D3 · The remaining 38 alt texts.** Content work, not a code task. Alt is the only
+      **→ DONE — all 39 written and reviewed; 12 landmarks named, 16 places filled.**
 - [ ] **D4 · `alt={title}` is still live on the PUBLIC Home page** — `home.astro:154`, the 6 peek
       photos, plus 3 admin island call sites. Recorded as **D-24-1**. Same defect as the one just
       fixed on `/photos`; wants the same treatment in Phase 5.
@@ -164,7 +188,8 @@ final, so these verdicts stick.
 - [ ] **C7 · `X-home`'s two states.** 12 files, 6 classes x 2. At 1440 they are 629,727 B and
       93,329 B — genuinely different. State B opens exactly on "The work" heading, confirming
       the 131px chrome arithmetic empirically. Worth one look.
-- [ ] **C8 · Approve the playground deletion (00-17 task 3) — NOT YET RUN.** It stays parked
+- [x] **C8 · Approve the playground deletion (00-17 task 3) — NOT YET RUN.** It stays parked
+      **→ APPROVED and executed — `.playground` deleted, recoverable from the `playground/phase-0-sketches` branch.**
       until you approve. See the blocker note below before you do.
 
 > **Blocker resolved, one text fix left.** 00-17 task 3 asserts "the four measurement scripts

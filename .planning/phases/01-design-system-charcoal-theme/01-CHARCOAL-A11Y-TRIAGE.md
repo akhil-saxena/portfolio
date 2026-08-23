@@ -612,3 +612,51 @@ DS_BRAND=charcoal npm run test:a11y              # charcoal: 483 passed / 25 fai
 The 25 failing story ids are in §2. The per-node fg/bg/ratio figures come from
 axe-core's own `any[].data` cross-checked against an independently written
 compositor verified on the recorded Tabs triple (§1.1).
+
+---
+
+## 8. Gate state at the time of this triage
+
+Measured on `$DS` commit **`5dbf0d3`** (`charcoal-theme`, 70 commits ahead of
+`main`, tracked-clean), each gate run separately with its exit code captured
+directly:
+
+| gate | exit | result |
+|---|---|---|
+| `npm run build` | **0** | full `tsup` build, `dist/` regenerated |
+| `npm test` | **0** | **1,946 passed / 123 files** |
+| `npm run check` | **0** | Biome |
+| `npm run typecheck` | **0** | both tsconfigs |
+| `npm run css:check` | **0** | 79 files, byte-exact |
+| `npm run test:a11y` | **0** | **508 passed / 84 suites — DEFAULT BRAND ONLY** |
+| `npm run test:visual` | **1** | 127 passed / 1 failed |
+
+Informational, and the subject of this document:
+
+| | exit | |
+|---|---|---|
+| `DS_BRAND=charcoal npm run test:a11y` | **1** | **483 passed, 25 failed / 8 suites** |
+
+**`control-boundary.spec.ts:117` — the one deterministic `test:visual` failure,
+and F-20-3 — is fixed** at `5dbf0d3` and passes in every run. It had been
+measuring a cell that does not exist: it asked for `theme:light` on the URL while
+73 stories pin their mode at story level, then tried to relocate them into the
+light cell by removing `.dark` from `<html>`. Two measured reasons that cannot
+work — a `border-color` transition read 150 ms before it settles, and
+React-authored inline dark styles that no class removal can undo. It now reads
+each story's resolved mode and skips the 73 that are not in this cell, measuring
+435. A 38-control `ROSTER_FLOOR` ratchet ensures the skip costs no coverage.
+
+**`test:visual` is still exit 1**, on a different and pre-existing failure:
+`data-display-tabs--narrow-overflow--charcoal` at **96 pixels (ratio 0.01)** —
+the identical story and pixel count 01-20 §5 recorded on `827f860`, before this
+change. It passes when `storybook.spec.ts` runs alone (504 + 504, exit 0) and
+fails when the other 18 specs have run first, in both parallel and single-worker
+modes. **Nothing was re-recorded**: the store is 1,019 files, 0 modified.
+
+`sortable-announce.spec.ts` also fails inside the full suite and passes in
+isolation (5/5, 2.0 s). Both are F-20-4 — suite reliability, not library defects.
+
+So the seven-gate criterion is **6 green / 1 red**, with the red no longer
+containing any deterministic defect. Every one of the 128 visual tests passes;
+they have not yet all passed in the same run.

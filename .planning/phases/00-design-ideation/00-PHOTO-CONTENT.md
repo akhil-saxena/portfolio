@@ -81,20 +81,20 @@ end of this file.
 
 | id | title | category | date | alt | place | description | tags |
 |----|-------|----------|------|-----|-------|-------------|------|
-| `architecture-hauntedmansionjpg` | Haunted Mansion | architecture | 2026-03-28 | A Second Empire mansion with a mansard roof, dormer windows and iron roof cresting, half screened by surrounding trees. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-hauntedmansionjpg` | Haunted Mansion | architecture | 2026-03-28 | Phantom Manor's mansard roof, dormer windows and iron roof cresting, half screened by surrounding trees. | Disneyland Paris | [AKHIL-OPT] | [AKHIL-OPT] |
 | `architecture-officegreens` | Office Greens | architecture | 2026-03-28 | A modern building's vertical metal fins seen from below, framed by palm fronds and a red-flowering shrub. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-parismuseum` | Paris Museum | architecture | 2026-03-28 | A gilded winged statue on the roofline of a carved stone opera house, a French flag to the left and storm cloud behind. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-parismuseum` | Paris Museum | architecture | 2026-03-28 | A gilded winged statue on the roofline of the Palais Garnier, a French flag to the left and storm cloud behind. | Palais Garnier, Paris | [AKHIL-OPT] | [AKHIL-OPT] |
 | `architecture-redbuilding` | Red Building | architecture | 2026-03-28 | A deep red concrete facade tilted steeply upward, square recessed windows in pale surrounds, a slatted canopy against turquoise sky. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-singapore` | Singapore | architecture | 2026-03-28 | A theatre's spiked aluminium shading shells over triangulated glass, treetops below and clear blue sky above. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-singaporesentosa` | Singapore Sentosa | architecture | 2026-03-28 | A brick tower ringed by a red pergola on a vine-covered island base, harbour buildings and a moored boat across the water. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-templemahabalipuram` | Temple Mahabalipuram | architecture | 2026-03-28 | A tiered granite temple tower on a stepped plinth lined with carved bulls, sea horizon to the right under bright cumulus. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-eiffeljpg` | Eiffel | architecture | 2026-03-28 | The Eiffel Tower from directly beneath at night, its ironwork lit amber against a black sky. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-citypalacegate` | City Palace Gate | architecture | 2026-03-28 | A painted gateway from below, its scalloped canopy and arched balcony dense with peacock and floral frescoes, marigold garlands at the edges. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-hawamahaldaytime` | Hawa Mahal Daytime | architecture | 2026-03-28 | Five tiers of latticed windows rising in a curved pink sandstone facade, shot from the street against a clear sky. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-pigeonatumaidbhawan` | Pigeon At Umaid Bhawan | architecture | 2026-03-28 | A pigeon on a carved finial in a honey-coloured sandstone courtyard, pierced lattice screens and heavy corbels on every side. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-singaporeflyer` | Singapore Flyer | architecture | 2026-03-28 | A giant white observation wheel from below, passenger capsules along its rim and spoke cables fanning to the hub. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-citypalacewide` | City Palace Wide | architecture | 2026-03-28 | A pink sandstone palace of domed pavilions and tiered latticed windows, red and marigold garlands hung over the entrance arch. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `architecture-europepalacejpg` | Europe Palace | architecture | 2026-03-28 | A long white baroque palace with red-tiled roofs stretched along a straight canal, reeds on the far bank under heavy cloud. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-singapore` | Singapore | architecture | 2026-03-28 | The Esplanade's spiked aluminium shading shells over triangulated glass, treetops below and clear blue sky above. | Esplanade, Singapore | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-singaporesentosa` | Singapore Sentosa | architecture | 2026-03-28 | A brick tower ringed by a red pergola on a vine-covered island base, harbour buildings and a moored boat across the water. | Sentosa, Singapore | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-templemahabalipuram` | Temple Mahabalipuram | architecture | 2026-03-28 | The Shore Temple at Mahabalipuram, its tiered granite tower on a stepped plinth lined with carved bulls, sea horizon to the right under bright cumulus. | Mahabalipuram, India | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-eiffeljpg` | Eiffel | architecture | 2026-03-28 | The Eiffel Tower from directly beneath at night, its ironwork lit amber against a black sky. | Paris, France | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-citypalacegate` | City Palace Gate | architecture | 2026-03-28 | A peacock-frescoed gate at the City Palace seen from below, its scalloped canopy and arched balcony dense with painted florals, marigold garlands at the edges. | City Palace, Jaipur | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-hawamahaldaytime` | Hawa Mahal Daytime | architecture | 2026-03-28 | Hawa Mahal's five tiers of latticed windows rising in a curved pink sandstone facade, shot from the street against a clear sky. | Jaipur, India | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-pigeonatumaidbhawan` | Pigeon At Umaid Bhawan | architecture | 2026-03-28 | A pigeon on a carved finial at Umaid Bhawan, pierced sandstone lattice screens and heavy corbels on every side. | Umaid Bhawan, Jodhpur | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-singaporeflyer` | Singapore Flyer | architecture | 2026-03-28 | The Singapore Flyer from below, passenger capsules along its rim and spoke cables fanning to the hub. | Singapore | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-citypalacewide` | City Palace Wide | architecture | 2026-03-28 | The City Palace's pink sandstone range of domed pavilions and tiered latticed windows, red and marigold garlands hung over the entrance arch. | City Palace, Jaipur | [AKHIL-OPT] | [AKHIL-OPT] |
+| `architecture-europepalacejpg` | Europe Palace | architecture | 2026-03-28 | Nymphenburg's white baroque wings and red-tiled roofs stretched along a straight canal, reeds on the far bank under heavy cloud. | Nymphenburg, Munich | [AKHIL-OPT] | [AKHIL-OPT] |
 
 ### nature — 8 photos
 
@@ -104,7 +104,7 @@ end of this file.
 | `nature-hillsandgreens` | Hills And Greens | nature | 2026-03-28 | Ridge after ridge fading into golden haze, a small hilltop tower silhouetted mid-frame above dark scrub. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 | `nature-naturehills` | Nature Hills | nature | 2026-03-28 | Overlapping hill slopes in sepia haze, a few bare branches on the near ridge, the sun diffused behind. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 | `nature-lonetree` | Lone Tree | nature | 2026-03-28 | A single broad-crowned tree on a bare dirt hilltop, distant ranges hazy below a deep blue sky. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `nature-naturewaterfall` | Nature Waterfall | nature | 2026-03-28 | A wide waterfall breaking white over dark rock ledges, spray hanging in the air between wooded banks. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `nature-naturewaterfall` | Nature Waterfall | nature | 2026-03-28 | The Rhine Falls breaking white over dark rock ledges, spray hanging in the air between wooded banks. | Rhine Falls, Switzerland | [AKHIL-OPT] | [AKHIL-OPT] |
 | `nature-shipsunset` | Ship Sunset | nature | 2026-03-28 | A cargo ship in silhouette on open sea beneath a large low sun, a second vessel faint on the horizon. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 | `nature-sunrisepoint` | Sunrise Point | nature | 2026-03-28 | Two hill summits in silhouette against an orange sunrise, a communication mast on the left peak. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 | `nature-fairwayreflections` | Fairway Reflections | nature | 2026-04-07 | A mown fairway and sand bunker backed by tall coconut palms, the whole treeline mirrored in still water with two egrets on the bank. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
@@ -132,8 +132,8 @@ end of this file.
 
 | id | title | category | date | alt | place | description | tags |
 |----|-------|----------|------|-----|-------|-------------|------|
-| `street-davidjpg` | David | street | 2026-03-28 | A weathered bronze cast of Michelangelo's David from the chest up, verdigris green against clear blue sky. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
-| `street-disneylandwalle` | Disneyland Wall E | street | 2026-03-28 | Life-size WALL-E and EVE figures in a planted bed, the white egg-shaped robot leaning toward the rusted tracked one. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `street-davidjpg` | David | street | 2026-03-28 | A weathered bronze cast of Michelangelo's David from the chest up, verdigris green against clear blue sky. | Florence, Italy | [AKHIL-OPT] | [AKHIL-OPT] |
+| `street-disneylandwalle` | Disneyland Wall E | street | 2026-03-28 | Life-size WALL-E and EVE figures in a planted bed, the white egg-shaped robot leaning toward the rusted tracked one. | Disneyland Paris | [AKHIL-OPT] | [AKHIL-OPT] |
 | `street-slothjpg` | Sloth | street | 2026-03-28 | A sloth climbing a vertical trunk in dense glasshouse planting, hanging moss around it and a red bromeliad at its base. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 | `street-tunnelvision` | Tunnel Vision | street | 2026-03-28 | A long covered footbridge of cross-braced steel receding to a bright far end, two figures walking away over red and grey floor tiles. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 
@@ -141,7 +141,7 @@ end of this file.
 
 | id | title | category | date | alt | place | description | tags |
 |----|-------|----------|------|-----|-------|-------------|------|
-| `portraits-portraitpatrikagate1` | Portrait Patrika Gate 1 | portraits | 2026-03-28 | A woman in a deep red ruffled dress walks away from the camera down a corridor of receding painted archways, each frescoed in florals and teal. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
+| `portraits-portraitpatrikagate1` | Portrait Patrika Gate 1 | portraits | 2026-03-28 | A woman in a deep red ruffled dress walks away from the camera down Patrika Gate's corridor of receding painted archways, each frescoed in florals and teal. | Patrika Gate, Jaipur | [AKHIL-OPT] | [AKHIL-OPT] |
 | `portraits-whitedresshalf` | White Dress Half | portraits | 2026-03-28 | Black-and-white portrait of a woman with a chin-length bob and graphic winged eyeliner, in a sheer embroidered white dress, leaning on a rail. | [AKHIL-OPT] | [AKHIL-OPT] | [AKHIL-OPT] |
 
 ### product — 2 photos
@@ -185,7 +185,7 @@ forgetting to add a row.
 
 ---
 
-## Status of the `alt` column — DRAFTED FROM THE PHOTOGRAPHS, 2026-08-23
+## Status of the `alt` column — DRAFTED FROM THE PHOTOGRAPHS AND REVIEWED, 2026-08-23
 
 All 39 `alt` values are filled. **They were written by looking at every photograph**, not inferred
 from titles — the 39 medium renditions were fetched from the public bucket and viewed one by one.
@@ -218,3 +218,25 @@ from opposite corners into flat grey fog. A title-derived draft would have shipp
 
 The three rules were machine-checked after drafting: **zero** values equal their own title, **zero**
 open with "Image of", "Photo of" or "Picture of", and every value is one sentence.
+
+### Review outcome, 2026-08-23
+
+Walked with Akhil. Four decisions, all applied:
+
+1. **Landmarks are named.** Twelve photographs now carry the place in the alt text rather than only a
+   description. Nine were named because the record id corroborated the frame, or because text in the
+   frame confirmed it — `architecture-parismuseum` says `…NALE DE MUSIQUE` on the cornice, which is
+   what identifies the Palais Garnier. Four more were confirmed by Akhil against appearance alone and
+   were **not** named until he did: **Nymphenburg**, the **Rhine Falls**, **Phantom Manor**, and the
+   Sentosa tower — which stays described, because he could place the island but not name the
+   structure.
+2. **The three species and object identifications stand as drafted** — sambar deer, white-throated
+   kingfisher, and the sloth described in a way that holds whether or not it is a live animal.
+3. **Both portraits stay described, unnamed.** No claim about who either subject is.
+4. **`place` is filled on 16 of 39** — only where the location adds something. The remaining 23 stay
+   empty, which renders nothing at all: no em dash, no gap.
+
+Machine-checked again after every edit: zero alt values equal their own title, none opens with
+"Image of" / "Photo of" / "Picture of", and each is one sentence.
+
+**The `alt` column is complete and reviewed. It is no longer blocking Phase 5.**

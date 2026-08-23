@@ -322,7 +322,15 @@ this a mode collapse rather than a bad colour.
 **The other 40 nodes have opaque backdrops and therefore deterministic ratios**,
 which makes them simpler to reason about than the Tabs bug was — Tabs was
 page-dependent (4.882 / 4.473 / 3.851) and passed on the page while failing on
-both raised surfaces. Only G4 has that property here.
+both raised surfaces. Of the 41 violating nodes, only these 2 have that property.
+
+There is one other translucent amber wash in the tree and it **passes**, which is
+worth recording because it is the counter-example that makes G4's diagnosis
+specific rather than "translucent tints are bad":
+`.dark .ds-atom-datepicker-cell.is-in-range` is `rgba(245,158,11,0.18)` —
+the same hardcoded-rgba shape, in dark mode — and its numeral inherits
+charcoal's near-white `--ink`, so it reads comfortably. G4 fails not because the
+tint is translucent but because `--amber-ink` forces **dark** ink onto it.
 
 ---
 
@@ -354,10 +362,50 @@ combination that cannot be safe across modes.
 Line and file counts are the shipped-source edit only, excluding tests,
 changelog and baselines.
 
-Baseline movement is measured, not estimated: a sweep of **all 508 stories under
-charcoal** counted which stories actually contain each group's affected DOM. A
-fix moves exactly those stories' baselines. See §4.1 for the measured surface
-and §4.2 for the resulting counts.
+Baseline movement is **measured, not estimated**: a sweep of **all 508 stories
+under charcoal** counted which stories actually contain each group's affected
+DOM, asserting `data-brand=charcoal` per story. A fix moves exactly those
+stories' baselines — and that set is **wider than the failing set**, because a
+story can render the affected element without tripping axe.
+
+### 4.1 Measured edit size and baseline movement
+
+| group | files | declarations | charcoal baselines moved | default baselines moved | total of 1,019 |
+|---|---|---|---|---|---|
+| **G1** | 1 (`primitives.css`) | **2** | **14** | **0** | **14** |
+| **G2** | 1 + a theme decision | 2-3 | **6** | **4** (if `--amber-ink`) | 6-10 |
+| **G3** | 2 (`primitives.css`, `AppBar/index.tsx`) + new token | 2-3 | **9** | **9** (same pinned hex in both brands) | up to 18 |
+| **G4** | 1 (`primitives.css`) | 2 | **1** | **0** if brand-scoped, **1** if not | 1-2 |
+| **G5** | 1 (`primitives.css`) | 1 | **4** | **4** | **8** |
+| **union, all five** | | | **34** | — | **34 charcoal (3.3% of 1,019)** |
+
+### 4.2 Which baselines, named
+
+The gap between "fails a11y" and "pixels move" is the whole reason to measure
+this. G1 is the clearest case: **12 stories fail, 14 would move.**
+
+| group | stories rendering the affected DOM | of which currently FAIL | clean but **would still move** |
+|---|---|---|---|
+| **G1** | **14** (11 light, 3 dark) | 12 | `inputs-daterangepicker--default`, `inputs-daterangepicker--dark-mode` — both render `.is-selected` range endpoints |
+| **G2** | **6** (4 light, 2 dark) | 4 | `feedback-alertbanner--dark-mode`, `inputs-daterangepicker--dark-mode` |
+| **G3** | **9** (7 light, 2 dark) | 7 | `surfaces-card--variants`, `surfaces-card--dark-mode` |
+| **G4** | **3** (2 light, 1 dark) | 1 | `inputs-statuspill--all-stages`, `inputs-statuspill--with-chevron` (both light, both pass at 15:1) |
+| **G5** | **4** (3 light, 1 dark) | 1 | `interaction-richtext--default`, `--read-only`, `--playground` |
+
+Two consequences worth having in hand before Task 3:
+
+- **G1 moves 14 charcoal images and zero default images.** That is the single
+  cheapest reviewable change in the set: one brand, 14 pictures, one expected
+  difference in each (a selected-date or button label going from `#1c1917` to
+  `#161616`).
+- **G3 and G5 move both brands.** G3 because the pinned chip hex is identical in
+  both brands, so any change to it re-renders all nine stories twice — **up to 18
+  images**. G5 because the default brand's `mark` currently inherits near-white
+  in dark and would become dark ink, which is a large, obvious pixel change in
+  the one image where it matters most.
+
+Nothing here proposes re-recording anything. Baselines are the developer's to
+approve.
 
 **Key asymmetry the developer needs before Task 3:** whether a fix moves
 **default-brand** baselines as well as charcoal ones depends entirely on whether
@@ -401,6 +449,30 @@ corroborates it.
 **Quantifying the blind spot is a prerequisite to trusting any charcoal a11y
 number**, and it is not done. Nothing in §6 should be read as "then charcoal is
 clean".
+
+### 5.1b A second blind spot: axe `incomplete` results the gate does not fail on
+
+`checkA11y` fails on `violations`. It does **not** fail on axe's `incomplete`
+bucket — the cases axe declines to judge. Measured on `inputs-daterangepicker`,
+both light and dark:
+
+```
+.is-range-start > .ds-atom-datepicker-cell-num   INCOMPLETE
+.is-range-end   > .ds-atom-datepicker-cell-num   INCOMPLETE
+   "Element's background color could not be determined due to a pseudo element"
+   messageKey: pseudoContent   expectedContrastRatio: 4.5:1
+```
+
+The two **range endpoints** are exactly the ochre pills most likely to be wrong —
+they are the `.is-selected` cells of G1 — and axe cannot see their background
+because `primitives.css:2545-2546` paints it with a `::before`. So they are
+neither passing nor failing; they are **unmeasured**, silently, in every run.
+
+This is the same class of defect as §5.1: the number 25 is bounded by what the
+instrument can reach, and two separate mechanisms — portal scope and
+pseudo-element backgrounds — put real elements outside that reach. **Any
+component that paints its surface with a pseudo-element is invisible to this
+gate's contrast rule**, and nobody has counted how many do.
 
 ### 5.2 Real user-facing failures — 18 of 25
 

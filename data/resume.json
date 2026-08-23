@@ -9,13 +9,8 @@
       "logo": null,
       "url": "https://www.brevo.com",
       "bullets": [
-        "Built E2E A/B testing systems (FE/BE + analytics) across onboarding, signup, and pricing flows",
         "Improved <strong>conversion by 15%</strong> by transforming a one-page checkout for <strong>2.5M+ users</strong> into a 3-step flow",
-        "Reduced onboarding friction by deferring phone verification to high-intent actions, balancing conversion and fraud control",
-        "Built analytics & attribution pipelines with event tracking, custom logging, and Omni dashboards to track funnel drop-offs and experiment performance",
-        "Developing AI-assisted enrichment & persona-based segmentation to guide users to relevant product experiences",
         "Engineered a unified, responsive settings navigation package adopted across <strong>18+ micro-frontend apps</strong>",
-        "Migrated login to Next.js; revamped homepage, user management, senders, and domain flows; migrated header & navigation packages to TypeScript",
         "Integrated <strong>18+ GoLang APIs</strong> and optimized payload structures, reducing <strong>API response size by 50%</strong>",
         "Reduced support tickets by <strong>12–20%</strong> in high-traffic modules (<strong>10K+ weekly users</strong>) via UX improvements and automated domain authentication",
         "Integrated Sniper Links into signup emails, boosting engagement across <strong>5M+ annual signups</strong>",

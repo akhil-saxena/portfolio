@@ -325,6 +325,11 @@ are doc-only.
 
 ### Phase 6: Case Studies
 
+> **Carries one deferred design-system decision.** If a study renders a metric as a tile, that is the
+> trigger for `StatCard`'s `class="glass"` fix — it currently has no consumer anywhere, so it was
+> deliberately left alone rather than fixed speculatively. Same one-line treatment `Badge` got in
+> plan 01-18. See the `StatCard` row in `phases/00-design-ideation/00-HUMAN-CHECKLIST.md`.
+
 **Goal**: Each project is told as a real case study — problem, decisions and outcome, including what was rejected — reusing the vocabulary the public site established
 **Depends on**: Phase 0 (template design + drafted copy), Phase 5 (layout and typography vocabulary)
 **Requirements**: CASE-01, CASE-02, CASE-03

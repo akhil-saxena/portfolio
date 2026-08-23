@@ -328,6 +328,23 @@ Not verification; a queue. Tick when handed over or filed.
       closes on the public Work page once Phase 7 switches D-45 from `Badge` to `StatusPill`** —
       which is the point of closing G-5. Don't read it as fully done at 01-20.
 
+- [x] **`StatCard class="glass"` — DECIDED 2026-08-23: deferred, with a trigger.** Carried unresolved
+      through plans 01, 04, 07, 09 and 12 and marked *"worth a decision at verify-phase"*. The
+      decision is **not to fix it yet**, on two grounds:
+      · **It has no consumer.** 00-12's F11 found the admin dashboard does not use it — *"pending
+      changes are entity groups with real change lists, not metrics"* — and nothing in Release 1
+      renders a metric tile either (Work uses project cards with chips and badges, Résumé uses
+      `Timeline`).
+      · **Its sibling defect was fixed on demand, not speculatively.** `Badge` had the identical
+      problem — wholly inline-styled, no CSS class — and 01-18 gave it a class *because a consumer
+      needed to target it*. That is the working pattern.
+      Fixing an unused component would also cut against the core value: the site is the proof, and a
+      gap it never exposes is not a finding.
+      **Trigger to revisit:** the first consumer that needs to target it from app CSS — most likely a
+      case-study metric tile in **Phase 6 (Release 2)**, since each study carries one hard fact and a
+      number wants a tile. At that point it gets the same one-line treatment `Badge` got: a real
+      `ds-atom-statcard` class beside the inline styles, and the styles moved into the sheet.
+
 ## F. Known-open, already recorded — do NOT re-report
 
 - **D-15-1** dashboard `.adm-group-link` 23px at every coarse class *(closed by 00-24 — confirm)*

@@ -2351,3 +2351,54 @@ work rather than as open review: **shorten the `[NEEDS AKHIL]` blocks** and **ve
 claims**, both when Phase 6 writes the real copy. The Act-2 grid is respecified above. The tier-split
 question from the plan's Task 2 is **void** — the mid-phase redirection removed the long/short
 tiering.
+
+### C3 — the two-state Home, reviewed from the committed captures (2026-08-23)
+
+Reviewed from `screenshots/00-X-home-state-{a,b}-dark-*.png` rather than live: the playground was
+deleted at 00-17, so the twelve captures (two states × six viewport classes) are the record.
+
+**The mechanism works.** State A fills the view with the identity block, a six-photo grid and a
+`SCROLL FOR THE WORK ↓` prompt; state B has the photographs entirely gone, with `The work` and
+`The résumé` owning the screen. That is the two-act behaviour as designed, and it holds at 1440.
+
+**Two defects found, both now decided.**
+
+#### 1. State B overflows at 841 × 768 — the near-square class
+
+At the foldable-unfolded width the `The résumé` heading sits on the bottom edge with its content cut
+off, so *"work and résumé occupy the view"* — the whole promise of the second act — **fails at exactly
+one viewport class**. Nothing in the earlier review caught this because the responsive contract's
+841 × 768 case was only ever checked in Act 1.
+
+**Resolution: tighten Act 2's vertical rhythm.** The capture carries two large dead gaps — between
+the project grid and the *"By day —"* line, and again before `The résumé` — and closing them recovers
+approximately the height the résumé block needs. Chosen over letting Act 2 scroll below 900px tall
+(which would make the near-square class behave unlike every other) and over shrinking the résumé
+block there (which would leave it saying almost nothing at that width).
+
+Phase 5 must verify Act 2 fits at **841 × 768** specifically, not only at 1440. It is the binding
+case.
+
+#### 2. The component count is stale in copy, and has moved twice
+
+The capture reads *"80 components"*. The ruling was **79**; Phase 1 has since shipped `FilterNav` and
+`FocalPointPicker`, so it is now **81**. Three different numbers exist across the sketch, the copy
+corpus and reality.
+
+**Resolution: Phase 5 derives the figure at build time from the installed design-system package
+rather than hardcoding it.** The design system already asserts the number in its own CI —
+`src/overview-links.test.ts` requires README, the shipped catalogue and the `src/` directory listing
+to agree, and it has failed by name twice in this phase and caught both drifts — so there is a
+trustworthy source to read. A hardcoded count has now gone stale twice inside a single phase, and it
+is a factual claim on the page a hiring manager reads first.
+
+This also supersedes the corrected figure in `00-COPY/one-liners.md`, which reads 79. **Do not fix
+that number by hand** — the whole point of deriving it is that no hand-maintained copy of it should
+exist.
+
+#### 3. Not a defect — the grid arrangement is already superseded
+
+The captures show the old featured-first layout: `Design System` as a `FLAGSHIP` row above a 2×2 of
+the other four. That was replaced earlier in this review by the equal-weight **auto-fit grid capped
+at six** with a link to `/work`. The screenshots predate that decision; Phase 5 builds the auto-fit
+version.

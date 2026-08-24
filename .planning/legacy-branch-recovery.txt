@@ -1,0 +1,34 @@
+# Legacy feature branches — recovery pointers
+#
+# STATUS: these seventeen branches still EXIST on origin as of 2026-08-25.
+# Deleting them was proposed and analysed but NOT executed — the push was
+# blocked, so it remains Akhil's to run. This file is the recovery record for
+# when he does.
+#
+# WHY THEY CAN GO: `git cherry legacy/nextjs-portfolio <branch>` returns zero
+# commits not already present in legacy — verified by patch-id, not ancestry,
+# across all 1,445 commits on the seventeen branches. The work is fully
+# preserved; only the branch pointers carry akhil.saxena@brevo.com authorship,
+# which is why removing them removes the last Brevo attribution from anything
+# reachable.
+#
+# TO DELETE:   git push origin --delete <branch>   (then: git remote prune origin)
+# TO RESTORE:  git push origin <sha>:refs/heads/<branch>
+
+feat/admin-improvements                            2f6232cc7becb6a206b070d5431326b1e53e5268
+feat/admin-plan1-data-extraction                   cd9039225ef62f93f945464485ad8ade475217a9
+feat/admin-plan2-api-layer                         a87e1c9ee0ab8526ac091eff38410340fe9c60b5
+feat/admin-plan3-watermark                         4abcbdfe9bb1be70cbfa380c41363d3569949689
+feat/admin-plan4-ui                                2d373b0eb11745e81900f85745964b0a2a407b58
+feat/admin-plan5-resume-editors                    546eeccf2c239f4f7fee2445c6575cdcf0deefdb
+feat/admin-plan6-preview-deploy                    28f9def02bc2d9ea1b4d0c7c2a0c227b2cceef7a
+feat/fixes-round2                                  6530293b134d8a999afa4c4d4844b735c22b1e9c
+feat/fixes-round3                                  fdf8970569b60db58c34d1473bfef1ecf42dae0b
+feat/lighthouse-planB-images                       e2764ef4faec6a9ead25abee21e3d531a0490e74
+feat/lighthouse-planC-touch-polish                 6fdb8b6ae5cfb3cb8fe44ef7cb245986506121f7
+feat/phase1-portfolio                              2a5063221d522d9954d4c5e78dfad0fc104ef702
+feat/quick-fixes                                   047ee2ce81ebe97cc50985958e57f8412b0748bc
+feat/scroll-title-nav-rename                       6d78f224cadd0510976b3d27bf2a39fa3d7141aa
+feat/section-scroll-titles-v2                      aa079cc373012810b9793d9b063b769f3cf8b674
+feat/wysiwyg-admin                                 353a01a219ea2f72e33a1a3bb84567d68af00ff8
+feat/wysiwyg-improvements                          477bffcce72e92f8cd38da6ba2350c66dea306bb

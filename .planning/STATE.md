@@ -3,15 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: PHASE 0 COMPLETE. Roadmap restructured into two releases — public site live before any admin work. 01-17 executing.
-last_updated: "2026-08-19T09:08:43.928Z"
-last_activity: 2026-08-22 -- roadmap resequenced: Release 1 is 3-4-5-8 (live), Release 2 is 6-9-06.1-7
+stopped_at: Completed 01-12 (AppBar height exposed, 44px touch floor, component count reconciled)
+last_updated: "2026-08-24T23:21:22.073Z"
 progress:
   total_phases: 11
-  completed_phases: 1
-  total_plans: 56
-  completed_plans: 56
-  percent: 96
+  completed_phases: 2
+  total_plans: 58
+  completed_plans: 57
+  percent: 18
 ---
 
 # Project State
@@ -30,10 +29,10 @@ Phases 0, 1 and 2 are all in flight concurrently.
 | Phase | Plans | Status |
 |---|---|---|
 | 00 design-ideation | **25 / 25 COMPLETE** | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
-| 01 charcoal theme | 12 / 21 | 01-13 next. Sibling `charcoal-theme` at 30 commits, tracked-clean. 01-20 (capture review) and 01-21 (`npm publish` v2.0.0) are human gates at the end. **01-12 left two new stories without visual baselines — 01-20 must record them.** |
+| 01 charcoal theme | 22 / 22 executed | 01-22 complete. Sibling `charcoal-theme` at **82 commits**, tracked-clean. Charcoal is now **near-monochrome** — the ochre identity was rejected at the 01-20 capture review and rebuilt in 01-22. `DS_BRAND=charcoal test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 (`npm publish` v2.0.0) remains a human gate; `package.json` is still 1.11.4 and nothing is published, tagged or merged. |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
 
-Progress: [████████░░] 80% of planned plans (phases 3–9 not yet planned)
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
@@ -48,12 +47,12 @@ Progress: [████████░░] 80% of planned plans (phases 3–9 no
 | Phase | Plans done | Notes |
 |-------|-----------|-------|
 | 00 | 25 / 25 | **complete** |
-| 01 | 12 / 21 | cross-repo, sibling branch |
+| 01 | 22 / 22 | cross-repo, sibling branch; charcoal rebuilt near-monochrome in 01-22 |
 | 02 | 10 / 10 | **complete** |
 
 **Recent Trend:**
 
-- Last 5 plans: 02-09, 01-09, 01-10, 01-11, 01-12
+- Last 5 plans: 01-19.1, 01-20, 01-FIX-focus-ring-soft, 01-21, 01-22
 - Recurring defect class: a CSS rule losing silently to an existing rule declared lower in
   `primitives.css`. Hit 01-10 and 01-11 consecutively; pre-flighted for 01-12, where it **recurred
   and was caught before shipping** — a floor written on `.ds-atom-footer-link` (0,1,0) was proven, in
@@ -61,9 +60,22 @@ Progress: [████████░░] 80% of planned plans (phases 3–9 no
   Shipped at (0,2,0) instead. The general lesson is now three-for-three: **tie on specificity means
   source order decides, and jsdom cannot see it** — so the pre-flight for 01-13 onward is to grep for
   every pre-existing block matching the target selector before writing a rule.
+
 - 01-12 also disproved two mechanisms its own plan prescribed (padding for a touch floor; a
   `.ds-atom-footer-link` selector) by reverting each and re-measuring. Both plan gates it ran had
   defects: one contradicted its own action, one named a spec containing no such probe.
+
+- **01-22 added a new defect class to the register: a design choice that disarms a gate.** Setting
+  charcoal light's paper to pure `#FFFFFF` — the obvious modern value, and the one the plan proposed —
+  made the correct paint indistinguishable from the hardcoded `rgba(255,255,255,.97)` that
+  `confirm-panel.spec.ts` exists to catch. Reinstating the defect left the light case **green**. The
+  pre-flight for any future token value change is therefore: grep the specs for that token's value as
+  a **decimal channel** as well as a hex, because `toBeCloseTo(30, 0)` is invisible to a hex grep, and
+  run the negative control rather than trusting the suite to be green for the right reason.
+
+- 01-22 also found that `--update-snapshots` presets to `changed`, so **448 of 504 charcoal baselines
+  were judged matching against the retired palette** — the default `toHaveScreenshot` YIQ threshold of
+  0.2 absorbs a cream-to-white shift. `--update-snapshots=all` is required after a palette change.
 
 *Updated after each plan completion*
 
@@ -97,6 +109,7 @@ None yet.
 - **Cross-repo gate:** Phase 5 cannot be verified against the real identity until Phase 1 publishes. Tarball (`npm pack` → `file:*.tgz`) is the dev bridge; never a symlink (duplicate React).
 - **Open question carried from research:** Playfair Display delivery — shipped from the design-system theme, or via Astro's `fonts` config? Must be settled in Phase 0 (DSGN-05) before the Phase 1 release is cut.
 - **Gate override (Phase 0 planning, 2026-08-17):** the decision-coverage gate reported 31 uncovered CONTEXT.md decisions and was overridden as a false positive. Cause is the matcher, not the plans: it greps for the literal `D-NN:` (colon) form, while the plans cite decisions as `D-02`, `(D-02)`, `D-24,` — D-02 appears 26 times, D-03 11 times, and gsd-plan-checker independently found zero contradictions of D-01…D-47. Separately, ~20 of the 31 (D-27…D-37 design-system/Phase 1; D-10…D-26 admin implementation/Phase 7) are genuinely later-phase decisions that Phase 0 only sketches, so the gate will keep misfiring here until they are tagged `[informational]` in CONTEXT.md. Re-surface at verify-phase.
+- DS-02 and DS-03 left Pending after 01-22: both were written against the retired ochre identity. DS-02's 'every accent-as-text usage passes AA' clause is measurably false (--amber as text, charcoal light, 3.11/3.19/2.96) and needs 5 rules in primitives.css re-pointed at --amber-d. DS-03 names --ochre-d as the focus-ring token, but --focus is now bound to --ink. Both need re-stating against the monochrome identity before they can be closed.
 
 ### Quick Tasks Completed
 
@@ -114,6 +127,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-19T09:08:43.920Z
+Last session: 2026-08-24T23:17:34.201Z
 Stopped at: Completed 01-12 (AppBar height exposed, 44px touch floor, component count reconciled)
 Resume file: None

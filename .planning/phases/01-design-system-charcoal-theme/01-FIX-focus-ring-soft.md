@@ -463,3 +463,38 @@ gate re-run and Proof 1 re-verified against the formatted bytes.
   disturb; the Playwright and test-runner harnesses manage 6006 themselves with
   `reuseExistingServer` on, and the browser probe in §4 used no server at all —
   `addStyleTag` against the real CSS files.
+
+---
+
+## Reviewed and confirmed — 2026-08-25
+
+**The dimmer glow stands.** Akhil reviewed the prominence drop (2.070 → 1.628) and kept it rather
+than restoring the old loudness with the computed `0.421` alpha. Recorded here so it reads as a
+decision rather than as a side effect nobody looked at.
+
+The reasoning that carried it: `tokens.css` states the **border** carries the focus indication and the
+glow is secondary — and the border is a solid 1px ochre, unmissable. The *old* figure was the
+anomaly: JobDash's amber made the dark ring **1.55×** louder than the light one, where ochre puts it
+at **1.21×**, near parity across modes. Restoring the loudness would have reinstated an asymmetry
+that came from the previous brand rather than from a decision.
+
+### How this was found, and why no gate could have
+
+Akhil photographed a focused `TextInput` during the 01-20 Task 3 review and asked why the ring looked
+pale. Two separate things had to be untangled:
+
+1. **The real defect** — `--focus-ring-soft` hardcoded `rgba(251, 191, 36, 0.3)`, JobDash's `#fbbf24`,
+   which charcoal could not reach because an **alias cannot reach a literal**.
+2. **A viewing artefact on top of it** — a box-shadow composites over whatever sits *behind* the
+   element, and on a Storybook **docs** page that is the light docs chrome, not the dark page. Ochre
+   at 30% measures `#e5d1b7` over light chrome and `#4b3821` over a real charcoal-dark page. The pale
+   halo in the screenshot was the ring landing on Storybook's own container.
+
+The fix is nonetheless visible even in the artefact: the old amber over that same light chrome would
+have been `#f5e1b0`, distinctly yellow, against the shipped `#e5d1b7`.
+
+**Neither a contrast gate nor the exhaustiveness gate could have caught the underlying defect** — it is
+a `box-shadow` rather than a colour token, and it is overridden *inside* `tokens.css` rather than by
+charcoal, so the "declare a light value for every token the dark theme overrides" check had nothing to
+compare. It fell in the seam between two gates, which is now closed by a reachability assertion rather
+than a symmetry one.

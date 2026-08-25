@@ -104,7 +104,17 @@ all seven real categories today, verified. The eighth key, `"All"`, is not a cat
 
 ---
 
-## 3. Open decisions — AWAITING AKHIL
+## 3. Open decisions — OD-1 and OD-2 RESOLVED, remainder awaiting Akhil
+
+> **Resolved 2026-08-25 by Akhil, in review.** These are decisions, not recommendations —
+> plans 03-01 and 03-03 implement them as written and do not re-ask.
+>
+> | # | Resolution |
+> |---|---|
+> | **OD-1** | **Option A.** The gate scopes to the shipped artefact set: `data/`, `src/`, `public/`, `scripts/`, `astro.config.mjs`, `wrangler.jsonc`, `*.example`, and `dist/` after a build. `.planning/**` and `CLAUDE.md`'s legacy section are excluded **by name, in the gate source, each with its reason written beside it**. |
+> | **OD-2** | **Option A.** `categories[]` holds the **seven** real records. The unfiltered column count becomes a sibling scalar `defaultColumns: 3`. `"all"` is not a category record, so the RI rule has exactly seven legal values and carries **no** exclusion list. |
+> | **OD-2b** | **Alphabetical** — `abstract, architecture, nature, portraits, product, street, wildlife`. Array order is now deliberate: self-maintaining when a category is added, and scannable by name. `product` is no longer an unexplained trailing anomaly. |
+
 
 Each is a blocking `checkpoint:decision` at the head of the plan named. A plan may not proceed
 past it on an executor's judgement, because every one of these changes reviewed data.

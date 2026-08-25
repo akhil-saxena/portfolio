@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 01-12 (AppBar height exposed, 44px touch floor, component count reconciled)
-last_updated: "2026-08-24T23:21:22.073Z"
+last_updated: "2026-08-25T01:26:39.124Z"
 progress:
   total_phases: 11
   completed_phases: 2
-  total_plans: 58
-  completed_plans: 57
+  total_plans: 59
+  completed_plans: 58
   percent: 18
 ---
 
@@ -38,9 +38,13 @@ Progress: [██████████] 98%
 
 **Velocity:**
 
-- Total plans completed: 57
+- Total plans completed: 58
+- 01-23: ~1h, 2 tasks, 2 commits (1 sibling, 1 portfolio), 46 files + 504 baselines renamed by
+  `git mv` with zero re-capture. Brand renamed to **monochrome** before anything published.
+
 - 01-22: ~3h, 2 tasks, 5 sibling commits, 16 files + 489 baselines. Monochrome a11y 11 failed/497
   passed → **508/508**.
+
 - Notable: G-15/DS-09 fixed — an `import { Chip }` island fell from 570,555 B / 176,922 B gzip / 99
   modules to **1,620 B / 785 B gzip / 2 modules**.
 
@@ -54,7 +58,7 @@ Progress: [██████████] 98%
 
 **Recent Trend:**
 
-- Last 5 plans: 01-19.1, 01-20, 01-FIX-focus-ring-soft, 01-21, 01-22
+- Last 5 plans: 01-20, 01-FIX-focus-ring-soft, 01-21, 01-22, 01-23
 - Recurring defect class: a CSS rule losing silently to an existing rule declared lower in
   `primitives.css`. Hit 01-10 and 01-11 consecutively; pre-flighted for 01-12, where it **recurred
   and was caught before shipping** — a floor written on `.ds-atom-footer-link` (0,1,0) was proven, in
@@ -97,6 +101,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Photo pipeline's Actions half is Phase 4, before the public site — settles the manifest shape and content-hashed keys before the gallery builds `srcset` against them, and debugs the riskiest integration early
 - [Roadmap]: CONT-04 (39 photo URLs off `pub-*.r2.dev`) is Phase 3, not a performance pass — it is a data migration and blocks reproducible Lighthouse scores
 - [Roadmap]: Phase 0 is design artefacts only; DSGN-04's running sketches are the sole deliberate exception
+- [Phase 01]: [01-23] the brand is renamed to **monochrome** in code and forward-looking documents only. Plan summaries, findings registers, the phase directory and the sibling branch keep their pre-rename names, because each records what was true on a date and rewriting it would falsify the record. A gate asserts the historical files still carry the old name, so a blanket replace fails
+- [Phase 01]: [01-23] the load-bearing rename gate is **zero references to the pre-rename brand name** anywhere in `src` / `.storybook` / `tests` / `scripts` — not the `data-brand="…"` selector grep. A partial rename written through the DOM API (`dataset.brand = …`) passes the selector grep untouched and silently applies the theme to nothing, which is the 508-story-sweep-in-the-wrong-brand failure of 01-20 in a new costume
 
 ### Pending Todos
 
@@ -112,6 +118,8 @@ None yet.
 - **Open question carried from research:** Playfair Display delivery — shipped from the design-system theme, or via Astro's `fonts` config? Must be settled in Phase 0 (DSGN-05) before the Phase 1 release is cut.
 - **Gate override (Phase 0 planning, 2026-08-17):** the decision-coverage gate reported 31 uncovered CONTEXT.md decisions and was overridden as a false positive. Cause is the matcher, not the plans: it greps for the literal `D-NN:` (colon) form, while the plans cite decisions as `D-02`, `(D-02)`, `D-24,` — D-02 appears 26 times, D-03 11 times, and gsd-plan-checker independently found zero contradictions of D-01…D-47. Separately, ~20 of the 31 (D-27…D-37 design-system/Phase 1; D-10…D-26 admin implementation/Phase 7) are genuinely later-phase decisions that Phase 0 only sketches, so the gate will keep misfiring here until they are tagged `[informational]` in CONTEXT.md. Re-surface at verify-phase.
 - DS-02 and DS-03 left Pending after 01-22: both were written against the retired ochre identity. DS-02's 'every accent-as-text usage passes AA' clause is measurably false (--amber as text, monochrome light, 3.11/3.19/2.96) and needs 5 rules in primitives.css re-pointed at --amber-d. DS-03 names --ochre-d as the focus-ring token, but --focus is now bound to --ink. Both need re-stating against the monochrome identity before they can be closed.
+- `test:visual` exits 1 on **two** stale baselines, both pre-existing and neither re-recorded by 01-23: `interaction-richtext--dark-mode.png` (default brand, 138 px, the `f1767f2` defect) and `data-display-tabs--narrow-overflow--monochrome.png` (94 px, re-recorded by 01-22 under contention at `8ce0d69`; three fresh captures are byte-identical to each other, so the baseline is stale rather than the story flaky). Both need one deliberate re-record on a quiet machine before 01-21 publishes — Akhil's call.
+- `storybook.spec.ts` is `describe.configure({ mode: "serial" })`, so while the default-brand capture fails the second brand's 504 comparisons **never run** in a full `test:visual`. Both stale baselines above are downstream of that skip.
 
 ### Quick Tasks Completed
 
@@ -129,6 +137,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-24T23:17:34.201Z
+Last session: 2026-08-25T01:25:28.641Z
 Stopped at: Completed 01-12 (AppBar height exposed, 44px touch floor, component count reconciled)
 Resume file: None

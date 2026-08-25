@@ -500,6 +500,34 @@ hashes: `9a4b8d3d…` both times, byte-identical. Commit `412ca9e`.
 
 ---
 
+## 9. State not advanced, and a requirement deliberately not ticked
+
+**`CONT-03` was NOT marked complete**, and the reason is that its text contradicts the decision it
+is supposed to track:
+
+> CONT-03: Résumé bullet HTML is **allowlist-sanitized** at both the write boundary and the render
+> boundary
+
+There is no sanitiser in this plan and there is not supposed to be one. ADR-001 §66, preserved by
+ADR-002 §2, chose the opposite approach on purpose — *"a filter can be bypassed or forgotten; a
+shape that cannot express markup cannot carry an injection."* This plan `owns_criteria:
+[criterion-3-storage-half]`, i.e. one of three boundaries: storage is closed structurally, the
+render boundary is 03-07's, and the write boundary does not exist until Phase 7. Ticking a
+requirement whose stated mechanism was deliberately rejected, on the strength of one of its three
+boundaries, is the "checkbox satisfied, property absent" failure this project keeps catching.
+
+**Recommended:** reword `CONT-03` to describe the shape decision rather than the sanitiser
+(`REQUIREMENTS.md:86` and the traceability row at `:213`), then split it across 03-02 / 03-07 /
+Phase 7. That is an edit to a shared planning file while two other plans are mid-flight, so it is
+left for the phase orchestrator rather than taken unilaterally here.
+
+**`STATE.md` and `ROADMAP.md` were not mutated.** Plans 03-01, 03-02 and 03-03 executed
+concurrently against `main`; three independent `state advance-plan` calls would increment the plan
+counter three times from three stale reads. Neither 03-01 nor 03-03 touched them either. Left for
+the orchestrator to reconcile once the wave lands.
+
+---
+
 ## Self-Check: PASSED
 
 | claim | verified |

@@ -11,6 +11,7 @@
     "dev": "npm run bootstrap:local && wrangler types && astro dev",
     "build": "wrangler types && astro check && astro build && npm run gate:routes",
     "gate:routes": "node scripts/assert-no-prerendered-protected-routes.mjs",
+    "gate:origin": "node scripts/assert-no-r2dev-urls.mjs",
     "gate:deps": "node scripts/assert-no-local-dep-specs.mjs",
     "gate:deps:advisory": "node scripts/assert-no-local-dep-specs.mjs --advisory",
     "deploy": "npm run gate:deps && npm run build && npm test && npm run gate:routes && wrangler deploy",

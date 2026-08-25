@@ -54,7 +54,18 @@
   // Deliberately absent:
   //   - analytics_engine_datasets / PHOTO_ANALYTICS. Dropping it is what keeps the
   //     public pages fully static; photo analytics is out of scope per PROJECT.md.
-  //   - a "vars" block. R2_PUBLIC_URL must point at the R2 custom domain provisioned
-  //     in 02-02, and Phase 3's CONT-04 adds it alongside the manifest rewrite. A
-  //     placeholder now would plant a pub-*.r2.dev reference for Phase 3 to hunt down.
+  //   - a "vars" block. This comment used to predict that Phase 3's CONT-04 would add
+  //     R2_PUBLIC_URL here alongside the manifest rewrite. Plan 03-01 checked that
+  //     prediction instead of obeying it, and it was wrong: nothing in Phase 3 reads
+  //     the value at runtime. The manifest holds absolute URLs resolved at build time,
+  //     and the only producer of new ones is the Phase 4 Actions pipeline, which runs on
+  //     a Node runner and never inside the Worker. Since astro.config.mjs sets
+  //     validateSecrets: true, declaring the var now would turn a value nothing reads
+  //     into a build failure until someone provisions it.
+  //
+  //     The canonical image origin therefore lives in src/lib/image-origin.ts, which the
+  //     manifest migration and the CONT-04 gate both import — one place, so they cannot
+  //     disagree with the data. Phase 4 adds the var here when its pipeline becomes a
+  //     real consumer, with that constant as the build-time default rather than a second
+  //     source of truth.
 }

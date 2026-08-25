@@ -53,10 +53,15 @@ export default defineConfig({
   ],
   test: {
     name: 'workers',
-    // Mutually exclusive with the integration project's glob, by contract. A
-    // workers-pool test picked up by the Node project fails in a way that reads as an
-    // application bug rather than a configuration one, so the two globs may never
-    // overlap and every *.test.ts under test/ must match exactly one of them.
+    // Mutually exclusive with the integration project's glob AND with the unit
+    // project's, by contract. A workers-pool test picked up by the Node project fails in
+    // a way that reads as an application bug rather than a configuration one, so the
+    // three globs may never overlap and every *.test.ts under test/ must match exactly
+    // one of them. The three suffixes are `.workerd.test.ts` (here, real workerd),
+    // `.node.test.ts` (integration, built site over HTTP) and `.unit.test.ts` (plain
+    // Node, no build) — plan 03-02 added the third and updated this paragraph in the same
+    // commit that made it necessary, because a contract that is only sometimes restated
+    // is how a stated contract quietly stops being true.
     include: ['test/**/*.workerd.test.ts'],
   },
 });

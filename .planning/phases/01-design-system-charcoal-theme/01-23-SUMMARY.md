@@ -185,8 +185,8 @@ default"*.
 red; restored from the committed blob via `git show HEAD:CHANGELOG.md` (never `git checkout --`), and
 `git status` reports the file clean.
 
-**The history gate bites.** It currently sees **106** files under `.planning/phases` still mentioning
-charcoal; a blanket replace would drive that to 0 and fail it, which is the design.
+**The history gate bites.** It sees **106** files under `.planning/phases` still mentioning charcoal
+(107 once this summary lands); a blanket replace would drive that to 0 and fail it, which is the design.
 
 ### Exit codes
 
@@ -278,8 +278,8 @@ and that is Akhil's call, not mine.
 
 ## 7. The historical record is untouched, and demonstrably so
 
-**106 files under `.planning/phases` still mention charcoal**, plus 8 more elsewhere in `.planning` —
-114 in total. Every plan, every summary, `00-FINDINGS.md`, `00-THEME-API.md`, the triage and fix
+**106 files under `.planning/phases` still mentioned charcoal** when this was counted — **107** once
+this summary was committed and joined them — plus 8 more elsewhere in `.planning`. Every plan, every summary, `00-FINDINGS.md`, `00-THEME-API.md`, the triage and fix
 documents, the Phase 0 prototype stylesheets and scripts, and the phase directory name
 `01-design-system-charcoal-theme` are exactly as they were.
 
@@ -368,5 +368,5 @@ Per protocol §10 these are recorded here and **not** added to `00-FINDINGS.md`.
   `src/themes/charcoal.css` — correctly ABSENT.
 - 504 `*--monochrome-chromium-darwin.png` — FOUND; 0 `*charcoal*`; 1019 total.
 - `04e7e38` — FOUND in `$DS`. `d0c0753` — FOUND in the portfolio.
-- Zero `charcoal` in `$DS` `src`/`.storybook`/`tests`/`scripts`; 106 `.planning/phases` files still
-  mention it, as required.
+- Zero `charcoal` in `$DS` `src`/`.storybook`/`tests`/`scripts`; **107** `.planning/phases` files still
+  mention it (106 before this summary was committed), as required.

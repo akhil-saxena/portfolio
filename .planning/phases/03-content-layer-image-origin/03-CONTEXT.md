@@ -267,3 +267,23 @@ arrive (Astro Actions surface zod input errors for free), but they cannot be *de
 
 **Recommendation: A.** B is a route written to satisfy a checklist, and it would be the only
 `prerender = false` surface in the repo that nothing calls.
+
+---
+
+## Open decisions — RESOLVED 2026-08-25
+
+All seven answered by Akhil. Two were taken on the planner's recommendation because they are
+mechanical; five are his.
+
+| ID | Decision | Rationale |
+|---|---|---|
+| **OD-1** | **Scoped gate.** The `r2.dev` ban covers shipped artefacts, not the repository, with exclusions named in the gate source. | *Taken on recommendation.* A literal reading rewrites `02-DNS-R2-PREREQS.md`, whose entire content is the before/after `cf-cache-status` measurement — destroying the evidence that the migration worked. Identical in shape to the 01-23 rename, where historical records were deliberately left saying what was true when written. |
+| **OD-2** | **Seven category records; `All` is not one.** A separate `defaultColumns` covers it, and `All` is a rendered affordance rather than a data record. | Admitting `all` as an id would force the ADR-002 referential-integrity rule to special-case exactly one value — and a special case inside the rule that exists to prevent silent orphaning is where the next silent orphan comes from. |
+| **OD-3** | **`tags` is dropped.** The schema forbids the field, so a stray tag fails the build rather than sitting unread. | Seven categories already organise 39 photographs and the gallery filters by category. A second taxonomy with nothing rendering it is metadata that rots. Settles a contradiction three documents held simultaneously: `PROJECT.md:91` "Dropped", `research/ARCHITECTURE.md:481` implementing the drop, `00-ADMIN-IA` §6 "Revived". |
+| **OD-4** | **Migrate the résumé dates now**, experience and education together. | Four records and one formatter while the data is small and freshly reviewed. Deferring means changing the schema and the admin form together in Phase 7 — the harder change, in the phase with the most moving parts. Migrating only experience would leave two date shapes in one file, which is how the original drift started. |
+| **OD-5** | **Keep both `photo.focalPoint` and `home_config.peekPositions`.** | They answer different questions: `focalPoint` is the photograph's own default wherever it is cropped; `peekPositions` is the Home hero's specific crop. Flagged by the planner as the one place in the phase arguing for two fields of one shape, and accepted knowingly — collapsing them would bind the focal-point picker to a single surface rather than to the photograph. |
+| **OD-6** | **Placeholder token**, `{{ds.componentCount}}`, resolved in Phase 5, with the build failing on an unresolved token. | The figure has gone stale **three times in nine days** — 80 → 79 → 81, with the `src` directory now at 83. The 00-11 verdict was "derive it at build time"; the planner measured that as unimplementable here, because `@akhil-saxena/design-system` is not a dependency of this repo and v2.0.0 is unpublished. The token keeps that intent alive for when it is, and makes the unresolved case loud rather than silent. |
+| **OD-7** | **Structural gate** for criterion 1's third consumer. | *Taken on recommendation.* The write path is Phase 7 and does not exist yet, so Phase 3 has two live consumers. A `validateContent` action nobody calls would be a route written to satisfy a checklist. The gate asserts the schema has one definition and that every consumer imports it, which is the property the criterion is actually after. |
+
+**Phase 3 is unblocked.** Every `checkpoint:decision` at the head of a plan can be answered from this
+table.

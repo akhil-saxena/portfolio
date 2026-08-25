@@ -9,12 +9,12 @@
       "logo": null,
       "url": "https://www.brevo.com",
       "bullets": [
-        "Improved <strong>conversion by 15%</strong> by transforming a one-page checkout for <strong>2.5M+ users</strong> into a 3-step flow",
-        "Engineered a unified, responsive settings navigation package adopted across <strong>18+ micro-frontend apps</strong>",
-        "Integrated <strong>18+ GoLang APIs</strong> and optimized payload structures, reducing <strong>API response size by 50%</strong>",
-        "Reduced support tickets by <strong>12–20%</strong> in high-traffic modules (<strong>10K+ weekly users</strong>) via UX improvements and automated domain authentication",
-        "Integrated Sniper Links into signup emails, boosting engagement across <strong>5M+ annual signups</strong>",
-        "Introduced RBAC with <strong>40+ permissions</strong> across 6 business verticals, scaling access for <strong>1K+ enterprise users</strong>"
+        "Improved **conversion by 15%** by transforming a one-page checkout for **2.5M+ users** into a 3-step flow",
+        "Engineered a unified, responsive settings navigation package adopted across **18+ micro-frontend apps**",
+        "Integrated **18+ GoLang APIs** and optimized payload structures, reducing **API response size by 50%**",
+        "Reduced support tickets by **12–20%** in high-traffic modules (**10K+ weekly users**) via UX improvements and automated domain authentication",
+        "Integrated Sniper Links into signup emails, boosting engagement across **5M+ annual signups**",
+        "Introduced RBAC with **40+ permissions** across 6 business verticals, scaling access for **1K+ enterprise users**"
       ]
     },
     {
@@ -26,8 +26,8 @@
       "logo": null,
       "url": null,
       "bullets": [
-        "Modernized the UX for the B2B portal orders page, enhancing productivity for <strong>4K+ franchises</strong> across <strong>4 countries</strong>",
-        "Developed UIs for receipt generation and editing, reducing support tickets and <strong>response time by 30%</strong>",
+        "Modernized the UX for the B2B portal orders page, enhancing productivity for **4K+ franchises** across **4 countries**",
+        "Developed UIs for receipt generation and editing, reducing support tickets and **response time by 30%**",
         "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
       ]
     },
@@ -40,10 +40,10 @@
       "logo": null,
       "url": null,
       "bullets": [
-        "Built analytics pipelines from <strong>7+ data sources</strong>, modeling data into a Delta Lake (bronze, silver, gold) architecture",
-        "Developed a real-time write-back sync system for an app deployed to <strong>16K+ stores</strong>, ensuring operational reliability",
-        "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in <strong>under 3 months</strong>",
-        "Improved pipeline execution time by <strong>6×</strong> by replacing Power Automate workflows with Azure Data Factory"
+        "Built analytics pipelines from **7+ data sources**, modeling data into a Delta Lake (bronze, silver, gold) architecture",
+        "Developed a real-time write-back sync system for an app deployed to **16K+ stores**, ensuring operational reliability",
+        "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in **under 3 months**",
+        "Improved pipeline execution time by **6×** by replacing Power Automate workflows with Azure Data Factory"
       ]
     }
   ],

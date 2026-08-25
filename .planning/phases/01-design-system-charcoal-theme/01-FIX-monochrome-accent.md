@@ -8,7 +8,7 @@ three independent consumer groups whose requirements do not intersect, so this
 was never a token-layer change, and 01-22 was correct to decline to make it one.
 
 `$DS` = `design-system`, branch `charcoal-theme`. Started at **`e7b182f`** (82
-ahead of `main`), finished at **`b9f7e73`** (87 ahead). `package.json` stays
+ahead of `main`), finished at **`a2b6c00`** (88 ahead). `package.json` stays
 **1.11.4**. Nothing published, tagged or merged; zero tags point at HEAD; the 164
 pending renames are unapplied; **`src/tokens.css` is byte-for-byte untouched**,
 sha256 `3969eb91…`, the same hash 01-22 recorded.
@@ -20,6 +20,7 @@ sha256 `3969eb91…`, the same hash 01-22 recorded.
 | `8ce0d69` | `test(visual): re-record the 175 charcoal baselines the inverting accent moves` |
 | `c3d3469` | `docs(charcoal): correct ten figures I wrote before the measurement returned` |
 | `b9f7e73` | `docs(changelog): record the accent that stopped reading as disabled, and what it cost` |
+| `a2b6c00` | `docs(charcoal): count the --ink-inverse consumers instead of estimating them` |
 
 The headline, one line each:
 
@@ -92,12 +93,13 @@ This is the part worth more than the repair, because it is why the obvious
 one-line change is not available.
 
 **Group A — every filled control paints a near-black foreground on the accent.**
-Nine sites read `--ink-inverse`, which charcoal pinned near-black in *both*
-blocks; three more pinned their own literals. At the ink end all twelve collapse:
+Ten sites read `--ink-inverse` — nine in the stylesheet plus the primary button's
+inline style — which charcoal pinned near-black in *both* blocks; three more
+pinned their own literals. At the ink end all thirteen collapse:
 
 | site | ink | on the new fill `#111114` |
 |---|---|---|
-| `--ink-inverse` (9 sites incl. the primary button) | `#0d0d0f` | **1.03** |
+| `--ink-inverse` (10 sites, incl. the primary button) | `#0d0d0f` | **1.03** |
 | `SegmentedControl` active label | `#000` | **1.11** |
 | `MultiSelect` tick | `#1f1b17` | **1.10** |
 | `Checkbox` tick | `#1c1917` | **1.08** |
@@ -736,7 +738,7 @@ Files verified present:
 - `FOUND: ../design-system/CHANGELOG.md`
 
 Commits verified in `git log`: `005ae2a`, `435dbc5`, `8ce0d69`, `c3d3469`,
-`b9f7e73` — all present on `charcoal-theme`, which is **87** commits ahead of
-`main`. `package.json` is `1.11.4`; zero tags point at HEAD. Working tree
+`b9f7e73`, `a2b6c00` — all present on `charcoal-theme`, which is **88** commits
+ahead of `main`. `package.json` is `1.11.4`; zero tags point at HEAD. Working tree
 tracked-clean; the only untracked path is the known-harmless
 `design_handoff/design_handoff_ds_overview/`.

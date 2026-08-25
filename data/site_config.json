@@ -1,12 +1,40 @@
 {
-  "categoryColumns": {
-    "All": 3,
-    "Abstract": 3,
-    "Architecture": 3,
-    "Nature": 2,
-    "Portraits": 2,
-    "Street": 2,
-    "Wildlife": 2,
-    "Product": 2
-  }
+  "categories": [
+    {
+      "id": "abstract",
+      "label": "Abstract",
+      "columns": 3
+    },
+    {
+      "id": "architecture",
+      "label": "Architecture",
+      "columns": 3
+    },
+    {
+      "id": "nature",
+      "label": "Nature",
+      "columns": 2
+    },
+    {
+      "id": "portraits",
+      "label": "Portraits",
+      "columns": 2
+    },
+    {
+      "id": "product",
+      "label": "Product",
+      "columns": 2
+    },
+    {
+      "id": "street",
+      "label": "Street",
+      "columns": 2
+    },
+    {
+      "id": "wildlife",
+      "label": "Wildlife",
+      "columns": 2
+    }
+  ],
+  "defaultColumns": 3
 }

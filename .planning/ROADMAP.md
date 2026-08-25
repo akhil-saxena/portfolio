@@ -5,7 +5,7 @@
 The site is being rebuilt from scratch on Astro 7 + React islands, deployed to Cloudflare
 Workers with Static Assets, consuming Akhil's own published design system. The journey
 runs: design the two screens nobody has designed yet (admin, case studies) and validate
-the charcoal identity against real components → ship that identity as a published design
+the monochrome identity against real components → ship that identity as a published design
 system release while, in parallel, standing up an Astro Worker whose auth already fails
 closed → make all content schema-validated and move every image off the uncached
 `r2.dev` origin → debug the riskiest integration (sharp + exifr + concurrent R2/git
@@ -30,8 +30,8 @@ front-loaded into Phase 2 rather than left to Phase 8.
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the charcoal identity against real components — no production code
-- [ ] **Phase 1: Design System — Charcoal Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
+- [x] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the monochrome identity against real components — no production code
+- [ ] **Phase 1: Design System — Monochrome Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
 - [ ] **Phase 2: Astro Foundation & Fail-Closed Auth** - A deployed Worker that denies every unauthenticated request before any admin surface exists
 
 ### Release 1 — the public site, live
@@ -42,7 +42,7 @@ and "Phase 06.1" keep resolving; only the execution order moved.
 
 - [ ] **Phase 3: Content Layer & Image Origin** - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`. **Now also owns the `site_config` referential-integrity rule** (ADR-002) — every `photo.category` must exist in `site_config`'s ids, since there is no `/admin/site` screen to guard it
 - [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
-- [ ] **Phase 5: Public Site** - Home, Work, Photos and **Résumé** on the charcoal identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
+- [ ] **Phase 5: Public Site** - Home, Work, Photos and **Résumé** on the monochrome identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
 - [ ] **Phase 8: Harden & Cut Over** - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving. **★ THIS IS THE LIVE MILESTONE.** The accepted-downtime clock stops here
 
 ### Release 2 — depth, then the admin
@@ -73,16 +73,16 @@ blocker and Phase 2 is the longest-lead-time item. Neither should wait on the ot
 
 ### Phase 0: Design & Ideation
 
-**Goal**: Every screen the build phases need has a design, and the charcoal identity is proven against real design-system components before the theme release is cut
+**Goal**: Every screen the build phases need has a design, and the monochrome identity is proven against real design-system components before the theme release is cut
 **Depends on**: Nothing (first phase)
 **Requirements**: DSGN-01, DSGN-02, DSGN-03, DSGN-04, DSGN-05, DSGN-06
 **Success Criteria** (what must be TRUE):
 
   1. A reviewable wireframe set exists for the admin CMS — every screen, its information architecture, and its states — where no design existed before
   2. A case-study page template exists as a design, with the problem → decisions → outcome structure laid out against real drafted content rather than lorem ipsum
-  3. Work and Photos are resolved onto the charcoal dark palette, replacing the handoff's earlier ivory iteration
-  4. Throwaway sketches render real `@akhil-saxena/design-system` components under the charcoal palette, and every gap they expose is written down as a design-system finding to fix upstream
-  5. The charcoal theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
+  3. Work and Photos are resolved onto the monochrome dark palette, replacing the handoff's earlier ivory iteration
+  4. Throwaway sketches render real `@akhil-saxena/design-system` components under the monochrome palette, and every gap they expose is written down as a design-system finding to fix upstream
+  5. The monochrome theme's public API is decided in writing — scope selector, composition with `:root.dark`, font delivery — and first-pass copy exists for the five project one-liners and the case studies, drafted for Akhil to edit
 
 **Plans**: 25 plans across 19 waves (8 gap-closure plans added for the public/admin rework)
 
@@ -95,7 +95,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [x] 00-04-PLAN.md — theme-charcoal.css and fonts-charcoal.css, with the exhaustiveness, font-name and three-surface contrast gates
+- [x] 00-04-PLAN.md — the Phase 0 prototype theme and font stylesheets in `theme-prototype/` (their filenames keep the pre-01-23 brand name), with the exhaustiveness, font-name and three-surface contrast gates
 - [x] 00-05-PLAN.md — The two long-form case studies: the design system and Cairn
 - [x] 00-06-PLAN.md — The three short-form case studies: TimeShift, hued and Momentum
 
@@ -105,8 +105,8 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [x] 00-08-PLAN.md — 00-THEME-API.md: the charcoal theme's public API decided in writing
-- [x] 00-09-PLAN.md — Work and Photos resolved onto charcoal, Home Act 2 resolving OQ-1, and the contact sheet started
+- [x] 00-08-PLAN.md — 00-THEME-API.md: the monochrome theme's public API decided in writing
+- [x] 00-09-PLAN.md — Work and Photos resolved onto monochrome, Home Act 2 resolving OQ-1, and the contact sheet started
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -114,7 +114,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 00-11-PLAN.md — Human review of the public charcoal surfaces and the case-study templates *(checkpoint)*
+- [ ] 00-11-PLAN.md — Human review of the public monochrome surfaces and the case-study templates *(checkpoint)*
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
@@ -188,18 +188,18 @@ are doc-only.
 > design system package, because that is the only way to validate the theme before the
 > release is cut. They are throwaway. No production application code is written here.
 
-### Phase 1: Design System — Charcoal Theme
+### Phase 1: Design System — Monochrome Theme
 
-**Goal**: The charcoal identity ships as a consumable, contrast-safe, correctly-fonted theme from a published version of `@akhil-saxena/design-system`
+**Goal**: The monochrome identity ships as a consumable, contrast-safe, correctly-fonted theme from a published version of `@akhil-saxena/design-system`
 **Depends on**: Phase 0 (theme API decided in DSGN-05, gaps found in DSGN-04)
 **Parallel with**: Phase 2 — different repository, no shared code or build
 **Requirements**: DS-01, DS-02, DS-03, DS-04, DS-05, DS-06, DS-07, DS-08, DS-09
 **Success Criteria** (what must be TRUE):
 
-  1. `npm install @akhil-saxena/design-system@<new version>` from the public registry yields a working charcoal theme consumable by version number, with no local path or tarball required
-  2. Applying the charcoal scope alongside `:root.dark` produces charcoal in both light and dark, regardless of which stylesheet the bundler ordered first
+  1. `npm install @akhil-saxena/design-system@<new version>` from the public registry yields a working monochrome theme consumable by version number, with no local path or tarball required
+  2. Applying the monochrome scope alongside `:root.dark` produces monochrome in both light and dark, regardless of which stylesheet the bundler ordered first
   3. Light-mode muted text and the ochre accent pass WCAG AA for body text, a darkened ochre token exists for focus rings, and `tokens.test.ts` fails CI if either regresses
-  4. A page consuming only the charcoal theme downloads Playfair Display, DM Sans and IBM Plex Mono — and does not download Inter, Archivo, JetBrains Mono or Newsreader
+  4. A page consuming only the monochrome theme downloads Playfair Display, DM Sans and IBM Plex Mono — and does not download Inter, Archivo, JetBrains Mono or Newsreader
   5. `Lightbox` closes on backdrop click, accepts a `srcset`, responds to swipe, and announces slide changes to a screen reader; and a public island importing design-system components pulls in no TipTap, ProseMirror or dnd-kit
 
 **Plans**: TBD
@@ -301,7 +301,7 @@ are doc-only.
 > `data/resume.json`; this is a rendering job, not a content one.
 
 
-**Goal**: Visitors get the whole public site — Home, Work, Photos, Résumé — on the charcoal identity, at Lighthouse-grade weight, with four of the five routes shipping no framework JavaScript
+**Goal**: Visitors get the whole public site — Home, Work, Photos, Résumé — on the monochrome identity, at Lighthouse-grade weight, with four of the five routes shipping no framework JavaScript
 **Depends on**: Phase 1 (published theme), Phase 3 (content layer)
 **Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08, PUB-09, PUB-10, PUB-11, PUB-12, PUB-13, PUB-14, SEO-01, SEO-02, SEO-03, SEO-05
 **Success Criteria** (what must be TRUE):
@@ -345,12 +345,12 @@ are doc-only.
 ### Phase 06.1: Design System — Cascade Layers & Density Axis (INSERTED)
 
 **Goal**: The design system's cascade is order-independent by declaration rather than by specificity arithmetic, and it exposes a density axis — so the admin can be compact without a single spacing override in the portfolio
-**Depends on**: Phase 1 (charcoal theme published; compound selectors in place to migrate from), Phase 0 (DSGN-04 findings evidencing what density actually needs)
+**Depends on**: Phase 1 (monochrome theme published; compound selectors in place to migrate from), Phase 0 (DSGN-04 findings evidencing what density actually needs)
 **Parallel with**: Phases 2–6 — different repository, no shared code or build. Must land before Phase 7.
 **Requirements**: DS-10, DS-11, DS-12
 **Success Criteria** (what must be TRUE):
 
-  1. Charcoal, dark and compact applied together resolve deterministically regardless of the order the bundler emits stylesheets — verified in a real Astro build, not only in isolation
+  1. Monochrome, dark and compact applied together resolve deterministically regardless of the order the bundler emits stylesheets — verified in a real Astro build, not only in isolation
   2. The admin's denser spacing comes entirely from `data-density="compact"`; no spacing token is redefined anywhere in the portfolio repo
   3. The existing Playwright snapshot suite passes on the layers migration as an isolated release, with no font or contrast changes landing alongside it
   4. A published npm version carries both changes, consumable by version number
@@ -366,8 +366,8 @@ are doc-only.
 > compact layout with no legitimate mechanism until a density axis exists.
 
 > **Why not Phase 1.** Phase 1 uses explicit compound selectors
-> (`:root[data-brand="charcoal"].dark` at (0,3,0) beats `:root.dark` at (0,2,0)) precisely
-> so the charcoal theme is unblocked without a global cascade migration. This phase
+> (`:root[data-brand="monochrome"].dark` at (0,3,0) beats `:root.dark` at (0,2,0)) precisely
+> so the monochrome theme is unblocked without a global cascade migration. This phase
 > migrates that arithmetic to declared layer order and adds density as a fourth axis
 > (brand × mode × density) — the combinatorial pressure that justifies layers in the first
 > place.
@@ -451,7 +451,7 @@ and 6.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Design & Ideation | 24/25 | In Progress|  |
-| 1. Design System — Charcoal Theme | 22/23 | In Progress|  |
+| 1. Design System — Monochrome Theme | 22/23 | In Progress|  |
 | 2. Astro Foundation & Fail-Closed Auth | 9/10 | In Progress|  |
 | 3. Content Layer & Image Origin | 0/TBD | Not started | - |
 | 4. Photo Pipeline (Actions half) | 0/TBD | Not started | - |
@@ -467,7 +467,7 @@ and 6.
 | Phase | Requirements | Count |
 |-------|--------------|------:|
 | 0. Design & Ideation | DSGN-01 … DSGN-06 | 6 |
-| 1. Design System — Charcoal Theme | DS-01 … DS-09 | 9 |
+| 1. Design System — Monochrome Theme | DS-01 … DS-09 | 9 |
 | 2. Astro Foundation & Fail-Closed Auth | FND-01 … FND-07, AUTH-01 … AUTH-04 | 11 |
 | 3. Content Layer & Image Origin | CONT-01, CONT-02, CONT-03, CONT-04 | 4 |
 | 4. Photo Pipeline (Actions half) | PIPE-01 … PIPE-05, CONT-05 | 6 |

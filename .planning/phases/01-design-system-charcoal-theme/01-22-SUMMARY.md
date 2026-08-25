@@ -32,6 +32,13 @@ metrics:
 
 # Phase 1 Plan 22: Charcoal, near-monochrome Summary
 
+> **Renamed since.** Plan 01-23 renamed the brand **charcoal → monochrome** in code and in
+> forward-looking documents, before anything published. Everything below is left exactly as
+> written, because it records what was measured on 2026-08-25 under the name in use that day.
+> Read every `charcoal` here as today's `monochrome`: `src/themes/charcoal.css` is now
+> `src/themes/monochrome.css`, `[data-brand="charcoal"]` is now `[data-brand="monochrome"]`,
+> and the `--charcoal-` baseline suffix is now `--monochrome-`. See `01-23-SUMMARY.md`.
+
 Charcoal's accent hue is gone and its neutrals are true neutrals; the charcoal a11y sweep went from **11 failed / 497 passed to 508 / 508**, because every one of the 11 involved the retired ochre.
 
 `$DS` branch `charcoal-theme`, `60921fa` (77 ahead) → **`e7b182f`** (82 ahead). `package.json` stays **1.11.4**. Nothing published, tagged or merged; the 164 pending renames are unapplied; `src/tokens.css` is byte-for-byte untouched.

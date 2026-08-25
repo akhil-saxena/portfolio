@@ -112,4 +112,4 @@ only have let the web résumé be corrected while the PDF stayed wrong — which
 `F-15-5` (D-45's three statuses indistinguishable by fill) was initially assessed as dropping with
 `/admin/projects`. **That was wrong:** the badges render on the **public** Work page
 (`00-PUBLIC-DESIGN-NOTES.md:1630`, `:1475`). It stays in 01-18's scope, and its primary mode is
-charcoal *dark*, not the light the finding's text names.
+monochrome *dark*, not the light the finding's text names.

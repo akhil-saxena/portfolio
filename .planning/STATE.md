@@ -20,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** The site must be the proof that the design system works — where bespoke and design-system conflict, the design system wins and the gap becomes an upstream finding.
-**Current focus:** Phase 1 (charcoal theme, cross-repo) ∥ Phase 2 (Astro foundation) — the declared load-bearing parallelism
+**Current focus:** Phase 1 (monochrome theme, cross-repo) ∥ Phase 2 (Astro foundation) — the declared load-bearing parallelism
 
 ## Current Position
 
@@ -29,7 +29,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 | Phase | Plans | Status |
 |---|---|---|
 | 00 design-ideation | **25 / 25 COMPLETE** | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
-| 01 charcoal theme | 22 / 22 executed | 01-22 complete. Sibling `charcoal-theme` at **82 commits**, tracked-clean. Charcoal is now **near-monochrome** — the ochre identity was rejected at the 01-20 capture review and rebuilt in 01-22. `DS_BRAND=charcoal test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 (`npm publish` v2.0.0) remains a human gate; `package.json` is still 1.11.4 and nothing is published, tagged or merged. |
+| 01 monochrome theme | 23 / 23 executed | 01-23 complete. The brand was **renamed to monochrome in 01-23**, while nothing had published: `data-brand="monochrome"`, the `./themes/monochrome.css` and `./fonts/monochrome.css` subpaths, `DS_BRAND=monochrome`, and 504 visual baselines renamed by `git mv` with no re-capture. The sibling branch **keeps its original name** (see `01-SIBLING-PROTOCOL.md` §2) and is at **89 commits**, tracked-clean. The palette itself went **near-monochrome** in 01-22, after the ochre identity was rejected at the 01-20 capture review. `DS_BRAND=monochrome test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 (`npm publish` v2.0.0) remains a human gate; `package.json` is still 1.11.4 and nothing is published, tagged or merged. |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
 
 Progress: [██████████] 98%
@@ -39,7 +39,7 @@ Progress: [██████████] 98%
 **Velocity:**
 
 - Total plans completed: 57
-- 01-22: ~3h, 2 tasks, 5 sibling commits, 16 files + 489 baselines. Charcoal a11y 11 failed/497
+- 01-22: ~3h, 2 tasks, 5 sibling commits, 16 files + 489 baselines. Monochrome a11y 11 failed/497
   passed → **508/508**.
 - Notable: G-15/DS-09 fixed — an `import { Chip }` island fell from 570,555 B / 176,922 B gzip / 99
   modules to **1,620 B / 785 B gzip / 2 modules**.
@@ -49,7 +49,7 @@ Progress: [██████████] 98%
 | Phase | Plans done | Notes |
 |-------|-----------|-------|
 | 00 | 25 / 25 | **complete** |
-| 01 | 22 / 22 | cross-repo, sibling branch; charcoal rebuilt near-monochrome in 01-22 |
+| 01 | 23 / 23 | cross-repo, sibling branch; palette rebuilt near-monochrome in 01-22, brand renamed to monochrome in 01-23 |
 | 02 | 10 / 10 | **complete** |
 
 **Recent Trend:**
@@ -68,14 +68,14 @@ Progress: [██████████] 98%
   defects: one contradicted its own action, one named a spec containing no such probe.
 
 - **01-22 added a new defect class to the register: a design choice that disarms a gate.** Setting
-  charcoal light's paper to pure `#FFFFFF` — the obvious modern value, and the one the plan proposed —
+  monochrome light's paper to pure `#FFFFFF` — the obvious modern value, and the one the plan proposed —
   made the correct paint indistinguishable from the hardcoded `rgba(255,255,255,.97)` that
   `confirm-panel.spec.ts` exists to catch. Reinstating the defect left the light case **green**. The
   pre-flight for any future token value change is therefore: grep the specs for that token's value as
   a **decimal channel** as well as a hex, because `toBeCloseTo(30, 0)` is invisible to a hex grep, and
   run the negative control rather than trusting the suite to be green for the right reason.
 
-- 01-22 also found that `--update-snapshots` presets to `changed`, so **448 of 504 charcoal baselines
+- 01-22 also found that `--update-snapshots` presets to `changed`, so **448 of 504 monochrome baselines
   were judged matching against the retired palette** — the default `toHaveScreenshot` YIQ threshold of
   0.2 absorbs a cream-to-white shift. `--update-snapshots=all` is required after a palette change.
 
@@ -93,7 +93,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - [Roadmap]: Auth (AUTH-01..04) lands in Phase 2 (foundation), not the admin phase — `/admin` is a live surface the moment it is routable
-- [Roadmap]: Phase 1 (charcoal theme) executes **cross-repo** in `../design-system` and ends with a published npm version; Phase 1 ∥ Phase 2
+- [Roadmap]: Phase 1 (monochrome theme) executes **cross-repo** in `../design-system` and ends with a published npm version; Phase 1 ∥ Phase 2
 - [Roadmap]: Photo pipeline's Actions half is Phase 4, before the public site — settles the manifest shape and content-hashed keys before the gallery builds `srcset` against them, and debugs the riskiest integration early
 - [Roadmap]: CONT-04 (39 photo URLs off `pub-*.r2.dev`) is Phase 3, not a performance pass — it is a data migration and blocks reproducible Lighthouse scores
 - [Roadmap]: Phase 0 is design artefacts only; DSGN-04's running sketches are the sole deliberate exception
@@ -111,7 +111,7 @@ None yet.
 - **Cross-repo gate:** Phase 5 cannot be verified against the real identity until Phase 1 publishes. Tarball (`npm pack` → `file:*.tgz`) is the dev bridge; never a symlink (duplicate React).
 - **Open question carried from research:** Playfair Display delivery — shipped from the design-system theme, or via Astro's `fonts` config? Must be settled in Phase 0 (DSGN-05) before the Phase 1 release is cut.
 - **Gate override (Phase 0 planning, 2026-08-17):** the decision-coverage gate reported 31 uncovered CONTEXT.md decisions and was overridden as a false positive. Cause is the matcher, not the plans: it greps for the literal `D-NN:` (colon) form, while the plans cite decisions as `D-02`, `(D-02)`, `D-24,` — D-02 appears 26 times, D-03 11 times, and gsd-plan-checker independently found zero contradictions of D-01…D-47. Separately, ~20 of the 31 (D-27…D-37 design-system/Phase 1; D-10…D-26 admin implementation/Phase 7) are genuinely later-phase decisions that Phase 0 only sketches, so the gate will keep misfiring here until they are tagged `[informational]` in CONTEXT.md. Re-surface at verify-phase.
-- DS-02 and DS-03 left Pending after 01-22: both were written against the retired ochre identity. DS-02's 'every accent-as-text usage passes AA' clause is measurably false (--amber as text, charcoal light, 3.11/3.19/2.96) and needs 5 rules in primitives.css re-pointed at --amber-d. DS-03 names --ochre-d as the focus-ring token, but --focus is now bound to --ink. Both need re-stating against the monochrome identity before they can be closed.
+- DS-02 and DS-03 left Pending after 01-22: both were written against the retired ochre identity. DS-02's 'every accent-as-text usage passes AA' clause is measurably false (--amber as text, monochrome light, 3.11/3.19/2.96) and needs 5 rules in primitives.css re-pointed at --amber-d. DS-03 names --ochre-d as the focus-ring token, but --focus is now bound to --ink. Both need re-stating against the monochrome identity before they can be closed.
 
 ### Quick Tasks Completed
 

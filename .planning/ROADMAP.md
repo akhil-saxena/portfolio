@@ -255,7 +255,19 @@ are doc-only.
   3. A résumé bullet containing a script tag is stripped at both the write boundary and the render boundary, verified by a test — the legacy stored-XSS class is closed structurally, not by convention
   4. No `pub-*.r2.dev` URL remains anywhere in the repository, and a photo request returns `cf-cache-status: HIT` from the R2 custom domain
 
-**Plans**: TBD
+**Plans**: 8 plans across 5 waves. Seven open decisions are recorded in
+[`03-CONTEXT.md`](phases/03-content-layer-image-origin/03-CONTEXT.md) and surfaced as blocking
+checkpoints inside the plans that need them — five of them change data Akhil has already reviewed.
+
+Plans:
+- [ ] 03-01-PLAN.md — wave 1 · CONT-04: the 156-URL origin migration, the canonical-origin module, and the scoped `r2.dev` gate (OD-1)
+- [ ] 03-02-PLAN.md — wave 1 · the bold-only bullet grammar, and the 13-bullet `<strong>` → markdown conversion
+- [ ] 03-03-PLAN.md — wave 1 · D-25: `site_config` categories become `{id, label, columns}` records (OD-2)
+- [ ] 03-04-PLAN.md — wave 2 · merge the 39 reviewed alt values and 16 place values; backfill D-22's per-category order (OD-5)
+- [ ] 03-05-PLAN.md — wave 2 · D-24: split `projects.json` out; settle the date shape and the component figure (OD-4, OD-6)
+- [ ] 03-06-PLAN.md — wave 3 · CONT-01: the one schema module, the cross-file referential-integrity rules, and the single-definition gate (OD-3, OD-7)
+- [ ] 03-07-PLAN.md — wave 4 · CONT-03: the render boundary, and the ban on raw-HTML sinks
+- [ ] 03-08-PLAN.md — wave 5 · CONT-02: build enforcement, readable errors, and the phase-wide gate wiring
 
 > **CONT-04 is early on purpose.** Building the gallery against URLs that are about to
 > change is rework, and the uncached, rate-limited `r2.dev` origin makes Lighthouse scores

@@ -31,7 +31,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 | 00 design-ideation | **25 / 25 COMPLETE** | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
 | 01 monochrome theme | 23 / 23 executed | 01-23 complete. The brand was **renamed to monochrome in 01-23**, while nothing had published: `data-brand="monochrome"`, the `./themes/monochrome.css` and `./fonts/monochrome.css` subpaths, `DS_BRAND=monochrome`, and 504 visual baselines renamed by `git mv` with no re-capture. The sibling branch **keeps its original name** (see `01-SIBLING-PROTOCOL.md` §2) and is at **89 commits**, tracked-clean. The palette itself went **near-monochrome** in 01-22, after the ochre identity was rejected at the 01-20 capture review. `DS_BRAND=monochrome test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 **COMPLETE 2026-08-25**: `2.0.0-beta.1` published to the **`next`** dist-tag with SLSA provenance; `latest` stays at `1.11.4`, so Cairn's `^1.9.0` is untouched. Published **not** by token but by **GitHub Actions trusted publishing (OIDC)** — the account runs `auth-and-writes` 2FA, under which a Publish token authenticates but cannot write. There is no local publish path; the tag push is the publish button. The registry tarball's shasum came back byte-identical to the local pack, so the build is reproducible. |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
-| 03 content layer | **5 / 8 executed** | **Waves 1–2 complete.** 03-01 156 photo URLs onto `images.akhilsaxena.com` + the CONT-04 gate; 03-02 the bold-only bullet grammar (13 bullets, **34 HTML tags → 0**, 17 spans preserved); 03-03 `site_config` as seven `{id,label,columns}` records + `defaultColumns`, 39/39 resolving, 0 orphans; **03-04** 39 `alt` + 16 `place` merged from the reviewed brief, `categoryOrder` backfilled on 39, OD-5 pinned as an assertion; **03-05** projects split to `projects.json` (5 records), `period` deleted from all four records and derived by `src/lib/period.ts` — all four strings byte-identical including **U+2013** — and OD-6's `{{ds.componentCount}}` placeholder stored. Suite **351/351** across 9 files; `gate:origin`/`check`/`typecheck` exit 0. OD-1…OD-6 all resolved by Akhil. **Wave 3 (03-06) needs OD-3 and OD-7.** |
+| 03 content layer | **6 / 8 executed** | **Waves 1–3 complete.** 03-01 156 URLs onto `images.akhilsaxena.com` + CONT-04 gate; 03-02 the bold-only bullet grammar (**34 HTML tags → 0**); 03-03 seven `{id,label,columns}` records; 03-04 39 `alt` + 16 `place` + `categoryOrder`; 03-05 projects split and `period` derived (all four strings byte-exact, **U+2013**); **03-06 the keystone** — `src/schemas/` is the one definition, importing `containsHtmlTag`/`parseBullet`/`formatPeriod`/`IMAGE_ORIGIN` rather than restating them, with six RI rules, a `rulesSkipped` list so a rule whose input failed is *named* rather than silently not firing, and a single-definition gate whose **five blind spots are demonstrated by running them**. `tags` dropped from both halves (39→0 in data, `z.never` in schema). Suite **458/458** across 10 files; `gate:schema`/`gate:origin`/`gate:routes`/`check`/`typecheck` all exit 0. **Wave 4 (03-07) unblocked.** |
 
 Progress: [██████████] 98%
 
@@ -131,6 +131,20 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **Tally now nine, and the pattern widened.** 03-06 found a manifest `.min(0)` that could not fail —
+  the ninth vacuous gate. More importantly it found **two new failure classes** in the plan's own
+  scaffolding. Four Task-2 verify predicates **could not fire at all**: three matched double-quoted
+  specifiers where `biome.json` enforces single quotes, and the fourth, `/<\s*[a-zA-Z]/`, matched the
+  *literal characters* `[a-zA-Z]` after a `<` — a shape no real regex produces. And all four Task-3
+  harnesses assumed **bash `${PIPESTATUS[0]}` while the shell is zsh**: run verbatim, the clean-tree
+  control printed `FAIL: gate fires on the clean tree` for a gate that exited 0. Same class as the
+  subshell harnesses, different mechanism. **Any harness in a future plan must be run under the shell
+  it will actually execute in, before its verdict is believed.**
+- **A rival type definition exists in the repo today and the single-definition gate is blind to it.**
+  `test/content/photo-enrichment.unit.test.ts:57` declares its own `interface Photo`; `gate:schema`
+  passes. This is blind spot 1 of 5, recorded in the gate's own header and verified here
+  independently. The gate scans `src/` only, so it protects the shipped surface, not the test surface.
+  **Phase 7 must not read this as "one definition exists" without also reading the header.**
 - **Running tally of unfailable plan gates, Phase 3: eight.** Wave 2 added two more, both in 03-04.
   Its **idempotence gate measured the commit, not the re-run** — `node merge && git diff --quiet` read
   the 55 additions the merge had just made and reported `FAIL: not idempotent` on correct code, and

@@ -7,6 +7,8 @@
  *      `resume.json` keeps exactly `experience, skills, education`.
  *   2. (OD-6, Option A) The `design-system` record's hardcoded component figure stops being a
  *      literal and becomes the token `{{ds.componentCount}}`.
+ *   3. (OD-4, Option A — including education) The four `period` strings become structured date
+ *      fields, and `period` is DELETED from disk. `src/lib/period.ts` derives it at render time.
  *
  * WHY THE SPLIT (D-24)
  * --------------------
@@ -46,11 +48,30 @@
  * exactly the churn that makes a future diff unreadable. `icon: null` on `cairn` and
  * `design-system` is carried as `null`, not dropped and not defaulted.
  *
+ * WHY THE DATES BECOME STRUCTURED (OD-4)
+ * --------------------------------------
+ * `period: "Jul 2023 – Present"` is a lossy encoding: unsortable, unvalidatable, and it leaves
+ * "is this role current?" expressed only as the English word `Present`. 00-ADMIN-IA §5 chose the
+ * structured shape. Months are stored as INTEGERS 1-12, not as the three-letter strings: the
+ * string is a rendering concern, and storing it here would recreate the exact coupling this
+ * decision removes — the admin would then be editing a display string again.
+ *
+ * `isPresent: true` implies `endMonth` and `endYear` are ABSENT — not `null`, not `0`. One entry
+ * (Brevo) is in that state.
+ *
+ * The reconstruction check below deliberately does NOT import `src/lib/period.ts`. It reimplements
+ * the month table so that "the parse round-trips" is an INDEPENDENT claim rather than a circular
+ * one: a formatter and a parser sharing a table agree with each other by construction even when
+ * both are wrong. `test/content/resume-structure.unit.test.ts` is where `formatPeriod` is checked
+ * against the strings read out of git; this is the second, cheaper opinion.
+ *
  * IDEMPOTENCE
  * -----------
- * A second run reports `0 changes` and writes nothing. The script reports the WORK IT DID, not
- * whether the tree converged — those are different claims, and only the first one distinguishes
- * "this run was a no-op" from "this run did twelve things that happened to be undone".
+ * A second run reports `0 changes, no file rewritten` and writes nothing. The script reports the
+ * WORK IT DID *and* the tree effect, as two separate numbers — those are different claims, and
+ * only the pair distinguishes "this run was a no-op" from "this run normalised a file's
+ * serialisation and happened to converge". An idempotence gate that reads only `git diff --quiet`
+ * is measuring convergence, not work, and will call a rewriting run a no-op.
  *
  * Usage: node scripts/migrate-resume-structure.mjs
  */
@@ -85,6 +106,18 @@ const COMPONENT_COUNT_TOKEN = '{{ds.componentCount}}';
  * agree by construction rather than by three people writing the same regex from memory.
  */
 const LITERAL_FIGURE = /\b(\d+)([- ])component/i;
+
+/**
+ * The month table, reimplemented rather than imported from `src/lib/period.ts` — see the header
+ * note on why the round-trip check must be independent to mean anything.
+ */
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/**
+ * The stored `period` grammar, anchored, with the separator written as an ESCAPE. A pasted glyph
+ * here would be indistinguishable from a hyphen in review, which is the whole hazard.
+ */
+const PERIOD_GRAMMAR = /^([A-Z][a-z]{2}) (\d{4}) \u2013 (?:(Present)|([A-Z][a-z]{2}) (\d{4}))$/;
 
 function fail(message) {
   console.error(`FAIL: ${message}`);
@@ -131,6 +164,86 @@ function assertProjectShape(projects, origin) {
       );
     }
   }
+}
+
+/**
+ * Parse one stored `period` string into structured fields, or fail loudly.
+ *
+ * Deliberately anchored and total: there is no "best effort" branch. Four strings exist, all four
+ * match, and a fifth shape appearing later is a content question for a human, not something a
+ * migration should quietly interpret.
+ */
+function parsePeriod(period, label) {
+  if (typeof period !== 'string') {
+    fail(`${label}.period is ${JSON.stringify(period)}, expected a string`);
+  }
+  const match = PERIOD_GRAMMAR.exec(period);
+  if (!match) {
+    const points = [...period].map((c) => `U+${c.codePointAt(0).toString(16).toUpperCase()}`);
+    fail(
+      `${label}.period ${JSON.stringify(period)} does not match the stored grammar. ` +
+        `Code points: ${points.join(' ')}. If the separator reads U+002D or U+2014 rather than ` +
+        'U+2013, that is the bug — the four strings on disk use an EN DASH.'
+    );
+  }
+  const [, startMonthName, startYear, present, endMonthName, endYear] = match;
+  const startMonth = MONTHS.indexOf(startMonthName) + 1;
+  if (startMonth === 0) fail(`${label}.period has an unknown start month "${startMonthName}"`);
+
+  if (present) {
+    return { startMonth, startYear: Number(startYear), isPresent: true };
+  }
+  const endMonth = MONTHS.indexOf(endMonthName) + 1;
+  if (endMonth === 0) fail(`${label}.period has an unknown end month "${endMonthName}"`);
+  return {
+    startMonth,
+    startYear: Number(startYear),
+    endMonth,
+    endYear: Number(endYear),
+    isPresent: false,
+  };
+}
+
+/** Independent reconstruction — see the header note on why this does not call `formatPeriod`. */
+function reconstructPeriod(dates) {
+  const start = `${MONTHS[dates.startMonth - 1]} ${dates.startYear}`;
+  const end = dates.isPresent ? 'Present' : `${MONTHS[dates.endMonth - 1]} ${dates.endYear}`;
+  return `${start} – ${end}`;
+}
+
+/**
+ * Return a copy of `entry` with `period` replaced IN PLACE by the structured fields.
+ *
+ * The new keys take `period`'s slot rather than being appended, so the committed diff reads as a
+ * field changing shape where it already lived instead of a deletion at line 4 and an unrelated
+ * addition at the end of the record.
+ */
+function withStructuredDates(entry, label) {
+  const dates = parsePeriod(entry.period, label);
+  const reconstructed = reconstructPeriod(dates);
+  if (reconstructed !== entry.period) {
+    fail(
+      `${label}: the parse does not round-trip. Stored ${JSON.stringify(entry.period)}, ` +
+        `reconstructed ${JSON.stringify(reconstructed)}`
+    );
+  }
+
+  const out = {};
+  for (const [key, value] of Object.entries(entry)) {
+    if (key !== 'period') {
+      out[key] = value;
+      continue;
+    }
+    out.startMonth = dates.startMonth;
+    out.startYear = dates.startYear;
+    // ABSENT, not null and not 0, when the range is open — see the header note.
+    if (!dates.isPresent) {
+      out.endMonth = dates.endMonth;
+      out.endYear = dates.endYear;
+    }
+    out.isPresent = dates.isPresent;
+  }
+  return out;
 }
 
 const resume = readJson(RESUME_PATH, 'data/resume.json');
@@ -188,6 +301,55 @@ if (!figureRecord.description.includes(COMPONENT_COUNT_TOKEN)) {
   );
 }
 
+// --- OD-4: period becomes structured dates, on all four records ------------------------------
+// Experience AND education. Migrating only experience would leave two date shapes inside one
+// file, which is how the original drift started.
+const DATED_SECTIONS = [
+  { key: 'experience', expected: 3 },
+  { key: 'education', expected: 1 },
+];
+
+let converted = 0;
+let alreadyStructured = 0;
+for (const { key, expected } of DATED_SECTIONS) {
+  const entries = resume.parsed[key];
+  if (!Array.isArray(entries) || entries.length !== expected) {
+    fail(
+      `resume.json ${key} holds ${Array.isArray(entries) ? entries.length : 'no array'}, ` +
+        `expected ${expected} record(s) — the shape changed under this migration`
+    );
+  }
+  resume.parsed[key] = entries.map((entry) => {
+    const label = `${key}[${entry.id}]`;
+    const hasPeriod = 'period' in entry;
+    const hasStructured = 'startYear' in entry;
+    if (hasPeriod && hasStructured) {
+      fail(
+        `${label} carries BOTH period and structured dates — that is the legacy defect ` +
+          '00-ADMIN-IA §5 names, and this migration will not resolve it by guessing which wins'
+      );
+    }
+    if (hasPeriod) {
+      converted += 1;
+      return withStructuredDates(entry, label);
+    }
+    if (hasStructured) {
+      alreadyStructured += 1;
+      return entry;
+    }
+    return fail(`${label} carries neither period nor structured dates — it has no date range`);
+  });
+}
+if (converted > 0) {
+  work.push(`converted ${converted} period string(s) to structured dates and deleted \`period\``);
+}
+if (converted + alreadyStructured !== 4) {
+  fail(
+    `expected 4 dated records (3 experience + 1 education), accounted for ` +
+      `${converted + alreadyStructured}`
+  );
+}
+
 // --- serialise ------------------------------------------------------------------------------
 // `data/` is Biome-excluded (biome.json → "!data"), so this serialisation is the final
 // formatting; nothing downstream reformats it.
@@ -205,11 +367,26 @@ if (projectsOut !== existingProjectsOut) {
   bytesWritten += 1;
 }
 
-// Two numbers, both reported. `changes` is the WORK done; `files rewritten` is the tree effect.
-// A gate that only reads the second cannot tell a no-op run from a run that undid itself.
-console.log(
-  work.length === 0
-    ? `OK 0 changes, 0 files rewritten — ${projects.length} project records already canonical ` +
-        `(read from ${origin})`
-    : `OK ${work.length} change(s), ${bytesWritten} file(s) rewritten: ${work.join('; ')}`
-);
+// Two numbers, ALWAYS both reported and never assumed from each other. `changes` is the semantic
+// work done; `file(s) rewritten` is the effect on the tree.
+//
+// The first version of this line printed a hardcoded "0 files rewritten" inside the `work === 0`
+// branch. That is wrong and it was caught by deliberately re-indenting `data/projects.json` to
+// four spaces and re-running: the script rewrote the file back to two spaces — real work — and
+// reported "0 changes, 0 files rewritten", while `git diff --quiet` went green because the tree
+// had converged. A gate reading either signal alone would have called that a no-op. The exact
+// string `0 changes, no file rewritten` is the contract the idempotence gate greps for.
+const rewritten = bytesWritten === 0 ? 'no file rewritten' : `${bytesWritten} file(s) rewritten`;
+if (work.length === 0 && bytesWritten === 0) {
+  console.log(
+    `OK 0 changes, no file rewritten — ${projects.length} project records and 4 dated records ` +
+      `already canonical (projects read from ${origin})`
+  );
+} else if (work.length === 0) {
+  console.log(
+    `OK 0 semantic changes, but ${rewritten} — the serialisation on disk was not canonical ` +
+      '(indentation, key spacing or the trailing newline). This run DID work; it is not a no-op.'
+  );
+} else {
+  console.log(`OK ${work.length} change(s), ${rewritten}: ${work.join('; ')}`);
+}

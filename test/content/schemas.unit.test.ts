@@ -143,6 +143,43 @@ const wholeSet = () => ({
 });
 
 /* ============================================================================================
+ * 0a. The harness itself. Three plans in this project shipped a control harness that could not
+ *     fail; `mutated()` is the harness every negative case below depends on, so it is proven
+ *     rather than assumed.
+ * ========================================================================================== */
+
+describe('the mutated() harness', () => {
+  it('refuses a two-field change — the rejection would be credited to the wrong field', () => {
+    expect(() =>
+      mutated(PHOTOS[0], '/alt', (draft) => {
+        draft.alt = 'x';
+        draft.title = 'y';
+      })
+    ).toThrow(/expected exactly one change/);
+  });
+
+  it('refuses a NO-OP mutation — a negative case that changes nothing tests nothing', () => {
+    expect(() => mutated(PHOTOS[0], '/alt', () => {})).toThrow(/expected exactly one change/);
+  });
+
+  it('refuses a change at a pointer other than the declared one', () => {
+    expect(() =>
+      mutated(PHOTOS[0], '/alt', (draft) => {
+        draft.title = 'y';
+      })
+    ).toThrow(/expected exactly one change at \/alt/);
+  });
+
+  it('sees a key DELETION as a diff, not as equality', () => {
+    expect(() =>
+      mutated(PHOTOS[0], '/wrong-pointer', (draft) => {
+        delete draft.alt;
+      })
+    ).toThrow(/\/alt/);
+  });
+});
+
+/* ============================================================================================
  * 0. The census. If these are wrong every negative case below is testing something else.
  * ========================================================================================== */
 

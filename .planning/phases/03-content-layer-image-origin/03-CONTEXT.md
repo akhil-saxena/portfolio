@@ -114,6 +114,24 @@ all seven real categories today, verified. The eighth key, `"All"`, is not a cat
 > | **OD-1** | **Option A.** The gate scopes to the shipped artefact set: `data/`, `src/`, `public/`, `scripts/`, `astro.config.mjs`, `wrangler.jsonc`, `*.example`, and `dist/` after a build. `.planning/**` and `CLAUDE.md`'s legacy section are excluded **by name, in the gate source, each with its reason written beside it**. |
 > | **OD-2** | **Option A.** `categories[]` holds the **seven** real records. The unfiltered column count becomes a sibling scalar `defaultColumns: 3`. `"all"` is not a category record, so the RI rule has exactly seven legal values and carries **no** exclusion list. |
 > | **OD-2b** | **Alphabetical** — `abstract, architecture, nature, portraits, product, street, wildlife`. Array order is now deliberate: self-maintaining when a category is added, and scannable by name. `product` is no longer an unexplained trailing anomaly. |
+> | **OD-4** | **Option A, including education.** `period` is deleted from disk for all four records — three experience entries **and** education. `src/lib/period.ts` derives it, with a test asserting all four strings reproduce byte-for-byte: `Jul 2023 – Present`, `Nov 2022 – Jun 2023`, `Dec 2021 – Nov 2022`, `Jul 2018 – Jun 2022`, three-letter month, **U+2013 en dash with spaces**. |
+> | **OD-5** | **Option A.** Both fields survive: `photo.focalPoint` is the photo's own crop wherever it is cropped; `home_config.peekPositions` is a Home-specific override for the 3:2 peek frame. The one existing value stays untouched, and 03-06 asserts `peekPositions` keys ⊆ `peekIds`. |
+> | **OD-6** | **Option A — placeholder + Phase 5 resolver.** 03-05 stores `{{ds.componentCount}}`; 03-06's schema **rejects** any project description containing a literal `\d+-component`; Phase 5 supplies the resolver. **Two of OD-6's premises were wrong and are corrected below.** |
+>
+> **OD-6's premises, re-measured 2026-08-26 — do not trust the OD-6 text below:**
+>
+> - *"Phase 1's v2.0.0 is unpublished, so Phase 3 cannot resolve the number."* **False now.**
+>   `2.0.0-beta.1` is on the `next` dist-tag, so Phase 5's resolver can simply take a dependency
+>   rather than reading a sibling checkout.
+> - *"The figure has been wrong three times (80 → 79 → 81)."* The **three-numbers problem is already
+>   closed upstream.** `OverviewPage.tsx`'s `categories` array — the authority per 01-12 — sums to
+>   **81**; `README.md` says **81**; `src/overview-links.test.ts` asserts the two agree. The 83
+>   directory count differs by exactly the two documented exclusions (`Field`, `IconButton`). **Only
+>   `data/resume.json`'s 79 is stale.**
+> - The prose comment above that array still reads *"It sums to 79, README.md states 79"* and is
+>   itself stale. That is a **design-system** repo fix, not a portfolio one — do not chase it here.
+> - The resolver's source is the **catalog**, not `README.md` (explicitly retired as an authority for
+>   the figure by 01-12) and not the directory count (never an authority).
 
 
 Each is a blocking `checkpoint:decision` at the head of the plan named. A plan may not proceed

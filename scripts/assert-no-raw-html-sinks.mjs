@@ -82,6 +82,23 @@ import process from 'node:process';
 const DEFAULT_SCAN_ROOT = 'src';
 const scanRootArg = process.argv[2];
 const usingDefaultRoot = scanRootArg === undefined;
+
+// An argument that is PRESENT but empty is not the same as no argument: `path.resolve(cwd, '')`
+// silently returns cwd, so `node assert-no-raw-html-sinks.mjs ""` would scan the whole repository
+// — including vendored material nobody ships — while looking like a deliberate narrow scan. Found
+// by a probe harness that passed `"${4:-}"` for an unset positional; the gate reported real hits
+// in design_handoff_portfolio/ for a caller that had asked about src/. A caller that got its own
+// argument wrong must be told, not quietly given a different scan.
+if (scanRootArg !== undefined && scanRootArg.trim().length === 0) {
+  console.error('assert-no-raw-html-sinks: REFUSED — the scan root argument is present but empty.');
+  console.error(
+    "  path.resolve(cwd, '') is cwd, so this would have scanned the entire repository rather " +
+      'than the directory you meant. Pass a real path, or pass no argument to scan ' +
+      `${DEFAULT_SCAN_ROOT}/.`
+  );
+  process.exit(1);
+}
+
 const scanRoot = path.resolve(process.cwd(), scanRootArg ?? DEFAULT_SCAN_ROOT);
 
 /** Report paths relative to cwd when that is shorter and readable, absolute when it is not. */

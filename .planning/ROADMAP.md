@@ -31,8 +31,8 @@ front-loaded into Phase 2 rather than left to Phase 8.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 0: Design & Ideation** - Wireframe the admin and case studies, resolve Work/Photos onto dark, validate the monochrome identity against real components — no production code
-- [ ] **Phase 1: Design System — Monochrome Theme** - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
-- [ ] **Phase 2: Astro Foundation & Fail-Closed Auth** - A deployed Worker that denies every unauthenticated request before any admin surface exists
+- [x] **Phase 1: Design System — Monochrome Theme** ✅ **COMPLETE 2026-08-25** (`2.0.0-beta.1` on the `next` dist-tag, SLSA provenance) — - CROSS-REPO (`../design-system`): ship the identity as a contrast-safe, correctly-fonted, published npm release
+- [x] **Phase 2: Astro Foundation & Fail-Closed Auth** ✅ **COMPLETE** (`preview.akhilsaxena.com` serving) — - A deployed Worker that denies every unauthenticated request before any admin surface exists
 
 ### Release 1 — the public site, live
 

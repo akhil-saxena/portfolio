@@ -2,6 +2,7 @@
   {
     "id": "abstract-intothemist",
     "title": "Into The Mist",
+    "alt": "Two bundles of overhead cables descend from opposite corners and vanish into flat grey fog.",
     "category": "abstract",
     "tags": [],
     "date": "2026-03-28",
@@ -29,6 +30,7 @@
   {
     "id": "abstract-lightscameraart",
     "title": "Lights Camera Art",
+    "alt": "Crossing streaks of white and gold light on black, drawn by moving the camera through a long exposure.",
     "category": "abstract",
     "tags": [],
     "date": "2026-03-28",
@@ -56,6 +58,7 @@
   {
     "id": "abstract-watertexture",
     "title": "Water Texture",
+    "alt": "One small wave breaking white across dark blue-black open water, lit from a low angle.",
     "category": "abstract",
     "tags": [],
     "date": "2026-03-28",
@@ -83,6 +86,8 @@
   {
     "id": "architecture-hauntedmansionjpg",
     "title": "Haunted Mansion",
+    "alt": "Phantom Manor's mansard roof, dormer windows and iron roof cresting, half screened by surrounding trees.",
+    "place": "Disneyland Paris",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -110,6 +115,7 @@
   {
     "id": "architecture-officegreens",
     "title": "Office Greens",
+    "alt": "A modern building's vertical metal fins seen from below, framed by palm fronds and a red-flowering shrub.",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -137,6 +143,8 @@
   {
     "id": "architecture-parismuseum",
     "title": "Paris Museum",
+    "alt": "A gilded winged statue on the roofline of the Palais Garnier, a French flag to the left and storm cloud behind.",
+    "place": "Palais Garnier, Paris",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -164,6 +172,7 @@
   {
     "id": "architecture-redbuilding",
     "title": "Red Building",
+    "alt": "A deep red concrete facade tilted steeply upward, square recessed windows in pale surrounds, a slatted canopy against turquoise sky.",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -191,6 +200,8 @@
   {
     "id": "architecture-singapore",
     "title": "Singapore",
+    "alt": "The Esplanade's spiked aluminium shading shells over triangulated glass, treetops below and clear blue sky above.",
+    "place": "Esplanade, Singapore",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -218,6 +229,8 @@
   {
     "id": "architecture-singaporesentosa",
     "title": "Singapore Sentosa",
+    "alt": "A brick tower ringed by a red pergola on a vine-covered island base, harbour buildings and a moored boat across the water.",
+    "place": "Sentosa, Singapore",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -245,6 +258,7 @@
   {
     "id": "nature-acrossthetrees",
     "title": "Across The Trees",
+    "alt": "The sun setting through a tangle of bare branches, hill ridges receding behind in sepia haze.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -272,6 +286,8 @@
   {
     "id": "architecture-templemahabalipuram",
     "title": "Temple Mahabalipuram",
+    "alt": "The Shore Temple at Mahabalipuram, its tiered granite tower on a stepped plinth lined with carved bulls, sea horizon to the right under bright cumulus.",
+    "place": "Mahabalipuram, India",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -299,6 +315,8 @@
   {
     "id": "architecture-eiffeljpg",
     "title": "Eiffel",
+    "alt": "The Eiffel Tower from directly beneath at night, its ironwork lit amber against a black sky.",
+    "place": "Paris, France",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -326,6 +344,7 @@
   {
     "id": "nature-hillsandgreens",
     "title": "Hills And Greens",
+    "alt": "Ridge after ridge fading into golden haze, a small hilltop tower silhouetted mid-frame above dark scrub.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -353,6 +372,7 @@
   {
     "id": "nature-naturehills",
     "title": "Nature Hills",
+    "alt": "Overlapping hill slopes in sepia haze, a few bare branches on the near ridge, the sun diffused behind.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -380,6 +400,8 @@
   {
     "id": "architecture-citypalacegate",
     "title": "City Palace Gate",
+    "alt": "A peacock-frescoed gate at the City Palace seen from below, its scalloped canopy and arched balcony dense with painted florals, marigold garlands at the edges.",
+    "place": "City Palace, Jaipur",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -407,6 +429,8 @@
   {
     "id": "architecture-hawamahaldaytime",
     "title": "Hawa Mahal Daytime",
+    "alt": "Hawa Mahal's five tiers of latticed windows rising in a curved pink sandstone facade, shot from the street against a clear sky.",
+    "place": "Jaipur, India",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -434,6 +458,8 @@
   {
     "id": "architecture-pigeonatumaidbhawan",
     "title": "Pigeon At Umaid Bhawan",
+    "alt": "A pigeon on a carved finial at Umaid Bhawan, pierced sandstone lattice screens and heavy corbels on every side.",
+    "place": "Umaid Bhawan, Jodhpur",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -461,6 +487,7 @@
   {
     "id": "nature-lonetree",
     "title": "Lone Tree",
+    "alt": "A single broad-crowned tree on a bare dirt hilltop, distant ranges hazy below a deep blue sky.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -488,6 +515,7 @@
   {
     "id": "abstract-plane",
     "title": "Plane",
+    "alt": "An airliner high in an empty pale blue sky, crossed by a single taut diagonal wire.",
     "category": "abstract",
     "tags": [],
     "date": "2026-03-28",
@@ -515,6 +543,8 @@
   {
     "id": "nature-naturewaterfall",
     "title": "Nature Waterfall",
+    "alt": "The Rhine Falls breaking white over dark rock ledges, spray hanging in the air between wooded banks.",
+    "place": "Rhine Falls, Switzerland",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -542,6 +572,7 @@
   {
     "id": "nature-shipsunset",
     "title": "Ship Sunset",
+    "alt": "A cargo ship in silhouette on open sea beneath a large low sun, a second vessel faint on the horizon.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -569,6 +600,7 @@
   {
     "id": "nature-sunrisepoint",
     "title": "Sunrise Point",
+    "alt": "Two hill summits in silhouette against an orange sunrise, a communication mast on the left peak.",
     "category": "nature",
     "tags": [],
     "date": "2026-03-28",
@@ -596,6 +628,8 @@
   {
     "id": "architecture-singaporeflyer",
     "title": "Singapore Flyer",
+    "alt": "The Singapore Flyer from below, passenger capsules along its rim and spoke cables fanning to the hub.",
+    "place": "Singapore",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -623,6 +657,8 @@
   {
     "id": "portraits-portraitpatrikagate1",
     "title": "Portrait Patrika Gate 1",
+    "alt": "A woman in a deep red ruffled dress walks away from the camera down Patrika Gate's corridor of receding painted archways, each frescoed in florals and teal.",
+    "place": "Patrika Gate, Jaipur",
     "category": "portraits",
     "tags": [],
     "date": "2026-03-28",
@@ -650,6 +686,8 @@
   {
     "id": "street-davidjpg",
     "title": "David",
+    "alt": "A weathered bronze cast of Michelangelo's David from the chest up, verdigris green against clear blue sky.",
+    "place": "Florence, Italy",
     "category": "street",
     "tags": [],
     "date": "2026-03-28",
@@ -677,6 +715,7 @@
   {
     "id": "wildlife-kingfisher",
     "title": "Kingfisher",
+    "alt": "A white-throated kingfisher with a red bill perched on a bare diagonal branch, backlit green foliage behind.",
     "category": "wildlife",
     "tags": [],
     "date": "2026-03-28",
@@ -704,6 +743,8 @@
   {
     "id": "architecture-citypalacewide",
     "title": "City Palace Wide",
+    "alt": "The City Palace's pink sandstone range of domed pavilions and tiered latticed windows, red and marigold garlands hung over the entrance arch.",
+    "place": "City Palace, Jaipur",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -731,6 +772,7 @@
   {
     "id": "nature-fairwayreflections",
     "title": "Fairway Reflections",
+    "alt": "A mown fairway and sand bunker backed by tall coconut palms, the whole treeline mirrored in still water with two egrets on the bank.",
     "category": "nature",
     "tags": [],
     "date": "2026-04-07",
@@ -758,6 +800,7 @@
   {
     "id": "product-peppers",
     "title": "Peppers",
+    "alt": "Red, orange, yellow and green bell peppers clustered on a counter, jars soft-focused behind.",
     "category": "product",
     "tags": [],
     "date": "2026-03-28",
@@ -785,6 +828,8 @@
   {
     "id": "architecture-europepalacejpg",
     "title": "Europe Palace",
+    "alt": "Nymphenburg's white baroque wings and red-tiled roofs stretched along a straight canal, reeds on the far bank under heavy cloud.",
+    "place": "Nymphenburg, Munich",
     "category": "architecture",
     "tags": [],
     "date": "2026-03-28",
@@ -812,6 +857,7 @@
   {
     "id": "product-gadgets",
     "title": "Gadgets",
+    "alt": "A closed silver laptop, a part-folded phone standing on its hinge, and a small earbuds case, arranged on dark textured slate.",
     "category": "product",
     "tags": [],
     "date": "2026-03-28",
@@ -839,6 +885,7 @@
   {
     "id": "portraits-whitedresshalf",
     "title": "White Dress Half",
+    "alt": "Black-and-white portrait of a woman with a chin-length bob and graphic winged eyeliner, in a sheer embroidered white dress, leaning on a rail.",
     "category": "portraits",
     "tags": [],
     "date": "2026-03-28",
@@ -866,6 +913,8 @@
   {
     "id": "street-disneylandwalle",
     "title": "Disneyland Wall E",
+    "alt": "Life-size WALL-E and EVE figures in a planted bed, the white egg-shaped robot leaning toward the rusted tracked one.",
+    "place": "Disneyland Paris",
     "category": "street",
     "tags": [],
     "date": "2026-03-28",
@@ -893,6 +942,7 @@
   {
     "id": "street-slothjpg",
     "title": "Sloth",
+    "alt": "A sloth climbing a vertical trunk in dense glasshouse planting, hanging moss around it and a red bromeliad at its base.",
     "category": "street",
     "tags": [],
     "date": "2026-03-28",
@@ -920,6 +970,7 @@
   {
     "id": "street-tunnelvision",
     "title": "Tunnel Vision",
+    "alt": "A long covered footbridge of cross-braced steel receding to a bright far end, two figures walking away over red and grey floor tiles.",
     "category": "street",
     "tags": [],
     "date": "2026-03-28",
@@ -947,6 +998,7 @@
   {
     "id": "wildlife-deerinsight",
     "title": "Deer In Sight",
+    "alt": "An antlered sambar deer standing in shallow water facing the camera, dry scrub behind and its reflection below.",
     "category": "wildlife",
     "tags": [],
     "date": "2026-03-28",
@@ -974,6 +1026,7 @@
   {
     "id": "wildlife-pigeon",
     "title": "Pigeon",
+    "alt": "A pigeon on the ridge pole of a thatched roof, coarse straw across the lower frame and deep blue sky above.",
     "category": "wildlife",
     "tags": [],
     "date": "2026-03-28",
@@ -1001,6 +1054,7 @@
   {
     "id": "wildlife-starfish",
     "title": "Starfish",
+    "alt": "Two starfish on wet dark sand, the nearer one filling the frame with dark red nodules ridged along its pale arms.",
     "category": "wildlife",
     "tags": [],
     "date": "2026-03-28",
@@ -1028,6 +1082,7 @@
   {
     "id": "wildlife-yinyangjpg",
     "title": "Yin Yang",
+    "alt": "Two ducks resting on a grassy bank facing opposite ways, still water behind them reflecting cloud and sky.",
     "category": "wildlife",
     "tags": [],
     "date": "2026-03-28",

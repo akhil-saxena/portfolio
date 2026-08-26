@@ -77,8 +77,16 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Ends in the AUTH-03 prerender gate, which is chained inside the script itself
-      # rather than added here, so a developer building locally gets the same gate.
+      # Ends in `npm run gate:content`, which chains every gate this project has:
+      # gate:schema (one definition of each content shape), gate:sinks (no raw-HTML
+      # sink), gate:origin (no legacy r2.dev URL in a shipped artefact) and gate:routes
+      # (the AUTH-03 prerender gate). Chained inside the script rather than added here as
+      # four steps, so a developer building locally gets exactly what CI gets — and so the
+      # whole gate set is one reviewable line instead of five plans' worth of additions.
+      #
+      # The content gate itself is not in that chain and does not need to be: it is an
+      # astro:config:done integration hook inside the build, so `astro build`, `astro check`
+      # and `astro dev` all run it. See astro.config.mjs.
       - name: Build
         run: npm run build
 
@@ -101,6 +109,17 @@ jobs:
       # which is why the ship path re-runs the route gate after it.
       - name: Test
         run: npm test
+
+      # NOT redundant with the Build step, and this was confirmed rather than assumed.
+      # `test/setup/preview-server.ts` line 248 runs `astro build` DIRECTLY — deliberately
+      # not the `build` npm script, because that script has a gate appended to it and the
+      # harness must not depend on one. So by the time `npm test` finishes, `dist/` is a
+      # freshly built artefact that no dist-scoped gate has looked at, and `gate:origin`'s
+      # own source records this as blind spot 3: "dist/ IS ONLY AS GOOD AS THE LAST BUILD".
+      # Re-running the chain here is what closes it. The ship path does the same thing, in
+      # the same position, inside the `deploy` script.
+      - name: Re-assert the gates against the artefact the test run rebuilt
+        run: npm run gate:content
 
       # Advisory on purpose, and the advisory form belongs only here. A file: dependency
       # spec is the sanctioned way to consume an unpublished design-system tarball during

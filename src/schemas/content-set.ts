@@ -39,6 +39,7 @@
  * binds it to `data/*.json`.
  */
 
+import { describeIssue } from '../lib/content-errors';
 import { HomeConfigSchema } from './home';
 import { PhotoManifestSchema } from './photo';
 import { ProjectsSchema } from './projects';
@@ -94,13 +95,21 @@ const FILE = {
   resume: 'data/resume.json',
 } as const;
 
-/** Render a zod issue path as something a reader can find in the file. */
-function renderPath(path: readonly PropertyKey[]): string {
-  return path
-    .map((segment) => (typeof segment === 'number' ? `[${segment}]` : `.${String(segment)}`))
-    .join('')
-    .replace(/^\./, '');
-}
+/**
+ * The name of the top-level array in the two files that ARE arrays.
+ *
+ * A zod issue path for `photos[12].order` begins at the index, so it carries no name for the thing
+ * being indexed. The formatter needs one to render `nature-hillsandgreens [photos[12] of 39]`, and
+ * it comes from here rather than from a string literal at the call site so the two array files and
+ * the three object files are described by one table.
+ */
+const ROOT_NAME = {
+  photos: 'photos',
+  site: 'site',
+  home: 'home',
+  projects: 'projects',
+  resume: 'resume',
+} as const;
 
 /** Every value that appears more than once, with the indices it appeared at. */
 function duplicates<T>(values: T[]): Map<T, number[]> {
@@ -138,11 +147,15 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     const issues = (result.error as { issues?: { path: PropertyKey[]; message: string }[] })
       .issues ?? [{ path: [], message: String(result.error) }];
     for (const issue of issues) {
-      const at = renderPath(issue.path);
+      // NAMED, not merely located. `data/resume.json experience[0].bullets[2]` tells the reader
+      // where to click and not which company's bullet it is; `describeIssue` walks the same path
+      // through the DATA and reports `Brevo … [experience[0] of 3] → bullets[2]`. That difference
+      // is criterion 2's "readable", and it is why this function has the raw input in scope.
+      const framed = describeIssue(FILE[key], ROOT_NAME[key], input[key], issue);
       violations.push({
         rule: `SCHEMA-${key}`,
-        where: at ? `${FILE[key]} ${at}` : FILE[key],
-        detail: issue.message,
+        where: framed.where,
+        detail: framed.detail,
         why: `${FILE[key]} does not match its schema in src/schemas, so nothing downstream may assume its shape.`,
       });
     }
@@ -205,7 +218,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
       if (ids.has(photo.category)) continue;
       violations.push({
         rule: 'RI-1',
-        where: `${FILE.photos} ${photo.id}`,
+        where: `${FILE.photos} → ${photo.id} → category`,
         detail: `category ${JSON.stringify(photo.category)} does not exist in ${FILE.site}`,
         why: `the ${declared.length} declared ids are: ${declared.join(', ')}. Comparison is exact — no case transform on either side. ADR-002 §4 removed the screen that used to make this impossible, so this rule is the only thing between a hand-edit and an orphaned photograph.`,
       });
@@ -225,7 +238,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
       if (used.has(category.id)) continue;
       violations.push({
         rule: 'RI-2',
-        where: `${FILE.site} ${category.id}`,
+        where: `${FILE.site} → ${category.id}`,
         detail: `no photograph is filed under ${JSON.stringify(category.id)}`,
         why: 'a declared category no photograph uses ships as a filter tab that opens an empty gallery. RI-1 alone cannot see this: it is clean in exactly this case.',
       });
@@ -245,7 +258,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
       if (photoIds.has(id)) return;
       violations.push({
         rule: 'RI-3',
-        where: `${FILE.home} peekIds[${index}]`,
+        where: `${FILE.home} → peekIds[${index}]`,
         detail: `${JSON.stringify(id)} is not the id of any photograph`,
         why: 'a peek id pointing at a deleted photograph renders a blank tile in the Home hero. It reads as a slow image rather than a broken one, so nothing surfaces it.',
       });
@@ -265,7 +278,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
       if (peeked.has(key)) continue;
       violations.push({
         rule: 'RI-4',
-        where: `${FILE.home} peekPositions[${JSON.stringify(key)}]`,
+        where: `${FILE.home} → peekPositions[${JSON.stringify(key)}]`,
         detail: `${JSON.stringify(key)} is not one of the peeked photographs`,
         why: 'a crop override for a photograph the hero does not show is never read, so it is dead configuration that looks live. OD-5 kept this field alongside photo.focalPoint on the argument that they answer different questions; this is the assertion that keeps that argument honest.',
       });
@@ -284,7 +297,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     for (const [id, at] of duplicates(photos.map((photo) => photo.id))) {
       violations.push({
         rule: 'RI-5',
-        where: `${FILE.photos} indices ${at.join(', ')}`,
+        where: `${FILE.photos} → indices ${at.join(', ')}`,
         detail: `duplicate photo id ${JSON.stringify(id)}`,
         why: 'ids address photographs from home_config and from every URL. Two records sharing one means one of them is unreachable.',
       });
@@ -293,7 +306,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     for (const [order, at] of duplicates(photos.map((photo) => photo.order))) {
       violations.push({
         rule: 'RI-5',
-        where: `${FILE.photos} indices ${at.join(', ')}`,
+        where: `${FILE.photos} → indices ${at.join(', ')}`,
         detail: `duplicate global order value ${String(order)}`,
         why: 'the global order is the gallery sequence. A tie is resolved by whatever the sort happens to do, which is not a decision anyone made.',
       });
@@ -302,7 +315,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     for (const [id, at] of duplicates(projects.map((project) => project.id))) {
       violations.push({
         rule: 'RI-5',
-        where: `${FILE.projects} indices ${at.join(', ')}`,
+        where: `${FILE.projects} → indices ${at.join(', ')}`,
         detail: `duplicate project id ${JSON.stringify(id)}`,
         why: 'project ids are the anchor for case-study routes; two records sharing one collides at build.',
       });
@@ -334,7 +347,7 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
       for (const [rank, at] of duplicates(group.map((entry) => entry.rank))) {
         violations.push({
           rule: 'RI-6',
-          where: `${FILE.photos} category ${category}`,
+          where: `${FILE.photos} → category ${category}`,
           detail: `categoryOrder ${String(rank)} is used by ${at.map((index) => group[index].id).join(' and ')}`,
           why: 'categoryOrder is the sequence within a filtered gallery. A tie there is the same silent arbitrary sort as a duplicate global order, restricted to one tab.',
         });

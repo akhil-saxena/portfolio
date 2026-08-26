@@ -64,7 +64,13 @@ order         int, unique across all 39                    unchanged (global ord
 alt           string, min 1, REQUIRED                      ← 03-04, from 00-PHOTO-CONTENT.md (39/39)
 place         string, optional                             ← 03-04 (16/39 filled)
 description   string, optional                             ← 00-ADMIN-IA §6; 0/39 filled, field absent
-focalPoint    string, optional, default "50% 50%"          ← 00-ADMIN-IA §6 / D-23; 0/39 filled
+focalPoint    string, optional, NO schema default         ← 00-ADMIN-IA §6 / D-23; 0/39 filled
+              AMENDED by 03-06: this line originally said `default "50% 50%"`. A zod `.default()`
+              makes `parse()` return a key the input did not contain, and `src/schemas` is ALSO the
+              Phase 7 write boundary — so an admin parsing a record and committing the result would
+              materialise `focalPoint` on all 39 records at the first save. Implemented `.optional()`,
+              with `DEFAULT_FOCAL_POINT` exported for the renderer to apply. Pinned by the test
+              "does NOT materialise focalPoint on parse".
 categoryOrder int, unique within its category              ← D-22, backfilled in 03-04
 tags          string[]                                     ← OPEN, OD-3
 ```

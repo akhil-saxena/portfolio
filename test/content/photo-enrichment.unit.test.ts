@@ -29,6 +29,7 @@
  * file. Phase 5 must assert the attribute on rendered HTML.
  */
 
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -206,5 +207,162 @@ describe("the brief's own rules, re-asserted after the strings left the file tha
       )
       .map((p) => p.id);
     expect(prefixed).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// D-22: the per-category order (plan 03-04, task 2)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Locate the last revision of the manifest that PREDATES this migration — the newest one in which
+ * no record carries `categoryOrder` — and return its global `order` per id. That revision is, by
+ * definition, the ordering the ranks were derived from.
+ *
+ * Deliberately NOT `HEAD~1`. Plan 03-05 is committing to this branch in the same wave, so `HEAD~1`
+ * stops being this migration's parent the moment it lands, and the comparison would silently start
+ * reading an already-migrated revision — comparing the shipped ranks against themselves. Searching
+ * the file's own log for the last pre-migration revision is stable regardless of what else commits,
+ * and it is the pattern `site-config-migration.unit.test.ts` already established here.
+ *
+ * Every rejection below returns `null` rather than an empty map, and exhausting the log throws.
+ * A "previous revision" that resolves to nothing would make the loop over its ids run zero times
+ * and the file go green having compared nothing — the failure this project has shipped repeatedly.
+ */
+function parsePreMigrationOrder(raw: string | null | undefined): Map<string, number> | null {
+  if (typeof raw !== 'string' || raw.trim() === '') return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+  const records = parsed as Photo[];
+  // Post-migration revisions are not evidence about what the migration derived from.
+  if (records.some((p) => 'categoryOrder' in p)) return null;
+  if (!records.every((p) => typeof p.id === 'string' && Number.isInteger(p.order))) return null;
+  const orders = new Map<string, number>(records.map((p) => [p.id, p.order]));
+  if (orders.size !== records.length) return null; // duplicate ids
+  if (new Set(records.map((p) => p.order)).size !== records.length) return null; // duplicate orders
+  return orders;
+}
+
+function findPreMigrationOrder(): { ref: string; orders: Map<string, number> } {
+  const refs = execFileSync('git', ['log', '--format=%H', '--', 'data/portfolio_images.json'], {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const ref of refs) {
+    let raw: string;
+    try {
+      raw = execFileSync('git', ['show', `${ref}:data/portfolio_images.json`], {
+        cwd: REPO_ROOT,
+        encoding: 'utf8',
+      });
+    } catch {
+      continue; // the file did not exist at this revision
+    }
+    const orders = parsePreMigrationOrder(raw);
+    if (orders) return { ref, orders };
+  }
+
+  throw new Error(
+    'No revision of data/portfolio_images.json predating the categoryOrder backfill was found. ' +
+      'The consistency invariant has nothing to compare against and MUST NOT pass vacuously — ' +
+      `searched ${refs.length} revision(s).`
+  );
+}
+
+describe('categoryOrder is dense and unique inside every category', () => {
+  /**
+   * A gap or a duplicate is a reorder bug that surfaces as two photographs fighting for one slot
+   * in the filtered view. `n` is taken from the group's own size rather than from a table of
+   * expected counts, so publishing a photograph does not make this assertion wrong — but the
+   * totals below ARE pinned, because a group that silently lost a member would otherwise be dense
+   * over its survivors.
+   */
+  it('gives every record an integer categoryOrder', () => {
+    const notInteger = manifest.filter((p) => !Number.isInteger(p.categoryOrder)).map((p) => p.id);
+    expect(notInteger).toEqual([]);
+    expect(manifest).toHaveLength(EXPECTED_RECORDS);
+  });
+
+  it('ranks each category exactly 1…n with no gap and no duplicate', () => {
+    const byCategory = new Map<string, Photo[]>();
+    for (const photo of manifest) {
+      const group = byCategory.get(photo.category) ?? [];
+      group.push(photo);
+      byCategory.set(photo.category, group);
+    }
+    expect(byCategory.size).toBe(7); // the seven real categories, per OD-2
+    let counted = 0;
+    for (const [category, group] of byCategory) {
+      const ranks = group.map((p) => p.categoryOrder as number).sort((a, b) => a - b);
+      const dense = group.map((_, i) => i + 1);
+      expect(ranks, `ranks in ${category} are not dense 1…n`).toEqual(dense);
+      counted += group.length;
+    }
+    expect(counted).toBe(EXPECTED_RECORDS);
+  });
+});
+
+describe('categoryOrder agrees with the global order it was derived from', () => {
+  /**
+   * The assertion that carries the information. Density alone is satisfied by shuffling every
+   * category's ranks — the file would look perfectly valid while the filtered gallery Akhil has
+   * already looked at had quietly rearranged itself.
+   *
+   * SCOPE, AND READ THIS BEFORE DELETING IT. This describe block is true OF THIS MIGRATION ONLY.
+   * D-22 exists precisely because the two orderings are allowed to diverge, and Phase 7's
+   * `/admin/photos` reorders photographs inside an active category filter — which changes
+   * `categoryOrder` without changing the global `order` and WILL make this red on purpose. When
+   * that happens, retire this block by name, with the reason written beside it, and leave the
+   * density block above alone: density and uniqueness stay true forever. Weakening this assertion
+   * in place, rather than retiring it deliberately, is how a real reorder bug would get through.
+   */
+  const previous = findPreMigrationOrder();
+
+  it('found a pre-migration revision to compare against', () => {
+    expect(previous.ref).toMatch(/^[0-9a-f]{40}$/);
+    expect(previous.orders.size).toBe(EXPECTED_RECORDS);
+  });
+
+  it('covers every shipped record — a photo published after the migration is out of scope', () => {
+    const uncovered = manifest.filter((p) => !previous.orders.has(p.id)).map((p) => p.id);
+    expect(
+      uncovered,
+      `these ids did not exist at ${previous.ref.slice(0, 7)}, so this migration did not derive their rank; re-scope or retire this block rather than weakening it`
+    ).toEqual([]);
+  });
+
+  it('orders each category the same way the pre-migration global order did', () => {
+    const byCategory = new Map<string, Photo[]>();
+    for (const photo of manifest) {
+      const group = byCategory.get(photo.category) ?? [];
+      group.push(photo);
+      byCategory.set(photo.category, group);
+    }
+    let compared = 0;
+    for (const [category, group] of byCategory) {
+      const byRank = [...group]
+        .sort((a, b) => (a.categoryOrder as number) - (b.categoryOrder as number))
+        .map((p) => p.id);
+      const byGlobal = [...group]
+        .sort(
+          (a, b) => (previous.orders.get(a.id) as number) - (previous.orders.get(b.id) as number)
+        )
+        .map((p) => p.id);
+      expect(
+        byRank,
+        `${category} disagrees with the global order at ${previous.ref.slice(0, 7)}`
+      ).toEqual(byGlobal);
+      compared += group.length;
+    }
+    expect(compared).toBe(EXPECTED_RECORDS);
   });
 });

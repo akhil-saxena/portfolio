@@ -191,6 +191,68 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
+// --- The D-22 backfill: a per-category rank derived from the global order. ---
+
+/**
+ * 00-ADMIN-IA §3 (D-22): "one ordering cannot serve both views". The 39 photographs are unevenly
+ * distributed — architecture 14 against product 2 — so a global sequence that reads well
+ * end-to-end scatters each category's best frames arbitrarily inside its own filtered view. The
+ * per-category value wins when a category filter is active; the global `order` governs the
+ * unfiltered gallery and the Home peek strip.
+ *
+ * THE FIELD IS NAMED `categoryOrder`. 00-ADMIN-IA specifies the semantics and never names the
+ * field, and three consumers have to agree on the word: 03-06's schema, Phase 5's gallery and
+ * Phase 7's `/admin/photos`. `categoryOrder` was chosen over `rank`, `positionInCategory` and
+ * `sortIndex` because it reads as the sibling of the `order` it sits beside — the pair
+ * `order` / `categoryOrder` states the two facts in the two words that distinguish them, and a
+ * reader who knows what `order` means needs no glossary for the second.
+ *
+ * The derivation is total and deterministic: within each category, rank by ascending global
+ * `order` and assign 1…n densely. It refuses on a tie rather than breaking one, because a
+ * silent tie-break would make the output depend on array position — and array position is not a
+ * fact anybody reviewed.
+ */
+const ordersSeen = new Map();
+for (const photo of manifest) {
+  if (!Number.isInteger(photo.order)) {
+    fail(
+      `"${photo.id}" has no integer global \`order\` (${JSON.stringify(photo.order)}), so no per-category rank can be derived from it`
+    );
+    continue;
+  }
+  if (typeof photo.category !== 'string' || photo.category.trim() === '') {
+    fail(`"${photo.id}" has no category, so there is no group to rank it within`);
+    continue;
+  }
+  if (ordersSeen.has(photo.order)) {
+    fail(
+      `global \`order\` ${photo.order} is used by both "${ordersSeen.get(photo.order)}" and "${photo.id}" — the rank derivation would depend on array position, which nobody reviewed. Refusing to break the tie.`
+    );
+    continue;
+  }
+  ordersSeen.set(photo.order, photo.id);
+}
+
+if (failures.length > 0) {
+  console.error(`FAIL: refusing to merge. ${failures.length} problem(s):`);
+  for (const f of failures) console.error(`  - ${f}`);
+  process.exit(1);
+}
+
+/** id → its 1-based rank within its own category, by ascending global order. */
+const categoryRank = new Map();
+const byCategory = new Map();
+for (const photo of manifest) {
+  if (!byCategory.has(photo.category)) byCategory.set(photo.category, []);
+  byCategory.get(photo.category).push(photo);
+}
+for (const group of byCategory.values()) {
+  const ranked = [...group].sort((a, b) => a.order - b.order);
+  ranked.forEach((photo, i) => {
+    categoryRank.set(photo.id, i + 1);
+  });
+}
+
 // --- Merge. Values are copied verbatim; only the table's own cell padding was trimmed. ---
 
 /** An optional cell is "absent" when it is empty or holds the optional marker. */
@@ -199,25 +261,32 @@ const isAbsent = (cell) => cell === '' || cell === OPT_MARKER || cell === ALT_MA
 const changes = [];
 
 /**
- * Rebuild the record with `alt` immediately after `title` and `place` immediately after `alt`,
- * every other key keeping its position. The point is diff legibility: an insertion at a sensible
- * spot reads as an addition, whereas appending would push the reviewer through a whole-record
- * reshuffle to find two new strings.
+ * Rebuild the record with `alt` immediately after `title`, `place` immediately after `alt` and
+ * `categoryOrder` immediately after `order`, every other key keeping its position. The point is
+ * diff legibility: an insertion at a sensible spot reads as an addition, whereas appending would
+ * push the reviewer through a whole-record reshuffle to find three new values. `categoryOrder`
+ * sits beside `order` specifically so that the two orderings are read together — they are the
+ * one pair in the record that can silently contradict each other.
  */
 const merged = manifest.map((photo) => {
   const row = rowById.get(photo.id);
   const next = {};
   for (const [key, value] of Object.entries(photo)) {
-    if (key === 'alt' || key === 'place') continue; // re-inserted in their canonical positions
+    // Re-inserted below in their canonical positions rather than kept where they were found.
+    if (key === 'alt' || key === 'place' || key === 'categoryOrder') continue;
     next[key] = value;
     if (key === 'title') {
       next.alt = row.alt;
       if (!isAbsent(row.place)) next.place = row.place;
     }
+    if (key === 'order') next.categoryOrder = categoryRank.get(photo.id);
   }
   if (!('alt' in next)) {
     // Defensive: a record with no `title` key would otherwise lose its alt silently.
     fail(`"${photo.id}" has no "title" key, so there is no anchor to insert alt after`);
+  }
+  if (!('categoryOrder' in next)) {
+    fail(`"${photo.id}" has no "order" key, so there is no anchor to insert categoryOrder after`);
   }
   if (photo.alt !== next.alt)
     changes.push(`${photo.id}: alt ${photo.alt === undefined ? 'added' : 'changed'}`);
@@ -225,6 +294,10 @@ const merged = manifest.map((photo) => {
   const hasPlace = 'place' in next;
   if (hadPlace !== hasPlace) changes.push(`${photo.id}: place ${hasPlace ? 'added' : 'removed'}`);
   else if (hasPlace && photo.place !== next.place) changes.push(`${photo.id}: place changed`);
+  if (photo.categoryOrder !== next.categoryOrder)
+    changes.push(
+      `${photo.id}: categoryOrder ${photo.categoryOrder === undefined ? 'added' : 'changed'} (${photo.category} ${next.categoryOrder}, global ${photo.order})`
+    );
   return next;
 });
 

@@ -31,7 +31,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 | 00 design-ideation | **25 / 25 COMPLETE** | Both remaining are **human gates** (00-11 sketch review, 00-17 copy review). Playground deletion is parked behind them. One off-plan deliverable shipped: `00-RESPONSIVE-CONTRACT.md`. |
 | 01 monochrome theme | 23 / 23 executed | 01-23 complete. The brand was **renamed to monochrome in 01-23**, while nothing had published: `data-brand="monochrome"`, the `./themes/monochrome.css` and `./fonts/monochrome.css` subpaths, `DS_BRAND=monochrome`, and 504 visual baselines renamed by `git mv` with no re-capture. The sibling branch **keeps its original name** (see `01-SIBLING-PROTOCOL.md` §2) and is at **89 commits**, tracked-clean. The palette itself went **near-monochrome** in 01-22, after the ochre identity was rejected at the 01-20 capture review. `DS_BRAND=monochrome test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 **COMPLETE 2026-08-25**: `2.0.0-beta.1` published to the **`next`** dist-tag with SLSA provenance; `latest` stays at `1.11.4`, so Cairn's `^1.9.0` is untouched. Published **not** by token but by **GitHub Actions trusted publishing (OIDC)** — the account runs `auth-and-writes` 2FA, under which a Publish token authenticates but cannot write. There is no local publish path; the tag push is the publish button. The registry tarball's shasum came back byte-identical to the local pack, so the build is reproducible. |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
-| 03 content layer | **3 / 8 executed** | Wave 1 complete: **03-01** 156 photo URLs onto `images.akhilsaxena.com` + the CONT-04 gate (73 files scanned, 0 occurrences); **03-02** the bold-only bullet grammar, 13 bullets converted, **34 HTML tags → 0**, 17 emphasised spans preserved exactly; **03-03** `site_config` as `{id,label,columns}` records, seven ids, `defaultColumns: 3`, 39/39 photos resolving with 0 orphans. Suite **258/258**; `gate:origin`, `check`, `typecheck` all exit 0. OD-1 and OD-2 resolved by Akhil 2026-08-25. Wave 2 (03-04, 03-05) unblocked. |
+| 03 content layer | **5 / 8 executed** | **Waves 1–2 complete.** 03-01 156 photo URLs onto `images.akhilsaxena.com` + the CONT-04 gate; 03-02 the bold-only bullet grammar (13 bullets, **34 HTML tags → 0**, 17 spans preserved); 03-03 `site_config` as seven `{id,label,columns}` records + `defaultColumns`, 39/39 resolving, 0 orphans; **03-04** 39 `alt` + 16 `place` merged from the reviewed brief, `categoryOrder` backfilled on 39, OD-5 pinned as an assertion; **03-05** projects split to `projects.json` (5 records), `period` deleted from all four records and derived by `src/lib/period.ts` — all four strings byte-identical including **U+2013** — and OD-6's `{{ds.componentCount}}` placeholder stored. Suite **351/351** across 9 files; `gate:origin`/`check`/`typecheck` exit 0. OD-1…OD-6 all resolved by Akhil. **Wave 3 (03-06) needs OD-3 and OD-7.** |
 
 Progress: [██████████] 98%
 
@@ -131,6 +131,22 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **Running tally of unfailable plan gates, Phase 3: eight.** Wave 2 added two more, both in 03-04.
+  Its **idempotence gate measured the commit, not the re-run** — `node merge && git diff --quiet` read
+  the 55 additions the merge had just made and reported `FAIL: not idempotent` on correct code, and
+  *after* a commit would have reported OK for a script that never ran. Its **`categoryOrder` gate
+  passed vacuously**: given `[]` it iterated zero groups and printed `OK 7 categories, dense 1..n
+  ranks` with exit 0 — a sentence about seven categories it had never seen. Both repaired by the
+  executor, the second with an anti-vacuity clause driven by the *expectation table* rather than by
+  the data, so an empty dataset cannot silence it.
+- **The `HEAD~1` time bomb fired exactly as predicted.** 03-04 recorded that 03-05 committed `2009dc9`
+  **mid-execution**, so the plan's `git show HEAD~1` evidence instruction would have selected a
+  revision already carrying `categoryOrder`. It searched the manifest's own log instead and proved the
+  choice non-tautological: `HEAD` has `categoryOrder` on 39/39 and a naive finder picks it, while the
+  real finder picks `27a5e38` and quotes that hash in its failure messages.
+- **Fifteenth machine-sleep agent death**, this time 03-05, which had finished its 586-line summary but
+  not staged it. Work was intact because of the one-commit-per-task rule; the summary was committed
+  post-hoc after independent verification. The rule keeps paying for itself.
 - **The plans' own verification scaffolding is now a known defect surface, not just the code it
   tests.** Phase 3 wave 1 found **four** classes of unfailable gate written *into the plans*: a
   `/three/i` grep that passed on an unedited file by matching a prose comment (the **seventh**

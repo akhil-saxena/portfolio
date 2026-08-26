@@ -42,6 +42,21 @@ jobs:
       # comment is documentation; the SHA is the contract.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history, NOT the default shallow depth-1 clone.
+          #
+          # Four migration proofs walk `git log -- <file>` for the revision that predates
+          # their migration -- the before-state they compare against. Under depth 1 that
+          # search finds one revision, and each test THROWS rather than passing:
+          #   "...has nothing to compare against and MUST NOT pass vacuously
+          #     -- searched 1 revision(s)."
+          #
+          # That is the guard working, not a flake. Do not fix this by softening those
+          # tests into skips -- they say so in their own message, and a skipped
+          # losslessness proof is indistinguishable from a passing one in a green run.
+          # Phase 3 shipped ten gates that could not fail; these four are the ones that
+          # refuse to.
+          fetch-depth: 0
 
       # The Node version is read from .nvmrc so there is exactly one answer to what it
       # is. The legacy repository pinned it separately inside each workflow, drifted to

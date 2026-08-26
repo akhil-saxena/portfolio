@@ -62,6 +62,7 @@ interface Photo {
   category: string;
   order: number;
   categoryOrder?: unknown;
+  focalPoint?: unknown;
 }
 
 type BriefRow = Record<(typeof COLUMNS)[number], string>;
@@ -364,5 +365,53 @@ describe('categoryOrder agrees with the global order it was derived from', () =>
       compared += group.length;
     }
     expect(compared).toBe(EXPECTED_RECORDS);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// OD-5, resolved by Akhil on 2026-08-25: BOTH FIELDS SURVIVE (option A)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * `photo.focalPoint` does NOT supersede `home_config.peekPositions`. Both survive.
+ *
+ * THE ARGUMENT, WRITTEN DOWN HERE BECAUSE IT IS THE ONE PLACE IN PHASE 3 WHERE TWO FIELDS OF THE
+ * SAME SHAPE ARE DEFENDED RATHER THAN DELETED. D-25 deleted `site_config.categoryColumns` and
+ * 00-ADMIN-IA §5 deleted the résumé's `period` for exactly the duplication these two look like:
+ * both hold a `"50% 25%"` string, and one of them holds a single value while the other holds
+ * none. So the burden is on the defence, and the defence is that they answer different questions:
+ *
+ *   - `focalPoint` is "where is the subject in this photograph" — a property of the IMAGE, true
+ *     in any crop, anywhere on the site: a hero, a grid tile, a lightbox, a peek frame.
+ *   - `peekPositions` is "how should this photo sit in HOME'S 3:2 peek frame" — a property of one
+ *     PLACEMENT in one layout.
+ *
+ * The distinction is load-bearing rather than theoretical: overriding how a photograph sits in one
+ * frame, without changing how it is cropped everywhere else, is not expressible with a single
+ * field. Folding them would mean a photo has exactly one crop in every context forever, and undoing
+ * that later would mean undoing it with Phase 7's focal-marker editor already built on top.
+ *
+ * WHAT THIS MIGRATION THEREFORE DID: nothing. The single existing value,
+ * `{"architecture-hawamahaldaytime": "50% 25%"}`, stays in `data/home_config.json` untouched, and
+ * `focalPoint` is written onto no record. 03-06 adds `focalPoint` to `PhotoSchema` as optional
+ * with the default `"50% 50%"` DECLARED IN THE SCHEMA — an explicitly stored default is a value
+ * nobody edited that looks like one somebody chose. 03-06 also owns the referential rule that
+ * `peekPositions` keys are a subset of `peekIds`; it is not duplicated here.
+ */
+describe('OD-5: focalPoint is added to the schema, not to the data', () => {
+  it('writes focalPoint onto no record — the default lives in 03-06 schema, not on disk', () => {
+    const carriers = manifest.filter((p) => 'focalPoint' in p).map((p) => p.id);
+    expect(carriers).toEqual([]);
+    expect(manifest).toHaveLength(EXPECTED_RECORDS); // not vacuous: there are 39 records to check
+  });
+
+  it('stores no explicit copy of the "50% 50%" default, whatever focalPoint values appear', () => {
+    // DECLARED VACUOUS TODAY, deliberately. No record carries `focalPoint` at all — the assertion
+    // above pins that — so this one currently filters an empty set. It is written now rather than
+    // later because the moment Phase 7's focal-marker editor authors the first real value is the
+    // moment it stops being vacuous, and a rule added after the data exists is a rule added after
+    // the violation. When that day comes, retire the assertion above by name and keep this one.
+    const defaulted = manifest.filter((p) => p.focalPoint === '50% 50%').map((p) => p.id);
+    expect(defaulted).toEqual([]);
   });
 });

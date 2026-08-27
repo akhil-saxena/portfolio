@@ -357,12 +357,21 @@ function runJob(sandbox: Sandbox, overrides: Record<string, string> = {}): Run {
     ...overrides,
   };
 
+  // The cast is load-bearing and not a shrug. `worker-configuration.d.ts` augments
+  // `NodeJS.ProcessEnv` with CF_ACCESS_TEAM_DOMAIN and CF_ACCESS_AUD as REQUIRED, which is right
+  // for this application's own process and wrong for a child the test is deliberately starving:
+  // the whole point of building this object key by key is that the job must run on exactly what
+  // the workflow step's `env:` provides and must not inherit the parent's environment. Spelling
+  // the two Access variables in here to satisfy the type would hand the pipeline two credentials
+  // it has no business seeing, to silence a type error about a shape it is not.
+  const childEnv = env as unknown as NodeJS.ProcessEnv;
+
   // `spawnSync`, not `execFileSync`. execFileSync RETURNS stdout and discards stderr on a zero
   // exit — which made case 7 (a successful run that emits a WARNING on stderr) unable to see the
   // very line it exists to assert. Both streams are captured on both paths here.
   const result = spawnSync(process.execPath, ['scripts/process-photo.mjs'], {
     cwd: sandbox.work,
-    env,
+    env: childEnv,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
     maxBuffer: 32 * 1024 * 1024,

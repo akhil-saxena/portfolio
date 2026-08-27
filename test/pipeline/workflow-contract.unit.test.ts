@@ -27,6 +27,17 @@
  * uses the 1.2 core schema and keeps it a string — asserted below rather than trusted, because
  * a future swap of parser is exactly the change that would silently disarm rules 1, 2 and 3.
  *
+ * THE PARSER IS AN UNDECLARED DEPENDENCY, AND THAT IS RECORDED RATHER THAN HIDDEN
+ * -----------------------------------------------------------------------------
+ * `yaml` 2.9.0 resolves at the top of `node_modules` as a TRANSITIVE dependency of `vite` (via
+ * `astro`) and `@astrojs/yaml2ts`. It is in the committed lockfile, so `npm ci` installs it
+ * deterministically and CI has it — but nothing in `package.json` asks for it, so a future Vite
+ * release that drops it would take this file with it. Plan 04-08 could not add the declaration:
+ * `package.json` belonged to a plan running in the same wave. The failure mode is a loud
+ * `Cannot find module 'yaml'` at import, never a vacuous pass, which is why this was recorded
+ * and shipped rather than worked around with a hand-rolled parser. PROMOTE `yaml` TO A DIRECT
+ * devDependency.
+ *
  * THE RESIDUAL BOUNDARY ON RULE A9, MEASURED RATHER THAN ASSUMED
  * -------------------------------------------------------------
  * A9 refuses `${{ inputs.… }}` inside a `run:` block, because Actions substitutes that text

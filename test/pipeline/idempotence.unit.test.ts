@@ -486,6 +486,62 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     expect(PhotoSchema.safeParse(after).success).toBe(true);
   });
 
+  it('replaces IN PLACE — the record keeps its index, so a retry is a one-record diff', () => {
+    // FOUND BY A WALK-THROUGH ATTEMPT, 2026-08-27. An implementation that preserved both ranks
+    // and then returned `[...manifest.filter(notThisId), preserved]` passed all 51 assertions:
+    // the rank VALUES were right and the record happened to be last anyway. It is not always
+    // last, and a repair that moved a record through a 39-record file would produce a diff on
+    // reviewed content out of all proportion to what changed. So the position is asserted, with
+    // a record that is deliberately NOT at the end.
+    const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
+    const inserted = find(first, ID);
+    const interloper = {
+      ...inserted,
+      id: 'nature-interloper',
+      order: inserted.order + 1,
+      categoryOrder: inserted.categoryOrder + 1,
+    };
+    const between = [...first, interloper];
+    const indexBefore = between.findIndex((photo) => photo.id === ID);
+    expect(indexBefore).toBe(between.length - 2);
+
+    const after = upsertRecord(between, build('v2', between)) as Photo[];
+    expect(after.findIndex((photo) => photo.id === ID)).toBe(indexBefore);
+    // And nothing else moved either.
+    expect(after.map((photo) => photo.id).join('|')).toBe(
+      between.map((photo) => photo.id).join('|')
+    );
+  });
+
+  it('carries EVERY non-rank field from the rebuilt record — including place', () => {
+    // ALSO FOUND BY A WALK-THROUGH ATTEMPT. An upsert that silently dropped `place` on the repair
+    // path passed all 51 assertions, because no test built a record with a place and then
+    // repaired it. `place` is reviewed content; a retry losing it would be a silent edit.
+    //
+    // Asserted as a class rather than field by field: everything except the two ranks must be
+    // byte-identical to what buildRecord produced, so a field added later is covered without this
+    // test being touched.
+    const first = upsertRecord(
+      COMMITTED,
+      build('v1', COMMITTED, { place: 'Coorg, Karnataka' })
+    ) as Photo[];
+    const rebuilt = build('v2', first, { place: 'Chikmagalur, Karnataka' });
+    const second = upsertRecord(first, rebuilt) as Photo[];
+    const after = find(second, ID);
+
+    expect(find(first, ID).place).toBe('Coorg, Karnataka');
+    expect(after.place).toBe('Chikmagalur, Karnataka');
+
+    const withoutRanks = (photo: Photo): string => {
+      const { order: _order, categoryOrder: _categoryOrder, ...rest } = photo;
+      return JSON.stringify(rest);
+    };
+    expect(withoutRanks(after)).toBe(withoutRanks(rebuilt));
+    // ...and the ranks themselves are the FIRST run's, not the rebuild's.
+    expect(after.order).toBe(find(first, ID).order);
+    expect(after.order).not.toBe(rebuilt.order);
+  });
+
   it('never mutates its input array or any record object in it', () => {
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const firstSnapshot = JSON.stringify(first);

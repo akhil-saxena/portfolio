@@ -18,8 +18,19 @@
  * Eight gates in this phase have shipped green while checking nothing — a grep that matched
  * prose, a loop that iterated zero groups and still printed "OK 7 categories". Every rule in
  * `validateContentSet` therefore reports how many things it looked at, and this file asserts
- * those counts are the real ones (39 photos, 7 categories, 6 peek ids, 13 bullets). A run that
- * checked zero photographs cannot look like a run that checked thirty-nine.
+ * those counts are real. A run that checked zero photographs cannot look like a run that checked
+ * the whole corpus.
+ *
+ * THE PHOTO COUNT IS A FLOOR, NOT A CENSUS (plan 04-01, 2026-08-27)
+ * ----------------------------------------------------------------
+ * `MIN_PHOTOS = 39` is a FLOOR and is labelled as one at its declaration. The four other censuses
+ * — categories, peek ids, projects, bullets — stay EQUALITIES, because nothing in Phase 4 adds one
+ * of those and a change in any of them is a decision, not growth. The photo corpus is the single
+ * collection this project is built to grow: Phase 4's pipeline appends records to
+ * `data/portfolio_images.json`, and measured on 2026-08-27, one valid 40th record turned four
+ * assertions in THIS FILE red while `astro sync` reported `PASS · 40 photo(s)`. Where the count was
+ * doing anti-vacuity work it is now `>= MIN_PHOTOS`; where it was standing in for "all of them" it
+ * is now `PHOTOS.length`, which is what the assertion always meant.
  *
  * `describe('vacuity')` goes further and feeds the validator empty arrays: it must FAIL, loudly,
  * naming what was empty. That is the ninth vacuous gate, caught before it ships.
@@ -60,8 +71,18 @@ const HOME = read('data/home_config.json') as Record<string, unknown>;
 const PROJECTS = read('data/projects.json') as Record<string, unknown>[];
 const RESUME = read('data/resume.json') as Record<string, unknown>;
 
+/**
+ * MIN_PHOTOS — FLOOR. 39 is the reviewed corpus as it stood on 2026-08-23, and the corpus only
+ * grows: the Phase 4 pipeline's whole purpose is to append records. A manifest that shrank BELOW
+ * this is a data loss and must fail; a manifest above it is the feature working. This is the exact
+ * shape `scripts/assert-no-r2dev-urls.mjs` already uses at its `manifest.length < EXPECTED_RECORDS`
+ * guard, which the 04-RESEARCH measurement confirmed passing correctly at 40 records.
+ *
+ * It is NOT a census. Anywhere below that needed "all of the photographs" now says `PHOTOS.length`.
+ */
+const MIN_PHOTOS = 39;
+
 /** The censuses this plan was written against, re-derived here rather than trusted. */
-const EXPECTED_PHOTOS = 39;
 const EXPECTED_CATEGORIES = 7;
 const EXPECTED_PEEK_IDS = 6;
 const EXPECTED_PROJECTS = 5;
@@ -184,8 +205,10 @@ describe('the mutated() harness', () => {
  * ========================================================================================== */
 
 describe('the data this file is written against', () => {
-  it('is the census the plan measured', () => {
-    expect(PHOTOS).toHaveLength(EXPECTED_PHOTOS);
+  it('holds at least the reviewed photo corpus, and the four fixed censuses exactly', () => {
+    // FLOOR on photos: see MIN_PHOTOS. EQUALITY on the other four: none of them grows in Phase 4,
+    // and a change to any of them is a decision that should red this assertion deliberately.
+    expect(PHOTOS.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
     expect((SITE.categories as unknown[]).length).toBe(EXPECTED_CATEGORIES);
     expect((HOME.peekIds as unknown[]).length).toBe(EXPECTED_PEEK_IDS);
     expect(PROJECTS).toHaveLength(EXPECTED_PROJECTS);
@@ -194,8 +217,13 @@ describe('the data this file is written against', () => {
   });
 
   it('carries exif on every record with nullable fields — not optional (the 11-record trap)', () => {
+    // INVARIANT + FLOOR. `PhotoExifSchema` is a required strict object, so a complete six-key exif
+    // block is true of every record the schema accepts — including the pipeline's. The claim was
+    // always "all of them"; `EXPECTED_PHOTOS` was standing in for that and asserting corpus size
+    // as a side effect. The floor is what stops `PHOTOS.length` making this vacuous at zero.
     const withExif = PHOTOS.filter((p) => 'exif' in p);
-    expect(withExif).toHaveLength(EXPECTED_PHOTOS);
+    expect(withExif).toHaveLength(PHOTOS.length);
+    expect(PHOTOS.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
     const nullLens = PHOTOS.filter((p) => (p.exif as Record<string, unknown>).lens === null);
     expect(nullLens.length).toBeGreaterThan(0);
     const allNull = PHOTOS.filter((p) =>
@@ -240,7 +268,12 @@ describe('the committed data parses as it stands', () => {
     expect(reportText(report)).toBe('');
     expect(report.ok).toBe(true);
     // The anti-vacuity assertion: a run that checked nothing must not read like this one.
-    expect(report.checked.photos).toBe(EXPECTED_PHOTOS);
+    // INVARIANT + FLOOR. The census must count WHAT IS IN THE FILE — hardcoding 39 here asserted
+    // the file's size, which is a different claim and the wrong one. `PHOTOS.length` catches the
+    // failure the line exists for (a validator that visited fewer records than it was handed);
+    // the floor catches the one `PHOTOS.length` alone cannot (both being zero).
+    expect(report.checked.photos).toBe(PHOTOS.length);
+    expect(PHOTOS.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
     expect(report.checked.categories).toBe(EXPECTED_CATEGORIES);
     expect(report.checked.peekIds).toBe(EXPECTED_PEEK_IDS);
     expect(report.checked.projects).toBe(EXPECTED_PROJECTS);
@@ -640,8 +673,12 @@ describe('alt text — the brief stops being the authority the moment 03-04 merg
  * ========================================================================================== */
 
 describe('OD-3 — tags is dropped', () => {
-  it('is absent from all 39 committed records', () => {
+  it('is absent from every committed record', () => {
+    // INVARIANT + FLOOR. Already whole-manifest, so it survived the 40-record measurement
+    // untouched; the floor is added because `filter(...).toHaveLength(0)` is trivially satisfied by
+    // an empty manifest, and the retitle removes a count the assertion never made.
     expect(PHOTOS.filter((p) => 'tags' in p)).toHaveLength(0);
+    expect(PHOTOS.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
   });
 
   it('is REJECTED by the schema, so a stray tag fails the build rather than sitting unread', () => {
@@ -724,15 +761,26 @@ describe('exif', () => {
  * ========================================================================================== */
 
 describe('optional photo fields', () => {
-  it('accepts the 23 records with no place key at all', () => {
+  it('accepts every record that carries no place key at all', () => {
+    // INVARIANT + FLOOR, and the assertion plan 04-01 did not predict: this was the FOURTH failing
+    // assertion in this file at 40 records, not the `tags` block the plan named (that one was
+    // already whole-manifest and passed). `toBe(23)` was a census of the cohort complement, and the
+    // 40th record — which carries no `place` — made it 24.
+    //
+    // The claim is that `place` really is optional, proven against real records that omit it, so it
+    // is now iterated over the whole manifest. MIN_PLACELESS_PHOTOS is the anti-vacuity floor: 23 of
+    // the reviewed 39 omit `place`, and adding a photograph can only leave that figure alone or
+    // raise it. It falling is a cohort record gaining a `place`, which is a data change
+    // `test/content/photo-enrichment.unit.test.ts` fails on by name.
+    const MIN_PLACELESS_PHOTOS = 23;
     const without = PHOTOS.filter((p) => !('place' in p));
-    expect(without.length).toBe(23);
+    expect(without.length).toBeGreaterThanOrEqual(MIN_PLACELESS_PHOTOS);
     for (const photo of without) {
       expect([photo.id, PhotoSchema.safeParse(photo).success]).toEqual([photo.id, true]);
     }
   });
 
-  it('does NOT materialise focalPoint on parse — a write path must not rewrite 39 records', () => {
+  it('does NOT materialise focalPoint on parse — a write path must not rewrite every record', () => {
     const parsed = PhotoSchema.parse(PHOTOS[0]);
     expect('focalPoint' in parsed).toBe(false);
     expect(JSON.stringify(parsed)).toBe(JSON.stringify(PHOTOS[0]));

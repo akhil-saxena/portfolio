@@ -150,8 +150,26 @@ describe('the evidence this proof rests on', () => {
     expect(legacyKeys).toContain(UNFILTERED_KEY);
   });
 
-  it('reads all 39 photo records', () => {
-    expect(photos).toHaveLength(39);
+  it('reads the whole photo manifest, and every record resolves to a live category', () => {
+    // FLOOR + INVARIANT (plan 04-01). This block's job is anti-vacuity: the orphan check further
+    // down loops over `photos`, and a manifest that failed to load would make it iterate zero
+    // records and report green. A `toHaveLength` equality on the corpus size did that job and
+    // also forbade a 40th
+    // photograph — measured on 2026-08-27, it was one of the 15 assertions that redded at 40
+    // records while `astro sync` stayed green.
+    //
+    // MIN_PHOTOS is a floor: the corpus only grows, and a manifest below the reviewed 39 is a data
+    // loss rather than a smaller test. The category-resolution half is the INVARIANT — true of
+    // every record forever, and it is what makes the count mean something rather than being a bare
+    // size check. RI-1 enforces the same property at build time; re-asserting it here is
+    // deliberate, because this file is the losslessness proof for the migration that created the
+    // id set being resolved against.
+    const MIN_PHOTOS = 39;
+    expect(photos.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
+    const liveIds = new Set(ids);
+    expect(liveIds.size).toBeGreaterThan(0); // ANTI-VACUITY for the filter below
+    const unresolved = photos.filter((p) => !liveIds.has(p.category)).map((p) => p.id);
+    expect(unresolved).toEqual([]);
   });
 });
 

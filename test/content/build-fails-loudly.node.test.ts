@@ -215,7 +215,7 @@ afterAll(() => {
 
 describe('a clean tree builds, and the gate says how much it looked at', () => {
   it(
-    'exits 0, emits dist/, and reports a census of 39 photographs rather than a bare PASS',
+    'exits 0, emits dist/, and reports a census of the sandbox manifest rather than a bare PASS',
     async () => {
       const result = await buildAfter(() => {});
       expect(result.output.length).toBeGreaterThan(0);
@@ -225,7 +225,21 @@ describe('a clean tree builds, and the gate says how much it looked at', () => {
       // Anti-vacuity: "content set: PASS" is the same sentence over zero photographs and over
       // thirty-nine, and only one of them is a pass.
       expect(result.output).toContain('content set: PASS');
-      expect(result.output).toContain('39 photo(s)');
+
+      // DERIVED (plan 04-01), from THE SANDBOX'S OWN COPY of the manifest — the file this build
+      // actually read — not from a literal and not from the repository. `39 photo(s)` was one of
+      // the 15 assertions that redded at 40 records on 2026-08-27, and bumping it to 40 would have
+      // put the same trap back one photograph further along.
+      //
+      // The claim being kept is the one the block exists for: the gate reports A CENSUS rather than
+      // a bare PASS, and the census is the size of what it was given. `n > 0` comes FIRST because
+      // `toContain('0 photo(s)')` over an empty sandbox manifest would otherwise satisfy this
+      // trivially — and an empty manifest is refused by `PhotoManifestSchema.min(1)`, so a build
+      // that got that far would already be failing for a different reason.
+      const sandboxPhotos = readJson('portfolio_images.json') as unknown[];
+      expect(Array.isArray(sandboxPhotos)).toBe(true);
+      expect(sandboxPhotos.length).toBeGreaterThan(0);
+      expect(result.output).toContain(`${sandboxPhotos.length} photo(s)`);
       expect(result.output).toContain('7 category record(s)');
       expect(result.output).toContain('5 project(s)');
       expect(result.output).toContain('RI-1, RI-2, RI-3, RI-4, RI-5, RI-6');

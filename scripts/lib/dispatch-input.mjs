@@ -281,7 +281,7 @@ export function assertRuleCoverage(inputs, ruleNames) {
         `DISPATCH_INPUTS. A rule with no input is a rule nobody runs.`
     );
   }
-  if (declared.join(' ') !== ruleNames.join(' ')) {
+  if (declared.join('\u0000') !== ruleNames.join('\u0000')) {
     throw new Error(
       `dispatch-input: rule order (${ruleNames.join(', ')}) does not match declaration order ` +
         `(${declared.join(', ')}). The workflow generates its inputs block in declaration order.`

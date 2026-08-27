@@ -192,6 +192,23 @@ result it did not measure.
     load-bearing check is the decoded-width assertion), but it is the same shape twice, which is why
     the standing rule is: **every `! grep` needs a `test -f` guard.**
 
+21. **`wrangler r2 object` operates on LOCAL storage unless `--remote` is passed.** Measured on the
+    installed wrangler 4.123.0 against a key that certainly exists remotely: without the flag it
+    reports *"The specified key does not exist."*; with it, the 28,426-byte object downloads.
+    **A `put` without `--remote` writes to local disk and looks like success**, so every dispatch
+    would be a silent exit-0 no-op that uploads nothing and commits a manifest pointing at objects
+    that were never created. Load-bearing because OD-5 resolved to wrangler over the S3 SDK.
+    **Every `r2 object` invocation must carry `--remote`, and a gate must assert it** — the failure
+    mode is silent, so nothing downstream would notice.
+22. **A source file containing a literal NUL byte is invisible to `grep`, and every grep-based gate
+    over it passes vacuously.** `scripts/lib/dispatch-input.mjs` used join('\0') with a **literal**
+    NUL as an array-comparison separator — a correct technique, since a name containing the separator
+    cannot then cause false equality. But the literal byte made `file(1)` report the source as
+    `data`, and `grep -q 'export'` returned **not found** while `grep -a` found it 9 times. Fixed by
+    writing the separator as the escape '\u0000': identical at runtime, and the file is text
+    again. Verified after the edit — 957/957 and all gates unchanged. **Standing rule: a control
+    character belongs in a source file as an escape, never as a literal byte.**
+
 ## Validation Sign-Off
 
 - [x] All tasks have `<automated>` verify or a Wave 0 dependency

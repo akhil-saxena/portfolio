@@ -105,8 +105,22 @@ const remoteUrl = z
     }
   );
 
-/** The LQIP. Not an address at all, which is why it is excluded from REMOTE_URL_KEYS. */
-const THUMB_PREFIX = 'data:image/webp;base64,';
+/**
+ * The LQIP. Not an address at all, which is why it is excluded from REMOTE_URL_KEYS.
+ *
+ * EXPORTED since plan 04-02 (W6). Phase 4's pipeline declares the same prefix in
+ * `src/lib/photo-pipeline.ts` (`THUMB.dataUriPrefix`) because that module must stay loadable by
+ * plain `node` on the Actions runner and cannot import this file — measured: this file imports
+ * the origin extensionless, which Node's ESM resolver will not resolve. Without this `export`
+ * the only available agreement check compared the pipeline's value against a literal re-typed in
+ * a test, which agrees with itself and proves nothing.
+ *
+ * The `export` is a VISIBILITY change and nothing else: no zod rule moved, and a bare string
+ * constant is not a rival content shape, so `npm run gate:schema` is unaffected (verified, exit
+ * 0). `test/pipeline/photo-pipeline-contract.unit.test.ts` imports both sides and asserts they
+ * are byte-equal, so the two cannot drift.
+ */
+export const THUMB_PREFIX = 'data:image/webp;base64,';
 
 const thumbUri = z
   .string()

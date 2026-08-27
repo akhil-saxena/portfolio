@@ -1,0 +1,202 @@
+name: Process Photos
+
+# One photograph, from a staged upload to a committed record, driven by one command line.
+# (Phase 4. This file is plan 04-08: the trigger, the inputs, the token and the validation.
+# The R2 read, the derivation, the upload, the liveness check, the commit and the staged-object
+# delete are plan 04-09 and are deliberately NOT here yet — see the last step, which says so.)
+#
+# HOW IT IS CALLED
+#
+#   gh workflow run process-photos.yml --ref main \
+#     -f temp_key=<staged object key> \
+#     -f category=<an id from data/site_config.json> \
+#     -f title='…' \
+#     -F alt=@alt.txt          # -F respects @, so long alt text comes from a file
+#     [-f place='…']
+#
+# WHY THERE IS NO push TRIGGER, AND WHY new-photos/ MUST NOT COME BACK
+#
+# The legacy app's wired upload path base64'd the whole file through a Worker isolate and PUT it
+# to `new-photos/`, whose push then triggered processing. That put a 25 MB blob in git history
+# permanently, and it is why this pipeline is dispatch-driven instead. `new-photos/` is not a
+# tracked directory today and must not become one: it is a new TOP-LEVEL path, and
+# `scripts/assert-no-r2dev-urls.mjs` classifies every tracked path exhaustively, so an
+# unclassified one fails `npm run gate:origin` with `unclassified path` until somebody adds a
+# rule with a written reason. Everything this pipeline touches lives under `.github/`, `scripts/`
+# or `test/`, all of which are already classified.
+#
+# THE ORIGIN IS NOT READ FROM ANYWHERE, AND THAT IS THE POINT (OD-3)
+#
+# There is no `R2_PUBLIC_URL` in this file and there will not be one. The pipeline composes every
+# URL from `IMAGE_ORIGIN` in `src/lib/image-origin.ts`, so it structurally cannot emit a
+# non-canonical origin. Plan 04-02 moved `.github/**` from SKIP to SCAN in the origin gate, so
+# this file IS now read by `npm run gate:origin` — but only as TEXT. A `${{ secrets.X }}`
+# reference is a reference, not a literal, so a wrong value living inside a secret stays
+# invisible to every gate in this repository. Refusing to read an origin secret at all is the
+# only thing that closes that half, and it is what this file does.
+#
+# THE CREDENTIAL, AND WHY IT IS NOT GITHUB_TOKEN (OD-8, option A)
+#
+# GitHub documents that a push made with the repository's own `GITHUB_TOKEN` creates NO new
+# workflow run. This repository's deploy chain is `push → CI → workflow_run → Deploy`, and
+# `deploy.yml` has neither a push trigger nor a manual-dispatch trigger, on purpose — its header
+# says either would be a way to reach the publish without a green CI run. So a pipeline commit
+# pushed with `GITHUB_TOKEN` would land on main, run no CI, and deploy nothing: the photograph
+# would sit in the manifest and never reach the site.
+#
+# A GitHub App installation token triggers `push` normally, so the existing chain runs unchanged
+# and stays the ONLY deploy path. It is short-lived and repo-scoped, and the two app secrets are
+# scoped to the single step that mints it.
+#
+# NOT DONE, AND NOT NEGOTIABLE: adding this workflow to `deploy.yml`'s `workflow_run.workflows`
+# list. That would create a SECOND deploy path with only one of the two gated — the exact hazard
+# `deploy.yml`'s header exists to prevent, and the same reasoning that keeps Cloudflare Workers
+# Builds disconnected from this repository.
+#
+# UNTIL PHOTO_PIPELINE_APP_ID AND PHOTO_PIPELINE_APP_PRIVATE_KEY EXIST, the token step FAILS.
+# That failure is the report that the `user_setup` is outstanding, not a bug to work around.
+# Plan 04-10's blocking checkpoint is where they get confirmed.
+
+on:
+  # workflow_dispatch and nothing else. A `push:` here would be a second way in, and the
+  # contract test asserts the trigger KEY SET rather than merely the presence of this one, so
+  # adding a trigger later fails a test by name instead of passing quietly.
+  #
+  # The five inputs below are generated from `DISPATCH_INPUTS` in `src/lib/photo-pipeline.ts` —
+  # same names, same order, same `required` flags, same descriptions. They cannot drift: the
+  # contract test parses this YAML and compares it to that array, key for key.
+  workflow_dispatch:
+    inputs:
+      temp_key:
+        description: >-
+          R2 key of the staged upload, rooted at the staging prefix. Validated by
+          assertStagingKey before any object is read.
+        required: true
+        type: string
+      category:
+        description: >-
+          Existing category id from data/site_config.json. A lowercase slug; it is compared to
+          the real id set with no case transform on either side.
+        required: true
+        type: string
+      title:
+        description: Human title for the photograph, as it appears in the gallery.
+        required: true
+        type: string
+      alt:
+        description: >-
+          Alt text, written from looking at the photograph. The entire non-visual experience of
+          the gallery — the public pages ship no JavaScript, so nothing else can supply a
+          description later. Placeholder-shaped values are refused (OD-2b). Pass it from a file
+          with `-F alt=@alt.txt` if it is long.
+        required: true
+        type: string
+      place:
+        description: Optional place name. Omitted rather than empty when unknown.
+        required: false
+        type: string
+
+# Least privilege, and stated rather than inherited.
+#
+# `contents: read` is what `actions/checkout` needs and it is the whole grant. There is NO
+# `contents: write` here, deliberately: the pipeline's commit is pushed with the App installation
+# token minted below, not with GITHUB_TOKEN, so a write grant on GITHUB_TOKEN would be a standing
+# permission nobody re-reads and nothing uses. `actions/create-github-app-token` needs no
+# permission at all — it authenticates with the app's private key.
+permissions:
+  contents: read
+
+# Pipeline runs QUEUE, they do not cancel. Same setting and same reason as `deploy.yml`: a run
+# cancelled mid-publish is exactly how the bucket and the manifest end up disagreeing, because
+# the R2 upload and the manifest commit are not one atomic operation. `ci.yml` cancels; the
+# difference between the two is deliberate in both directions.
+#
+# This serialises pipeline runs against EACH OTHER and nothing more. Contention with a human
+# push to `data/portfolio_images.json` is handled by plan 04-06's re-derive-and-retry loop, which
+# no concurrency group can substitute for.
+concurrency:
+  group: photo-pipeline
+  cancel-in-progress: false
+
+jobs:
+  process:
+    name: validate the dispatch, then publish one photograph
+    runs-on: ubuntu-latest
+    steps:
+      # Third-party actions are pinned to a full commit SHA, never to a tag — a tag is a mutable
+      # pointer that whoever controls the action's repository can move. The version in the
+      # trailing comment is documentation; the SHA is the contract. Same SHAs as ci.yml and
+      # deploy.yml, on purpose: three workflows agreeing on one revision is one thing to audit.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history, chosen rather than inherited. The default is a depth-1 shallow clone,
+          # which broke Deploy at run 32941901693 on 2026-08-26: four migration proofs walk
+          # `git log -- <file>` for the revision predating their migration, find one revision,
+          # and THROW rather than pass vacuously. Two reasons it is 0 here as well:
+          #   1. plan 04-06's publish loop fetches and re-derives against the fetched manifest;
+          #      a shallow clone makes that a special case for no benefit.
+          #   2. if this job ever runs `npm test`, those four proofs are in it.
+          # The repository is small enough that a full clone costs seconds.
+          fetch-depth: 0
+
+      # The Node version is read from .nvmrc so there is exactly one answer to what it is. The
+      # legacy repository pinned it separately per workflow and drifted to 20 in one and 22 in
+      # the other.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # BEFORE `npm ci`, and before anything is read, written or minted.
+      #
+      # `scripts/lib/dispatch-input.mjs` imports only `node:` builtins and
+      # `src/lib/photo-pipeline.ts` (resolved by Node's own type stripping), so it needs no
+      # installed dependency and a bad dispatch is refused in seconds rather than after an
+      # install. It reports EVERY finding at once and exits 1, so a caller fixing four mistakes
+      # does it in one edit rather than four dispatches.
+      #
+      # Every input reaches Node through `env:`, never through `${{ }}` interpolated into this
+      # `run:` line. A `run:` block is bash and `${{ inputs.alt }}` is substituted textually
+      # before bash ever sees it, so caller-supplied text in that position is a shell-injection
+      # surface (T-04-35). The contract test asserts this against the PARSED YAML, so a
+      # multi-line block scalar cannot hide one.
+      - name: Validate the dispatch inputs
+        run: node scripts/lib/dispatch-input.mjs
+        env:
+          INPUT_TEMP_KEY: ${{ inputs.temp_key }}
+          INPUT_CATEGORY: ${{ inputs.category }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_ALT: ${{ inputs.alt }}
+          INPUT_PLACE: ${{ inputs.place }}
+
+      # Plan 04-09's processing steps need this; the validation above deliberately does not.
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      # Minted LAST, and plan 04-09 must keep it adjacent to the push it authorises. The whole
+      # argument for option A over a long-lived PAT is that the credential is short-lived, and a
+      # token minted at the top of a job that then spends minutes downloading and encoding images
+      # is short-lived only on paper.
+      #
+      # The two app secrets appear in this step and nowhere else — not at workflow level, not at
+      # job level. Same rule as `deploy.yml`'s Cloudflare credentials, and for the same reason:
+      # no other step, and no action invoked by another step, can read them. `with:` rather than
+      # `env:` because that is this action's only input surface; the scoping is identical.
+      - name: Mint the pipeline's push token
+        id: push-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PHOTO_PIPELINE_APP_ID }}
+          private-key: ${{ secrets.PHOTO_PIPELINE_APP_PRIVATE_KEY }}
+
+      # The boundary, named so a run's step list says where the file stops rather than implying
+      # a publish that did not happen. Plan 04-09 replaces this step with the pipeline.
+      - name: Pipeline steps land in plan 04-09 — this run validated inputs only
+        run: |
+          printf '%s\n' \
+            'Dispatch inputs validated, and a short-lived push token was minted.' \
+            'NOT DONE HERE: the R2 read, the derivation, the upload, the liveness check,' \
+            'the manifest commit and the staged-object delete. Those are plan 04-09.' \
+            'Nothing was read from the bucket and nothing was committed by this run.'

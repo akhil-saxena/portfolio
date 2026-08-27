@@ -129,6 +129,28 @@ result it did not measure.
    404s, correctly. Any proof step demanding both "append a 40th record" and "`--verify` exits 0"
    is unsatisfiable and must be split.
 
+10. **The EXIF differential corpus does not exist — OD-12's stated evidentiary basis is gone.**
+    All 39 served originals carry **exactly one RIFF chunk (`VP8`)**: no `EXIF`, no `XMP`, no `ICCP`.
+    Verified three ways — a raw chunk walk, `sharp(...).metadata()` reporting `exif: false`, and the
+    container header. Mechanism, not guesswork: the legacy encoder never calls `withMetadata`/
+    `withExif`/`keepMetadata`, sharp strips by default, and the camera sources were never committed
+    (`new-photos/` holds only `.gitkeep`). So the committed EXIF **values are real but unrederivable**.
+    OD-12 was chosen partly because "the 39 records are a ready-made regression corpus" — that
+    premise, in both my brief and the research, was **wrong**.
+11. **`exifr` and `exif-reader` disagree on one tag name, and a verbatim port writes `null` forever.**
+    Tag `0x8827` is `ISO` in `exifr` and **`ISOSpeedRatings`** in `exif-reader`. A straight port
+    produces `iso: null` on every future record — **schema-valid, and invisible to every gate in this
+    repo**. Found by 04-04 running a cross-library differential on real fixtures (12/12 otherwise
+    identical) rather than on the absent corpus. 04-07 owns the mapper and must pin this.
+12. **`yaml` is an undeclared transitive dependency.** `require('yaml')` resolves at 2.9.0 today, but
+    nothing in `package.json` declares it, so a lockfile refresh could remove it and break 04-08's
+    workflow contract test. `package.json` belonged to a concurrent plan at the time. **Whoever next
+    owns `package.json` must declare it.**
+13. **A re-dispatch under a DIFFERENT category orphans the old record.** `id === category + '-' + slug`,
+    so changing the category yields a new id and an insert, leaving the previous record in place.
+    **Nothing in Phase 4 owns deletion.** Measured and tested by 04-05, recorded here as a known gap
+    rather than papered over — it belongs to the admin phase or a follow-up.
+
 ## Validation Sign-Off
 
 - [x] All tasks have `<automated>` verify or a Wave 0 dependency

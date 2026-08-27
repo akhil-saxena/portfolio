@@ -132,6 +132,15 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **Concurrent plans in one wave share a git index, and my own repair made that bite.** 04-06's
+  commit `f16c6af` swept **six of 04-04's files** into itself — the fixtures, the generator and the
+  fixture test. Cause: my W-a repair added `git add test/pipeline/fixtures &&` to 04-04's verify
+  command (correct, because `git diff` is blind to untracked files) in a wave where four executors
+  share one index, so another plan committed while they were staged. **Content is correct and
+  complete; only attribution is wrong, and history was not rewritten.** For waves 3-5: a verify step
+  must never `git add` in a shared-index wave — stage inside a `git clone --no-hardlinks` sandbox, or
+  assert trackedness with `git ls-files --error-unmatch` instead, which is what 04-04 switched to.
+
 - **The placeholder-`alt` refusal (OD-2b) has three measured holes, and closing the first would break
   a legitimate caption.** `"TODO add real alt text here"`, `"XXX marks the spot at the third arch"`
   and `"??? what even is this shot"` are **ACCEPTED** — the refusal catches bare tokens and leading

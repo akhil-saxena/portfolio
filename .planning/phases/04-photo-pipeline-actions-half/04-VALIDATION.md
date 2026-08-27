@@ -151,6 +151,29 @@ result it did not measure.
     **Nothing in Phase 4 owns deletion.** Measured and tested by 04-05, recorded here as a known gap
     rather than papered over — it belongs to the admin phase or a follow-up.
 
+14. **A token deny-list for git argv is not sufficient, and mine was not.** I specified case 0's
+    banned set as `rebase`, `--force`, `--force-with-lease`, `-A`, `--all` — and designated it the
+    *only* remaining control after a blind source grep was deleted. Measured by 04-06: **three of
+    four attacks walk through it.** `git push -f` force-pushes (short form, no `--force`);
+    `git push origin +HEAD:refs/heads/main` force-pushes via the `+` refspec prefix with no flag at
+    all; and `git add .` stages everything while writing no `-A`. All three ran with the guard
+    **silent** and the clean-push case **green** — the clobber surfaced only downstream, as a
+    consequence rather than as the operation.
+    The shipped guard extends to 12 tokens **and adds four structural checks**: a subcommand
+    allow-list, a `-c` key allow-list, a `+`-refspec check, and an exact `add -- <one path>` shape.
+    **The lesson generalises: enumerate the permitted shape, do not enumerate forbidden spellings.**
+15. **`observeGit` must not be substitutable for the runner.** A witness that *replaces* the git
+    runner proves a prohibition about a runner that never ran. 04-06's observer is additive, runs
+    live on every invocation, and its terminal audit asserts `observed.length > 0` **and** that
+    `push`/`commit`/`fetch`/`reset` each appeared — because "no forbidden argv" is trivially true of
+    a module that never pushed. Measured: 110 invocations captured, 0 forbidden.
+16. **`publishManifest` validates bytes, never semantics — so `astro sync` must stay INSIDE the retry
+    loop.** 04-06 measured that a stale re-derive *is* committed and pushed, silently discarding a
+    concurrent human record. The catching layer is `rederive` itself. This binds 04-09 step 9.
+17. **`engines.node: ">=22.12.0"` understates the floor** — the `.ts`-extension imports need
+    **22.18.0** type stripping. `.nvmrc` pins 22.22.3 and all three workflows read it, so CI is safe;
+    the declared range is what is wrong.
+
 ## Validation Sign-Off
 
 - [x] All tasks have `<automated>` verify or a Wave 0 dependency

@@ -2,7 +2,7 @@
 phase: 4
 slug: photo-pipeline-actions-half
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-08-26
 ---
@@ -117,11 +117,11 @@ result it did not measure.
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or a Wave 0 dependency
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers every ❌ above
-- [ ] No watch-mode flags
-- [ ] Every gate proven to FAIL by planting its target defect
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or a Wave 0 dependency
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers every ❌ above
+- [x] No watch-mode flags
+- [x] Every gate proven to FAIL by planting its target defect
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved 2026-08-26 — after the plan-checker's 8 blockers and the repairs in `04-10` plus six gate edits

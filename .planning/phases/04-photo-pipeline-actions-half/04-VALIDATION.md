@@ -115,6 +115,20 @@ result it did not measure.
 
 ---
 
+7. **`console.log` and `console.info` are SWALLOWED by this vitest setup.** Only
+   `process.stdout.write` reaches the output. Verified independently with a probe test: the two
+   console markers appeared **0** times, the `process.stdout.write` marker once. Found by 04-01,
+   whose "out-of-cohort ids are reported by name" diagnostic printed nothing at all — a gate that
+   reports its findings via `console.log` looks like a gate that found nothing. Any test or script
+   that must *show* something in a verify block writes with `process.stdout.write`.
+8. **Do not commit `appendFortieth`'s output.** 04-01's fixture asserts, as its first check, that the
+   40th record is one the committed manifest does **not** already contain — deliberately, so a test
+   fixture leaking into reviewed content is loud rather than silent. Appending it and committing
+   fails 4 of 23 assertions by design. 04-05 and 04-09 import this fixture; use it in a sandbox.
+9. **`--verify` cannot exit 0 for a record whose R2 objects were never uploaded.** It reports four
+   404s, correctly. Any proof step demanding both "append a 40th record" and "`--verify` exits 0"
+   is unsatisfiable and must be split.
+
 ## Validation Sign-Off
 
 - [x] All tasks have `<automated>` verify or a Wave 0 dependency

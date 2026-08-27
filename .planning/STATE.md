@@ -131,6 +131,13 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **`console.log` / `console.info` are swallowed by this repo's vitest setup — only
+  `process.stdout.write` prints.** Verified independently with a probe: both console markers appeared
+  **0** times, the stdout marker once. Found by 04-01, whose by-name diagnostic printed nothing. This
+  is its own defect class: **a gate reporting findings through `console.log` is indistinguishable from
+  a gate that found nothing**, which is how nine vacuous gates in this project stayed invisible. Any
+  assertion that must *show* its evidence writes with `process.stdout.write`.
+
 - **HEAD and GET answer different questions against `images.akhilsaxena.com`, and the obvious choice
   is wrong for liveness.** Measured by 04-03, re-measured independently: `HEAD` returns
   `cf-cache-status: DYNAMIC` and therefore always reaches R2; `GET` can be answered from the edge

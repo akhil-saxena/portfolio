@@ -131,6 +131,29 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **🔴 LIVE EXPOSURE — all 39 unwatermarked masters are publicly downloadable. DEFERRED BY AKHIL
+  2026-08-26 to the cutover phase; it is shipping until then.** The legacy pipeline writes an
+  unwatermarked 2000px master to `private/<category>/<slug>-clean.webp`. **`private/` is a path
+  prefix, not a permission** — the bucket is fronted by a public custom domain, so every master is
+  one predictable URL away, and the key is derivable from the public manifest in one line. The
+  watermark on the public variants is therefore decorative. Verified independently 2026-08-26:
+  **39/39 return HTTP 200 `image/webp`**, and each `-clean` file is larger than its watermarked
+  public twin (28,426 → 30,834 · 213,984 → 244,114 · 442,354 → 499,818 bytes).
+
+  Reproduce (GET, never HEAD — HEAD returns `DYNAMIC` with no `cache-control` and will mislead):
+  ```bash
+  curl -sS -o /dev/null -w '%{http_code} %{content_type} %{size_download}\n' \
+    https://images.akhilsaxena.com/private/abstract/intothemist-clean.webp
+  ```
+
+  **Two fixes, and they compose.** (a) A Cloudflare rule blocking `/private/*` on
+  `images.akhilsaxena.com` — minutes, reversible, stops it immediately. (b) Stop writing masters to
+  a public bucket at all: a separate bucket with no public domain, or do not upload them. (b) is a
+  **Phase 4 design change**, because the pipeline is what writes them.
+
+  This predates Phase 4 and predates the rebuild. **Phase 8 must not cut over to the apex domain
+  with this open.**
+
 - **Tally now nine, and the pattern widened.** 03-06 found a manifest `.min(0)` that could not fail —
   the ninth vacuous gate. More importantly it found **two new failure classes** in the plan's own
   scaffolding. Four Task-2 verify predicates **could not fire at all**: three matched double-quoted

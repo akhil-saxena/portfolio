@@ -131,6 +131,16 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
+- **HEAD and GET answer different questions against `images.akhilsaxena.com`, and the obvious choice
+  is wrong for liveness.** Measured by 04-03, re-measured independently: `HEAD` returns
+  `cf-cache-status: DYNAMIC` and therefore always reaches R2; `GET` can be answered from the edge
+  (`HIT`/`REVALIDATED`/`EXPIRED`). So **liveness probes must use HEAD** — a GET cannot distinguish
+  "the object exists" from "the object was cached before the upload failed", which is a false pass on
+  a mutable key. **Cache assertions must use GET** — HEAD returns no `cache-control` at all, which is
+  the opposite trap and the one 03-01 nearly recorded wrongly. My own brief to 04-03 asserted GET for
+  both; the executor measured it and refused. `scripts/verify-photo-urls.mjs` encodes this in a frozen
+  mode table whose invariant refuses module load if violated.
+
 - **🔴 LIVE EXPOSURE — all 39 unwatermarked masters are publicly downloadable. DEFERRED BY AKHIL
   2026-08-26 to the cutover phase; it is shipping until then.** The legacy pipeline writes an
   unwatermarked 2000px master to `private/<category>/<slug>-clean.webp`. **`private/` is a path

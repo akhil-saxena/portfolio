@@ -447,3 +447,26 @@ None.
 | `npm run typecheck` | 0 |
 | `npm run gate:content` | 0 |
 | Task 3 doc gate (`test -s` && `grep -q baseSha` && `grep -q 409`) | 0 |
+
+## Self-Check: PASSED
+
+Files claimed → found on disk and tracked by git:
+`scripts/lib/git-publish.mjs`, `test/pipeline/concurrent-push.node.test.ts`,
+`.planning/phases/04-photo-pipeline-actions-half/04-CONCURRENCY-CONTRACT.md`,
+`.planning/phases/04-photo-pipeline-actions-half/04-06-SUMMARY.md`,
+`.planning/phases/04-photo-pipeline-actions-half/deferred-items.md`.
+
+Commits claimed → found in the log: `f16c6af`, `3e58d1e`, `35c0a44`, `845eb09`, `18c587a`.
+
+`git diff --diff-filter=D` across all five: **no file deletions**. All five authored
+`Akhil Saxena <saxena.akhil42@gmail.com>`; no AI attribution in any message.
+
+`STATE.md` and `ROADMAP.md` were deliberately **not** touched, per the execution brief — four
+plans in this wave were writing concurrently.
+
+## TDD Gate Compliance
+
+`type: execute`, Task 1 `tdd="true"`. Both gate commits are present and in order:
+**RED** `f16c6af` (`test(04-06)`, measured failing) → **GREEN** `3e58d1e` (`feat(04-06)`). No
+REFACTOR commit; `35c0a44` is Task 2's hardening, which changes behaviour and is correctly not
+labelled `refactor`.

@@ -2,23 +2,7 @@
 
 **Researched:** 2026-08-26
 **Domain:** GitHub Actions image pipeline · sharp/EXIF on a Node runner · R2 object lifecycle · CDN cache invalidation · concurrent writes to `main`
-**Confidence:** HIGH on everything measured in this session; MEDIUM on two Cloudflare behaviours that could not be measured without R2 write credentials (flagged inline and in `## Open decisions — OD-1, 2, 3, 6, 7, 11 RESOLVED 2026-08-26
-
-> **Decided by Akhil in review, 2026-08-26.** These are decisions, not recommendations. Plan 04-02
-> implements them as written and does not re-ask. The remaining decisions (OD-4, OD-5, OD-8, OD-9,
-> OD-10, OD-12) are still open and belong to plans 04-04, 04-05, 04-07, 04-08.
->
-> | # | Resolution |
-> |---|---|
-> | **OD-2** | **Option A — `alt` is a required `workflow_dispatch` input**, validated against the four content rules **before any R2 read**, so a bad value costs nothing. `gh workflow run -F alt=@alt.txt` reads it from a file, so length is not a constraint. |
-> | **OD-2b** | **NEW REQUIREMENT — refuse placeholder-shaped `alt`.** The dispatch validator must reject, case-insensitively and after trimming: `TODO`, `TBD`, `FIXME`, `XXX`, `???`, the bare words `alt`/`photo`/`image`/`picture`, a value equal to the filename, a value equal to the title verbatim, and anything shorter than ~15 characters. **This closes a measured gap:** 04-08 proves `alt: "TODO"` passes all four existing content rules, so without this a hurried dispatch ships a photograph announced to a screen reader as "TODO". Validate before any R2 read. Akhil asked for this explicitly. |
-> | **OD-1** | **Option A — content-hashed keys**, `photos/<cat>/<slug>-<hash8><suffix>.webp`. A re-upload yields a new URL, so nothing serves stale bytes and no cache purge is needed. Gates Phase 5's `srcset`. |
-> | **OD-3** | **Option A — the pipeline never reads `R2_PUBLIC_URL`;** it imports `IMAGE_ORIGIN` from `src/lib/image-origin.ts`, so it structurally cannot emit a non-canonical origin. The secret predates the custom domain by five months and very likely still holds the `r2.dev` value. Also: move `.github/**` from SKIP to SCAN in the origin gate. |
-> | **OD-6** | **Option A — staging prefix `temp/`.** The lifecycle rule is created **once by Akhil** (04-10 Task 2, a blocking human-verify), and asserted thereafter by comparing the rule's prefix to the same constant the pipeline writes — plus `enabled` and a real expiry action. |
-> | **OD-7** | **Option A — commit directly to `main`** with a bounded re-derive-and-retry on conflict. Available because OD-2 resolved to A rather than C. |
-> | **OD-11** | **Option A — declare `dimensions` as the intrinsic size of the source**, not of `urls.original`. Three records already disagree today (`nature-fairwayreflections` is `4608x3072` while `urls.original` serves `2000x1333`), so this converts an accident into a contract before Phase 5 builds CLS reservation on it. |
-
-## Open decisions (original analysis follows)`)
+**Confidence:** HIGH on everything measured in this session; MEDIUM on two Cloudflare behaviours that could not be measured without R2 write credentials (flagged inline and in the open-decisions section).
 
 > **Every number and every behavioural claim below carries the command that produced it.**
 > Where a claim is cited rather than measured it is tagged `[CITED: url]`. Where it rests on
@@ -1126,6 +1110,20 @@ emptied manifest still fails.
 | A pipeline commit deploying without CI | Tampering | this is the *inverse* risk in OD-8: option (b) must not become a second, ungated deploy path — `deploy.yml`'s header says exactly why |
 
 ---
+
+> **Decided by Akhil in review, 2026-08-26.** These are decisions, not recommendations. Plan 04-02
+> implements them as written and does not re-ask. The remaining decisions (OD-4, OD-5, OD-8, OD-9,
+> OD-10, OD-12) are still open and belong to plans 04-04, 04-05, 04-07, 04-08.
+>
+> | # | Resolution |
+> |---|---|
+> | **OD-2** | **Option A — `alt` is a required `workflow_dispatch` input**, validated against the four content rules **before any R2 read**, so a bad value costs nothing. `gh workflow run -F alt=@alt.txt` reads it from a file, so length is not a constraint. |
+> | **OD-2b** | **NEW REQUIREMENT — refuse placeholder-shaped `alt`.** The dispatch validator must reject, case-insensitively and after trimming: `TODO`, `TBD`, `FIXME`, `XXX`, `???`, the bare words `alt`/`photo`/`image`/`picture`, a value equal to the filename, a value equal to the title verbatim, and anything shorter than ~15 characters. **This closes a measured gap:** 04-08 proves `alt: "TODO"` passes all four existing content rules, so without this a hurried dispatch ships a photograph announced to a screen reader as "TODO". Validate before any R2 read. Akhil asked for this explicitly. |
+> | **OD-1** | **Option A — content-hashed keys**, `photos/<cat>/<slug>-<hash8><suffix>.webp`. A re-upload yields a new URL, so nothing serves stale bytes and no cache purge is needed. Gates Phase 5's `srcset`. |
+> | **OD-3** | **Option A — the pipeline never reads `R2_PUBLIC_URL`;** it imports `IMAGE_ORIGIN` from `src/lib/image-origin.ts`, so it structurally cannot emit a non-canonical origin. The secret predates the custom domain by five months and very likely still holds the `r2.dev` value. Also: move `.github/**` from SKIP to SCAN in the origin gate. |
+> | **OD-6** | **Option A — staging prefix `temp/`.** The lifecycle rule is created **once by Akhil** (04-10 Task 2, a blocking human-verify), and asserted thereafter by comparing the rule's prefix to the same constant the pipeline writes — plus `enabled` and a real expiry action. |
+> | **OD-7** | **Option A — commit directly to `main`** with a bounded re-derive-and-retry on conflict. Available because OD-2 resolved to A rather than C. |
+> | **OD-11** | **Option A — declare `dimensions` as the intrinsic size of the source**, not of `urls.original`. Three records already disagree today (`nature-fairwayreflections` is `4608x3072` while `urls.original` serves `2000x1333`), so this converts an accident into a contract before Phase 5 builds CLS reservation on it. |
 
 ## Open decisions
 

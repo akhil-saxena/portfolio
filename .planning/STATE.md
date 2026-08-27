@@ -32,6 +32,7 @@ Phases 0, 1 and 2 are all in flight concurrently.
 | 01 monochrome theme | 23 / 23 executed | 01-23 complete. The brand was **renamed to monochrome in 01-23**, while nothing had published: `data-brand="monochrome"`, the `./themes/monochrome.css` and `./fonts/monochrome.css` subpaths, `DS_BRAND=monochrome`, and 504 visual baselines renamed by `git mv` with no re-capture. The sibling branch **keeps its original name** (see `01-SIBLING-PROTOCOL.md` §2) and is at **89 commits**, tracked-clean. The palette itself went **near-monochrome** in 01-22, after the ochre identity was rejected at the 01-20 capture review. `DS_BRAND=monochrome test:a11y` is **508/508**, up from 11 failed/497; findings **G2 and G3 dissolved by construction**. 01-21 **COMPLETE 2026-08-25**: `2.0.0-beta.1` published to the **`next`** dist-tag with SLSA provenance; `latest` stays at `1.11.4`, so Cairn's `^1.9.0` is untouched. Published **not** by token but by **GitHub Actions trusted publishing (OIDC)** — the account runs `auth-and-writes` 2FA, under which a Publish token authenticates but cannot write. There is no local publish path; the tag push is the publish button. The registry tarball's shasum came back byte-identical to the local pack, so the build is reproducible. |
 | 02 astro foundation | **10 / 10 COMPLETE** | `preview.akhilsaxena.com` LIVE. The Worker's own auth gate observed returning exactly 401 on five request shapes with Access disabled — the only such observation in the project, and the one the legacy app's cookie-fallback gate would have failed. Authenticated path confirmed: `/admin` renders, `/api/health` returns `"r2":"reachable"`. |
 | 03 content layer | **8 / 8 COMPLETE** | All five waves landed. Criterion 2 verified independently: a planted cross-file violation exits **1**, emits **no `dist/`**, and reports `✖ [RI-1] data/portfolio_images.json → abstract-intothemist → category: category "archtecture" does not exist in data/site_config.json` with all six RI rules named as run. **`research/ARCHITECTURE.md` Pattern 2 was measured FALSE** — a module-scope `parse()` that nothing imports leaves the build green and emits `dist/`, so the rule ADR-002 made load-bearing would have shipped in dead code. Mechanism is an `astro:config:done` integration, chosen over `build:start` because it also fires on `astro check` and `astro sync`. `npm run build` 0 · `npm test` **484/484 across 12 files** · `gate:content`/`gate:schema`/`gate:origin`/`gate:routes`/`check`/`typecheck` all 0. |
+| 04 photo pipeline | **3 / 10 executed** | **Wave 1 complete.** 04-01 re-scoped all 15 count assertions *per assertion* (9 cohort / 7 invariant+floor), so a 40th photo goes from **14 failing tests** to green — proven by renaming a cohort id and watching it fail with `no manifest record for cohort id`. 04-02 shipped `src/lib/photo-pipeline.ts`, the one contract every later plan imports, plus Akhil's OD-2b placeholder-`alt` refusal and the `.github/**` SCAN flip. 04-03 closed the hole where **a manifest could lie about the bucket** — `astro sync` and `gate:origin` both PASS over a URL that 404s. Suite **651/651 across 15 files**; seven gates and `build` all exit 0. |
 
 Progress: [██████████] 98%
 
@@ -130,6 +131,21 @@ Recent decisions affecting current work:
   03-07's renderer, which must not double-escape it.
 
 ### Blockers/Concerns
+
+- **The placeholder-`alt` refusal (OD-2b) has three measured holes, and closing the first would break
+  a legitimate caption.** `"TODO add real alt text here"`, `"XXX marks the spot at the third arch"`
+  and `"??? what even is this shot"` are **ACCEPTED** — the refusal catches bare tokens and leading
+  markers, not a marker word buried in a longer sentence. 04-02 measured this rather than claiming
+  completeness. Tightening the first pattern to a substring match was tried and **rejected**: it reds
+  `"Todo el mundo crowds the square before the procession"`, a real Spanish caption. All 39 reviewed
+  `alt` values pass, the shortest measured at 83 characters, so the 15-character floor sits 5.5× below
+  anything real. **Accepted residual, not a defect** — but if a photo ever ships announced as "TODO
+  add real alt text here", this is why.
+- **The `.github/**` origin-gate flip cannot see a value hidden behind a secret reference.** Measured:
+  a literal inside `${{ secrets.X || '…' }}` **is** caught, but a value living only in the secret
+  itself is invisible. `R2_PUBLIC_URL` predates the custom domain by five months, so it very likely
+  still holds the `r2.dev` value — and no gate can reach it. OD-3 resolves this by never reading the
+  secret; deleting it is a `user_setup` item for 04-10.
 
 - **`console.log` / `console.info` are swallowed by this repo's vitest setup — only
   `process.stdout.write` prints.** Verified independently with a probe: both console markers appeared

@@ -174,6 +174,24 @@ result it did not measure.
     **22.18.0** type stripping. `.nvmrc` pins 22.22.3 and all three workflows read it, so CI is safe;
     the declared range is what is wrong.
 
+18. **`exif-reader` returns `DateTimeOriginal` as a `Date`, and the naive EXIF stamp is parsed as
+    UTC — so `date` must be formatted with `toISOString()`, never local getters.** Verified on this
+    machine, which resolves to `Asia/Calcutta`: a `2026-03-28T23:59Z` capture yields **2026-03-28**
+    via `toISOString()` and **2026-03-29** via `getFullYear()/getMonth()/getDate()`. Every evening
+    exposure would be dated a day late. 04-07 pins it by forcing `TZ=Asia/Kolkata` around a 23:59Z
+    capture so the test discriminates wherever it runs; planting local getters fails it. **Neither the
+    typings nor the docs reveal this** — it was found by running the library.
+19. **`q85/85/85/80` was never true of the legacy output.** The plan quoted legacy `addWatermark`
+    verbatim as the spec, but that code's second encode uses sharp's **default** quality, discarding
+    the table. 04-07 builds one lossy encode per variant (resize → raw → composite → WebP once at the
+    variant's quality), so the quality column is now true of the emitted bytes. Recorded as a
+    deliberate departure from legacy, not a port.
+20. **The numeric-literal guard passes on a missing file.** Same defect the B7 repair fixed for the
+    OD-9 grep — `grep` exits 2 and prints nothing on an absent file, indistinguishable from a clean
+    one — and the fix was never applied to its neighbour. Not a live risk (the module exists and the
+    load-bearing check is the decoded-width assertion), but it is the same shape twice, which is why
+    the standing rule is: **every `! grep` needs a `test -f` guard.**
+
 ## Validation Sign-Off
 
 - [x] All tasks have `<automated>` verify or a Wave 0 dependency

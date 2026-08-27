@@ -205,7 +205,7 @@ describe('the watermark, proven by bytes and by pixels', () => {
   });
 
   it('leaves the thumb untouched — byte-identical to an independent unwatermarked encode', async () => {
-    const expected = await plainThumb(RICH);
+    const expected = Buffer.from(await plainThumb(RICH));
     expect(rich.thumb).toBe(`${THUMB.dataUriPrefix}${expected.toString('base64')}`);
   });
 

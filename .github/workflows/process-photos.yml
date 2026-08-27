@@ -1,9 +1,32 @@
 name: Process Photos
 
 # One photograph, from a staged upload to a committed record, driven by one command line.
-# (Phase 4. This file is plan 04-08: the trigger, the inputs, the token and the validation.
-# The R2 read, the derivation, the upload, the liveness check, the commit and the staged-object
-# delete are plan 04-09 and are deliberately NOT here yet — see the last step, which says so.)
+# (Phase 4. Plan 04-08 wrote the trigger, the inputs, the token and the validation; plan 04-09
+# added the processing step at the bottom.)
+#
+# THE TEN STEPS, AND WHERE THE SIDE-EFFECT LINE FALLS
+#
+# `scripts/process-photo.mjs` is the job. It runs, in this order:
+#
+#    1  read the dispatch inputs and validate them          [nothing read, nothing written]
+#    2  GET the staged object out of R2                     [read-only]
+#    3  sharp: 4 variants + a 40px thumb; EXIF              [pure, in memory]
+#    4  hash each variant -> compose keys and URLs           [pure]
+#    5  read the manifest, build the record, upsert, write   [local write to the checkout only]
+#    6  `astro sync` — the whole content gate                [exit 1 stops the job]
+#    ---------------- NOTHING ABOVE THIS LINE HAS A SIDE EFFECT ----------------
+#    7  PUT the four variants to R2
+#    8  liveness: every URL in the new record, 200 image/webp
+#    9  git commit + push, with the bounded re-derive-and-retry loop
+#   10  DELETE the staged object                            [the once-only token]
+#
+# A crash before step 7 leaves the bucket, the manifest and `main` byte-identical to how they
+# started. A crash between 7 and 9 leaves orphan BYTES in the bucket — unreferenced, and swept by
+# the staging lifecycle rule — and never an orphan RECORD. Step 10 last is what makes the staged
+# key a once-only token, so a re-run of a completed job finds nothing and exits 0.
+#
+# The step below is the only one with a side effect, and it is the only one holding a credential
+# that can cause one.
 #
 # HOW IT IS CALLED
 #
@@ -140,6 +163,21 @@ jobs:
           # The repository is small enough that a full clone costs seconds.
           fetch-depth: 0
 
+          # OD-8 A, AND IT IS LOAD-BEARING RATHER THAN TIDY.
+          #
+          # By default this action leaves an `http.https://github.com/.extraheader` in the local
+          # git config carrying GITHUB_TOKEN, and an Authorization HEADER beats credentials in a
+          # remote URL. So a later `git remote set-url origin https://x-access-token:<app token>@…`
+          # would look like it pushed with the App token and would in fact push with GITHUB_TOKEN.
+          #
+          # GitHub documents that a push made with GITHUB_TOKEN creates NO new workflow run. This
+          # repository's only deploy path is `push → CI → workflow_run → Deploy`, so that push
+          # would land the photograph on main, run no CI, and deploy nothing — the record would sit
+          # in the manifest and never reach the site, silently, with a green run. The whole reason
+          # OD-8 chose an App token is to avoid exactly that, and this line is what keeps the
+          # choice real.
+          persist-credentials: false
+
       # The Node version is read from .nvmrc so there is exactly one answer to what it is. The
       # legacy repository pinned it separately per workflow and drifted to 20 in one and 22 in
       # the other.
@@ -191,12 +229,57 @@ jobs:
           app-id: ${{ secrets.PHOTO_PIPELINE_APP_ID }}
           private-key: ${{ secrets.PHOTO_PIPELINE_APP_PRIVATE_KEY }}
 
-      # The boundary, named so a run's step list says where the file stops rather than implying
-      # a publish that did not happen. Plan 04-09 replaces this step with the pipeline.
-      - name: Pipeline steps land in plan 04-09 — this run validated inputs only
+      # THE JOB. Ten steps, one process, one outcome line at the end — `gh run view` is the only
+      # diagnostic surface this pipeline has, and six distinguishable exit codes are what make a
+      # failed run readable without opening the source (T-04-48).
+      #
+      # EVERY CREDENTIAL THIS STEP HOLDS IS SCOPED TO THIS STEP. Not the job, not the workflow —
+      # the same rule and the same reason as `deploy.yml`'s two Cloudflare values: no other step,
+      # and no third-party action invoked by another step, can read them.
+      #
+      # The two Cloudflare values are stripped of whitespace before use, which is not defensive
+      # coding but a repair. This project's first deploy died on `Invalid account ID "***\n"` from
+      # a trailing newline in a pasted secret, AFTER the dependency gate, the build and all the
+      # tests had passed. Here the same stray byte would surface as a wrangler auth failure at
+      # step 2 — as "the staged object could not be read", which is a wrong and expensive thing to
+      # go and investigate. Stripping cannot mask a real value: Cloudflare ids and tokens are
+      # alphanumeric with hyphens and underscores, so whitespace is never part of a well-formed
+      # one. Neither value is ever echoed.
+      #
+      # The remote is repointed at an `x-access-token` URL carrying the App installation token
+      # minted immediately above, because `persist-credentials: false` on the checkout means there
+      # is no ambient credential to push with — see that step's comment for why that is the point.
+      # `scripts/lib/git-publish.mjs` never runs `git remote get-url` and redacts remote URLs out
+      # of every message it emits, precisely because this URL carries a token (T-04-25).
+      #
+      # Every value reaches the process through `env:`, never interpolated into this `run:` block.
+      # A `run:` block is bash and `${{ … }}` is substituted textually before bash starts, so
+      # caller-supplied text in that position is shell source (T-04-35). The contract test asserts
+      # this against the PARSED YAML, so a multi-line block scalar cannot hide one.
+      - name: Process the photograph and publish it
         run: |
-          printf '%s\n' \
-            'Dispatch inputs validated, and a short-lived push token was minted.' \
-            'NOT DONE HERE: the R2 read, the derivation, the upload, the liveness check,' \
-            'the manifest commit and the staged-object delete. Those are plan 04-09.' \
-            'Nothing was read from the bucket and nothing was committed by this run.'
+          CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')"
+          CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          node scripts/process-photo.mjs
+        env:
+          INPUT_TEMP_KEY: ${{ inputs.temp_key }}
+          INPUT_CATEGORY: ${{ inputs.category }}
+          INPUT_TITLE: ${{ inputs.title }}
+          INPUT_ALT: ${{ inputs.alt }}
+          INPUT_PLACE: ${{ inputs.place }}
+
+          # OD-5 B: the pipeline reads and writes R2 with `wrangler r2 object`, so the credential
+          # surface is these two and the five legacy R2_* secrets are not read by anything here.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+          # Adjacent to the push it authorises, and to nothing else.
+          PUSH_TOKEN: ${{ steps.push-token.outputs.token }}
+
+          # The committing identity is PASSED IN, never taken from the runner's global config —
+          # `publishManifest` refuses to run without it. A commit attributed to whatever identity
+          # a runner image happens to carry is one nobody can attribute later.
+          GIT_AUTHOR_NAME: photo-pipeline
+          GIT_AUTHOR_EMAIL: photo-pipeline@users.noreply.github.com

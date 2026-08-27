@@ -55,7 +55,7 @@
  * `eval ` is absent from the workflow, which is the part a test can actually hold.
  */
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,6 +69,41 @@ const WORKFLOW_PATH = `${REPO_ROOT}${WORKFLOW_RELATIVE}`;
 
 /** `workflow_dispatch` accepts at most this many top-level inputs. */
 const DISPATCH_INPUT_LIMIT = 25;
+
+/**
+ * WHICH SECRET MAY APPEAR IN WHICH STEP — and nothing else may appear anywhere.
+ *
+ * THIS REPLACED A COUNT, AND THE REPLACEMENT IS THE POINT (plan 04-09).
+ *
+ * Until 04-09 this file asserted `expect(carriers).toHaveLength(1)`: exactly one step in the
+ * workflow may reference `secrets.*`. That was true while the only credential was the App key
+ * pair, and it stopped being true the moment the processing step needed R2 credentials — a
+ * legitimate change that the assertion could only report as a failure.
+ *
+ * Bumping the `1` to a `2` would have been the weakening it looks like: `2` is satisfied by any
+ * two steps holding any secrets, including the App private key sitting in the step that shells
+ * out to `node`. So the count is gone and the SHAPE is enumerated instead, which is this
+ * repository's standing lesson from `04-VALIDATION.md` hazard 14 — a token deny-list for git argv
+ * was defeated three ways while the guard stayed silent, and the fix was to enumerate the
+ * permitted shape rather than the forbidden spellings.
+ *
+ * What A12 now holds, and what the old count could not:
+ *   - every `secrets.X` in the file is one of these four names (no unknown secret, anywhere);
+ *   - each one appears in EXACTLY ONE step;
+ *   - that step is the one named here — the App key pair only in the step that mints the token,
+ *     the Cloudflare pair only in the step that does the R2 I/O;
+ *   - and every name listed here appears at least once, so the allow-list cannot rot into a list
+ *     of secrets nobody uses while the workflow quietly reads different ones.
+ */
+const SECRET_SCOPES: ReadonlyArray<{ secret: string; step: RegExp; why: string }> = [
+  { secret: 'PHOTO_PIPELINE_APP_ID', step: /mint/i, why: 'OD-8 A — the App identity' },
+  { secret: 'PHOTO_PIPELINE_APP_PRIVATE_KEY', step: /mint/i, why: 'OD-8 A — the App private key' },
+  { secret: 'CLOUDFLARE_API_TOKEN', step: /process/i, why: 'OD-5 B — wrangler r2 object' },
+  { secret: 'CLOUDFLARE_ACCOUNT_ID', step: /process/i, why: 'OD-5 B — wrangler r2 object' },
+];
+
+/** The entrypoint the workflow must actually run. A14 checks the file is really there. */
+const ENTRYPOINT = 'scripts/process-photo.mjs';
 
 /** The two DNS labels of the legacy development origin, joined here so this file holds no copy. */
 const LEGACY_ORIGIN_RE = new RegExp(
@@ -313,6 +348,83 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     }
   }
 
+  /* -- A12: each secret in exactly one step, and in the step allowed to hold it -------------- */
+  // Read from the PARSED document, never from the raw source. 04-08's header explains why a
+  // `${{ secrets.X }}` reference is invisible to `gate:origin` — and that sentence is itself in
+  // the file, so a textual scan finds a secret named `X` in a comment and reports it. Measured
+  // here: the first draft of this rule reddened all 15 planted-defect cases and the baseline for
+  // exactly that reason. `parse()` drops comments, so the document holds only what Actions reads.
+  const secretReferences = [...asText(doc).matchAll(/secrets\.([A-Z0-9_]+)/g)].map((m) => m[1]);
+  for (const name of new Set(secretReferences)) {
+    if (!SECRET_SCOPES.some((scope) => scope.secret === name)) {
+      add(
+        'A12',
+        `secrets.${name} is referenced but is not in SECRET_SCOPES. Every credential this ` +
+          `workflow reads is declared there with the step allowed to hold it and why.`
+      );
+    }
+  }
+  for (const scope of SECRET_SCOPES) {
+    const holders = steps
+      .filter((step) => asText(step).includes(`secrets.${scope.secret}`))
+      .map((step) => String(step.name ?? '(unnamed step)'));
+    if (holders.length === 0) {
+      // Anti-vacuity: without this, deleting a credential from the workflow would leave the
+      // allow-list describing a workflow that no longer exists, and every check above it would
+      // pass over a name nothing uses.
+      add(
+        'A12',
+        `secrets.${scope.secret} (${scope.why}) appears in no step. Either the workflow stopped ` +
+          `reading it — in which case remove it from SECRET_SCOPES — or it moved somewhere this ` +
+          `rule cannot see.`
+      );
+      continue;
+    }
+    if (holders.length > 1) {
+      add(
+        'A12',
+        `secrets.${scope.secret} appears in ${holders.length} steps (${holders.join(', ')}). A ` +
+          `credential readable by more steps than need it is one more place it can leak.`
+      );
+    }
+    for (const holder of holders) {
+      if (!scope.step.test(holder)) {
+        add(
+          'A12',
+          `secrets.${scope.secret} (${scope.why}) is held by step "${holder}", which does not ` +
+            `match ${scope.step}. That secret belongs to one step and this is not it.`
+        );
+      }
+    }
+  }
+
+  /* -- A13: the checkout must not persist GITHUB_TOKEN into the local git config -------------- */
+  for (const step of checkoutSteps) {
+    const withBlock = (step.with ?? {}) as Record<string, unknown>;
+    if (withBlock['persist-credentials'] !== false) {
+      add(
+        'A13',
+        `the checkout step does not set persist-credentials: false (it is ` +
+          `${JSON.stringify(withBlock['persist-credentials'])}). It would then leave an ` +
+          `http.https://github.com/.extraheader carrying GITHUB_TOKEN in the local git config, ` +
+          `and an Authorization header BEATS credentials in a remote URL — so the pipeline's ` +
+          `push would silently use GITHUB_TOKEN, which GitHub documents as creating no new ` +
+          `workflow run. The photograph would land on main, run no CI, and never deploy. That is ` +
+          `precisely the failure OD-8 A chose an App token to avoid.`
+      );
+    }
+  }
+
+  /* -- A14: the workflow actually runs the entrypoint, and the entrypoint exists -------------- */
+  if (!runBlocks.some((block) => block.includes(ENTRYPOINT))) {
+    add(
+      'A14',
+      `no run: block invokes ${ENTRYPOINT}. This workflow's entire purpose is to run it; a ` +
+        `version of this file that validates the inputs and stops is a green run that published ` +
+        `nothing.`
+    );
+  }
+
   return { findings, counts };
 }
 
@@ -394,15 +506,33 @@ describe('the committed workflow', () => {
     );
   });
 
-  it('scopes the two app secrets to exactly one step, and names which', () => {
+  it('scopes every secret to the one step allowed to hold it, and names which', () => {
     const doc = parse(source) as {
       jobs: Record<string, { steps: Array<Record<string, unknown>> }>;
     };
-    const carriers = Object.values(doc.jobs)[0]
-      .steps.filter((s) => asText(s).includes('secrets.'))
-      .map((s) => s.name);
-    process.stdout.write(`[workflow-contract] secret-bearing step(s): ${carriers.join(', ')}\n`);
-    expect(carriers).toHaveLength(1);
+    const steps = Object.values(doc.jobs)[0].steps;
+    const carriers = steps.filter((s) => asText(s).includes('secrets.')).map((s) => String(s.name));
+
+    // Printed with `process.stdout.write`: console.log is SWALLOWED by this vitest setup
+    // (measured), so a diagnostic through it is indistinguishable from one that found nothing.
+    for (const scope of SECRET_SCOPES) {
+      const holders = steps
+        .filter((s) => asText(s).includes(`secrets.${scope.secret}`))
+        .map((s) => String(s.name));
+      process.stdout.write(
+        `[workflow-contract] secrets.${scope.secret} -> ${holders.join(', ') || '(nowhere)'}\n`
+      );
+      expect(holders).toEqual([carriers.find((name) => scope.step.test(name))]);
+    }
+
+    // The count is derived from the allow-list rather than typed, so adding a credential means
+    // declaring where it lives — not editing a number until the test goes green again.
+    expect(new Set(carriers).size).toBe(new Set(SECRET_SCOPES.map((s) => s.step.source)).size);
+  });
+
+  it('runs the entrypoint, and the entrypoint is really on disk', () => {
+    expect(source).toContain(ENTRYPOINT);
+    expect(existsSync(`${REPO_ROOT}${ENTRYPOINT}`)).toBe(true);
   });
 });
 
@@ -532,6 +662,52 @@ describe('each rule fails on its own defect and on nothing else', () => {
       )
     );
     expect(ruleIds(findings)).toEqual(['A10']);
+  });
+
+  it('A12 — a credential duplicated into a step that has no use for it', () => {
+    // The plant the OLD count-based assertion could not see: two steps, which is what
+    // `toHaveLength(2)` would have accepted, but the App private key is now readable by the step
+    // that shells out to node.
+    const source = loadWorkflow(WORKFLOW_PATH).replace(
+      '          PUSH_TOKEN: ${{ steps.push-token.outputs.token }}',
+      '          PUSH_TOKEN: ${{ steps.push-token.outputs.token }}\n' +
+        '          SNEAK: ${{ secrets.PHOTO_PIPELINE_APP_PRIVATE_KEY }}'
+    );
+    const { findings } = auditWorkflow(source);
+    expect(new Set(ruleIds(findings))).toEqual(new Set(['A12']));
+    expect(describeFindings(findings)).toMatch(/PHOTO_PIPELINE_APP_PRIVATE_KEY/);
+    expect(describeFindings(findings)).toMatch(/2 steps/);
+  });
+
+  it('A12 — an undeclared secret introduced anywhere in the file', () => {
+    const source = loadWorkflow(WORKFLOW_PATH).replace(
+      'CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}',
+      'CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SOME_OTHER_TOKEN }}'
+    );
+    const { findings } = auditWorkflow(source);
+    expect(new Set(ruleIds(findings))).toEqual(new Set(['A12']));
+    expect(describeFindings(findings)).toMatch(/SOME_OTHER_TOKEN is referenced/);
+    expect(describeFindings(findings)).toMatch(/CLOUDFLARE_ACCOUNT_ID.*appears in no step/s);
+  });
+
+  it('A13 — persist-credentials deleted, so GITHUB_TOKEN would silently do the push', () => {
+    const source = loadWorkflow(WORKFLOW_PATH).replace(
+      '          persist-credentials: false\n',
+      ''
+    );
+    const { findings } = auditWorkflow(source);
+    expect(ruleIds(findings)).toEqual(['A13']);
+    expect(findings[0].detail).toMatch(/no new workflow run/);
+  });
+
+  it('A14 — the entrypoint invocation removed, leaving a green run that publishes nothing', () => {
+    const source = loadWorkflow(WORKFLOW_PATH).replace(
+      'node scripts/process-photo.mjs',
+      "echo 'nothing to do'"
+    );
+    const { findings } = auditWorkflow(source);
+    expect(ruleIds(findings)).toEqual(['A14']);
+    expect(findings[0].detail).toMatch(/published\s+nothing/);
   });
 
   it('A7 — the permissions block removed entirely', () => {

@@ -86,12 +86,40 @@
  * anyone ever edits the table into a mode that asserts on `cache-control` over HEAD.
  *
  * ---------------------------------------------------------------------------------------------
+ * AND WHY HEAD IS THE RIGHT PROBE FOR LIVENESS — NOT MERELY THE CHEAPER ONE
+ *
+ * `cf-cache-status: DYNAMIC` on every HEAD is not a defect to work around; it is the property that
+ * makes HEAD the correct probe for THIS question. A HEAD is not served from the edge cache, so it
+ * reaches R2 and answers "does the object exist in the bucket?". A GET can be answered `HIT` by the
+ * edge — measured on these very objects — and therefore cannot distinguish "the object exists" from
+ * "the object was cached before it was deleted or before an upload silently failed". Since the
+ * pipeline's step 8 runs this immediately after writing new objects to a MUTABLE key (CONT-05's
+ * whole problem: browser TTL 4h, edge revalidating after 2h), a GET-based liveness check could
+ * report a previous upload's cached bytes as proof that this upload succeeded. PIPE-04 asks about
+ * the bucket, so the probe must bypass the cache.
+ *
+ * That the two methods can genuinely DISAGREE on this origin was measured here, not assumed:
+ * `https://images.akhilsaxena.com/robots.txt` — no such object in the bucket — answered
+ * `HTTP 404` to `fetch(..., { method: 'HEAD' })` on two runs and `200 text/plain` on a third, while
+ * every GET returned a stable `200 text/plain` with `cf-cache-status: HIT`. Different Cloudflare
+ * colos answered differently (`cf-ray` … -HKG vs … -SIN). A GET being satisfied by an edge entry
+ * for an object the bucket does not hold is exactly the false pass described above, observed live.
+ * All four remote keys of all 39 committed records, by contrast, agreed 200 `image/webp` on both
+ * methods across every run — the divergence appears on a zone-served path, not on a photo.
+ *
+ * So: liveness = HEAD, deliberately, because it asks the bucket. Cache behaviour = GET, because
+ * only a GET carries the headers. Neither substitutes for the other.
+ *
+ * ---------------------------------------------------------------------------------------------
  * WHY `gate:liveness` IS NOT CHAINED INTO `gate:content`
  *
  * `gate:content` is four OFFLINE gates (`gate:schema && gate:sinks && gate:origin && gate:routes`)
  * that run on every `npm run build` and in every CI job. This one makes one network request per
  * remote URL — 156 today. Putting it on the build path would mean a CDN blip, a DNS hiccup or an
- * offline laptop reds a build whose code is fine, which teaches the team to ignore it. Its two real
+ * offline laptop reds a build whose code is fine, which teaches the team to ignore it. That blip is
+ * not hypothetical: this script's own failure proof caught a one-off `HTTP 502` on
+ * `architecture-hauntedmansionjpg.small` that ten immediate re-probes could not reproduce, which is
+ * why `RETRYABLE_STATUSES` below exists. Its two real
  * homes are step 8 of the pipeline job (04-09), between the R2 upload and the commit, where a
  * failed upload becomes a failed job with NO manifest change; and a deliberate manual/e2e run
  * (04-10).
@@ -328,11 +356,40 @@ export function parseArgv(argv) {
 }
 
 /**
- * Request one target. Returns a failure string or null. Transient network errors are retried;
- * a final one is REPORTED, never swallowed — an unreachable object is indistinguishable from a
- * missing one from here, and both are reasons not to commit the record.
+ * Statuses that are retried rather than reported on sight — and NOTHING ELSE, which is the whole
+ * point of the list being explicit.
+ *
+ * MEASURED, 2026-08-27, during this script's own four-step failure proof: a full 156-URL run
+ * returned `HTTP 502` for `architecture-hauntedmansionjpg.small` while the other 155 returned 200.
+ * Ten immediate re-probes of that exact URL (5x HEAD + 5x GET, curl) all returned `200 image/webp`.
+ * So the origin does emit the occasional 5xx blip, and the first version of this script reported it
+ * as a finding — a false one.
+ *
+ * That matters more here than in most gates, because this gate's real home is step 8 of the
+ * pipeline job (04-09): a false 502 there fails a legitimate publish AFTER the R2 upload has
+ * happened, which is precisely the half-committed state PIPE-04 exists to prevent.
+ *
+ * `404` is deliberately ABSENT. A missing object is the defect this gate was built to catch, and
+ * retrying it three times would only make the gate slower at reporting it. Same for a 200 with the
+ * wrong content-type. Only statuses that mean "ask again" are retried, and a target that returns
+ * one on all three attempts is still REPORTED, with the status — so a persistent 502 (an object
+ * that genuinely cannot be served) fails the gate exactly as it should.
  */
-async function checkTarget(target, mode) {
+export const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+/** Linear backoff base: attempt 1 waits this, attempt 2 waits twice it. */
+const RETRY_BACKOFF_MS = 250;
+
+/**
+ * Request one target. Returns a failure string or null. Transient network errors and the statuses
+ * above are retried; a final one is REPORTED, never swallowed — an unreachable object is
+ * indistinguishable from a missing one from here, and both are reasons not to commit the record.
+ *
+ * `backoffMs` is injectable for one reason only: the unit test drives the retry path with a stubbed
+ * `fetch` and should not spend 750ms of real time proving that a persistent 502 is still reported.
+ * Nothing in the CLI passes it.
+ */
+export async function checkTarget(target, mode, { backoffMs = RETRY_BACKOFF_MS } = {}) {
   for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
     try {
       const response = await fetch(target.url, { method: mode.method, redirect: 'follow' });
@@ -342,7 +399,14 @@ async function checkTarget(target, mode) {
 
       const contentType = response.headers.get('content-type') ?? '(none)';
       if (response.status !== 200) {
-        return `${target.id}.${target.key}: HTTP ${response.status} — ${target.url}`;
+        if (RETRYABLE_STATUSES.has(response.status) && attempt < ATTEMPTS) {
+          await new Promise((resolve) => setTimeout(resolve, backoffMs * attempt));
+          continue;
+        }
+        const retried = RETRYABLE_STATUSES.has(response.status)
+          ? ` (after ${ATTEMPTS} attempts)`
+          : '';
+        return `${target.id}.${target.key}: HTTP ${response.status}${retried} — ${target.url}`;
       }
       if (!contentType.toLowerCase().startsWith('image/webp')) {
         return (
@@ -364,7 +428,7 @@ async function checkTarget(target, mode) {
       if (attempt === ATTEMPTS) {
         return `${target.id}.${target.key}: network error — ${error.message} — ${target.url}`;
       }
-      await new Promise((resolve) => setTimeout(resolve, 250 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, backoffMs * attempt));
     }
   }
   /* c8 ignore next */

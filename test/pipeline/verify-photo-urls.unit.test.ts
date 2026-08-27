@@ -54,7 +54,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 // fetch spy below proves — opens no socket.
 import {
   assembleTargets,
+  checkTarget,
   parseArgv,
+  RETRYABLE_STATUSES,
   readManifest,
   VerifierRefusal,
 } from '../../scripts/verify-photo-urls.mjs';
@@ -438,6 +440,106 @@ describe('the argv contract, including the HEAD/GET rule', () => {
 
   it('refuses two manifest paths', () => {
     expect(() => parseArgv(['a.json', 'b.json'])).toThrow(VerifierRefusal);
+  });
+});
+
+/**
+ * The retry path, driven with a stubbed `fetch` — no socket, no real backoff.
+ *
+ * This block exists because of a MEASUREMENT taken during this plan's own four-step failure proof:
+ * a full 156-URL run reported `HTTP 502` for `architecture-hauntedmansionjpg.small`, and ten
+ * immediate re-probes of that exact URL (5x HEAD + 5x GET) all returned `200 image/webp`. The origin
+ * emits the occasional 5xx blip, and the first version of the verifier reported it as a finding.
+ *
+ * A retry is the fix and also a risk: the obvious wrong version retries EVERYTHING, which would
+ * turn the 404 this gate was built to catch into three slow 404s and then — one careless edit later —
+ * into a pass. So both halves are asserted: transient statuses recover, and a status that persists
+ * is still REPORTED.
+ */
+describe('the retry path cannot mask a real failure', () => {
+  /** A minimal Response stand-in: only what checkTarget reads. */
+  const respond = (status: number, headers: Record<string, string> = {}) => ({
+    status,
+    headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
+    arrayBuffer: async () => new ArrayBuffer(0),
+  });
+
+  const TARGET = {
+    id: 'nature-example',
+    key: 'medium',
+    url: `${IMAGE_ORIGIN}/photos/nature/example-md.webp`,
+  };
+  const HEAD_MODE = parseArgv([]).mode;
+  const NO_WAIT = { backoffMs: 0 };
+
+  /** Replaces the throwing spy for the duration of one call, then restores it. */
+  async function withFetch(
+    queue: ReturnType<typeof respond>[],
+    run: () => Promise<string | null>
+  ): Promise<{ result: string | null; calls: number }> {
+    const spy = globalThis.fetch;
+    let calls = 0;
+    globalThis.fetch = (async () => {
+      calls++;
+      return queue.shift() ?? respond(500);
+    }) as unknown as typeof globalThis.fetch;
+    try {
+      const result = await run();
+      return { result, calls };
+    } finally {
+      globalThis.fetch = spy;
+    }
+  }
+
+  it('retries a 502 and reports the eventual 200 as a pass', async () => {
+    const { result, calls } = await withFetch(
+      [respond(502), respond(200, { 'content-type': 'image/webp' })],
+      () => checkTarget(TARGET, HEAD_MODE, NO_WAIT)
+    );
+    expect(calls).toBe(2);
+    expect(result).toBe(null);
+  });
+
+  it('reports a 502 that persists across all attempts, saying how many it tried', async () => {
+    const { result, calls } = await withFetch([respond(502), respond(502), respond(502)], () =>
+      checkTarget(TARGET, HEAD_MODE, NO_WAIT)
+    );
+    expect(calls).toBe(3);
+    expect(result).not.toBe(null);
+    expect(String(result).length).toBeGreaterThan(0);
+    expect(String(result)).toContain('nature-example.medium');
+    expect(String(result)).toContain('HTTP 502');
+    expect(String(result)).toContain('after 3 attempts');
+    expect(String(result)).toContain(TARGET.url);
+  });
+
+  it('does NOT retry a 404 — the defect this gate exists to catch is reported at once', async () => {
+    const { result, calls } = await withFetch([respond(404, { 'content-type': 'text/html' })], () =>
+      checkTarget(TARGET, HEAD_MODE, NO_WAIT)
+    );
+    expect(calls).toBe(1);
+    expect(String(result)).toContain('HTTP 404');
+    expect(String(result)).not.toContain('after');
+    expect(RETRYABLE_STATUSES.has(404)).toBe(false);
+  });
+
+  it('does NOT retry a 200 with the wrong content-type, and names the type it got', async () => {
+    const { result, calls } = await withFetch(
+      [respond(200, { 'content-type': 'text/plain; charset=utf-8' })],
+      () => checkTarget(TARGET, HEAD_MODE, NO_WAIT)
+    );
+    expect(calls).toBe(1);
+    expect(String(result)).toContain('text/plain');
+    expect(String(result)).toContain('is not image/webp');
+  });
+
+  it('retries only statuses that mean "ask again", and 404/403/410 are not among them', () => {
+    for (const status of [400, 401, 403, 404, 410, 451]) {
+      expect(RETRYABLE_STATUSES.has(status), `${status} must not be retried`).toBe(false);
+    }
+    for (const status of [429, 500, 502, 503, 504]) {
+      expect(RETRYABLE_STATUSES.has(status), `${status} should be retried`).toBe(true);
+    }
   });
 });
 

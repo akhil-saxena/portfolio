@@ -405,6 +405,111 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
 
 /* ============================================================================================ */
 
+/**
+ * THE ONE CORPUS-DRIVEN PROOF THAT IS STILL AVAILABLE.
+ *
+ * OD-12 made a 39-record differential mandatory and 04-04 measured the corpus out of existence:
+ * the served bytes carry no EXIF, so the READING half can never be re-run. But the RENDERING half
+ * can. Every non-null `aperture`, `shutter`, `focalLength` and `iso` in the reviewed manifest is a
+ * string this mapper's own formula must be able to produce, so each committed value is turned back
+ * into the tag it came from and pushed through the mapper, which must return the committed string
+ * character for character.
+ *
+ * It is honestly weaker than the lost proof and the difference is stated rather than blurred: it
+ * shows the mapper AGREES WITH 39 REVIEWED VALUES ON FORMAT, not that `exif-reader` reads the same
+ * numbers `exifr` read in 2026-03. `camera` and `lens` are excluded because they are free strings
+ * whose `Make`/`Model` split cannot be recovered from the joined value.
+ *
+ * Anti-vacuity is driven by the expectation, not by the data (fixtures/README.md, control 2): the
+ * committed manifest is DECLARED to hold at least these many non-null values per field, so an
+ * empty or truncated read refuses to pass instead of agreeing with itself about nothing.
+ */
+describe('the mapper reproduces the format of every reviewed value in the manifest', () => {
+  type ManifestRecord = {
+    exif: {
+      aperture: string | null;
+      shutter: string | null;
+      focalLength: string | null;
+      iso: number | null;
+    };
+  };
+  const manifest = JSON.parse(
+    readFileSync(join(HERE, '..', '..', 'data', 'portfolio_images.json'), 'utf8')
+  ) as ManifestRecord[];
+
+  /** Floors, not exact counts — the manifest grows. Measured on the 39 committed records. */
+  const FLOOR = { aperture: 37, shutter: 37, focalLength: 37, iso: 37 };
+
+  it('reads a manifest big enough to be worth checking', () => {
+    expect(manifest.length).toBeGreaterThanOrEqual(39);
+  });
+
+  it('reproduces every committed aperture from its FNumber', () => {
+    let checked = 0;
+    for (const record of manifest) {
+      const value = record.exif.aperture;
+      if (value === null) continue;
+      const fNumber = Number(value.slice('f/'.length));
+      expect(Number.isFinite(fNumber)).toBe(true);
+      expect(mapExifFields(parsedExif({}, { FNumber: fNumber })).aperture).toBe(value);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(FLOOR.aperture);
+  });
+
+  it('reproduces every committed shutter from its ExposureTime', () => {
+    let checked = 0;
+    let longExposures = 0;
+    for (const record of manifest) {
+      const value = record.exif.shutter;
+      if (value === null) continue;
+      let exposure: number;
+      if (value.startsWith('1/')) {
+        exposure = 1 / Number(value.slice('1/'.length));
+      } else {
+        exposure = Number(value.slice(0, -1));
+        longExposures += 1;
+      }
+      expect(Number.isFinite(exposure)).toBe(true);
+      expect(mapExifFields(parsedExif({}, { ExposureTime: exposure })).shutter).toBe(value);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(FLOOR.shutter);
+    // Recorded, not asserted as a requirement: the reviewed corpus contains NO >= 1s exposure,
+    // which is why fixtures/README.md names that branch as unreachable through the data and why
+    // the synthetic case above is the only thing covering it.
+    expect(longExposures).toBe(0);
+  });
+
+  it('reproduces every committed focalLength from its FocalLength', () => {
+    let checked = 0;
+    for (const record of manifest) {
+      const value = record.exif.focalLength;
+      if (value === null) continue;
+      const focal = Number(value.slice(0, -'mm'.length));
+      expect(Number.isFinite(focal)).toBe(true);
+      expect(mapExifFields(parsedExif({}, { FocalLength: focal })).focalLength).toBe(value);
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(FLOOR.focalLength);
+  });
+
+  it('reproduces every committed iso from its ISOSpeedRatings, still as a number', () => {
+    let checked = 0;
+    for (const record of manifest) {
+      const value = record.exif.iso;
+      if (value === null) continue;
+      const mapped = mapExifFields(parsedExif({}, { ISOSpeedRatings: value })).iso;
+      expect(mapped).toBe(value);
+      expect(typeof mapped).toBe('number');
+      checked += 1;
+    }
+    expect(checked).toBeGreaterThanOrEqual(FLOOR.iso);
+  });
+});
+
+/* ============================================================================================ */
+
 describe('OD-9 option A · no emitted upload descriptor is under `private/`', () => {
   it('emits descriptors at all, THEN emits none under that prefix', async () => {
     const assets = await deriveAssets({

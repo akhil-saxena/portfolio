@@ -647,17 +647,18 @@ export function extractExif(metadata, options = {}) {
     /** @type {string|null} */
     failure: null,
   };
+  // The three ways this can come up empty share one answer, and it is spelled once so that a
+  // later edit cannot make two of them agree and the third drift.
+  const nothingRead = () => ({ fields: emptyExif(), date: ingestionDate, probe });
 
-  if (metadata === null || typeof metadata !== 'object') {
-    return { fields: emptyExif(), date: ingestionDate, probe };
-  }
+  if (metadata === null || typeof metadata !== 'object') return nothingRead();
   probe.metadataRead = true;
 
   const raw = /** @type {{ exif?: unknown }} */ (metadata).exif;
   if (!(raw instanceof Uint8Array) || raw.length === 0) {
     // Measured by 04-04: `sharp(no-exif.jpg).metadata()` does not even DEFINE `.exif`. So this
     // is the reader having looked and found nothing, which the probe records as such.
-    return { fields: emptyExif(), date: ingestionDate, probe };
+    return nothingRead();
   }
   probe.exifPresent = true;
   probe.exifBytes = raw.length;
@@ -672,7 +673,7 @@ export function extractExif(metadata, options = {}) {
         'empty exif block and the ingestion date — a damaged metadata segment is not a reason to ' +
         'refuse a photograph.\n'
     );
-    return { fields: emptyExif(), date: ingestionDate, probe };
+    return nothingRead();
   }
   probe.parsed = true;
 

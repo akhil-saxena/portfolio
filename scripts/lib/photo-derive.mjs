@@ -365,7 +365,10 @@ export function addWatermark(pipeline, imageWidth, imageHeight) {
  */
 export async function buildVariants(bytes, sourceWidth, options = {}) {
   const watermark = options.watermark !== false;
-  const source = toBuffer(bytes);
+  // The cap again, not only in `deriveAssets`. This function is EXPORTED, so a caller that
+  // reached it directly would otherwise hand an uncapped buffer to a native decoder — a control
+  // that only guards one of its two doors is not a control.
+  const source = toBuffer(assertSourceBytes(bytes));
   /** @type {EmittedVariant[]} */
   const emitted = [];
 
@@ -404,7 +407,7 @@ export async function buildVariants(bytes, sourceWidth, options = {}) {
  * @returns {Promise<string>} the `data:image/webp;base64,…` URI
  */
 export async function buildThumb(bytes) {
-  const encoded = await sharp(toBuffer(bytes))
+  const encoded = await sharp(toBuffer(assertSourceBytes(bytes)))
     .resize({ width: THUMB.width, withoutEnlargement: true })
     .webp({ quality: THUMB.quality })
     .toBuffer();

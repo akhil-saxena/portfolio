@@ -314,6 +314,16 @@ describe('input refusal, before sharp decodes anything', () => {
     ).rejects.toThrow(/not a decodable image|unsupported/i);
   });
 
+  it('applies the same cap to the exported buildVariants and buildThumb, not only to deriveAssets', async () => {
+    // Both are exported, so both are doors. A cap on one of two doors is not a cap.
+    const oversized = Buffer.alloc(MAX_SOURCE_BYTES + 1);
+    await expect(buildVariants(oversized, VARIANTS[0].maxWidth)).rejects.toThrow(
+      String(MAX_SOURCE_BYTES)
+    );
+    await expect(buildThumb(oversized)).rejects.toThrow(String(MAX_SOURCE_BYTES));
+    await expect(buildThumb(Buffer.alloc(0))).rejects.toThrow(/empty|zero/i);
+  });
+
   it('refuses a zero-length buffer', async () => {
     await expect(
       deriveAssets({

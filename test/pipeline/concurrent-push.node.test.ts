@@ -52,6 +52,8 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  ALLOWED_GIT_CONFIG_KEYS,
+  ALLOWED_GIT_SUBCOMMANDS,
   FORBIDDEN_GIT_ARGS,
   observeGit,
   PUBLISH_BRANCH,
@@ -181,6 +183,80 @@ function forbiddenTokensIn(argv: readonly string[]): string[] {
   return argv.filter((token) => banned.includes(token));
 }
 
+/** `git [-c k=v]... <subcommand> <rest...>` — the leading `-c` pairs are git-global options. */
+function splitGitArgv(argv: readonly string[]): {
+  configs: string[];
+  subcommand: string;
+  rest: string[];
+} {
+  const configs: string[] = [];
+  let index = 0;
+  while (argv[index] === '-c') {
+    configs.push(argv[index + 1] ?? '');
+    index += 2;
+  }
+  return { configs, subcommand: argv[index] ?? '', rest: [...argv.slice(index + 1)] };
+}
+
+/**
+ * Every way this module could clobber someone else's work, expressed as a claim about ONE git
+ * invocation. Returns a list of findings so the failure message can name all of them.
+ *
+ * The token half and the structural half exist for different reasons, and the walk-through step is
+ * why both are here rather than only the first:
+ *
+ *   MEASURED, before this function was hardened — a module patched to run
+ *   `git push -f origin HEAD:refs/heads/main`, and one patched to run
+ *   `git push origin +HEAD:refs/heads/main`, BOTH passed a token-only guard carrying
+ *   `rebase --force --force-with-lease -A --all`. Case 1 (the clean push) went GREEN in both runs
+ *   while the module was force-pushing. The clobber was caught only downstream, by case 2 noticing
+ *   the human's commit had gone — that is, by a consequence rather than by the operation. A control
+ *   that can see only the consequence is not the control criterion 4 asked for.
+ *
+ * So `-f`, `--force-if-includes`, `--mirror` and `-a` joined the token list in the module, and the
+ * four structural checks below joined it here.
+ */
+function violationsIn(call: GitCall): string[] {
+  const findings: string[] = [];
+  const { configs, subcommand, rest } = splitGitArgv(call.argv);
+
+  for (const token of forbiddenTokensIn(call.argv)) {
+    findings.push(`banned token "${token}"`);
+  }
+
+  // A `-c` this module did not intend is alias/refspec injection: `-c remote.origin.push=+HEAD:main`
+  // force-pushes with no flag and no `+` visible on the push command line at all.
+  for (const config of configs) {
+    const key = config.split('=', 1)[0] ?? '';
+    if (!(ALLOWED_GIT_CONFIG_KEYS as readonly string[]).includes(key)) {
+      findings.push(`config injection "-c ${config}"`);
+    }
+  }
+
+  if (!(ALLOWED_GIT_SUBCOMMANDS as readonly string[]).includes(subcommand)) {
+    findings.push(`subcommand "${subcommand}" is outside this module's vocabulary`);
+  }
+
+  // The classic force-push with no flag at all: a `+` prefix on the refspec.
+  if (subcommand === 'push') {
+    for (const token of rest) {
+      if (token.startsWith('+')) findings.push(`force refspec "${token}"`);
+    }
+  }
+
+  // T-04-23. `git add .` and `git add :/` stage a whole runner working tree without ever writing
+  // `-A`, so the SHAPE is checked and not just the flags: exactly `add -- <one path>`.
+  if (subcommand === 'add') {
+    const path = rest[1] ?? '';
+    const shapeIsExact = rest.length === 2 && rest[0] === '--';
+    if (!shapeIsExact || path === '' || path === '.' || path === ':/' || path.startsWith('-')) {
+      findings.push(`git add must be exactly "add -- <one path>", got "${rest.join(' ')}"`);
+    }
+  }
+
+  return findings;
+}
+
 /**
  * The control. It runs on EVERY git invocation the module makes, in every case in this file,
  * because it is installed as the observer for the whole file and the per-case hooks below are
@@ -193,11 +269,9 @@ function forbiddenTokensIn(argv: readonly string[]): string[] {
  * reset from an unsanctioned force. T-04-22 and T-04-23 rest on this function.
  */
 function assertPermittedArgv(call: GitCall): void {
-  const hits = forbiddenTokensIn(call.argv);
-  if (hits.length > 0) {
-    const line =
-      `FORBIDDEN GIT ARGV — banned token(s) ${hits.join(', ')} in: git ${call.argv.join(' ')} ` +
-      `(cwd ${call.cwd})`;
+  const findings = violationsIn(call);
+  if (findings.length > 0) {
+    const line = `FORBIDDEN GIT ARGV — ${findings.join('; ')} in: git ${call.argv.join(' ')} (cwd ${call.cwd})`;
     process.stdout.write(`[case 0] ${line}\n`);
     throw new Error(line);
   }
@@ -397,23 +471,97 @@ afterAll(() => {
 /* ============================================================================================ */
 
 describe('PIPE-05 · publishManifest against a real bare repository', () => {
-  it('case 0 (a): the argv guard fires on every forbidden token, and NOT on the sanctioned reset', () => {
+  it('case 0 (a): the argv guard fires on every banned token AND on every structural walk-through', () => {
+    // Every banned token, named in the failure message.
     for (const token of FORBIDDEN_GIT_ARGS) {
       const call: GitCall = { argv: ['push', 'origin', token, 'main'], cwd: '/nowhere' };
       expect(() => assertPermittedArgv(call)).toThrow(
-        new RegExp(`FORBIDDEN GIT ARGV.*${token.replace(/[-]/g, '\\-')}`)
+        new RegExp(`FORBIDDEN GIT ARGV.*banned token "${token.replace(/-/g, '\\-')}"`)
       );
     }
-    // The discrimination the deleted source grep could not make. `reset --hard <sha>` is what the
-    // module is INSTRUCTED to do (P-5: discard our commit, re-derive against what won), so a gate
-    // that banned it would ban the design.
-    expect(() =>
-      assertPermittedArgv({ argv: ['reset', '--hard', 'abc1234'], cwd: '/nowhere' })
-    ).not.toThrow();
-    expect(() =>
-      assertPermittedArgv({ argv: ['add', '--', MANIFEST], cwd: '/nowhere' })
-    ).not.toThrow();
-    expect(FORBIDDEN_GIT_ARGS).toEqual(['rebase', '--force', '--force-with-lease', '-A', '--all']);
+
+    // The four walk-throughs. The first two were MEASURED to defeat a token-only guard: the module
+    // was patched to run each of them and case 1 went green while it force-pushed.
+    const walkThroughs: ReadonlyArray<{ why: string; argv: string[]; expect: RegExp }> = [
+      {
+        why: 'force refspec — a `+` prefix forces with no flag at all',
+        argv: ['push', 'origin', `+HEAD:refs/heads/${PUBLISH_BRANCH}`],
+        expect: /force refspec "\+HEAD:refs\/heads\/main"/,
+      },
+      {
+        why: 'config injection — forces via remote.origin.push, invisible on the push line',
+        argv: ['-c', 'remote.origin.push=+HEAD:refs/heads/main', 'push', 'origin'],
+        expect: /config injection "-c remote\.origin\.push=/,
+      },
+      {
+        why: 'git add . — stages a whole runner working tree without ever writing -A (T-04-23)',
+        argv: ['add', '.'],
+        expect: /git add must be exactly "add -- <one path>"/,
+      },
+      {
+        why: 'an out-of-vocabulary subcommand — update-ref rewrites a ref with no push at all',
+        argv: ['update-ref', 'refs/heads/main', 'deadbeef'],
+        expect: /subcommand "update-ref" is outside this module's vocabulary/,
+      },
+    ];
+    for (const walkThrough of walkThroughs) {
+      expect(
+        () => assertPermittedArgv({ argv: walkThrough.argv, cwd: '/nowhere' }),
+        walkThrough.why
+      ).toThrow(walkThrough.expect);
+    }
+
+    // And the discrimination the deleted source grep could not make: every argv the module is
+    // SUPPOSED to issue passes. `reset --hard <sha>` in particular is what the design requires
+    // (P-5: discard our commit, re-derive against what won), so a gate that banned it would ban
+    // the design rather than the defect.
+    const sanctioned: string[][] = [
+      ['rev-parse', '--is-inside-work-tree'],
+      ['rev-parse', 'FETCH_HEAD'],
+      ['remote'],
+      ['add', '--', MANIFEST],
+      [
+        '-c',
+        'user.name=Photo Pipeline',
+        '-c',
+        'user.email=p@x.invalid',
+        'commit',
+        '-m',
+        'photo: publish',
+        '--',
+        MANIFEST,
+      ],
+      ['push', 'origin', `HEAD:refs/heads/${PUBLISH_BRANCH}`],
+      ['fetch', 'origin', PUBLISH_BRANCH],
+      ['reset', '--hard', 'abc1234'],
+    ];
+    for (const argv of sanctioned) {
+      expect(violationsIn({ argv, cwd: '/nowhere' }), `git ${argv.join(' ')}`).toEqual([]);
+    }
+
+    expect(FORBIDDEN_GIT_ARGS).toEqual([
+      'rebase',
+      '--rebase',
+      '--force',
+      '-f',
+      '--force-with-lease',
+      '--force-if-includes',
+      '--mirror',
+      '-A',
+      '--all',
+      '-a',
+      'clean',
+      'filter-branch',
+    ]);
+    expect(ALLOWED_GIT_SUBCOMMANDS).toEqual([
+      'rev-parse',
+      'remote',
+      'add',
+      'commit',
+      'push',
+      'fetch',
+      'reset',
+    ]);
   });
 
   it('case 1: a clean fast-forward push succeeds on attempt 1 and origin points at that commit', async () => {
@@ -474,17 +622,21 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
     expect(gitExit(topology.origin, ['merge-base', '--is-ancestor', human.sha, originTip])).toBe(0);
     expect(previousRevisionOf(topology.origin, originTip, MANIFEST)).toBe(human.sha);
 
+    // rederive: once per retry, with the FETCHED bytes. Compared against the human's committed
+    // version, never against the stale one — otherwise the whole retry is theatre. This is asserted
+    // BEFORE the merged-content checks below, so that a module handing `rederive` the stale
+    // manifest fails on the ARGUMENT rather than only on the downstream consequence: the plant
+    // (read the file before the reset instead of after) trips both, and the argument is the
+    // sharper report of the two.
+    expect(seenByRederive).toHaveLength(result.attempts - 1);
+    expect(seenByRederive[0]).toBe(humanContent);
+    expect(seenByRederive[0]).not.toBe(stale.content);
+
     const finalIds = (
       JSON.parse(committedText(topology.origin, originTip, MANIFEST)) as Record_[]
     ).map((r) => r.id);
     expect(finalIds).toContain('human-first');
     expect(finalIds).toContain('pipeline-contended');
-
-    // rederive: once per retry, with the FETCHED bytes. Compared against the human's committed
-    // version, never against the stale one — otherwise the whole retry is theatre.
-    expect(seenByRederive).toHaveLength(result.attempts - 1);
-    expect(seenByRederive[0]).toBe(humanContent);
-    expect(seenByRederive[0]).not.toBe(stale.content);
 
     process.stdout.write(
       `[case 2] attempts=${result.attempts} human=${human.sha.slice(0, 8)} tip=${originTip.slice(0, 8)} ` +

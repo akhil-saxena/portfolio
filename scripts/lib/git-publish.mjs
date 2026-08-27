@@ -128,14 +128,53 @@ import { PUBLISH_BRANCH, PUBLISH_RETRY_LIMIT } from '../../src/lib/photo-pipelin
 
 const execFileAsync = promisify(execFile);
 
-/** Tokens this module is forbidden to pass to git, ever. Asserted at argv level by case 0. */
+/**
+ * Tokens this module is forbidden to pass to git, ever. Asserted at argv level by case 0 of
+ * `test/pipeline/concurrent-push.node.test.ts`.
+ *
+ * The first five are the ones criterion 4 names. The rest were added after the walk-through step
+ * MEASURED that the first five do not hold: `git push -f` and `git push origin +HEAD:refs/heads/main`
+ * both force-push while containing none of them, and both passed the guard on the first run of the
+ * plant. `-f` is simply the short spelling of `--force`; the leading `+` on a refspec is the force
+ * marker with no flag at all. `-a` is `git commit --all`, i.e. T-04-23 by another name.
+ *
+ * The token list is the part of the control that can NAME what went wrong. The structural half —
+ * a subcommand allow-list, a `-c` key allow-list, the `+refspec` check and the exact shape of
+ * `git add` — lives in the test beside it, because it is a claim about a call's SHAPE rather than
+ * about a word appearing in it.
+ */
 export const FORBIDDEN_GIT_ARGS = Object.freeze([
   'rebase',
+  '--rebase',
   '--force',
+  '-f',
   '--force-with-lease',
+  '--force-if-includes',
+  '--mirror',
   '-A',
   '--all',
+  '-a',
+  'clean',
+  'filter-branch',
 ]);
+
+/**
+ * The complete vocabulary of git subcommands this module is permitted to invoke. A verb outside
+ * this set — `update-ref`, `pull`, `rebase`, `clean`, `filter-branch` — is a violation whatever
+ * flags it carries, which is what makes the control resistant to a new spelling of an old idea.
+ */
+export const ALLOWED_GIT_SUBCOMMANDS = Object.freeze([
+  'rev-parse',
+  'remote',
+  'add',
+  'commit',
+  'push',
+  'fetch',
+  'reset',
+]);
+
+/** The only `-c key=value` settings this module may pass. Blocks alias and refspec injection. */
+export const ALLOWED_GIT_CONFIG_KEYS = Object.freeze(['user.name', 'user.email']);
 
 /** Base class, so a caller can catch everything this module throws with one `instanceof`. */
 export class PublishError extends Error {

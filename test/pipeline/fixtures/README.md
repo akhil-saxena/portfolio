@@ -197,12 +197,215 @@ return {
 
 ### Result
 
-**PENDING — written by 04-04 Task 3**, which builds the fixtures this comparison runs against.
-If this line is still here, the comparison was not run and OD-12 option B carries no proof at all.
+`exifr@7.1.3` and `exif-reader@2.0.3` were installed in a throwaway directory together with
+`sharp@0.35.4`, `rich-exif.jpg` and `no-exif.jpg` were copied in, and both extractors were run over
+both files. **`exifr` was never added to this repository.**
+
+```
+$ node differential.mjs                                  # shell: zsh
+rich-exif.jpg
+  field        exifr 7.1.3 (A)                  exif-reader 2.0.3 (B)            verdict
+  camera       "NIKON CORPORATION NIKON D5300"  "NIKON CORPORATION NIKON D5300"  MATCH
+  lens         "18.0-55.0 mm f/3.5-5.6"         "18.0-55.0 mm f/3.5-5.6"         MATCH
+  aperture     "f/11"                           "f/11"                           MATCH
+  shutter      "1/500"                          "1/500"                          MATCH
+  iso          200                              200                              MATCH
+  focalLength  "40mm"                           "40mm"                           MATCH
+  six-key object returned by both? A=6 B=6
+
+no-exif.jpg
+  field        exifr 7.1.3 (A)                  exif-reader 2.0.3 (B)            verdict
+  camera       null                             null                             MATCH
+  ... all six ...                                                                MATCH
+  six-key object returned by both? A=6 B=6
+
+fields that drifted: 0/12
+```
+
+**12 of 12 fields match, on both the populated and the empty fixture, and both readers return a
+complete six-key object rather than `undefined` for the file with no EXIF.** OD-12 option B is
+implemented on this evidence.
+
+### The one real mapping difference, and why it did not become a bug
+
+`exifr` surfaces EXIF tag `0x8827` as **`ISO`**. `exif-reader` surfaces it under its TIFF name,
+**`ISOSpeedRatings`**. A port that copied the legacy mapper across unchanged would read
+`d.ISO`, get `undefined`, and write `iso: null` into every future record — schema-valid, silently
+wrong, and invisible to every gate in this repository.
+
+**This is exactly the class of regression OD-12's differential proof existed to catch**, it is
+real, and it was caught here rather than in production. It is why `EXIF_SOURCE` in
+`scripts/generate-photo-fixtures.mjs` keys that tag `ISOSpeedRatings` with a comment saying not to
+"tidy" it, and why `test/pipeline/fixtures.unit.test.ts` asserts the seven picked tags one `it` per
+tag instead of one `toEqual` over the object.
+
+### This comparison was proven able to fail — four controls, all in zsh
+
+| # | Control | Expected | Result |
+|---|---|---|---|
+| 1 | **Plant the defect.** Change extractor B's `d.ISOSpeedRatings` to `d.ISO` — the exact mistake a careless port makes | FAIL, naming the field | **exit 1**, `iso  200  null  DRIFT` |
+| 2 | **Give it nothing to check.** Point it at `does-not-exist.jpg` | FAIL | **exit 0 — THE GATE COULD NOT FAIL.** See below |
+| 3 | **Correct code** | PASS | **exit 0**, `fields that drifted: 0/12` |
+| 4 | **Walk-through:** quietly drop `rich-exif.jpg` from the compared list | FAIL | **exit 1**, `rich-exif.jpg was never compared` |
+| 4b | **Walk-through:** re-point the anti-vacuity clause at `no-exif.jpg` | FAIL | **exit 1**, names all six fields left null |
+
+**Control 2 found a real hole and it was fixed rather than excused.** As first written, the
+differential pointed at a nonexistent file reported **12/12 MATCH and exited 0** — both extractors
+caught their own error, returned `null`, and `null === null` six times over. It was agreeing with
+itself about nothing, which is the precise failure this project has shipped repeatedly.
+
+The fix is an anti-vacuity clause **driven by the expectation, not by the data**: `rich-exif.jpg`
+is *declared* to carry all six fields, so if it is absent from the comparison, or present and
+yielding any null, the run refuses to pass. After the fix, control 2 exits 1 with
+`ANTI-VACUITY FAILED: rich-exif.jpg was never compared. Refusing to pass.`
+
+### The script, so this is reproducible without adding `exifr` to the repo
+
+```bash
+mkdir /tmp/exif-differential && cd /tmp/exif-differential   # a THROWAWAY directory
+npm init -y && npm install exifr@7.1.3 exif-reader@2.0.3 sharp@0.35.4
+cp <repo>/test/pipeline/fixtures/{rich-exif.jpg,no-exif.jpg} .
+# save the script below as differential.mjs
+node differential.mjs
+```
+
+```js
+// Cross-library differential: legacy `exifr` extractor (verbatim) vs `exif-reader` fed from
+// sharp's metadata buffer. Run in a THROWAWAY directory; exifr is NOT a dependency of the repo.
+import exifr from 'exifr';
+import exifReader from 'exif-reader';
+import sharp from 'sharp';
+const w = (s) => process.stdout.write(s + '\n');
+
+// --- A: the legacy reference, copied verbatim from
+//     git show legacy/nextjs-portfolio:scripts/process-images.js
+async function extractExifLegacy(filePath) {
+  try {
+    const data = await exifr.parse(filePath, {
+      pick: ['Make', 'Model', 'LensModel', 'FNumber', 'ExposureTime', 'ISO', 'FocalLength'],
+      gps: false,
+    });
+    if (!data) return null;
+    return {
+      camera: [data.Make, data.Model].filter(Boolean).join(' ') || null,
+      lens: data.LensModel || null,
+      aperture: data.FNumber ? `f/${data.FNumber}` : null,
+      shutter: data.ExposureTime
+        ? data.ExposureTime < 1
+          ? `1/${Math.round(1 / data.ExposureTime)}`
+          : `${data.ExposureTime}s`
+        : null,
+      iso: data.ISO || null,
+      focalLength: data.FocalLength ? `${data.FocalLength}mm` : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// --- B: OD-12 option B. Same mapping, different reader. Note ISOSpeedRatings, not ISO.
+async function extractExifNew(filePath) {
+  try {
+    const meta = await sharp(filePath).metadata();
+    const p = exifReader(meta.exif);
+    const d = { ...(p.Image || {}), ...(p.Photo || {}) };
+    return {
+      camera: [d.Make, d.Model].filter(Boolean).join(' ') || null,
+      lens: d.LensModel || null,
+      aperture: d.FNumber ? `f/${d.FNumber}` : null,
+      shutter: d.ExposureTime
+        ? d.ExposureTime < 1
+          ? `1/${Math.round(1 / d.ExposureTime)}`
+          : `${d.ExposureTime}s`
+        : null,
+      iso: d.ISOSpeedRatings || null,
+      focalLength: d.FocalLength ? `${d.FocalLength}mm` : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+const FIELDS = ['camera', 'lens', 'aperture', 'shutter', 'iso', 'focalLength'];
+const ALLNULL = Object.fromEntries(FIELDS.map((f) => [f, null]));
+let failures = 0;
+
+// ANTI-VACUITY, driven by the expectation and not by the data. Measured: without this, pointing
+// the differential at a file that does not exist reports 12/12 MATCH and exits 0 — both readers
+// return null for everything and null equals null. The rich fixture is DECLARED to carry all six
+// fields, so if it does not, the comparison read nothing and its agreement is worthless.
+const EXPECT_ALL_SIX_NON_NULL = 'rich-exif.jpg';
+let sawRichFixture = false;
+
+for (const file of ['rich-exif.jpg', 'no-exif.jpg']) {
+  const a = (await extractExifLegacy(file)) ?? ALLNULL;
+  const b = (await extractExifNew(file)) ?? ALLNULL;
+  w(`\n${file}`);
+  w(`  ${'field'.padEnd(12)} ${'exifr 7.1.3 (A)'.padEnd(32)} ${'exif-reader 2.0.3 (B)'.padEnd(32)} verdict`);
+  for (const f of FIELDS) {
+    const same = JSON.stringify(a[f]) === JSON.stringify(b[f]);
+    if (!same) failures++;
+    w(`  ${f.padEnd(12)} ${JSON.stringify(a[f]).padEnd(32)} ${JSON.stringify(b[f]).padEnd(32)} ${same ? 'MATCH' : 'DRIFT'}`);
+  }
+  w(`  six-key object returned by both? A=${Object.keys(a).length} B=${Object.keys(b).length}`);
+  if (file === EXPECT_ALL_SIX_NON_NULL) {
+    sawRichFixture = true;
+    const emptyA = FIELDS.filter((f) => a[f] === null);
+    const emptyB = FIELDS.filter((f) => b[f] === null);
+    if (emptyA.length || emptyB.length) {
+      w(`  ANTI-VACUITY FAILED: ${file} is declared to carry all six fields but A left ` +
+        `[${emptyA}] null and B left [${emptyB}] null. Nothing was read; refusing to pass.`);
+      failures += emptyA.length + emptyB.length;
+    }
+  }
+}
+if (!sawRichFixture) {
+  w(`\nANTI-VACUITY FAILED: ${EXPECT_ALL_SIX_NON_NULL} was never compared. Refusing to pass.`);
+  failures += FIELDS.length;
+}
+w(`\nfields that drifted: ${failures}/12`);
+process.exit(failures === 0 ? 0 : 1);
+```
 
 ---
 
 ## Which of the six fields the fixtures can and cannot exercise
 
-**PENDING — written by 04-04 Task 3.** A fixture that silently exercises five of six fields,
-with a test named as though it exercised six, is the shape this project has shipped ten times.
+All six. Nothing was dropped, and the round trip was measured rather than assumed.
+
+`sharp`'s `withExif` writes to a named IFD, and the placement is not a free choice: `Make` and
+`Model` belong to **IFD0**, and `LensModel`, `FNumber`, `ExposureTime`, `ISOSpeedRatings` and
+`FocalLength` belong to the Exif sub-IFD, which sharp names **IFD2**. A tag written to the wrong
+IFD is silently dropped by libvips — which is why `test/pipeline/fixtures.unit.test.ts` asserts
+each tag reads back rather than trusting that it was written.
+
+| Schema field | Source tag | IFD | Written as | Reads back as | Exercised by the fixtures? |
+|---|---|---|---|---|---|
+| `camera` | `Make` + `Model` | IFD0 | `"NIKON CORPORATION"`, `"NIKON D5300"` | same strings | **yes** |
+| `lens` | `LensModel` | IFD2 | `"18.0-55.0 mm f/3.5-5.6"` | same string | **yes** |
+| `aperture` | `FNumber` | IFD2 | `"11/1"` | `11` (number) | **yes** |
+| `shutter` | `ExposureTime` | IFD2 | `"1/500"` | `0.002` (number) | **yes** — and sub-second, so the `1/N` branch fires |
+| `iso` | `ISOSpeedRatings` | IFD2 | `"200"` | `200` (number) | **yes** |
+| `focalLength` | `FocalLength` | IFD2 | `"40/1"` | `40` (number) | **yes** |
+
+`1/0.002` is exactly `500`, so the `shutter` assertion has no rounding slack to hide in. The
+`>= 1s` branch of the shutter mapping (`${t}s`) is the one behaviour these fixtures do **not**
+reach — a second fixture would be needed for a long exposure. **04-07 must cover it with a direct
+unit test of the mapper against a synthetic parsed object**, per the plan's rule that a field a
+fixture cannot exercise is named in writing rather than quietly dropped.
+
+### The no-EXIF path is a THROWN EXCEPTION, not a null
+
+Measured, and load-bearing for 04-07:
+
+```
+exifReader(undefined)     -> THREW TypeError: Cannot read properties of undefined (reading 'toString')
+exifReader(Buffer.alloc(0)) -> THREW Error: Invalid EXIF data: buffer should start with "Exif", "MM" or "II".
+exifReader(<garbage>)     -> THREW Error: Invalid EXIF data: buffer should start with "Exif", "MM" or "II".
+```
+
+`sharp(no-exif.jpg).metadata()` does not even define `.exif` (`Object.hasOwn(meta,'exif') === false`).
+So the legacy behaviour — *"returns null on ANY throw, with the caller substituting an all-null
+object"* — is **required, not incidental**: `PhotoExifSchema` is a `strictObject` of six nullable,
+**non-optional** fields, so a record whose `exif` is absent is a schema failure while a record whose
+`exif` is six nulls is not. 04-07's `try/catch` is the thing standing between those two outcomes.

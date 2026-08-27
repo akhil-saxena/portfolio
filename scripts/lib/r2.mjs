@@ -465,10 +465,13 @@ export async function getStagedObject(key) {
       return null;
     }
     if (!result.ok) {
-      throw new R2Error(`r2: reading ${key} failed (wrangler exit ${result.code}) — ` + summarise(result), {
-        key,
-        code: result.code,
-      });
+      throw new R2Error(
+        `r2: reading ${key} failed (wrangler exit ${result.code}) — ` + summarise(result),
+        {
+          key,
+          code: result.code,
+        }
+      );
     }
 
     const size = statSync(file).size;

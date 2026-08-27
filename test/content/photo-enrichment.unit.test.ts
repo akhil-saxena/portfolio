@@ -154,6 +154,23 @@ const COHORT: ReadonlySet<string> = new Set(rows.map((r) => r.id));
 /** Manifest ids the frozen brief never described — the pipeline's output, and out of every COHORT claim. */
 const outOfCohortIds = (): string[] => manifest.filter((p) => !COHORT.has(p.id)).map((p) => p.id);
 
+/**
+ * Print a line that a PASSING run actually shows. `process.stdout.write`, not `console.log`.
+ *
+ * MEASURED, 2026-08-27, `vitest 4.1.10`, `--project unit`: a throwaway test emitting all three of
+ * `console.log`, `console.info` and `process.stdout.write` printed ONLY the last one. The first
+ * draft of the out-of-cohort report below used `console.info` and produced nothing at all — an
+ * exclusion whose justification was written down and then never displayed, which is the same
+ * failure as one that lives in a plan file. Do not "tidy" this back to `console.log`: run the probe
+ * again first.
+ *
+ * This is a REPORT, not an assertion. Records outside the cohort are legitimate — they are what
+ * Phase 4's pipeline produces — so they must be visible without being a failure.
+ */
+const report = (line: string): void => {
+  process.stdout.write(`${line}\n`);
+};
+
 describe('the merge read something', () => {
   /**
    * The vacuous-pass guard, and the reason it is first. Every assertion in this file is a loop
@@ -189,7 +206,7 @@ describe('the merge read something', () => {
     const outside = outOfCohortIds();
     expect(COHORT.size + outside.length).toBe(manifest.length);
     if (outside.length > 0) {
-      console.info(
+      report(
         `photo-enrichment: ${outside.length} manifest record(s) are outside the 03-04 cohort and ` +
           `so out of scope for every COHORT assertion in this file: ${outside.join(', ')}`
       );
@@ -474,7 +491,7 @@ describe('categoryOrder agrees with the global order it was derived from', () =>
     // run rather than being invisible in a filter predicate.
     const outside = outOfCohortIds();
     if (outside.length > 0) {
-      console.info(
+      report(
         `photo-enrichment: ${outside.length} record(s) postdate ${previous.ref.slice(0, 7)} and ` +
           `are out of scope for this migration's rank claim: ${outside.join(', ')}`
       );

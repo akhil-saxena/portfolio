@@ -1,0 +1,56 @@
+# OD-12 differential corpus probe — 04-04 Task 1, measured 2026-08-27
+#
+# READ THE `0/6` COLUMN CORRECTLY. It does NOT mean "the re-extraction ran and every
+# field drifted". It means the re-extraction CANNOT RUN: not one of the 39 live objects
+# carries any EXIF at all, so there are zero bytes from which any of the six schema
+# fields could be reproduced. The corpus OD-12's proof was to be run against does not
+# exist. See README.md, "OD-12 differential corpus: THE VERDICT".
+#
+# Columns: <record-id>  <fields-reproducible>/<fields-total>  <two independent readers>  <what is committed>
+#   sharp.exif        = sharp(buf).metadata().exif       (library-level answer)
+#   riff-EXIF-chunk   = raw RIFF chunk walk for a fourcc of 'EXIF' (byte-level answer,
+#                       so the library answer is not taken on trust)
+#   chunks            = every RIFF chunk in the container, with its byte length
+#   committed-non-null = how many of the six fields data/portfolio_images.json holds for
+#                       this record — i.e. how much there WOULD have been to reproduce
+#
+# All 39 probed with GET (a body is required; HEAD cannot carry one). 0 non-200s.
+abstract-intothemist  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:28406]  committed-non-null=6/6
+abstract-lightscameraart  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:213964]  committed-non-null=6/6
+abstract-watertexture  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:442334]  committed-non-null=5/6
+architecture-hauntedmansionjpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:376240]  committed-non-null=6/6
+architecture-officegreens  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:1590580]  committed-non-null=6/6
+architecture-parismuseum  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:93320]  committed-non-null=6/6
+architecture-redbuilding  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:329024]  committed-non-null=1/6
+architecture-singapore  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:241926]  committed-non-null=5/6
+architecture-singaporesentosa  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:252286]  committed-non-null=5/6
+nature-acrossthetrees  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:274618]  committed-non-null=6/6
+architecture-templemahabalipuram  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:371712]  committed-non-null=5/6
+architecture-eiffeljpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:183376]  committed-non-null=6/6
+nature-hillsandgreens  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:118934]  committed-non-null=5/6
+nature-naturehills  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:25610]  committed-non-null=6/6
+architecture-citypalacegate  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:761562]  committed-non-null=6/6
+architecture-hawamahaldaytime  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:819010]  committed-non-null=6/6
+architecture-pigeonatumaidbhawan  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:605422]  committed-non-null=6/6
+nature-lonetree  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:300938]  committed-non-null=6/6
+abstract-plane  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:37854]  committed-non-null=6/6
+nature-naturewaterfall  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:438334]  committed-non-null=6/6
+nature-shipsunset  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:360008]  committed-non-null=5/6
+nature-sunrisepoint  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:27196]  committed-non-null=6/6
+architecture-singaporeflyer  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:192800]  committed-non-null=5/6
+portraits-portraitpatrikagate1  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:491588]  committed-non-null=6/6
+street-davidjpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:39516]  committed-non-null=6/6
+wildlife-kingfisher  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:132296]  committed-non-null=6/6
+architecture-citypalacewide  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:351018]  committed-non-null=6/6
+nature-fairwayreflections  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:696134]  committed-non-null=6/6
+product-peppers  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:83082]  committed-non-null=0/6
+architecture-europepalacejpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:326516]  committed-non-null=6/6
+product-gadgets  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:384400]  committed-non-null=6/6
+portraits-whitedresshalf  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:158470]  committed-non-null=5/6
+street-disneylandwalle  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:578246]  committed-non-null=6/6
+street-slothjpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:301880]  committed-non-null=6/6
+street-tunnelvision  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:671534]  committed-non-null=6/6
+wildlife-deerinsight  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:381240]  committed-non-null=6/6
+wildlife-pigeon  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:241744]  committed-non-null=6/6
+wildlife-starfish  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:855400]  committed-non-null=5/6
+wildlife-yinyangjpg  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:288992]  committed-non-null=6/6

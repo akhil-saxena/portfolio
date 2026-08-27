@@ -109,7 +109,7 @@ const schemaAccepts = (alt: string): boolean =>
  * The findings a refusal carried. Throws if the value was ACCEPTED, so a test that expected a
  * refusal can never pass by the validator having no opinion.
  */
-const findingsFor = (raw: unknown, options?: unknown): string[] => {
+const findingsFor = (raw: unknown, options?: { siteConfigPath?: string }): string[] => {
   let accepted: unknown;
   try {
     accepted = validateDispatchInputs(raw, options);
@@ -125,7 +125,7 @@ const findingsFor = (raw: unknown, options?: unknown): string[] => {
 };
 
 /** The finding that names one input, or a failure that says which findings were there instead. */
-const findingFor = (raw: unknown, input: string, options?: unknown): string => {
+const findingFor = (raw: unknown, input: string, options?: { siteConfigPath?: string }): string => {
   const findings = findingsFor(raw, options);
   const match = findings.find((f) => f.startsWith(`${input}:`));
   if (match === undefined) {
@@ -553,11 +553,20 @@ function envFor(inputs: typeof VALID): Record<string, string> {
  * ========================================================================================== */
 
 describe('the CLI entry point', () => {
+  /**
+   * Every declared INPUT_* is explicitly cleared before `env` is layered on. Inheriting the
+   * parent environment is this suite's convention (`build-fails-loudly.node.test.ts`), and it is
+   * the right one here too — but a leaked INPUT_ALT would make the "empty environment" case pass
+   * for a reason the test did not intend.
+   */
+  const CLEARED = Object.fromEntries(
+    EXPECTED_INPUT_NAMES.map((name) => [`INPUT_${name.toUpperCase()}`, undefined])
+  );
   const runCli = (env: Record<string, string>) =>
     spawnSync(process.execPath, [MODULE_PATH], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
-      env: { PATH: process.env.PATH ?? '', ...env },
+      env: { ...process.env, ...CLEARED, ...env },
     });
 
   it('exits 0 and names what it checked on a good dispatch', () => {
@@ -588,7 +597,7 @@ describe('the CLI entry point', () => {
     const result = spawnSync(
       process.execPath,
       ['-e', `import(${JSON.stringify(MODULE_PATH)}).then(() => process.stdout.write("IMPORTED"))`],
-      { cwd: REPO_ROOT, encoding: 'utf8', env: { PATH: process.env.PATH ?? '' } }
+      { cwd: REPO_ROOT, encoding: 'utf8', env: { ...process.env, ...CLEARED } }
     );
     expect(result.status).toBe(0);
     expect(result.stdout).toBe('IMPORTED');

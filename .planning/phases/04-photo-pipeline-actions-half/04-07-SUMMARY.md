@@ -475,3 +475,10 @@ into, and it is now computed. `exifProbe` is available for the job log.
 Both entries are in `deferred-items.md`: `yaml` is still an undeclared transitive dependency and
 `engines.node` still understates its floor (04-06's entry), and the numeric guard needs the
 `test -f` repair. **This plan did not edit `package.json`.**
+
+## Self-Check: PASSED
+
+All three created files exist on disk; all seven commits (`54a4fec`, `6ecccd3`, `28dd072`,
+`a5cb728`, `ac2e5c1`, `62871b2`, `950ff82`) resolve in `git log`; every one is authored
+`Akhil Saxena <saxena.akhil42@gmail.com>` with no AI attribution trailer; the working tree is
+clean; and `git diff --diff-filter=D 54a4fec^ HEAD` lists no deletions — nothing was swept.

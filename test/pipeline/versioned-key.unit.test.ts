@@ -71,6 +71,19 @@ const VARIANTS: ReadonlyArray<readonly [string, string]> = [
 
 const encode = (text: string): Uint8Array => new TextEncoder().encode(text);
 
+interface VariantEntry {
+  bytes: Uint8Array;
+  hash?: string;
+}
+
+interface DerivedAssets {
+  slug: string;
+  variants: Record<string, VariantEntry>;
+  thumb: string;
+  dimensions: { width: number; height: number };
+  exif: Record<string, string | number | null>;
+}
+
 interface Bufs {
   original: string;
   large: string;
@@ -79,7 +92,7 @@ interface Bufs {
 }
 
 /** Build the assets object with an explicit payload per variant, so each can be varied alone. */
-const assetsFor = (bufs: Bufs, dimensions = { width: 4608, height: 3072 }) => ({
+const assetsFor = (bufs: Bufs, dimensions = { width: 4608, height: 3072 }): DerivedAssets => ({
   slug: SLUG,
   variants: {
     original: { bytes: encode(bufs.original) },
@@ -258,9 +271,7 @@ describe('each of the four variants carries its own version', () => {
 
 describe('a precomputed hash cannot drift from the bytes it claims to describe', () => {
   it('a matching hash is accepted', () => {
-    const assets = assetsFor(V1) as ReturnType<typeof assetsFor> & {
-      variants: Record<string, { bytes: Uint8Array; hash?: string }>;
-    };
+    const assets = assetsFor(V1);
     for (const [urlKey] of VARIANTS) {
       assets.variants[urlKey].hash = sha8(assets.variants[urlKey].bytes);
     }
@@ -278,9 +289,7 @@ describe('a precomputed hash cannot drift from the bytes it claims to describe',
     // the hash in the record ever disagreed, the manifest would point at objects that were never
     // written — the exact failure `scripts/verify-photo-urls.mjs` exists to catch, caught here
     // instead, before anything is uploaded.
-    const assets = assetsFor(V1) as ReturnType<typeof assetsFor> & {
-      variants: Record<string, { bytes: Uint8Array; hash?: string }>;
-    };
+    const assets = assetsFor(V1);
     assets.variants.large.hash = 'deadbeef';
     expect(() =>
       buildRecord({
@@ -293,10 +302,11 @@ describe('a precomputed hash cannot drift from the bytes it claims to describe',
   });
 
   it('a missing variant is refused rather than producing a record with three URLs', () => {
-    const assets = assetsFor(V1) as ReturnType<typeof assetsFor> & {
-      variants: Record<string, unknown>;
-    };
-    delete assets.variants.medium;
+    const complete = assetsFor(V1);
+    // Rebuilt without `medium` rather than `delete`d: an index-signature delete is a type error
+    // under this tsconfig, and rebuilding says the same thing without one.
+    const { medium: _dropped, ...withoutMedium } = complete.variants;
+    const assets = { ...complete, variants: withoutMedium };
     expect(() =>
       buildRecord({
         inputs: { temp_key: TEMP_KEY, category: CATEGORY, title: TITLE, alt: ALT },

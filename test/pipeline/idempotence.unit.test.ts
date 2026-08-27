@@ -366,9 +366,15 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
         manifest: COMMITTED,
       })
     ).toThrow(/date/);
-    expect(() =>
-      buildRecord({ inputs: INPUTS, assets: assetsFor('v1'), manifest: COMMITTED })
-    ).toThrow(/date/);
+    // Cast rather than omitted: `date` is a REQUIRED argument at the type level too, and the
+    // point of this assertion is that the runtime refuses it rather than defaulting — which is
+    // what would silently settle OD-10.
+    const withoutDate = {
+      inputs: INPUTS,
+      assets: assetsFor('v1'),
+      manifest: COMMITTED,
+    } as unknown as Parameters<typeof buildRecord>[0];
+    expect(() => buildRecord(withoutDate)).toThrow(/date/);
   });
 
   it('refuses placeholder-shaped alt before anything else happens (OD-2b)', () => {
@@ -510,20 +516,22 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     expect(ranksOf(first).split('|').length).toBe(COMMITTED.length);
   });
 
-  it('recomputes categoryOrder — and only that — when the record moves category', () => {
-    // The one case where preserving categoryOrder would be WRONG: the value ranks within a group,
-    // and the record has changed group. `order` is global and still must not move.
+  it('a re-dispatch under a DIFFERENT category is an insert, not a repair', () => {
+    // A consequence of OD-4's key, recorded rather than glossed. `id` is `category + "-" + slug`,
+    // so changing the category changes the id, and the upsert has nothing to match. The original
+    // record survives untouched — including its ranks — and the wrongly-filed one stays until
+    // somebody deletes it. Deleting records is not this pipeline's job.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const inserted = find(first, ID);
 
-    const moved = build('v2', first, { category: 'abstract' });
-    const second = upsertRecord(first, moved) as Photo[];
-    const after = find(second, 'abstract-pipelineproof');
+    const moved = build('v2', first, { category: 'abstract' }) as Photo;
+    expect(moved.id).toBe('abstract-pipelineproof');
 
-    expect(second.length).toBe(first.length);
-    expect(second.some((photo) => photo.id === ID)).toBe(false);
-    expect(after.order).toBe(inserted.order);
-    expect(after.categoryOrder).toBe(
+    const second = upsertRecord(first, moved) as Photo[];
+    expect(second.length).toBe(first.length + 1);
+    expect(find(second, ID).order).toBe(inserted.order);
+    expect(find(second, ID).categoryOrder).toBe(inserted.categoryOrder);
+    expect(find(second, 'abstract-pipelineproof').categoryOrder).toBe(
       COMMITTED.filter((photo) => photo.category === 'abstract').reduce(
         (best, photo) => Math.max(best, photo.categoryOrder),
         0
@@ -531,8 +539,28 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     );
   });
 
+  it('refuses a manifest that disagrees with itself about a shared id’s category', () => {
+    // Impossible under the id invariant, and worth refusing rather than resolving: a preserved
+    // categoryOrder ranks WITHIN a group, so carrying one across a group change would put a rank
+    // in the wrong gallery. RI-6 would eventually report the collision; this names the cause.
+    const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
+    const corrupted = first.map((photo) =>
+      photo.id === ID ? { ...photo, category: 'abstract' } : photo
+    );
+    expect(() => upsertRecord(corrupted, build('v2', first))).toThrow(/disagrees with itself/);
+  });
+
   it('refuses a record that is not rank-shaped rather than writing it', () => {
-    expect(() => upsertRecord(COMMITTED, { id: ID } as unknown as Photo)).toThrow(/order/);
+    expect(() =>
+      upsertRecord(COMMITTED, { id: ID, category: CATEGORY } as unknown as Photo)
+    ).toThrow(/order/);
+    expect(() =>
+      upsertRecord(COMMITTED, { id: ID, category: CATEGORY, order: 0 } as unknown as Photo)
+    ).toThrow(/order/);
+    expect(() =>
+      upsertRecord(COMMITTED, { id: ID, category: CATEGORY, order: 40 } as unknown as Photo)
+    ).toThrow(/categoryOrder/);
+    expect(() => upsertRecord(COMMITTED, { id: ID } as unknown as Photo)).toThrow(/category/);
     expect(() => upsertRecord(COMMITTED, null as unknown as Photo)).toThrow();
   });
 });

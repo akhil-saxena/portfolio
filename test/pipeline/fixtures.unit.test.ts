@@ -205,6 +205,52 @@ describe('fixture: small-320px.jpg', () => {
   });
 });
 
+/**
+ * `exif-differential.txt` is the ONLY artefact recording why OD-12's mandatory 39-record proof
+ * was not run. Without it the verdict is a sentence somebody wrote rather than a measurement
+ * somebody took, and a sentence rots silently.
+ *
+ * ADDED BEYOND THE PLAN (deviation, Rule 2). The plan verified that file with a one-shot shell
+ * check: `>= 3 lines matching /^\S+\s+\d+\/\d+/`. Proven walkable — three fabricated rows
+ * (`x 1/1`) satisfy the shape and the check passes. These assertions bind the rows to the
+ * committed manifest instead, so a fabricated or trimmed evidence file fails by name.
+ */
+describe('the OD-12 differential evidence', () => {
+  const rows = readFileSync(join(FIXTURES, 'exif-differential.txt'), 'utf8')
+    .split('\n')
+    .filter((line) => /^\S+\s+\d+\/\d+/.test(line))
+    .map((line) => line.split(/\s+/)[0]);
+
+  const manifestIds = new Set<string>(
+    (
+      JSON.parse(readFileSync(join(REPO, 'data', 'portfolio_images.json'), 'utf8')) as {
+        id: string;
+      }[]
+    ).map((record) => record.id)
+  );
+
+  it('covers at least the 39 records that existed when the measurement was taken', () => {
+    // A FLOOR, never a count — Phase 4 appends records, and the repo convention (see
+    // `photo-pipeline-contract.unit.test.ts`) is that a 40th record must strengthen a proof
+    // rather than falsify it.
+    expect(rows.length).toBeGreaterThanOrEqual(39);
+  });
+
+  it('names only real record ids — no row can be fabricated to satisfy a row count', () => {
+    const unknown = rows.filter((id) => !manifestIds.has(id));
+    expect(unknown).toStrictEqual([]);
+  });
+
+  it('names each record at most once, so rows cannot be padded by repetition', () => {
+    expect(new Set(rows).size).toBe(rows.length);
+  });
+
+  it('states the verdict in README.md, not only in the data file', () => {
+    const readme = readFileSync(join(FIXTURES, 'README.md'), 'utf8');
+    expect(readme).toContain('The differential corpus is NOT available.');
+  });
+});
+
 describe('the fixtures as committed artefacts', () => {
   for (const relative of GENERATED) {
     it(`${relative} exists, is non-empty and is TRACKED BY GIT`, () => {

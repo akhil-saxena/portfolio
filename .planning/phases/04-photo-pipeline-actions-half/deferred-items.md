@@ -56,3 +56,94 @@ code. **Whoever lifts either grep into an automated verify block or a gate scrip
 ```
 test -f PATH && ! grep -nE '(maxWidth|width|height|quality)\s*[:=]\s*[0-9]' PATH
 ```
+
+## 04-09 · `classifyPushFailure` does not recognise a lost ref lock as a conflict
+
+**Found:** 2026-08-28, building case 6b of `test/pipeline/partial-failure.node.test.ts`.
+
+There are TWO ways a concurrent writer can beat the pipeline to `main`, and `git` reports them
+differently depending on WHEN the rival lands:
+
+- **Before the push starts** — git refuses locally with `! [rejected] … (fetch first)` and
+  `Updates were rejected because …`. `classifyPushFailure` returns `conflict`, the re-derive loop
+  runs, and the job exits 8 after exhausting `PUBLISH_RETRY_LIMIT`. Correct, and case 6 proves it.
+- **During the push** — git has already computed the ref's expected old value, so the remote
+  answers with a failed compare-and-swap:
+
+  ```
+  remote: error: cannot lock ref 'refs/heads/main': is at <new> but expected <old>
+  ! [remote rejected] HEAD -> main (failed to update ref)
+  ```
+
+  `CONFLICT_REASONS` in `scripts/lib/git-publish.mjs` matches
+  `non-fast-forward|fetch first|stale info`, and `updates were rejected because` is absent too, so
+  this classifies as `other` and the job exits **9 without retrying** — even though a re-derive is
+  exactly what would fix it.
+
+**Not a data-integrity problem, which is why it is deferred rather than fixed here.** The outcome
+is the safe one: nothing is committed, the four variants are orphan bytes, the staged object is
+unspent, and a re-dispatch repairs the run. It is a lost retry, not a lost record.
+
+**Not fixed by 04-09** because `git-publish.mjs` is 04-06's module and conflict classification is
+its central decision — widening it is a semantic change to a shipped, tested module, and 04-06's
+own header argues at length for matching the REASON rather than the `! [rejected]` marker (a
+rejection can also mean "refusing to update checked out branch", which a re-derive cannot fix).
+Any fix must keep that distinction.
+
+**Suggested fix:** add `cannot lock ref` **together with** `is at .* but expected` to
+`CONFLICT_REASONS` — the pair is specific to a lost compare-and-swap and cannot match the
+checked-out-branch or tag-clobber rejections. `test/pipeline/partial-failure.node.test.ts` case 6b
+pins the current behaviour and will go red, by name, the moment this is changed.
+
+## 04-09 · `scripts/lib/dispatch-input.mjs` holds two raw NUL bytes, so `grep` skips it silently
+
+**Found:** 2026-08-28, while reading 04-08's validator.
+
+Line 284 joins two arrays on a NUL separator, and the NUL is written as a **raw byte in the
+source** rather than as a `\u0000` escape. Two of them, so the file is not text:
+
+```
+$ file scripts/lib/dispatch-input.mjs
+scripts/lib/dispatch-input.mjs: data
+$ grep -c export scripts/lib/dispatch-input.mjs      # exit 1, NO OUTPUT
+$ grep -a -c export scripts/lib/dispatch-input.mjs   # 9
+```
+
+The separator choice is sound — a NUL cannot appear in an input name — but the encoding makes the
+file **invisible to every `grep`-based control in this repository**, and invisibly so: `grep`
+prints nothing and exits 1, which is byte-for-byte what a clean file looks like. This is the third
+appearance of that shape in this phase, after the two `! grep` guards that pass on a missing file
+(`04-VALIDATION.md` hazard 20).
+
+**Not a live risk today:** 04-08's contract test reads the file with `readFileSync`, not `grep`, so
+its source assertions still run. The risk is the next gate that greps `scripts/lib/*.mjs` and
+reports a clean pass over a file it never read.
+
+**And it is contagious, which is the part worth recording.** Writing this very entry pasted the
+raw byte into `deferred-items.md`, which turned THIS file binary: `grep -n '^## '` returned
+nothing and exited 1, i.e. reported no headings in a file with six. Two NULs were stripped and the
+file is `UTF-8 text` again. A byte that makes a file invisible to `grep` propagates through any
+copy-paste of the code that contains it.
+
+**Suggested fix:** write the separator as the escape `\u0000` instead of the raw byte. One
+character class of source, no behaviour change, and the file becomes text again. Verify with
+`file scripts/lib/dispatch-input.mjs` reporting `ASCII text` and `grep -c export` returning 9.
+
+## 04-09 · `wrangler` is now a RUNTIME dependency of the Actions pipeline, not just a deploy tool
+
+**Found:** 2026-08-28, wiring `scripts/lib/r2.mjs` under OD-5 B.
+
+`scripts/lib/r2.mjs` spawns `node node_modules/wrangler/bin/wrangler.js` for every R2 get, put and
+delete, so `wrangler` is required for the photo workflow to do its job at all. It is declared in
+`devDependencies`, which is correct today — `process-photos.yml` runs a plain `npm ci`, and that
+installs devDependencies.
+
+**The hazard is a future edit to the workflow.** Anyone who "optimises" that step to
+`npm ci --omit=dev` (a reasonable-looking change for a job that does not build the site) removes
+the binary the pipeline shells out to, and the failure surfaces at step 2 as "the staged object
+could not be read" rather than as a missing dependency.
+
+**Not fixed here** because it is not currently wrong. **Whoever next owns `package.json`** should
+decide deliberately whether `wrangler` moves to `dependencies` and, either way, leave the reason in
+a comment. Suggested alongside the two entries above (`yaml` undeclared, `engines.node`
+understated) — three edits, one file, one review.

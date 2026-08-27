@@ -150,6 +150,25 @@ const RULES = [
     test: (p) => p.endsWith('.example'),
     why: 'the templates a developer copies into real local config, so a stale origin propagates.',
   },
+  {
+    scan: true,
+    label: '.github/**',
+    test: (p) => p.startsWith('.github/'),
+    why:
+      'SKIP UNTIL 2026-08-27, MOVED TO SCAN BY PLAN 04-02 (decision OD-3). The rule used to say ' +
+      '"CI configuration, not a shipped artefact … REVISIT IN PHASE 4: the Actions photo ' +
+      'pipeline is the only future writer of new URLs, so once it exists its workflow env ' +
+      'genuinely can carry an origin". Phase 4 has landed, that pipeline is being built, and ' +
+      '03-01 named this rule in its own summary as the one most likely to be wrong once it did. ' +
+      'A workflow that published photos while carrying a legacy origin in an `env:` block would ' +
+      'write that origin into the manifest, which is the exact failure this gate exists to stop. ' +
+      'BLIND SPOT, and it is the reason OD-3 chose to refuse the secret rather than repoint it: ' +
+      'this gate reads TEXT, so a `secrets.R2_PUBLIC_URL` interpolation in a workflow is a ' +
+      'REFERENCE, not a literal, and its VALUE is invisible ' +
+      'to it — measured 2026-08-27, plan 04-02 Task 3 step 4. Nothing in this repository can see ' +
+      'a wrong value inside a secret. That is why the pipeline imports IMAGE_ORIGIN instead of ' +
+      'reading any secret at all; scanning .github/** closes the literal half only.',
+  },
 
   // ---------------------------------------------------------------------------------------- SKIP
   {
@@ -186,15 +205,6 @@ const RULES = [
     why:
       'a test asserting that the migration or this gate works must be free to name the string it ' +
       'forbids as a fixture. Tests do not ship. Not in OD-1 shipped set.',
-  },
-  {
-    scan: false,
-    label: '.github/**',
-    test: (p) => p.startsWith('.github/'),
-    why:
-      'CI configuration, not a shipped artefact, and not in OD-1 shipped set. REVISIT IN PHASE 4: ' +
-      'the Actions photo pipeline is the only future writer of new URLs, so once it exists its ' +
-      'workflow env genuinely can carry an origin and this rule should move to SCAN.',
   },
   {
     scan: false,
@@ -260,6 +270,8 @@ if (tracked.length === 0) {
 
 const toScan = [];
 const skipped = new Map();
+/** Tracked files matched per SCAN rule. See GUARD AGAINST NOTHING (4) below. */
+const scannedByLabel = new Map(RULES.filter((r) => r.scan).map((r) => [r.label, 0]));
 
 for (const relative of tracked) {
   const rule = RULES.find((r) => r.test(relative));
@@ -276,8 +288,33 @@ for (const relative of tracked) {
   }
   if (rule.scan) {
     toScan.push({ relative, absolute: path.join(repoRoot, relative) });
+    scannedByLabel.set(rule.label, scannedByLabel.get(rule.label) + 1);
   } else {
     skipped.set(rule.label, (skipped.get(rule.label) ?? 0) + 1);
+  }
+}
+
+/* --------------------------------------------------------------------------------------------
+ * GUARD AGAINST NOTHING (4/4): a SCAN rule that matched no tracked file is indistinguishable
+ * from a SKIP rule, and it reports a clean result over a directory it never opened.
+ *
+ * Added by plan 04-02 with the `.github/**` reclassification, because that flip is worth exactly
+ * nothing unless the rule actually reaches files: `scan: true` on a `test` that no longer matches
+ * anything — a renamed directory, a typo, a repository that stopped shipping the thing — would
+ * print PASS and mean nothing. It applies to EVERY scan rule, not just the new one: a rule that
+ * matches nothing is either dead or wrong, and deleting it is a decision someone should have to
+ * make in writing.
+ * -------------------------------------------------------------------------------------------- */
+for (const [label, count] of scannedByLabel) {
+  if (count === 0) {
+    failures.push({
+      where: `RULES → ${label}`,
+      detail: 'SCAN rule matched no tracked file',
+      why:
+        'a scan rule that reaches nothing is indistinguishable from a skip, so this gate would ' +
+        'report a clean result over files it never opened. Either the path moved and the rule ' +
+        'needs updating, or the rule is dead and should be deleted on purpose.',
+    });
   }
 }
 
@@ -462,6 +499,9 @@ console.log(
 );
 console.log(
   `  manifest: ${manifestChecked} remote URL(s) across ${EXPECTED_RECORDS}+ records all start with ${IMAGE_ORIGIN}/`
+);
+console.log(
+  `  scanned by named rule: ${[...scannedByLabel.entries()].map(([label, n]) => `${label} (${n})`).join(', ')}`
 );
 console.log(
   `  skipped by named rule: ${[...skipped.entries()].map(([label, n]) => `${label} (${n})`).join(', ')}`

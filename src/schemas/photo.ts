@@ -155,6 +155,33 @@ export const PhotoExifSchema = z.strictObject({
   focalLength: z.string().min(1).nullable(),
 });
 
+/**
+ * `dimensions` IS THE INTRINSIC SIZE OF THE SOURCE PHOTOGRAPH. (OD-11, decided 2026-08-26.)
+ *
+ * It is NOT the size of `urls.original`, and the difference is not theoretical — it is already
+ * true of the committed data. MEASURED: `nature-fairwayreflections` is `4608x3072` here while
+ * `urls.original` serves `2000x1333`, because the pipeline caps the largest variant at 2000px.
+ * Two other records differ the same way. The aspect ratios agree to within 0.03%.
+ *
+ * WHAT A CONSUMER MAY USE IT FOR: the ASPECT RATIO, and nothing else. That is what PUB-05's CLS
+ * reservation needs — `aspect-ratio: width / height` on the element, so the box is reserved
+ * before the bytes arrive.
+ *
+ * WHAT IT MUST NOT BE USED FOR: the pixel dimensions of any served variant. Writing
+ * `width={photo.dimensions.width}` on an `<img>` whose `src` is `urls.original` states 4608 for a
+ * 2000px image. It happens to be harmless for layout, because the ratio is preserved, and it is
+ * wrong for anything that reasons about bytes — `srcset` descriptors, a density decision, a
+ * "don't upscale" check. Phase 5 builds `srcset` on top of this field, which is why the contract
+ * is written down now rather than inferred later from three records that disagree.
+ *
+ * WHO GUARANTEES IT: Phase 4's pipeline is the producer. It reads the dimensions from the SOURCE
+ * file's metadata before any resize, so `dimensions` describes the photograph as it came off the
+ * camera. `src/lib/photo-pipeline.ts` carries the same statement beside the variant table.
+ *
+ * This block changes no zod rule. It is a contract being written down where the field is
+ * declared, because that is where a reader looks for it; the enforcement is 04-07's derivation
+ * test (source metadata, never emitted variant size).
+ */
 export const PhotoDimensionsSchema = z.strictObject({
   width: z.number().int().positive(),
   height: z.number().int().positive(),

@@ -24,11 +24,31 @@
  * rule that settles it: "declaring them now would force the developer to provision secrets
  * that nothing in Phase 2 reads."
  *
- * PHASE 4 OBLIGATION (recorded here so it is not rediscovered as an omission): when the
- * Actions publishing pipeline lands and a real consumer of the origin exists at runtime,
- * `R2_PUBLIC_URL` gains its `astro:env` schema entry and its `wrangler.jsonc` `vars` entry,
- * and this constant becomes that variable's build-time default rather than a second source
- * of truth. Until that consumer exists, adding the variable is cost with no benefit.
+ * PHASE 4 CHECKED THAT CONDITION AND IT DID NOT HOLD. (Amended 2026-08-27 by plan 04-02.)
+ *
+ * This paragraph used to record a PHASE 4 OBLIGATION: that when the Actions publishing pipeline
+ * landed and a real consumer of the origin existed AT RUNTIME, `R2_PUBLIC_URL` would gain its
+ * `astro:env` schema entry and its `wrangler.jsonc` `vars` entry, with this constant becoming
+ * that variable's build-time default. The reasoning was right and the prediction was wrong,
+ * so it is falsified here rather than deleted — a document recording what was true on a date is
+ * falsified by a blanket replace, not improved by one (the 01-23 precedent, the same one that
+ * keeps `.planning/**` out of the CONT-04 gate's scan set).
+ *
+ * WHAT PHASE 4 ACTUALLY BUILT: `src/lib/photo-pipeline.ts` plus `scripts/**`, run by GitHub
+ * Actions on a NODE RUNNER. It composes every URL from `IMAGE_ORIGIN` below, imported — decision
+ * OD-3, taken 2026-08-26, specifically so the pipeline cannot emit a non-canonical origin and so
+ * the five-month-old `R2_PUBLIC_URL` secret is never read. Nothing in Phase 4 reads the origin
+ * inside the Worker, which is the trigger the obligation named. So the condition is still unmet
+ * after the pipeline exists, and declaring the variable would still force a developer to
+ * provision a secret nothing reads — under `validateSecrets: true`, a BUILD FAILURE.
+ *
+ * The same prediction is written in `astro.config.mjs` (the `envSchema` comment naming Phases 3
+ * and 4) and in `wrangler.jsonc` (the "Deliberately absent" block). Both are equally falsified by
+ * the measurement above. Plan 04-02 does not own those two files, so they are named here rather
+ * than edited, and a reader arriving at either one should arrive here.
+ *
+ * If a runtime consumer inside the Worker is ever built — a Phase 7 admin route composing an
+ * upload URL, say — the original reasoning applies again and the variable earns its entry then.
  *
  * Provisioned in plan 02-02; the DNS records, the cache evidence and the byte-for-byte
  * bucket check are in `02-DNS-R2-PREREQS.md`.

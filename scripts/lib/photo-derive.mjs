@@ -80,6 +80,50 @@
  * image, and `info.height` off the raw buffer is the real height rather than a rounded guess.
  *
  * ---------------------------------------------------------------------------------------------
+ * OD-12 · THE READER IS `exif-reader`, FED FROM THE BUFFER `sharp` ALREADY PRODUCED
+ *
+ * (Option B, decided 2026-08-26.) One read of the staged object, one decode, and the EXIF comes
+ * off `metadata().exif` rather than out of a second open of the file — a second read is a second
+ * thing that can disagree with the first.
+ *
+ * THE MANDATORY DIFFERENTIAL PROOF WAS NOT AVAILABLE, AND THAT IS RECORDED RATHER THAN GLOSSED.
+ * `04-RESEARCH.md` made option B conditional on re-extracting EXIF from the 39 live originals and
+ * reproducing every committed value. 04-04 Task 1 measured that corpus out of existence: all 39
+ * served objects, AND the three unwatermarked masters it also probed, are single-chunk `VP8` WebP
+ * with no `EXIF`, `XMP` or `ICCP` — verified by a raw chunk walk, by `metadata().exif` and by the
+ * container header. The legacy encoder never called `withMetadata()`, sharp strips by default, and
+ * the camera sources were never committed. The committed `exif` blocks are the OUTPUT of an
+ * extraction, not an input one can be re-run against. What was available instead: the generated
+ * fixtures, the expectation table beside them, and a cross-library differential run once in a
+ * throwaway directory. Weaker, in one stated way — it shows the mapper reads what `exif-reader`
+ * produces, not that it agrees with 39 photographs a human reviewed in 2026-03.
+ *
+ * AND THE MAPPING IS THIS MODULE'S OWN. The six fields are `PhotoExifSchema`'s contract, not the
+ * library's, so no library helper composes them. Every tag name below was checked against
+ * `exif-reader` SPECIFICALLY — not against the legacy code and not against `exifr` — because the
+ * two libraries disagree: EXIF tag `0x8827` is `ISO` in `exifr` and `ISOSpeedRatings` here. A
+ * verbatim port reads `d.ISO`, gets `undefined`, and writes `iso: null` into every future record:
+ * schema-valid, and invisible to every gate in this repository (`04-VALIDATION.md` hazard 11).
+ *
+ * ---------------------------------------------------------------------------------------------
+ * OD-10 · `date` IS `DateTimeOriginal ?? ingestionDate`
+ *
+ * (Option B, decided 2026-08-26.) The capture date when the file carries one, the ingestion date
+ * when it does not. `DateTimeOriginal` was verified under that exact name in `exif-reader` before
+ * anything was built on it, for the same reason as the ISO tag: a silent rename would write the
+ * ingestion date forever while looking perfectly correct.
+ *
+ * OPTION C IS IMPOSSIBLE, NOT MERELY COSTLY. It proposed backfilling the 39 existing records from
+ * the originals' EXIF, and there is none to read (see above). So the split is permanent: the 39
+ * committed records mean *the day it was published* and every new record will mean *the day it was
+ * taken*. Phase 5 sorts and displays `date` and must decide which it presents; this is recorded
+ * here rather than left to be discovered by whoever writes the caption.
+ *
+ * A KNOWN LIMIT, LEFT AS ONE DELIBERATELY: a camera with a wrong clock writes a wrong capture
+ * date, and this module does not second-guess it. Clamping "the future" and not "1980" would be
+ * arbitrary policy invented at the wrong layer.
+ *
+ * ---------------------------------------------------------------------------------------------
  * SECURITY: THE BYTES ARE UNTRUSTED (T-04-28, T-04-29)
  *
  * They are whatever a dispatcher put in a staging bucket, and they are handed to a native decoder
@@ -98,6 +142,7 @@
  * guard.
  */
 
+import exifReader from 'exif-reader';
 import sharp from 'sharp';
 import {
   contentHash,
@@ -119,6 +164,8 @@ import {
  * @typedef {{ bytes: Buffer, hash: string }} VariantAsset
  * @typedef {{ urlKey: string, suffix: string, width: number, height: number, bytes: Buffer }} EmittedVariant
  * @typedef {{ key: string, bytes: Buffer, contentType: string, cacheControl: string }} UploadDescriptor
+ * @typedef {{ metadataRead: boolean, exifPresent: boolean, exifBytes: number, parsed: boolean,
+ *   failure: string|null }} ExifProbe
  */
 
 /* ==============================================================================================
@@ -415,6 +462,228 @@ export async function buildThumb(bytes) {
 }
 
 /* ==============================================================================================
+ * 3b. EXIF: the reader, the six-field mapping, and `date`.
+ * ============================================================================================ */
+
+/**
+ * The six fields, in the order `PhotoExifSchema` declares them.
+ *
+ * RESTATED, as `scripts/lib/photo-record.mjs` also has to restate it and for the same reason:
+ * `src/schemas/photo.ts` cannot be loaded by plain `node`, and `src/lib/photo-pipeline.ts` does
+ * not export the list. The agreement is asserted rather than assumed — `PhotoExifSchema` is a
+ * `strictObject` of six nullable, NON-optional fields, so it refuses both an extra key and a
+ * missing one, and 04-05's suite runs a produced record through it.
+ */
+export const EXIF_FIELDS = Object.freeze([
+  'camera',
+  'lens',
+  'aperture',
+  'shutter',
+  'iso',
+  'focalLength',
+]);
+
+/**
+ * Six keys, every one null.
+ *
+ * NOT an absent object, and the difference is the whole point: `PhotoExifSchema` refuses a record
+ * whose `exif` is missing and accepts one whose `exif` is six nulls. A photograph with no metadata
+ * is an ordinary photograph; a record with no `exif` block is a schema failure.
+ *
+ * @returns {Record<string, string|number|null>}
+ */
+export function emptyExif() {
+  return Object.fromEntries(EXIF_FIELDS.map((field) => [field, null]));
+}
+
+/**
+ * `{ ...Image, ...Photo }` — `Photo` last.
+ *
+ * `exif-reader` returns the IFDs as separate groups: `Make` and `Model` arrive in `Image` (IFD0)
+ * and the other five in `Photo` (the Exif sub-IFD). Flattening with `Photo` winning matches the
+ * differential 04-04 ran, and means a tag that legitimately appears in both is read from the more
+ * specific directory.
+ *
+ * @param {unknown} parsed
+ * @returns {Record<string, unknown>}
+ */
+const tagsOf = (parsed) => {
+  if (parsed === null || typeof parsed !== 'object') return {};
+  const groups = /** @type {Record<string, unknown>} */ (parsed);
+  const image = groups.Image !== null && typeof groups.Image === 'object' ? groups.Image : {};
+  const photo = groups.Photo !== null && typeof groups.Photo === 'object' ? groups.Photo : {};
+  return { ...image, ...photo };
+};
+
+/**
+ * A tag as a non-empty string, or null.
+ *
+ * The trim matters: camera makers pad `Make` and `Model` to a fixed width, and `PhotoExifSchema`
+ * puts `.min(1)` on the five string fields — so a tag that is only whitespace has to become null
+ * rather than `" "`. An empty tag means the camera wrote nothing, which is what null says.
+ */
+const text = (value) => {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+};
+
+/** First element if the tag came back as an array (some cameras write SHORT[n]), else the value. */
+const scalar = (value) => (Array.isArray(value) ? value[0] : value);
+
+/** A finite positive number, or null. Zero is falsy in the legacy mapper too, deliberately. */
+const positiveNumber = (value) => {
+  const one = scalar(value);
+  return typeof one === 'number' && Number.isFinite(one) && one > 0 ? one : null;
+};
+
+/**
+ * A positive INTEGER, or null. `PhotoExifSchema` declares
+ * `z.number().int().positive().nullable()`, so a stringified or fractional ISO fails the schema.
+ * Rounding is observable only for a value no camera writes.
+ */
+const positiveInteger = (value) => {
+  const one = positiveNumber(value);
+  return one === null ? null : Math.round(one);
+};
+
+/**
+ * The six schema fields from an `exif-reader` result. THE MAPPING IS THIS MODULE'S, and every
+ * tag name is `exif-reader`'s — see the OD-12 note in the header for why that sentence exists.
+ *
+ * @param {unknown} parsed  an `exif-reader` result, or anything at all
+ * @returns {Record<string, string|number|null>}
+ */
+export function mapExifFields(parsed) {
+  const tags = tagsOf(parsed);
+
+  const camera = [text(tags.Make), text(tags.Model)].filter(Boolean).join(' ');
+  const aperture = positiveNumber(tags.FNumber);
+  const exposure = positiveNumber(tags.ExposureTime);
+  const focal = positiveNumber(tags.FocalLength);
+
+  // `1/N` under a second, `Ns` at a second and over. The long branch is the one no fixture
+  // reaches (`test/pipeline/fixtures/README.md` names it), so it is covered by a synthetic case.
+  let shutter = null;
+  if (exposure !== null) {
+    shutter = exposure < 1 ? `1/${Math.round(1 / exposure)}` : `${exposure}s`;
+  }
+
+  return {
+    camera: camera.length === 0 ? null : camera,
+    lens: text(tags.LensModel),
+    aperture: aperture === null ? null : `f/${aperture}`,
+    shutter,
+    // ISOSpeedRatings, NOT ISO. See the header. Do not "tidy" this to the exifr spelling.
+    iso: positiveInteger(tags.ISOSpeedRatings),
+    focalLength: focal === null ? null : `${focal}mm`,
+  };
+}
+
+/**
+ * `YYYY-MM-DD` from whichever shape `DateTimeOriginal` arrived in, or null.
+ *
+ * UTC PARTS, NEVER LOCAL ONES. `exif-reader` parses the naive EXIF timestamp as if it were UTC, so
+ * the UTC components are exactly the digits the camera wrote. A `getFullYear()`/`getDate()`
+ * implementation reads them back through the runner's timezone and shifts the day for any evening
+ * exposure east of Greenwich — a one-day error that would look right in London and wrong in Delhi.
+ *
+ * The string form is handled too: `exif-reader`'s own typings declare this tag as a `Date` in the
+ * Exif sub-IFD and as a `string` in IFD0, so both are reachable.
+ */
+const isoDayFrom = (value) => {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  if (typeof value !== 'string') return null;
+  const match = /^(\d{4})[:-](\d{2})[:-](\d{2})/.exec(value.trim());
+  if (match === null) return null;
+  const day = `${match[1]}-${match[2]}-${match[3]}`;
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) return null;
+  return day;
+};
+
+/**
+ * OD-10 option B: the capture date, falling back to the ingestion date.
+ *
+ * @param {unknown} parsed  an `exif-reader` result, or null
+ * @param {string} ingestionDate  `YYYY-MM-DD`
+ * @returns {string}
+ */
+export function captureDate(parsed, ingestionDate) {
+  return isoDayFrom(tagsOf(parsed).DateTimeOriginal) ?? ingestionDate;
+}
+
+/**
+ * Read the EXIF off metadata `sharp` already produced, map it, and decide `date`.
+ *
+ * RETURNS A PROBE, and the probe is not decoration. The all-null result has to be distinguishable
+ * from a reader that was never called: a stub returning six nulls for a file it never opened is
+ * green against every assertion about the VALUES (T-04-32). `metadataRead` says the decode
+ * happened, `exifPresent`/`exifBytes` say whether there was anything to read, `parsed` says the
+ * reader succeeded, and `failure` carries the message when it did not.
+ *
+ * ANY THROW YIELDS THE ALL-NULL OBJECT — the legacy behaviour, preserved deliberately (T-04-33).
+ * A photograph with a damaged metadata segment should still publish; the six fields are nullable
+ * by design. The throw is written to STDERR rather than to `console.warn`, because `console.log`
+ * and `console.info` print nothing at all under this repository's vitest setup
+ * (`04-VALIDATION.md` hazard 7) — a warning nobody can see is a warning that does not exist, and
+ * `process.stderr.write` is visible both on an Actions runner and to a test.
+ *
+ * @param {unknown} metadata  the result of `sharp(bytes).metadata()`
+ * @param {{ ingestionDate?: string }} options
+ * @returns {{ fields: Record<string, string|number|null>, date: string,
+ *   probe: { metadataRead: boolean, exifPresent: boolean, exifBytes: number, parsed: boolean,
+ *   failure: string|null } }}
+ */
+export function extractExif(metadata, options = {}) {
+  const ingestionDate = assertIngestionDate(options.ingestionDate);
+  const probe = {
+    metadataRead: false,
+    exifPresent: false,
+    exifBytes: 0,
+    parsed: false,
+    /** @type {string|null} */
+    failure: null,
+  };
+
+  if (metadata === null || typeof metadata !== 'object') {
+    return { fields: emptyExif(), date: ingestionDate, probe };
+  }
+  probe.metadataRead = true;
+
+  const raw = /** @type {{ exif?: unknown }} */ (metadata).exif;
+  if (!(raw instanceof Uint8Array) || raw.length === 0) {
+    // Measured by 04-04: `sharp(no-exif.jpg).metadata()` does not even DEFINE `.exif`. So this
+    // is the reader having looked and found nothing, which the probe records as such.
+    return { fields: emptyExif(), date: ingestionDate, probe };
+  }
+  probe.exifPresent = true;
+  probe.exifBytes = raw.length;
+
+  let parsed;
+  try {
+    parsed = exifReader(toBuffer(raw));
+  } catch (cause) {
+    probe.failure = cause instanceof Error ? cause.message : String(cause);
+    process.stderr.write(
+      `photo-derive: the EXIF segment could not be read (${probe.failure}). Publishing with an ` +
+        'empty exif block and the ingestion date — a damaged metadata segment is not a reason to ' +
+        'refuse a photograph.\n'
+    );
+    return { fields: emptyExif(), date: ingestionDate, probe };
+  }
+  probe.parsed = true;
+
+  return {
+    fields: mapExifFields(parsed),
+    date: captureDate(parsed, ingestionDate),
+    probe,
+  };
+}
+
+/* ==============================================================================================
  * 4. The whole derivation.
  * ============================================================================================ */
 
@@ -437,8 +706,9 @@ export async function buildThumb(bytes) {
  * by suffix, so the four URLs are distinct and each resolves to the object written under it.
  *
  * @param {{ bytes?: Uint8Array, category?: string, slug?: string, ingestionDate?: string }} args
- * @returns {Promise<{ slug: string, category: string, ingestionDate: string,
+ * @returns {Promise<{ slug: string, category: string, ingestionDate: string, date: string,
  *   dimensions: Dimensions, variants: Record<string, VariantAsset>, thumb: string,
+ *   exif: Record<string, string|number|null>, exifProbe: ExifProbe,
  *   descriptors: UploadDescriptor[] }>}
  */
 export async function deriveAssets({ bytes, category, slug, ingestionDate } = {}) {
@@ -450,7 +720,8 @@ export async function deriveAssets({ bytes, category, slug, ingestionDate } = {}
   }
   assertIngestionDate(ingestionDate);
 
-  const { dimensions } = await readSource(bytes);
+  const { metadata, dimensions } = await readSource(bytes);
+  const { fields: exif, date, probe: exifProbe } = extractExif(metadata, { ingestionDate });
   const emitted = await buildVariants(bytes, dimensions.width);
   const thumb = await buildThumb(bytes);
 
@@ -469,5 +740,16 @@ export async function deriveAssets({ bytes, category, slug, ingestionDate } = {}
     });
   }
 
-  return { slug, category, ingestionDate, dimensions, variants, thumb, descriptors };
+  return {
+    slug,
+    category,
+    ingestionDate,
+    date,
+    dimensions,
+    variants,
+    thumb,
+    exif,
+    exifProbe,
+    descriptors,
+  };
 }

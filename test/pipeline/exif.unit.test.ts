@@ -100,8 +100,10 @@ const FULL_PHOTO = {
 };
 const full = () => parsedExif({ ...FULL_IMAGE }, { ...FULL_PHOTO });
 
-let richMeta: sharp.Metadata;
-let bareMeta: sharp.Metadata;
+type SharpMetadata = Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>;
+
+let richMeta: SharpMetadata;
+let bareMeta: SharpMetadata;
 
 beforeAll(async () => {
   richMeta = await sharp(RICH).metadata();

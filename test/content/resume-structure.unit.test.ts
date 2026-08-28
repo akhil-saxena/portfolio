@@ -33,6 +33,19 @@
  * hardcoded here, so this proves the migration reproduced what WAS on disk and not what the plan
  * believed was on disk.
  *
+ * WHAT PLAN 05-02 TOOK OVER (OQ-1)
+ * ---------------------------------
+ * `description` is no longer this file's to prove. 05-02 replaced all five with the reviewed
+ * Phase 0 copy from `00-COPY/one-liners.md` and added `status` and `oneLiner`, so three of the ten
+ * keys on a shipped record post-date the move this file is about. The response was to hand those
+ * fields over BY NAME — to `test/content/project-copy.unit.test.ts`, which proves the new copy
+ * verbatim against the markdown and proves every field 05-02 did NOT write byte-identical against
+ * the pre-migration revision — and to keep asserting, here, the things that are still true: the
+ * eight authored keys in their authored order, byte-identity of the seven this file still owns,
+ * and that the description CHANGED on every record. Two assertions below were inverted rather than
+ * deleted, each with the reason written where the old claim used to be. An assertion removed
+ * because it went red is indistinguishable from one that was never there.
+ *
  * Comparison is on CODE POINTS, not on a visual string equality. U+2013 EN DASH and U+002D
  * HYPHEN-MINUS are near-indistinguishable in most terminals and diff viewers, so an assertion
  * failure message showing `Jul 2023 – Present` against `Jul 2023 - Present` reads as identical.
@@ -51,6 +64,13 @@ const RESUME = 'data/resume.json';
 /** The five ids in authored order, and the eight keys in authored order. Both are the contract. */
 const PROJECT_IDS = ['cairn', 'hued', 'momentum', 'timeshift', 'design-system'];
 const PROJECT_KEYS = ['id', 'title', 'label', 'description', 'tech', 'icon', 'href', 'badges'];
+
+/**
+ * The two keys plan 05-02 inserted between `label` and `description` (OQ-1). Listed by name so the
+ * comparisons below EXCLUDE exactly these and nothing else — a third key appearing later fails the
+ * key-order assertion rather than being quietly absorbed by a filter.
+ */
+const PHASE_5_KEYS = ['status', 'oneLiner'];
 
 /** The record whose description OD-6 changed, and the token it now carries. */
 const FIGURE_RECORD_ID = 'design-system';
@@ -229,7 +249,21 @@ const evidenceById = new Map(evidence.projects.map((project) => [project.id, pro
  * fields be compared byte-for-byte with key ORDER intact. Masking beats deleting: deleting the key
  * would also delete the evidence that `description` still sits in position four.
  */
-const maskDescription = (record: ProjectRecord) => ({ ...record, description: '<<OD-6 FIELD>>' });
+/**
+ * Reduce a shipped record to the fields this proof still owns.
+ *
+ * `description` is BLANKED rather than dropped, because OD-6 changed its value but not its
+ * position, and blanking keeps it in the key order the comparison reads. `status` and `oneLiner`
+ * are DROPPED, because the evidence revision predates them and has no slot for them at all — a
+ * blank would compare a present key against an absent one and fail for the wrong reason.
+ */
+const maskDescription = (record: ProjectRecord): Record<string, unknown> => {
+  const masked: Record<string, unknown> = { ...record, description: '<<OD-6 FIELD>>' };
+  // Not cast back to `ProjectRecord`: after the deletions it is deliberately NOT one, and saying
+  // so would be a lie the compiler rejects (ts2352). The only consumer is `JSON.stringify`.
+  for (const key of PHASE_5_KEYS) delete masked[key];
+  return masked;
+};
 
 describe('the evidence this proof rests on', () => {
   it(`resolves a pre-split revision of ${RESUME} that still holds projects (${evidence.ref.slice(0, 7)})`, () => {
@@ -323,9 +357,15 @@ describe.each(PROJECT_IDS)('project "%s" moved verbatim', (id) => {
     expect(after).toBeDefined();
   });
 
-  it('carries the eight keys in the order they were authored in', () => {
-    expect(Object.keys(after)).toEqual(PROJECT_KEYS);
-    expect(Object.keys(after)).toEqual(Object.keys(before));
+  it('carries the eight authored keys, in the order they were authored in', () => {
+    // Derived by removing the 05-02 keys BY NAME, not by taking the first eight: a ninth key
+    // appearing later must fail here. The evidence revision is asserted to hold exactly the eight,
+    // so this proof did not shrink — it stopped owning two fields it never had.
+    const carried = Object.keys(after).filter((key) => !PHASE_5_KEYS.includes(key));
+    expect(carried).toEqual(PROJECT_KEYS);
+    expect(Object.keys(before)).toEqual(PROJECT_KEYS);
+    // The handover is asserted, not assumed: both new keys must be present, in their own order.
+    expect(Object.keys(after).filter((key) => PHASE_5_KEYS.includes(key))).toEqual(PHASE_5_KEYS);
   });
 
   it('is byte-identical to its previous home, key order included, except the OD-6 field', () => {
@@ -337,11 +377,19 @@ describe.each(PROJECT_IDS)('project "%s" moved verbatim', (id) => {
     );
   });
 
-  if (id !== FIGURE_RECORD_ID) {
-    it('has an untouched description too — OD-6 changed exactly one record', () => {
-      expect(after.description).toBe(before.description);
-    });
-  }
+  it('had its description REPLACED by plan 05-02, which is where that field is proven now', () => {
+    // This read "has an untouched description too — OD-6 changed exactly one record", and it was
+    // true: OD-6 tokenised one figure and left the other four sentences alone. 05-02 (OQ-1) then
+    // replaced all five with the reviewed copy from `00-COPY/one-liners.md`, which had been
+    // written, sourced per claim in Phase 0 and never merged.
+    //
+    // INVERTED, not deleted. The fact that made the old assertion wrong is itself asserted — the
+    // description changed, on every record — and the verbatim proof of its new value lives in
+    // `test/content/project-copy.unit.test.ts`. Deleting this would have been the same edit with
+    // no evidence attached.
+    expect(after.description).not.toBe(before.description);
+    expect(after.description.length).toBeGreaterThan(0);
+  });
 });
 
 describe('OD-6: the component figure is no longer a literal', () => {
@@ -360,22 +408,20 @@ describe('OD-6: the component figure is no longer a literal', () => {
     expect(after.description).toContain(COMPONENT_COUNT_TOKEN);
   });
 
-  it(`${FIGURE_RECORD_ID}.description changed the figure and NOTHING else`, () => {
-    // The reviewed sentence either side of the figure must survive byte for byte. Derived from the
-    // evidence rather than hardcoded, so this compares against what was on disk and not against
-    // what the plan believed was on disk.
-    expect(after.description).toBe(
-      before.description.replace(
-        LITERAL_FIGURE,
-        (match) => `${COMPONENT_COUNT_TOKEN}${match.replace(/^\d+/, '')}`
-      )
-    );
-    // And stated the other way round, so a bug in the line above cannot make both sides agree:
-    const [beforeHead, ...beforeRest] = before.description.split(LITERAL_FIGURE);
-    expect(beforeHead).toBe('');
-    expect(after.description.slice(COMPONENT_COUNT_TOKEN.length)).toBe(
-      `-component${beforeRest.join('')}`
-    );
+  it(`${FIGURE_RECORD_ID}.description carries the token and no literal figure`, () => {
+    // This was a byte comparison — the shipped description against the evidence one with only the
+    // figure substituted, the exact-and-nothing-else form OD-6 needed. Plan 05-02 replaced that
+    // whole sentence with the reviewed card copy, so the comparison stopped being true of
+    // anything, and a comparison that cannot be true is not a weaker proof, it is no proof.
+    //
+    // What OD-6 protects is unchanged and is asserted directly instead: the evidence revision DID
+    // carry a literal figure (asserted above, so the transition had a target), and the shipped
+    // description carries the token and no figure. The verbatim claim about the NEW sentence
+    // belongs to `test/content/project-copy.unit.test.ts`, which owns that copy and compares it
+    // against `00-COPY/one-liners.md` character for character.
+    expect(before.description).toMatch(LITERAL_FIGURE);
+    expect(after.description).toContain(COMPONENT_COUNT_TOKEN);
+    expect(after.description).not.toMatch(LITERAL_FIGURE);
   });
 
   it('no project description anywhere contains a literal component figure', () => {

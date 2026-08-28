@@ -81,9 +81,11 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -257,6 +259,42 @@ function overlayWorkingTree(work: string): void {
           `not happening, and the sandbox would then be testing HEAD while the author edits.`
       );
     }
+    // `git status --porcelain` reports a WHOLLY-UNTRACKED DIRECTORY as one entry ending in `/`
+    // (`?? src/styles/`) rather than one entry per file inside it. `copyFileSync` on a directory
+    // throws ENOENT, which took the whole suite down the moment plan 05-01 added `src/styles/`.
+    //
+    // This is not specific to that directory: every remaining Phase 5 plan creates new folders
+    // under `src/`, so the next one would have hit it too. Recurse instead — and keep the
+    // refuse-rather-than-skip discipline, because an empty recursion is the same silent no-op
+    // the `continue` above was removed for.
+    if (statSync(from).isDirectory()) {
+      const before = copied.length;
+      const walk = (relativeDir: string): void => {
+        for (const entry of readdirSync(join(REPO_ROOT, relativeDir), { withFileTypes: true })) {
+          const childRelative = `${relativeDir.replace(/\/$/, '')}/${entry.name}`;
+          if (entry.isDirectory()) {
+            walk(childRelative);
+            continue;
+          }
+          if (!entry.isFile()) continue;
+          const childTo = join(work, childRelative);
+          mkdirSync(dirname(childTo), { recursive: true });
+          copyFileSync(join(REPO_ROOT, childRelative), childTo);
+          copied.push(childRelative);
+        }
+      };
+      walk(relative);
+      if (copied.length === before) {
+        throw new Error(
+          `partial-failure: \`git status --porcelain\` named the directory ` +
+            `${JSON.stringify(relative)}, but walking it produced no files to overlay. ` +
+            `Refusing: see the throw above — an overlay that copies nothing is an overlay that ` +
+            `is not happening.`
+        );
+      }
+      continue;
+    }
+
     const to = join(work, relative);
     mkdirSync(dirname(to), { recursive: true });
     copyFileSync(from, to);

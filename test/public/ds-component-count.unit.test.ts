@@ -123,7 +123,8 @@ describe('extractDsCounts refusals', () => {
   });
 
   it('THROWS on a second match rather than picking one', () => {
-    const body = '**81 components across 10 categories.**\n\n**42 components across 7 categories.**';
+    const body =
+      '**81 components across 10 categories.**\n\n**42 components across 7 categories.**';
     expect(() => extractDsCounts(body, 'fake')).toThrow(/2 MATCHES/);
   });
 
@@ -147,7 +148,9 @@ describe('resolveDsTokens', () => {
     const out = resolveDsTokens(
       '{{ds.componentCount}}-component library across {{ds.categoryCount}} categories.'
     );
-    expect(out).toBe(`${expected.components}-component library across ${expected.categories} categories.`);
+    expect(out).toBe(
+      `${expected.components}-component library across ${expected.categories} categories.`
+    );
   });
 
   it('leaves a string with no tokens untouched', () => {

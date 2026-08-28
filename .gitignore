@@ -40,3 +40,10 @@ yarn-error.log*
 # cloudflare local dev secrets (see .dev.vars.example)
 .dev.vars
 !.dev.vars.example
+
+# live-run scratch (plan 04-10 Task 4)
+# The before-state SHA and the new record's id are written to FILES rather than exported,
+# because the action and its verify block are separate shell invocations and exported state
+# does not survive between them. They are run scratch, not deliverables.
+.live-run-before-sha
+.live-run-photo-id

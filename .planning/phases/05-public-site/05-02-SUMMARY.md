@@ -480,3 +480,23 @@ an unknown key.
   schema will refuse it, correctly.
 - **The stored design-system one-liner is 116 characters.** Any length check must run after
   resolution.
+
+---
+
+## Self-Check: PASSED
+
+All six claimed files exist on disk. All three claimed commits (`d986836`, `1a5c5ae`, `ee47558`)
+exist in `git log`, and `git ls-files --error-unmatch` confirms the three new files are tracked
+rather than merely present — asserted that way, not with `git add`, because two wave-mates share
+this index (04-06 swept six of 04-04s files exactly that way).
+
+A case-insensitive sweep of all three commits for `claude|anthropic|co-authored-by|generated with|
+ai assistant` across author, committer and message returns **0**. Author and committer on all three
+are `Akhil Saxena <saxena.akhil42@gmail.com>`, verified rather than set.
+
+A third consecutive migration run reports `data/projects.json already up to date` and leaves
+`38cfa74baa50ecbdae448a2df02a9c2ce7a052243b1109ddf17a1734c8f966c6` unchanged. The two suites
+re-run green after the wave-mates commits that landed during this plan: **125 passed / 125**.
+
+The only untracked paths in the working tree are `src/lib/photo-srcset.ts` and
+`test/public/photo-srcset.unit.test.ts`, both 05-05s and both left alone.

@@ -31,7 +31,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { readFileSync, statSync } from 'node:fs';
+import { copyFileSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import exifReader from 'exif-reader';
@@ -267,16 +267,49 @@ describe('the fixtures as committed artefacts', () => {
   }
 
   it('regenerates byte-identically — the generator is deterministic', () => {
-    const before = GENERATED.map((r) => sha256(join(REPO, r)));
-    execFileSync('node', [GENERATOR], { cwd: REPO, stdio: 'pipe' });
-    const after = GENERATED.map((r) => sha256(join(REPO, r)));
-    for (const [index, relative] of GENERATED.entries()) {
-      expect(`${relative}:${after[index]}`).toBe(`${relative}:${before[index]}`);
+    // COMPARE TWO GENERATIONS, NOT A GENERATION AGAINST THE COMMITTED BYTES.
+    //
+    // This used to hash the committed fixtures as `before`, regenerate, and hash again. That
+    // asserts something the generator cannot provide and nothing here needs: that libvips encodes
+    // JPEG identically on every PLATFORM. Measured — the committed bytes were produced on
+    // darwin/arm64 and reproduce there exactly, while ubuntu/x64 regenerates rich-exif.jpg as
+    // e2ce3654… against the committed 73702d94…. It passed on the machine that wrote it and
+    // failed on first contact with CI.
+    //
+    // Determinism is a per-machine property, so prove it per-machine: generate twice, compare the
+    // two generations. Restore the committed bytes from a copy afterwards, because on any platform
+    // other than the one that produced them a regeneration is legitimately different and must not
+    // be left in the tree.
+    const backups = GENERATED.map((relative) => {
+      const abs = join(REPO, relative);
+      const bak = `${abs}.determinism-backup`;
+      copyFileSync(abs, bak);
+      return { abs, bak };
+    });
+    try {
+      execFileSync('node', [GENERATOR], { cwd: REPO, stdio: 'pipe' });
+      const first = GENERATED.map((r) => sha256(join(REPO, r)));
+      execFileSync('node', [GENERATOR], { cwd: REPO, stdio: 'pipe' });
+      const second = GENERATED.map((r) => sha256(join(REPO, r)));
+      // Anti-vacuity: an empty GENERATED list would make the loop below assert nothing at all.
+      expect(GENERATED.length).toBeGreaterThan(0);
+      for (const [index, relative] of GENERATED.entries()) {
+        expect(`${relative}:${second[index]}`).toBe(`${relative}:${first[index]}`);
+      }
+    } finally {
+      for (const { abs, bak } of backups) {
+        copyFileSync(bak, abs);
+        rmSync(bak, { force: true });
+      }
     }
   });
 
-  it('leaves the working tree clean against git after regenerating', () => {
-    execFileSync('node', [GENERATOR], { cwd: REPO, stdio: 'pipe' });
+  it('the committed fixtures are not left dirty in the working tree', () => {
+    // DELIBERATELY DOES NOT REGENERATE. Regenerating first made this assert that the current
+    // platform's encoder output equals the committed bytes — the same cross-platform claim that
+    // broke the test above, and equally untrue on ubuntu. What IS portable, and what this needs to
+    // catch, is that nobody committed a fixture and then left a modified copy in the tree.
+    // Determinism itself is proved by the two-generation test above.
     // KNOWN TRAP, and the reason this test is paired with the tracked-by-git test above:
     // `git diff` is BLIND to untracked files. On a first run — fixtures new and never added —
     // `git diff --quiet` exits 0 whether or not the generator is deterministic, so on its own

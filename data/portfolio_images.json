@@ -1106,5 +1106,34 @@
       "width": 2000,
       "height": 1333
     }
+  },
+  {
+    "id": "wildlife-gentlegiants",
+    "title": "Gentle Giants",
+    "alt": "Two Asian elephants stand side by side grazing near a waterhole in lush Sri Lankan forest. The elephants face opposite directions while surrounded by dense green foliage under bright daylight.",
+    "place": "Yala National Park, Sri Lanka",
+    "category": "wildlife",
+    "date": "2026-01-24",
+    "exif": {
+      "camera": "SONY ILCE-7CM2",
+      "lens": "FE 28-60mm F4-5.6",
+      "aperture": "f/8",
+      "shutter": "1/125",
+      "iso": 100,
+      "focalLength": "60mm"
+    },
+    "urls": {
+      "original": "https://images.akhilsaxena.com/photos/wildlife/gentlegiants-ff17a846.webp",
+      "large": "https://images.akhilsaxena.com/photos/wildlife/gentlegiants-00f254f0-lg.webp",
+      "medium": "https://images.akhilsaxena.com/photos/wildlife/gentlegiants-50bea14f-md.webp",
+      "small": "https://images.akhilsaxena.com/photos/wildlife/gentlegiants-cd70b664-sm.webp",
+      "thumb": "data:image/webp;base64,UklGRrgBAABXRUJQVlA4IKwBAAAwCQCdASooABsAPq1Em0mmI6KhNVv4AMAViUATpmNobk7bNWBGtoKZArC7up3oQmEIT2/7YuOi19Nrvuc/AFvwflwHXgf/7vd2VmhVvFjwtKeAAP701ydD41I2pesTpwONTP3ERaWSSChwmi+3wduyDpx5SwLqwa089raTCndZvVNRDrKfwltl5KAkUrIhgdPUrcEiboESMMiZwUo9UJ/hh6E4XGwL/n+i4SkzEFKfm1BSynzM+1OLzfn6MCc462PPEqQWHe2nyU/zS+cAMPyJFq5gJd0Zk24quhU1jHE6UbdjgKW0UDb+Y04ihgT1YyjYmfo7RfJUQSHjKlJCS1srsCk8iUOq/o5dt7RkLZYuhrcQY8Wn3WRD6Hxt9hiYBuhb29+mFU15egwqC+q1nTYSFQfceyXnlneklxiqjwGvhkQObUmdPxoXl11tR27aJCe0661Ku+qGKZygRRPPZZ02CKXd3xi6VLDycOaChXRa2JtAwDDC59N7rD1fwUj+eQxMIxbF695D0FHZ7u8LiFDMj/efqug6PgwO0ukDuDoWo2Bn4BiXYva1w5oAAA=="
+    },
+    "order": 40,
+    "categoryOrder": 6,
+    "dimensions": {
+      "width": 3361,
+      "height": 2241
+    }
   }
 ]

@@ -17,7 +17,11 @@
         "Reduced support tickets by **12–20%** in high-traffic modules (**10K+ weekly users**) via UX improvements and automated domain authentication",
         "Integrated Sniper Links into signup emails, boosting engagement across **5M+ annual signups**",
         "Introduced RBAC with **40+ permissions** across 6 business verticals, scaling access for **1K+ enterprise users**"
-      ]
+      ],
+      "metric": {
+        "value": "+15%",
+        "label": "CONVERSION"
+      }
     },
     {
       "id": "pharmeasy",
@@ -35,7 +39,11 @@
         "Modernized the UX for the B2B portal orders page, enhancing productivity for **4K+ franchises** across **4 countries**",
         "Developed UIs for receipt generation and editing, reducing support tickets and **response time by 30%**",
         "Delivered a client-side recommendation system leveraging a rule engine to enable product upsell & cross-sell"
-      ]
+      ],
+      "metric": {
+        "value": "4K+",
+        "label": "FRANCHISES"
+      }
     },
     {
       "id": "maq",
@@ -54,7 +62,11 @@
         "Developed a real-time write-back sync system for an app deployed to **16K+ stores**, ensuring operational reliability",
         "Led SQL scripting and data modeling in a 4-member team, delivering an analytics solution for PepsiCo North America in **under 3 months**",
         "Improved pipeline execution time by **6×** by replacing Power Automate workflows with Azure Data Factory"
-      ]
+      ],
+      "metric": {
+        "value": "6×",
+        "label": "FASTER PIPELINES"
+      }
     }
   ],
   "skills": [

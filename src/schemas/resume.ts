@@ -115,6 +115,30 @@ export const ExperienceEntrySchema = z
     logo: z.string().min(1).nullable(),
     url: z.url().nullable(),
     bullets: z.array(proseLine).min(1),
+    // OQ-1b, plan 05-03. The right-aligned figure at the end of each employment row on /work.
+    //
+    // REQUIRED, not optional: all three records carry one and the reviewed design (05-UI-SPEC
+    // §10) has no employment row without it. An optional field would make "absent" a second way
+    // of saying something the design cannot render.
+    //
+    // TWO FIELDS, not one string, for two independent reasons. §10 gives the value
+    // `--ochre-d-strong` and the label the ink ramp at the same size, so a renderer needs them
+    // apart; and a single "+15% CONVERSION" string forces every consumer to parse it back into
+    // the two things it already was.
+    //
+    // DELIBERATELY NOT HERE: a refusal on the `{{…}}` placeholder form. It is tempting, and it
+    // is the wrong layer. The question OQ-1b actually asks is whether a placeholder can reach a
+    // reader, and that is a fact about RENDERED OUTPUT, not about stored text — a stored token
+    // is a legitimate intermediate state (it is what option `defer` would have committed) while
+    // a rendered one is always a defect. `scripts/assert-no-unresolved-placeholders.mjs` asks
+    // that question of `dist/`, where it is a fact rather than an inference.
+    //
+    // NOT ON `EducationEntrySchema`, for the same reason `period` is derived rather than stored:
+    // the education record is not in the employment band and has no figure to right-align.
+    metric: z.strictObject({
+      value: z.string().min(1),
+      label: z.string().min(1),
+    }),
   })
   .superRefine(checkPeriod);
 

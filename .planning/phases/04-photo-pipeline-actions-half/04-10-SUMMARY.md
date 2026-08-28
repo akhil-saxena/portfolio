@@ -582,3 +582,10 @@ will follow it: **report that rather than working around it.**
 
 I will run `--dry-run` first and show you the exact `wrangler` and `gh` command lines, the composed
 staging key and the record id it will produce, before anything touches the bucket.
+
+---
+
+## Self-Check: PASSED
+
+All five deliverables present on disk; all three commits (`da436b5`, `a50d13f`, `b3ac046`) present
+in `git log`; working tree clean (0 lines from `git status --short --porcelain`).

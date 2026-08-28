@@ -41,7 +41,7 @@ work begins.** Phase numbers are unchanged so the many existing cross-references
 and "Phase 06.1" keep resolving; only the execution order moved.
 
 - [x] **Phase 3: Content Layer & Image Origin** ✅ **COMPLETE 2026-08-26** — - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`. **Now also owns the `site_config` referential-integrity rule** (ADR-002) — every `photo.category` must exist in `site_config`'s ids, since there is no `/admin/site` screen to guard it
-- [ ] **Phase 4: Photo Pipeline (Actions half)** - The riskiest integration, driven from the command line, with zero admin UI in existence
+- [x] **Phase 4: Photo Pipeline (Actions half)** ✅ **10/10 executed 2026-08-28** — criteria 1–4 met and proven on a live run (`wildlife-gentlegiants`); **criterion 5 outstanding**, needing a second dispatch to prove the CDN round trip — - The riskiest integration, driven from the command line, with zero admin UI in existence
 - [ ] **Phase 5: Public Site** - Home, Work, Photos and **Résumé** on the monochrome identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
 - [ ] **Phase 8: Harden & Cut Over** — **BLOCKING PREREQUISITE: close the `private/*-clean.webp` master exposure (see STATE.md Blockers; 39/39 verified reachable 2026-08-26, deferred here by Akhil). Do not serve the apex domain with this open.** — - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving. **★ THIS IS THE LIVE MILESTONE.** The accepted-downtime clock stops here
 

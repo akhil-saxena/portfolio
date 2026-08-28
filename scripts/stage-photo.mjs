@@ -102,8 +102,10 @@
  * validity: a `--name` that reduces to nothing is a refusal, not a silently invented stem.
  */
 
-import { readFileSync, statSync } from 'node:fs';
-import { basename, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -453,34 +455,95 @@ export async function planStaging(request, options = {}) {
  * ============================================================================================ */
 
 /**
- * Spawn wrangler with an argv ARRAY, never a shell string. The credential check and the output
- * redactor both come from `scripts/lib/r2.mjs`, imported dynamically so that `--dry-run` needs no
- * credentials: that module calls `assertCredentials()` at module scope, and its message is the
- * canonical one for a missing token.
+ * THE TWO CREDENTIAL MODES, and why this does not route through `scripts/lib/r2.mjs`.
+ *
+ * `r2.mjs` calls `assertCredentials()` at MODULE SCOPE and requires `CLOUDFLARE_API_TOKEN` plus
+ * `CLOUDFLARE_ACCOUNT_ID`. That is exactly right for the Actions runner, where the only possible
+ * authentication is a token supplied by the workflow step and a missing one must DENY rather than
+ * degrade. It is wrong for this file, which is an OPERATOR'S LOCAL COMMAND: the plan's own
+ * preflight is a bare `npx wrangler r2 object put … --remote` typed into a shell, and on this
+ * machine wrangler is authenticated by a stored OAuth session
+ * (`wrangler login`) with no token in the environment at all. Routing through `r2.mjs` made the
+ * documented command unusable by the person it was written for — measured, not theorised: the
+ * first real staging attempt refused with r2.mjs's token message on a machine that could and did
+ * write to the bucket seconds earlier.
+ *
+ * So both modes are supported and neither degrades:
+ *
+ *   TOKEN MODE   — `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are both set. They are
+ *                  passed through and are the only credentials the child receives.
+ *   SESSION MODE — neither is set. `HOME` (and `XDG_CONFIG_HOME`, which wrangler honours) are
+ *                  passed so wrangler can find its own stored session, and NOTHING else
+ *                  credential-shaped is.
+ *
+ * IT STILL FAILS CLOSED. If neither a token nor a session exists, wrangler exits non-zero and
+ * this refuses — the check is wrangler's own authentication, which is the thing that actually
+ * knows. And an empty-string `CLOUDFLARE_API_TOKEN` is never set: an empty value is not "absent"
+ * to wrangler, and handing it one would turn a working session into an auth failure.
+ *
+ * `process.env` is NEVER passed wholesale (T-04-46). The environment is assembled key by key.
+ */
+
+/** The credential names, restated locally so this file needs no import from `r2.mjs`. */
+const CREDENTIAL_ENV = Object.freeze(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']);
+
+/**
+ * Replace any literal credential value with a marker before anything is printed. Identical in
+ * behaviour to `r2.mjs`'s: values under 8 characters are left alone, because a two-character
+ * "secret" would turn every occurrence of those two characters into noise and is not a
+ * credential anyone can use.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function redactCredentials(text) {
+  let out = String(text ?? '');
+  for (const name of CREDENTIAL_ENV) {
+    const value = process.env[name];
+    if (typeof value === 'string' && value.length >= 8) {
+      out = out.split(value).join(`[redacted:${name}]`);
+    }
+  }
+  return out;
+}
+
+/** The child's environment, assembled key by key. See the two-modes note above. */
+function childEnv() {
+  /** @type {Record<string, string>} */
+  const env = {
+    PATH: process.env.PATH ?? '',
+    HOME: process.env.HOME ?? '',
+    TMPDIR: process.env.TMPDIR ?? '/tmp',
+    CI: 'true',
+    WRANGLER_SEND_METRICS: 'false',
+  };
+  if (typeof process.env.XDG_CONFIG_HOME === 'string' && process.env.XDG_CONFIG_HOME !== '') {
+    env.XDG_CONFIG_HOME = process.env.XDG_CONFIG_HOME;
+  }
+  for (const name of CREDENTIAL_ENV) {
+    const value = process.env[name];
+    // Only when genuinely present. An empty string is not "absent" to wrangler.
+    if (typeof value === 'string' && value !== '') env[name] = value;
+  }
+  return env;
+}
+
+const REPO_ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const WRANGLER_ENTRY = join(REPO_ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
+
+/**
+ * Spawn wrangler with an argv ARRAY, never a shell string — the file path is operator-supplied
+ * text and must never reach a shell.
  *
  * @param {readonly string[]} argv
- * @returns {Promise<void>}
+ * @returns {Promise<{ code: number, out: string }>}
  */
-async function upload(argv) {
+function runWrangler(argv) {
   assertRemote(argv);
-  const { redactCredentials } = await import('./lib/r2.mjs');
-  const { spawn } = await import('node:child_process');
-  const { join } = await import('node:path');
-
-  const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
-  const wranglerEntry = join(repoRoot, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
-
-  const result = await new Promise((settle, reject) => {
-    const child = spawn(process.execPath, [wranglerEntry, ...argv], {
-      cwd: repoRoot,
-      env: {
-        PATH: process.env.PATH ?? '',
-        HOME: process.env.HOME ?? '',
-        CI: 'true',
-        WRANGLER_SEND_METRICS: 'false',
-        CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN ?? '',
-        CLOUDFLARE_ACCOUNT_ID: process.env.CLOUDFLARE_ACCOUNT_ID ?? '',
-      },
+  return new Promise((settle, reject) => {
+    const child = spawn(process.execPath, [WRANGLER_ENTRY, ...argv], {
+      cwd: REPO_ROOT,
+      env: childEnv(),
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let out = '';
@@ -495,11 +558,59 @@ async function upload(argv) {
     child.on('error', reject);
     child.on('close', (code) => settle({ code: code ?? 1, out: redactCredentials(out) }));
   });
+}
 
-  if (result.code !== 0) {
+/**
+ * Upload, then READ THE OBJECT BACK and compare its length to the source's.
+ *
+ * The read-back is not ceremony. Everything else in this file that guards hazard 21 inspects the
+ * ARGV — `wranglerPutArgv` appends the flag and `assertRemote` re-checks it — and an argv check
+ * can only ever prove that the flag was written, never that bytes arrived. The read-back is the
+ * one step that measures the object's existence at the composed key. Its honest limit is stated
+ * here rather than left implied: a put AND a get that both went local would agree with each
+ * other, so the read-back does not discriminate on its own — it is the argv assertions that fix
+ * the destination, and this that confirms something is actually there.
+ *
+ * @param {{ key: string, argv: readonly string[], expectedBytes: number }} plan
+ * @returns {Promise<void>}
+ */
+async function upload({ key, argv, expectedBytes }) {
+  const put = await runWrangler(argv);
+  if (put.code !== 0) {
     throw new StagingRefusal(
-      `stage-photo: wrangler exited ${result.code}. Nothing was staged.\n${result.out.trim()}`
+      `stage-photo: wrangler exited ${put.code}. Nothing was staged.\n${put.out.trim()}`
     );
+  }
+
+  const scratch = mkdtempSync(join(tmpdir(), 'gsd-stage-verify-'));
+  const readBack = join(scratch, 'staged.bin');
+  try {
+    const get = await runWrangler([
+      'r2',
+      'object',
+      'get',
+      `${STAGING_BUCKET}/${key}`,
+      '--file',
+      readBack,
+      REMOTE_FLAG,
+    ]);
+    if (get.code !== 0) {
+      throw new StagingRefusal(
+        `stage-photo: the object was reported uploaded, but reading it back from ` +
+          `${STAGING_BUCKET}/${key} failed (wrangler exit ${get.code}). Refusing to report a ` +
+          `staged photograph that cannot be read.\n${get.out.trim()}`
+      );
+    }
+    const got = statSync(readBack).size;
+    if (got !== expectedBytes) {
+      throw new StagingRefusal(
+        `stage-photo: ${key} read back as ${got} bytes but the source is ${expectedBytes}. ` +
+          `Refusing — the staged object is not the photograph.`
+      );
+    }
+    say(`  verified      read back ${got} bytes from ${STAGING_BUCKET}/${key}`);
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 }
 
@@ -544,7 +655,9 @@ function report(plan, dryRun) {
 export async function main(argv) {
   const { file, category, name, dryRun } = parseArgv(argv);
   const plan = await planStaging({ file, category, name });
-  if (!dryRun) await upload(plan.argv);
+  if (!dryRun) {
+    await upload({ key: plan.key, argv: plan.argv, expectedBytes: plan.source.bytes });
+  }
   report(plan, dryRun);
   return 0;
 }

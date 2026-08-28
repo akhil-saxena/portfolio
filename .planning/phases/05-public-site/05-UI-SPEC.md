@@ -1435,6 +1435,45 @@ recorded with a date.
 
 ---
 
+## 14.5 Decisions — resolved by Akhil, 2026-08-28
+
+These are decisions, not recommendations. Plans implement them as written.
+
+| # | Resolution |
+|---|---|
+| **OQ-1** | **Extend the schema and migrate the copy** as a Phase 5 wave-1 task, taking `status`, `oneLiner` and the card copy **verbatim** from `00-COPY/one-liners.md`. A `scripts/migrate-project-copy.mjs` alongside the four Phase 3 migrations. |
+| **OQ-1b** | **The three employment metrics are PLACEHOLDERS — Akhil supplies the real ones later.** See the mechanism below; a silent placeholder is not acceptable and he did not ask for one. |
+| **OQ-2** | **Microdata, not JSON-LD.** `itemscope`/`itemtype`/`itemprop` on markup already on the page. Zero script bytes on a zero-JS route, and the sinks gate stays exactly as strict as Phase 3 left it. Option 3 (a static `public/` file) does not work and is recorded so it is not re-proposed. |
+| **OQ-3** | **Write the no-flash script locally (~12 lines) AND file the gap upstream** for `2.0.0-beta.2`. The Core Value says a design-system gap is a *finding* rather than a workaround; it does not say the finding must be fixed before the consumer ships. The live site is down, which is a clock. |
+| **OQ-4** | **Fix `FilterNav` upstream** — a `@media (pointer: coarse) { min-height: 44px }` on `.ds-atom-segmented-btn`, mirroring the `AppBar`/`Footer` treatment already in `primitives.css`, plus a `scroll-snap-align` hook. No local override. It fixes Cairn too, and it can ride the same patch release as OQ-3's theme export. |
+| **OQ-5** | **`beforeprint`/`afterprint` in the existing inline script.** Restates no token and works on every page. The residual risk — some headless print-to-PDF paths do not fire the events — is accepted and recorded. |
+
+### OQ-1b — the placeholder mechanism, and why it is not just a string
+
+Akhil asked for placeholders and will supply the real metrics later. **The placeholder must fail the
+build, not sit quietly**, and this project has already paid for that lesson twice:
+
+- Phase 3 stored `{{ds.componentCount}}` and made the schema **reject** any literal `\d+-component`,
+  so a stale hand-typed figure could not return. That is the precedent to copy.
+- Phase 4 measured that `alt: "TODO"` **passes all four content rules** — which is precisely why Akhil
+  then asked for a placeholder refusal on `alt`. An unguarded placeholder ships.
+
+So: store the metric as `{{metric.value}}` / `{{metric.label}}`, and add a gate that **fails the
+build** if a `{{…}}` token survives into a rendered public route. The employment band is the first
+thing a hiring manager reads on Work; it must be impossible for it to go live reading `{{metric.value}}`.
+
+**For reference when he supplies them**, all three sketch values are traceable to reviewed bullets —
+this was measured, not assumed:
+
+| Company | Sketch metric | Supporting bullet |
+|---|---|---|
+| Brevo | `+15% CONVERSION` | *"Improved **conversion by 15%** by transforming a one-page checkout…"* |
+| PharmEasy | `4K+ FRANCHISES` | *"enhancing productivity for **4K+ franchises** across **4 countries**"* |
+| MAQ Software | `6× FASTER PIPELINES` | *"Improved pipeline execution time by **6×**…"* — **bullet 4**, not bullet 1 |
+
+That last row is why OQ-1's option 2 was rejected: deriving from each first bullet yields
+`7+ data sources` for MAQ, which is wrong.
+
 ## 15. Open questions
 
 Each blocks a named route or requirement. **I cannot ask Akhil; the orchestrator must.**

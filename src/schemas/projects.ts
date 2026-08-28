@@ -20,6 +20,29 @@
  * so a resolved description must remain legal — and a description that never had a figure at all
  * (00-COPY's alternative wording, "a React component library where one token change lands across
  * every screen at once") is legal too, deliberately. The rule bans the failure, not the shape.
+ *
+ * THE THREE FIELDS PHASE 5 ADDED, AND WHY THE BUDGETS ARE NOT HERE (plan 05-02, OQ-1)
+ * -----------------------------------------------------------------------------------
+ * `05-UI-SPEC.md` §0.3 measured this shape against the reviewed Phase 0 design and found two
+ * fields simply absent: the D-45 status the `StatusPill` renders, and the short Home Act-2
+ * sentence, which is a DIFFERENT string from the Work card's. `00-COPY/one-liners.md` had carried
+ * all three since Phase 0 and was never merged; `scripts/migrate-project-copy.mjs` merges it, and
+ * `test/content/project-copy.unit.test.ts` proves the merge verbatim against that same file.
+ *
+ * `status` is REQUIRED and is the only place currency lives (§13.1 rule 4). It is deliberately NOT
+ * derived from, or cross-checked against, `badges[]`: `badges[]` is a LINK list, and the
+ * coincidence that cairn's first badge label reads "Live" while hued's read "Play Store" and
+ * "GitHub" is exactly the confusion this field exists to end (§10.2).
+ *
+ * `oneLiner` is REQUIRED for the same reason `status` is — all five records have one, and
+ * "absent" would be a second way of saying something the data never means.
+ *
+ * THE CHARACTER BUDGETS (§13.1: one-liner 60–110, description 120–200) ARE NOT REFINEMENTS HERE,
+ * and that is a measurement rather than an omission. The stored design-system one-liner is 116
+ * characters because `{{ds.componentCount}}` is 19 characters longer than the figure it replaced;
+ * it RESOLVES to 97. A `.min/.max` on the stored string would refuse correct data. The budget
+ * belongs to the resolved string and is asserted in `test/content/project-copy.unit.test.ts`,
+ * where the resolver actually runs.
  */
 
 import { z } from 'astro/zod';
@@ -31,6 +54,30 @@ const SLUG = /^[a-z0-9-]+$/;
  * a sentence can start with it. Not global, so `.test` carries no `lastIndex` state between calls.
  */
 const LITERAL_COMPONENT_FIGURE = /\b\d+[- ]component/i;
+
+/**
+ * The OD-6 refusal, as a reusable string schema.
+ *
+ * It was inline on `description` until plan 05-02 added `oneLiner`, at which point the reviewed
+ * copy put the same sentence-with-a-figure in TWO fields — `00-COPY/one-liners.md`'s design-system
+ * one-liner ends "…{{ds.componentCount}} components, and this page is built on them." A rule that
+ * guarded one of the two would leave the figure a hand-edit away from coming back on the other,
+ * and the Home Act-2 one-liner is the more visible of the pair. The refusal follows the sentence,
+ * not the field it happened to be written for first.
+ *
+ * @param field the field name to name in the refusal, so the message points at the right string
+ */
+function copyWithNoLiteralComponentFigure(field: 'description' | 'oneLiner') {
+  return z
+    .string()
+    .min(1)
+    .refine((text) => !LITERAL_COMPONENT_FIGURE.test(text), {
+      error:
+        `OD-6: a project ${field} may not carry a literal component figure. It has been wrong ` +
+        'three times in nine days. Use the {{ds.componentCount}} token, which Phase 5 resolves ' +
+        'against the design system catalog, or reword so no figure appears.',
+    });
+}
 
 export const BadgeSchema = z.strictObject({
   label: z.string().min(1),
@@ -45,13 +92,20 @@ export const ProjectSchema = z.strictObject({
     text: z.string().min(1),
     icon: z.string().min(1),
   }),
-  description: z
-    .string()
-    .min(1)
-    .refine((text) => !LITERAL_COMPONENT_FIGURE.test(text), {
-      error:
-        'OD-6: a project description may not carry a literal component figure. It has been wrong three times in nine days. Use the {{ds.componentCount}} token, which Phase 5 resolves against the design system catalog, or reword so no figure appears.',
-    }),
+  /**
+   * D-45's currency vocabulary, rendered by `StatusPill` on Work and on Home Act 2 (§10.2). Three
+   * values and no fourth: the pill's generic path takes one tone per value and an unmapped status
+   * would have nothing to render. Sourced per project, with a reason each, in
+   * `00-COPY/one-liners.md`'s `badge:` lines.
+   */
+  status: z.enum(['live', 'maintained', 'archived']),
+  /**
+   * The Home Act-2 sentence (§13.1). A DIFFERENT string from `description` — 60–110 characters
+   * against the card's 120–200, measured on the RESOLVED text (see the header) rather than here.
+   */
+  oneLiner: copyWithNoLiteralComponentFigure('oneLiner'),
+  /** The Work card sentence (§13.1). Unchanged in shape since 03-05; only the copy was replaced. */
+  description: copyWithNoLiteralComponentFigure('description'),
   tech: z.array(z.string().min(1)).min(1),
   // Nullable, NOT optional: two of the five carry an explicit null.
   icon: z.string().min(1).nullable(),

@@ -6,7 +6,9 @@
       "text": "Web",
       "icon": "code"
     },
-    "description": "Job application tracker with interview workflows and feedback tracking, built on a custom design system. Deliberately anti-gamified and runs entirely on Cloudflare's free tier.",
+    "status": "live",
+    "oneLiner": "A job application tracker with no streaks, no cohort comparisons and no confetti anywhere in it.",
+    "description": "A job application tracker for a search that runs long, where restraint is the product. Its forever-no list rules out streaks, comparisons and resume scoring, and it runs on Cloudflare's free tier.",
     "tech": [
       "Astro",
       "React",
@@ -30,7 +32,9 @@
       "text": "Android App",
       "icon": "android"
     },
-    "description": "See your life through color. Extracts dominant palettes from your photo gallery by week, month, and year. Privacy-first, all on-device.",
+    "status": "maintained",
+    "oneLiner": "Turns your camera roll into the colours you actually lived in, with no network permission.",
+    "description": "Turns your camera roll into the colours you actually lived in, by week, month or year. Palettes are clustered in CIELAB so perceptually close shades merge, and it requests no network permission.",
     "tech": [
       "Kotlin",
       "CIELAB"
@@ -57,7 +61,9 @@
       "text": "Android App",
       "icon": "android"
     },
-    "description": "Goal tracker with adaptive daily targets, streaks, milestones, badges, home screen widgets, and cloud sync.",
+    "status": "maintained",
+    "oneLiner": "Breaks a long goal into a number for today, recomputed in a pure-Kotlin engine layer.",
+    "description": "Breaks a long-term goal into a number for today, and recalculates it when you fall behind. The target, streak and milestone maths sits in a pure-Kotlin engine layer with no Android imports.",
     "tech": [
       "Kotlin",
       "Material 3"
@@ -84,7 +90,9 @@
       "text": "Chrome Extension",
       "icon": "chrome"
     },
-    "description": "Right-click any time on the web to convert it instantly. NLP-powered parsing with smart timezone disambiguation and DST awareness.",
+    "status": "maintained",
+    "oneLiner": "Right-click any time on a page and read it in your own zone, CST and IST disambiguated.",
+    "description": "Right-click any time written on a page and read it in your own zone. It disambiguates CST, IST and BST from surrounding context, and follows the current DST state rather than a cached offset.",
     "tech": [
       "JavaScript",
       "Chrome APIs",
@@ -112,7 +120,9 @@
       "text": "Web",
       "icon": "code"
     },
-    "description": "{{ds.componentCount}}-component React library with semantic tokens, dark mode, and live Storybook docs.",
+    "status": "live",
+    "oneLiner": "Accessible React primitives with semantic tokens — {{ds.componentCount}} components, and this page is built on them.",
+    "description": "A React component library where one token change lands across every screen at once. {{ds.componentCount}} components in {{ds.categoryCount}} categories, and this site is built entirely out of them.",
     "tech": [
       "React",
       "TypeScript",

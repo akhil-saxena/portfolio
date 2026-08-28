@@ -30,12 +30,12 @@ import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   CAMERA_DISPLAY_NAMES,
+  displayCamera,
+  displayLens,
   EXIF_LABELS,
   EXIF_ROW_ORDER,
   exifRows,
   LENS_DISPLAY_NAMES,
-  displayCamera,
-  displayLens,
 } from '../../src/lib/exif-display.ts';
 import type { PhotoExif } from '../../src/schemas/photo.ts';
 
@@ -43,7 +43,15 @@ import type { PhotoExif } from '../../src/schemas/photo.ts';
  * The corpus, read from disk at check time.
  * ------------------------------------------------------------------------------------------ */
 
-const MANIFEST_URL = new URL('../../data/portfolio_images.json', import.meta.url);
+/**
+ * The corpus this suite reads. It defaults to the committed manifest and is overridable ONLY so
+ * that the suite's own anti-vacuity guards can be PROVEN to fire — running against an empty
+ * array and against a missing file, without moving `data/portfolio_images.json` aside in a wave
+ * where three executors share one git index. CI sets nothing, so CI reads the real file.
+ */
+const MANIFEST_URL = process.env.EXIF_DISPLAY_CORPUS
+  ? new URL(`file://${process.env.EXIF_DISPLAY_CORPUS}`)
+  : new URL('../../data/portfolio_images.json', import.meta.url);
 const MANIFEST_PATH = MANIFEST_URL.pathname;
 
 interface ManifestRecord {
@@ -239,7 +247,9 @@ describe('the two tables', () => {
     const unusedCameras = Object.keys(CAMERA_DISPLAY_NAMES).filter(
       (k) => !DISTINCT_CAMERAS.includes(k)
     );
-    const unusedLenses = Object.keys(LENS_DISPLAY_NAMES).filter((k) => !DISTINCT_LENSES.includes(k));
+    const unusedLenses = Object.keys(LENS_DISPLAY_NAMES).filter(
+      (k) => !DISTINCT_LENSES.includes(k)
+    );
     if (unusedCameras.length > 0 || unusedLenses.length > 0) {
       process.stdout.write(
         `exif-display: table entries unused by the corpus — cameras ${JSON.stringify(unusedCameras)}, ` +
@@ -440,10 +450,19 @@ describe('the module is pure', () => {
     }
   });
 
-  it('the comment stripper removes a header line that names a forbidden form', () => {
-    const withComment = "/**\n * import fs from 'node:fs' is forbidden here.\n */\nexport const x = 1;\n";
-    expect(/^\s*import[^\n]*['"]node:/m.test(withComment)).toBe(true);
-    expect(/^\s*import[^\n]*['"]node:/m.test(stripComments(withComment))).toBe(false);
+  it('the comment stripper removes a commented-out import that WOULD match', () => {
+    // MEASURED, and it is the reason the plan's shell gate was repaired to match the IMPORT
+    // STATEMENT rather than the bare token `node:`. A JSDoc line is `*`-prefixed, so it does
+    // NOT match `^\s*import` — a header may name the forbidden form in prose without firing
+    // the gate, which is what makes this module's own header legal:
+    const jsdoc = "/**\n * import fs from 'node:fs' is forbidden here.\n */\nexport const x = 1;\n";
+    expect(/^\s*import[^\n]*['"]node:/m.test(jsdoc)).toBe(false);
+
+    // A block-commented-out import DOES start at column 0 and DOES match, so the stripper is
+    // what stops a deleted-but-not-removed import from reading as a live one:
+    const commentedOut = "/*\nimport fs from 'node:fs';\n*/\nexport const x = 1;\n";
+    expect(/^\s*import[^\n]*['"]node:/m.test(commentedOut)).toBe(true);
+    expect(/^\s*import[^\n]*['"]node:/m.test(stripComments(commentedOut))).toBe(false);
   });
 
   it('contains none of the six impure forms, in code', () => {

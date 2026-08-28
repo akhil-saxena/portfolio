@@ -54,3 +54,30 @@ plan that owns it.
 - **Why not just run the autofix:** four plans shared this index during wave 2. `biome check
   --write` on files another plan is mid-edit is the 04-06 index-sweep failure with a different
   tool. 05-05 formatted only its own five files, by explicit path.
+
+## Phase 4 fixture · the working-tree overlay makes `npm test` unreliable during any concurrent plan
+
+**Found:** 2026-08-28, while 05-03 was mid-flight.
+
+`test/pipeline/partial-failure.node.test.ts` overlays the **uncommitted working tree** onto its
+sandbox — by design, so a plan's in-progress code is what gets exercised. Measured mid-run:
+
+```
+[partial-failure] sandbox overlay: data/resume.json, src/schemas/resume.ts, scripts/migrate-experience-metric.mjs
+```
+
+05-03 had `src/schemas/resume.ts` requiring `metric` while `data/resume.json`'s migration was still
+running, so the sandbox's content gate refused and **3 of 10 cases went red on a tree that is
+otherwise green**. Cases 1, 6b and 7; `npm run build` stayed at exit 0 throughout.
+
+**Not a defect in the fixture** — overlaying the working tree is the right behaviour, and it is what
+lets a plan test its own uncommitted code. But it means **`npm test` is not a reliable signal while
+any plan is mid-edit**, and a wave-mate reading it can conclude the tree is broken when it is not.
+
+This is the same shape as B4b, which serialised 05-02 and 05-03 because both add a required schema
+field and the content gate validates all five data files on every build. The overlay extends that
+interference to any plan running the full suite.
+
+**For the orchestrator:** verify a wave only after its plans have committed, or scope the check to
+the plan's own files. **For a plan:** if `partial-failure` goes red and the overlay line names files
+you do not own, it is a wave-mate mid-edit, not your regression — say so rather than chasing it.

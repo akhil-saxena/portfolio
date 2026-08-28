@@ -62,6 +62,11 @@ import {
   THUMB,
   VARIANTS,
 } from '../../src/lib/photo-pipeline';
+import {
+  PHOTO_ID_SEPARATOR as DECLARED_PHOTO_ID_SEPARATOR,
+  THUMB as DECLARED_THUMB,
+  VARIANTS as DECLARED_VARIANTS,
+} from '../../src/lib/photo-variants';
 import { THUMB_PREFIX } from '../../src/schemas/photo';
 
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -72,6 +77,68 @@ const RECORD_FLOOR = 39;
 
 type ManifestRecord = { id: string; title: string; alt: string; category: string };
 const manifest = JSON.parse(read('data/portfolio_images.json')) as ManifestRecord[];
+
+/**
+ * Source with comments removed, so a textual rule cannot fire on the prose that EXPLAINS it.
+ *
+ * This is the project's recurring defect class — a `/three/i` grep that passed by matching a
+ * comment was the seventh instance — and it bit inside this very file: the first revision of the
+ * separator-copy assertion below counted `'-'` occurrences raw, and `photo-variants.ts`'s own
+ * header spells `'-'` while explaining why the constant lives there. Two matches, one constant.
+ *
+ * A character scanner, not a regex, because `/\/\*[\s\S]*?\*\//` deletes anything between a
+ * `/*` inside a STRING and the next `*` + `/`, which is how a stripper silently eats real code.
+ * String and template bodies are preserved verbatim; only comment bodies become spaces, so byte
+ * offsets and line counts are unchanged.
+ *
+ * KNOWN LIMIT, recorded rather than claimed absent: a regex LITERAL containing a quote or a
+ * comment opener (`/['"]/`, `/\/\//`) would be misread as entering a string. Both files this is
+ * applied to were checked for that shape and neither has one; if one is ever added, this helper
+ * needs an AST pass rather than a patch.
+ */
+function stripComments(source: string): string {
+  let out = '';
+  let i = 0;
+  while (i < source.length) {
+    const two = source.slice(i, i + 2);
+    if (two === '//') {
+      while (i < source.length && source[i] !== '\n') {
+        out += ' ';
+        i += 1;
+      }
+      continue;
+    }
+    if (two === '/*') {
+      while (i < source.length && source.slice(i, i + 2) !== '*/') {
+        out += source[i] === '\n' ? '\n' : ' ';
+        i += 1;
+      }
+      out += '  ';
+      i += 2;
+      continue;
+    }
+    const ch = source[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      out += ch;
+      i += 1;
+      while (i < source.length && source[i] !== ch) {
+        if (source[i] === '\\') {
+          out += source.slice(i, i + 2);
+          i += 2;
+          continue;
+        }
+        out += source[i];
+        i += 1;
+      }
+      out += source[i] ?? '';
+      i += 1;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
 
 /* ============================================================================================
  * 1. The constants. Typed out again here; if one changes, this file has to change with it, which
@@ -317,6 +384,106 @@ describe('VARIANTS', () => {
 
   it('thumb is NOT a remote url key — it carries no hostname', () => {
     expect([...REMOTE_URL_KEYS]).not.toContain('thumb');
+  });
+});
+
+/* ============================================================================================
+ * 5b. THE MOVE IS A MOVE, NOT A COPY.  (plan 05-05 Task 1)
+ *
+ * `VARIANTS`, `THUMB` and `PHOTO_ID_SEPARATOR` are DECLARED in `src/lib/photo-variants.ts` — a
+ * module with zero `node:` imports, so a prerendered page can reach the numbers without pulling
+ * `node:crypto` into its graph — and RE-EXPORTED from `photo-pipeline.ts`.
+ *
+ * `toEqual` would pass against a second copy of the numbers, which is the ONE outcome §7.4
+ * explicitly forbade ("never a second copy of the numbers"). So the two object exports are
+ * compared with `toBe`: referential identity is only possible if there is one declaration.
+ * ========================================================================================== */
+
+describe('the variant table moved down, and there is still exactly one of it', () => {
+  it('the re-exported VARIANTS is the SAME OBJECT as the declared one (toBe, not toEqual)', () => {
+    expect(VARIANTS).toBe(DECLARED_VARIANTS);
+  });
+
+  it('the re-exported THUMB is the SAME OBJECT as the declared one (toBe, not toEqual)', () => {
+    expect(THUMB).toBe(DECLARED_THUMB);
+  });
+
+  it('PHOTO_ID_SEPARATOR agrees — and identity is asserted STRUCTURALLY, not by toBe', () => {
+    // A string is a primitive: `toBe` on it is value equality, so it could not tell a re-export
+    // from a second `const PHOTO_ID_SEPARATOR = '-'`. Saying so here rather than writing an
+    // assertion that looks like the two above and proves strictly less.
+    expect(PHOTO_ID_SEPARATOR).toBe(DECLARED_PHOTO_ID_SEPARATOR);
+  });
+
+  it('photo-pipeline.ts DECLARES none of the three and re-exports all three', () => {
+    // This is the assertion that carries the claim for the primitive, and it is the one that
+    // catches a "helpful" re-inlining of any of the three.
+    //
+    // `let` and `var` are in the alternation deliberately. WALK-THROUGH, and it found a hole in
+    // the first revision of this very assertion: with `const` alone, `export let
+    // PHOTO_ID_SEPARATOR = '-'` evaded BOTH halves of this block — the regex, because the
+    // keyword did not match, and the `toBe` above, because a string is a primitive and `toBe`
+    // on it is value equality. The two object exports were never exposed (a fresh array or
+    // object fails `toBe` whatever keyword declares it); the primitive was.
+    const source = read('src/lib/photo-pipeline.ts');
+    for (const name of ['VARIANTS', 'THUMB', 'PHOTO_ID_SEPARATOR']) {
+      expect(source).not.toMatch(new RegExp(`^\\s*export\\s+(?:const|let|var)\\s+${name}\\b`, 'm'));
+      expect(source).not.toMatch(new RegExp(`^\\s*(?:const|let|var)\\s+${name}\\b`, 'm'));
+    }
+    // ANTI-VACUITY: the two patterns above must be able to match something in this file, or a
+    // typo in either regex would make all six assertions pass against any source at all —
+    // including an empty one.
+    expect(source).toMatch(/^\s*export\s+(?:const|let|var)\s+STAGING_PREFIX\b/m);
+    expect(source).toMatch(/^\s*(?:const|let|var)\s+SUFFIX_ALTERNATION\b/m);
+    // ...and the re-export is present, with the explicit `.ts` the Actions scripts need.
+    expect(source).toMatch(/export\s*\{[^}]*\bVARIANTS\b[^}]*\}\s*from\s*'\.\/photo-variants\.ts'/);
+  });
+
+  it('photo-pipeline.ts cannot hold a RENAMED copy of the separator either', () => {
+    // The residual the name-based regexes above cannot see: `const SEP = '-'; export { SEP as
+    // PHOTO_ID_SEPARATOR };` declares a second definition under a name this file never checks.
+    // Closed textually rather than left open, because it can be: the separator's VALUE is a
+    // one-character string, and `photo-pipeline.ts`'s CODE contains that literal ZERO times now
+    // that the four variant suffixes live one file down. So the absence of the literal is the
+    // absence of any copy, under any name.
+    //
+    // Counted over comment-stripped source. Counting raw is what a first revision of this did,
+    // and it reported TWO separators in a file with one, because `photo-variants.ts`'s header
+    // spells `'-'` while explaining the constant. A rule that fires on its own rationale is a
+    // rule that gets deleted.
+    const pipelineCode = stripComments(read('src/lib/photo-pipeline.ts'));
+    expect([...pipelineCode.matchAll(/'-'/g)]).toHaveLength(0);
+    // ANTI-VACUITY: the matcher must be able to find that literal where it really does live,
+    // or "zero occurrences" is a statement about a broken regex rather than about the file.
+    const variantsCode = stripComments(read('src/lib/photo-variants.ts'));
+    expect([...variantsCode.matchAll(/'-'/g)]).toHaveLength(1);
+    // ANTI-VACUITY on the STRIPPER, which is the new thing being trusted: it must remove a
+    // comment and must NOT remove a string. Both halves, because a stripper that returned ''
+    // would satisfy the zero-count above and every rule built on it, forever.
+    expect(stripComments("const a = 1; // '-' in a line comment")).not.toContain("'-'");
+    expect(stripComments("const a = 1; /* '-' in a block comment */")).not.toContain("'-'");
+    expect(stripComments("const sep = '-';")).toContain("'-'");
+    expect(stripComments("const s = '// not a comment';")).toContain('// not a comment');
+    expect(stripComments("const s = '/* not a comment */';")).toContain('/* not a comment */');
+    // RESIDUAL, measured not claimed closed: a copy assembled without the literal —
+    // `String.fromCharCode(45)`, or `'a-b'.slice(1, 2)` — is invisible to every textual rule
+    // here and needs an AST pass. Same class as 05-01's R1 and assert-no-raw-html-sinks's
+    // blind spot 1. The `toBe` assertions above cover the two OBJECT exports regardless of how
+    // a copy is assembled; only the primitive has this residual.
+  });
+
+  it('photo-variants.ts imports nothing from node: — that is the whole point of the move', () => {
+    const source = read('src/lib/photo-variants.ts');
+    // Specifier position, not any mention: the header NAMES `node:crypto` when it explains why
+    // the file exists, and a rule that fires on its own rationale gets deleted within a week.
+    const specifiers = [...source.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)].map((m) => m[1]);
+    expect(specifiers.length).toBeGreaterThan(0);
+    expect(specifiers.filter((spec) => spec.startsWith('node:'))).toEqual([]);
+    // ANTI-VACUITY: the extractor must actually be finding the one import this file has.
+    expect(specifiers).toContain('./image-origin.ts');
+    // The header does name node:crypto, so a naive `toContain` check would have been satisfied
+    // by prose. Asserted, so the distinction is not merely commented.
+    expect(source).toContain('node:crypto');
   });
 });
 

@@ -7,12 +7,26 @@
  *
  *   - what the STAGING prefix and bucket are (`STAGING_PREFIX`, `STAGING_BUCKET`),
  *   - what a PUBLISHED object key looks like (`PUBLISHED_PREFIX`, `publishedKey`),
- *   - what the four derived variants are (`VARIANTS`) and what the LQIP is (`THUMB`),
  *   - what `Cache-Control` a published object carries (`OBJECT_CACHE_CONTROL`),
  *   - what the `workflow_dispatch` interface is called (`DISPATCH_INPUTS`),
  *   - what a publishable `alt` may not be (`altRefusalReason`),
  *   - where the pipeline commits and how often it retries (`PUBLISH_BRANCH`,
  *     `PUBLISH_RETRY_LIMIT`).
+ *
+ * ONE THING IT NO LONGER SAYS ITSELF, and the amendment is the point rather than a footnote.
+ * **The variant table is no longer declared here.** `VARIANTS`, `THUMB`, `PHOTO_ID_SEPARATOR` and
+ * the two `VariantTable*` types moved DOWN into `src/lib/photo-variants.ts`, a module with zero
+ * `node:` imports, and are RE-EXPORTED from §3 below. So this file is still the one definition of
+ * everything EXCEPT the table — of which there is still exactly one definition, one file down.
+ *
+ * WHY, since nothing here was broken: prerendered public pages need those numbers, and importing
+ * them from this module puts `node:crypto` in a page's module graph. `05-UI-SPEC.md` §7.4 named
+ * the fix ("never a second copy of the numbers") and §5.3 assertion 5 requires that boundary to be
+ * PROVABLE rather than currently-true. Plan 05-05 measured it first: a probe page importing
+ * `VARIANTS` from here BUILT CLEANLY and shipped no `node:crypto` to `dist/client`. That is the
+ * hazard, not the reassurance — `wrangler.jsonc` sets `nodejs_compat`, so the mistake this header
+ * warns about two paragraphs down would succeed quietly. The full measurement is in
+ * `photo-variants.ts`'s header, with the OD-1 / OD-11 rationale that travelled with the constants.
  *
  * Plans 04-05, 04-06, 04-07, 04-08, 04-09 and 04-10 IMPORT from here. None of them re-derives
  * any of it. A constant whose rationale lives in a plan file is one nobody can evaluate in two
@@ -32,7 +46,8 @@
  *   half of the argument — bytes at a URL never change, so a re-run cannot half-overwrite an
  *   object a live page is reading.
  *   Costs, recorded rather than glossed: superseded objects stay in the bucket on a re-upload,
- *   and the OLD id invariant breaks (see PHOTO_ID_SEPARATOR below).
+ *   and the OLD id invariant breaks (see PHOTO_ID_SEPARATOR, re-exported in §3 below and
+ *   declared in `photo-variants.ts`).
  *
  * OD-2 · `alt` IS A REQUIRED `workflow_dispatch` INPUT (option A), validated BEFORE any R2 read
  *   so a bad value costs nothing. `alt` cannot be machine-generated: all 39 existing values were
@@ -96,13 +111,16 @@
  * which runs under Vitest and can import both sides — see `THUMB` and plan 04-02's SUMMARY.
  *
  * `node:crypto` is imported here and nowhere else under `src/`. Nothing under `src/` imports this
- * module, so it never enters the Worker bundle; the contract test asserts that boundary, because
+ * module — `photo-variants.ts` is a LEAF that this file imports, never the reverse, which is what
+ * lets a prerendered page reach the table without reaching this file — so it never enters the
+ * Worker bundle; the contract test asserts that boundary, because
  * `wrangler.jsonc` sets `nodejs_compat`, which means an accidental import would NOT fail loudly —
  * it would just quietly ship the pipeline into the Worker.
  */
 
 import { createHash } from 'node:crypto';
-import { IMAGE_ORIGIN, type REMOTE_URL_KEYS } from './image-origin.ts';
+import { IMAGE_ORIGIN } from './image-origin.ts';
+import { PHOTO_ID_SEPARATOR, VARIANTS } from './photo-variants.ts';
 
 /* ==============================================================================================
  * 0. Small shared helpers. Regexes are BUILT from the constants below rather than typed out, so
@@ -274,70 +292,27 @@ const assertContentHash = (hash: string): void => {
 };
 
 /* ==============================================================================================
- * 3. THE VARIANT TABLE.  Read from `git show legacy/nextjs-portfolio:scripts/process-images.js`
- *    and confirmed against served bytes (a 400px `-sm.webp` decodes to 400x267).
+ * 3. THE VARIANT TABLE — MOVED, NOT COPIED.  (plan 05-05, Task 1)
+ *
+ *    `VARIANTS`, `THUMB` and their two types now live in `src/lib/photo-variants.ts`, which has
+ *    ZERO `node:` imports, and are RE-EXPORTED from here so every existing importer — the five
+ *    `.mjs` Actions scripts, six Phase 4 plans and the contract test — is unaffected and there is
+ *    still exactly ONE definition of the numbers.
+ *
+ *    WHY: prerendered public pages need the table, and importing it from this module drags
+ *    `node:crypto` into a page's graph. `05-UI-SPEC.md` §7.4 named this fix and §5.3 assertion 5
+ *    requires the boundary to be PROVABLE rather than currently-true. The measurement that
+ *    prompted it — the probe DID build, which is the hazard, not the reassurance — is recorded in
+ *    `photo-variants.ts`'s header along with the rationale comments, which travelled with the
+ *    constants they explain.
+ *
+ *    The contract test asserts the re-exported objects are REFERENTIALLY IDENTICAL (`toBe`) to the
+ *    ones declared there, and that this file re-declares none of them. A second copy would satisfy
+ *    `toEqual` and is exactly what the move exists to make impossible.
  * ============================================================================================ */
 
-/** One derived variant. `urlKey` is pinned to a member of `REMOTE_URL_KEYS` by `VariantTable`. */
-/**
- * A mapped TUPLE over `REMOTE_URL_KEYS`. This is the type-level half of the
- * `VARIANTS.map(v => v.urlKey)` deep-equals `REMOTE_URL_KEYS` claim: adding, removing, renaming
- * or REORDERING a remote key makes `VARIANTS` stop satisfying this type, which `npm run
- * typecheck` reports. The contract test asserts the same thing at runtime, independently.
- *
- * THE SHAPE OF THIS DECLARATION IS LOAD-BEARING, and both simpler forms were MEASURED to fail
- * (`npm run typecheck`, i.e. `astro check`, 2026-08-27):
- *
- *   - `readonly [I in keyof typeof REMOTE_URL_KEYS]: ImageVariant<(typeof REMOTE_URL_KEYS)[I]>`
- *     → ts(2344): inside the mapped type the type argument is checked against the constraint for
- *       EVERY key, `length` included, so `4` is offered where a key name is required.
- *   - the same mapping with the entry shape inlined, still over a CONCRETE tuple
- *     → ts(1360): the mapping is not homomorphic, so `length` is mapped too and the result is an
- *       object type with a `length` property rather than a tuple.
- *
- * Mapping over a TYPE PARAMETER (`Keys` below) is what makes it homomorphic, which is what makes
- * the result a tuple, which is what makes the position-for-position check happen at all. A
- * "tidied" version of this type may well stop asserting anything while still compiling.
- */
-type VariantTableFor<Keys extends readonly string[]> = {
-  readonly [I in keyof Keys]: {
-    readonly urlKey: Keys[I];
-    readonly suffix: string;
-    readonly maxWidth: number;
-    readonly quality: number;
-  };
-};
-
-type VariantTable = VariantTableFor<typeof REMOTE_URL_KEYS>;
-
-/**
- * Resize is `sharp(buf).resize({ width: Math.min(maxWidth, sourceWidth), withoutEnlargement:
- * true })` — 04-07 owns the derivation; this table owns the numbers, so no width or quality
- * literal appears in the deriver.
- */
-export const VARIANTS = [
-  { urlKey: 'original', suffix: '', maxWidth: 2000, quality: 85 },
-  { urlKey: 'large', suffix: '-lg', maxWidth: 1200, quality: 85 },
-  { urlKey: 'medium', suffix: '-md', maxWidth: 800, quality: 85 },
-  { urlKey: 'small', suffix: '-sm', maxWidth: 400, quality: 80 },
-] as const satisfies VariantTable;
-
-/**
- * The LQIP. Width 40, quality 60, NO watermark, emitted inline as a data URI — which is why
- * `thumb` is absent from `REMOTE_URL_KEYS`: it carries no hostname and an origin migration must
- * never rewrite it.
- *
- * `dataUriPrefix` is the same string `PhotoUrlsSchema` enforces. It is not imported from
- * `src/schemas/photo.ts` — see "WHERE THIS MODULE RUNS" in the header for the measurement that
- * forbids that import. `THUMB_PREFIX` is now EXPORTED from `photo.ts` so the contract test can
- * import both sides and assert they are equal; before that export the only available assertion
- * compared this value against a literal re-typed in the test, which agrees with itself.
- */
-export const THUMB = {
-  width: 40,
-  quality: 60,
-  dataUriPrefix: 'data:image/webp;base64,',
-} as const;
+export type { VariantTable, VariantTableFor } from './photo-variants.ts';
+export { PHOTO_ID_SEPARATOR, THUMB, VARIANTS } from './photo-variants.ts';
 
 /** `-lg|-md|-sm|` — longest first so the alternation is greedy, empty suffix last. */
 const SUFFIX_ALTERNATION = VARIANTS.map((variant) => variant.suffix)
@@ -443,8 +418,6 @@ export const OBJECT_CACHE_CONTROL = 'public, max-age=31536000, immutable';
  * 5. The record id — two eras, both written down.
  * ============================================================================================ */
 
-export const PHOTO_ID_SEPARATOR = '-';
-
 /**
  * `id === category + "-" + slug`.
  *
@@ -458,6 +431,12 @@ export const PHOTO_ID_SEPARATOR = '-';
  * Both are recorded here so that nobody, reading one era's data, re-derives the other era's
  * rule. `id` still has to satisfy `/^[a-z0-9-]+$/` in `src/schemas/photo.ts`, which is why
  * `category` and `slug` are both asserted against that grammar before they are joined.
+ *
+ * `PHOTO_ID_SEPARATOR` itself is DECLARED in `src/lib/photo-variants.ts` and re-exported from §3,
+ * because the public routes have to run this join BACKWARDS — `PhotoSchema` has no `slug` field,
+ * so `/photos/<category>/<slug>` is derived from the id at prerender time, in workerd, where this
+ * module cannot go. That inverse is `photoSlug` in `src/lib/photo-srcset.ts` and it reads the same
+ * separator constant, so the two directions cannot disagree.
  */
 export function photoIdFor(parts: { readonly category: string; readonly slug: string }): string {
   assertSlugLike(parts.category, 'category');

@@ -836,3 +836,48 @@ instead. Commit `893f393`.
 Run URL, commit SHA, `git show --stat`, the 39 → 40 count, `verify-photo-urls --only` green, the
 CI run for the pipeline's push, and sixteen GET measurements are all recorded above from captured
 output. Both scratch files are gitignored and were non-empty at gate time.
+
+
+---
+
+## Criterion 5 — MET, measured on live bytes
+
+Second dispatch, run **33158490277**, 2026-08-28T09:13:39, success. The same photograph re-staged
+with different bytes: the source was re-encoded at a different JPEG quality rather than edited, so
+the image is unchanged and only the encoding differs (`e9685ccb…` 3,112,283 B → `26fc5704…`
+4,210,795 B). EXIF survived the re-encode, which is what made the invariants below meaningful.
+
+**It replaced rather than inserted.** The manifest still holds **40** records, not 41 — the id is a
+pure function of (category, name, format), so re-staging under the same `--name gentlegiants`
+addressed the existing record.
+
+**OD-4's guarantee held on live data for the first time:**
+
+| | before | after |
+|---|---|---|
+| `order` | 40 | **40** |
+| `categoryOrder` | 6 | **6** |
+| `iso` | 100 | **100** |
+| `date` | 2026-01-24 | **2026-01-24** |
+| `dimensions` | 3361×2241 | **3361×2241** |
+
+A retry is a repair, not a renumbering. Had `order` moved, the gallery would have silently reordered
+as a side effect of re-uploading one photograph.
+
+**CONT-05, proven by construction rather than asserted.** Every GET, never HEAD:
+
+```
+old  photos/wildlife/gentlegiants-ff17a846.webp   sha256 ff17a846…   811,298 B   STILL SERVED
+new  photos/wildlife/gentlegiants-1de8c65e.webp   sha256 1de8c65e…   815,082 B
+```
+
+**The hash in each URL is the first eight hex of the sha256 of the bytes that URL actually serves** —
+verified for both. So a re-upload cannot serve stale bytes, because it does not reuse the address:
+the old object is orphaned and still intact, not overwritten. A cache purge is not merely unnecessary
+here, it is impossible to need.
+
+Both objects carry `cache-control: public, max-age=31536000, immutable` against the zone's 14400 that
+the 39 legacy objects inherit, and two consecutive GETs of the new URL return `cf-cache-status: HIT`.
+
+**All five criteria are now met.** Criterion 5 was recorded NOT MET in this summary's first version
+and is amended here on evidence, not reinterpreted.

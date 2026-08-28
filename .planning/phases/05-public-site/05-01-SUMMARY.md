@@ -622,3 +622,11 @@ narrower than assessed: the module no longer reads the filesystem at all.
   **UNVERIFIED**. Assert in a browser that exactly three families download (Playfair Display, DM
   Sans, IBM Plex Mono) and that Inter, Archivo, JetBrains Mono and Newsreader do not. A silent
   failure renders Playfair as Georgia and looks almost right.
+
+---
+
+## Self-Check: PASSED
+
+All five claimed files exist on disk; all three claimed commits (`e778eca`, `79f6bc4`, `694b7be`)
+exist in `git log`; the working tree is clean; no AI attribution appears in any commit message,
+author or committer field.

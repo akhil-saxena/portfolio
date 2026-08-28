@@ -1,0 +1,149 @@
+---
+/**
+ * SEO-01, as a component, so that no page ever hand-writes a meta tag. Plan 05-06, Task 3.
+ *
+ * Emitted into `PublicLayout`'s named `head` slot:
+ *
+ *     <PublicLayout>
+ *       <Seo slot="head" title="Work" description="..." canonical="/work" />
+ *       ...
+ *     </PublicLayout>
+ *
+ * ================================================================================================
+ * WHY IT THROWS RATHER THAN COPING
+ * ================================================================================================
+ *
+ * Every failure this component can have is INVISIBLE on the page that has it. A relative
+ * `og:image` is ignored by every scraper and produces a card with no picture; a relative canonical
+ * is resolved by some crawlers and not others; a missing `og:url` costs nothing you can see. None
+ * of them renders wrong, none of them logs, and none of them is caught by a screenshot — they are
+ * only visible inside somebody else's product, weeks later.
+ *
+ * So the refusals below are the requirement, not defensive coding, and they fire during
+ * `astro build` where a human is watching.
+ *
+ * ================================================================================================
+ * WHY ASTRO'S RAW-HTML DIRECTIVE APPEARS NOWHERE IN THIS FILE
+ * ================================================================================================
+ *
+ * `scripts/assert-no-raw-html-sinks.mjs` refuses it, and — MEASURED while writing this component —
+ * that gate matches by string ANYWHERE in a scanned file, comments included. Naming the directive
+ * in this very paragraph failed the build with two findings, both of them prose. So it is not
+ * spelled out here. That is worth knowing before somebody spends ten minutes on a
+ * "reachable sink" that is a sentence; it is recorded for 05-14 in the 05-06 summary.
+ *
+ * The component does not need it in any case: every value below lands in an ATTRIBUTE, which Astro
+ * escapes. (SEO-02's `Person` data is the case that genuinely would need one — OQ-2 resolves that
+ * as MICRODATA on markup already on the page, and it belongs to 05-10, not here.)
+ *
+ * ================================================================================================
+ * WHY `Astro.site` RATHER THAN A CONSTANT
+ * ================================================================================================
+ *
+ * `astro.config.mjs` already sets `site: 'https://akhilsaxena.com'`, and `@astrojs/sitemap`
+ * (05-13) reads the same field. A second copy of the origin here would be a second definition of
+ * the site's own address, and the cutover in Phase 8 would move one of them.
+ */
+
+import { SITE_OG_IMAGE, SITE_OG_IMAGE_ALT } from '../../lib/site-meta';
+
+interface Props {
+  /** The `<title>` and `og:title`. Written per page; never defaulted — see `PublicLayout`. */
+  title: string;
+  /** `<meta name="description">` and `og:description`. */
+  description: string;
+  /** A ROOT-RELATIVE path (`/work`, `/photos/architecture/singapore`). Made absolute here. */
+  canonical: string;
+  /** `og:type`. `website` for the four top-level routes; `article` for a case study. */
+  ogType?: string;
+  /** An ABSOLUTE image URL. Defaults to the site-wide card (OQ-6a). */
+  image?: string;
+  /** The image's own alt text. Defaults with the image. */
+  imageAlt?: string;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  ogType = 'website',
+  image = SITE_OG_IMAGE,
+  imageAlt = SITE_OG_IMAGE_ALT,
+} = Astro.props;
+
+/*
+ * `Astro.site` is `URL | undefined` — it is undefined when `astro.config.mjs` omits `site`. That
+ * config is committed and sets it, so this branch is not reachable today; it exists because the
+ * consequence of it becoming reachable is silent. Without a base, `new URL('/work', undefined)`
+ * throws a TypeError naming neither the component nor the page, and every canonical on the site
+ * would be wrong at once.
+ */
+if (!Astro.site) {
+  throw new Error(
+    'Seo: `Astro.site` is not set, so no canonical or og:url can be made absolute. Set `site` in ' +
+      'astro.config.mjs. A relative canonical is honoured by some crawlers and ignored by others, ' +
+      'which is worse than none.'
+  );
+}
+
+if (!canonical.startsWith('/')) {
+  throw new Error(
+    `Seo: canonical must be a root-relative path beginning with "/", received "${canonical}" ` +
+      `(page: ${Astro.url.pathname}). A bare "work" resolves against the CURRENT directory, so ` +
+      'the canonical of /photos/architecture/ would silently become /photos/architecture/work.'
+  );
+}
+
+let canonicalUrl: string;
+try {
+  canonicalUrl = new URL(canonical, Astro.site).href;
+} catch (error) {
+  throw new Error(
+    `Seo: canonical "${canonical}" could not be made absolute against ${Astro.site.href} ` +
+      `(page: ${Astro.url.pathname}) — ${error instanceof Error ? error.message : String(error)}`
+  );
+}
+
+/*
+ * The image refusal, and it is the one that matters most. A relative `og:image` is not
+ * interpreted relative to the page by Facebook, X, LinkedIn, Slack or iMessage — it is DROPPED.
+ * The card renders with no picture, the build is green, and nothing on the page looks wrong.
+ *
+ * `new URL(image)` with no base throws unless `image` is already absolute, which is exactly the
+ * test wanted — a protocol-relative `//host/x.webp` is also refused, because a scraper fetching
+ * it has no page protocol to resolve against.
+ */
+let imageUrl: string;
+try {
+  imageUrl = new URL(image).href;
+} catch {
+  throw new Error(
+    `Seo: og:image must be an ABSOLUTE URL, received "${image}" (page: ${Astro.url.pathname}). ` +
+      'A relative or protocol-relative og:image is ignored by every scraper and produces a card ' +
+      'with no picture and no error anywhere. Pass a full https:// URL, or omit the prop and take ' +
+      'the site default from src/lib/site-meta.ts.'
+  );
+}
+
+if (!imageAlt) {
+  throw new Error(
+    `Seo: og:image:alt is empty (page: ${Astro.url.pathname}). It is the only description a ` +
+      'screen-reader user gets of a social card.'
+  );
+}
+---
+
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonicalUrl} />
+
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:type" content={ogType} />
+<meta property="og:url" content={canonicalUrl} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:alt" content={imageAlt} />
+
+{/* summary_large_image, not summary: the card is a 3:2 landscape photograph and `summary` crops
+    it to a small square thumbnail beside the text. */}
+<meta name="twitter:card" content="summary_large_image" />

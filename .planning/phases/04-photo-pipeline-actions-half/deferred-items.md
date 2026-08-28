@@ -147,3 +147,49 @@ could not be read" rather than as a missing dependency.
 decide deliberately whether `wrangler` moves to `dependencies` and, either way, leave the reason in
 a comment. Suggested alongside the two entries above (`yaml` undeclared, `engines.node`
 understated) — three edits, one file, one review.
+
+## 04-10 · `deploy.yml` cannot run the suite it runs, because it checks out a DETACHED SHA
+
+**Found:** 2026-08-28, by 04-10's live run — the first time anything downstream of a pipeline
+commit was actually exercised.
+
+**Deploy has been failing since `5f8a451` (2026-08-28 03:06). It last succeeded on `36ce34a`,
+2026-08-27 15:25.** Every failure since is the same:
+
+```
+process-photo: push to "main" failed … git exit 1: fatal: couldn't find remote ref main
+Error: Command failed: git rev-parse main
+fatal: ambiguous argument 'main': unknown revision or path not in the working tree.
+  ❯ git      test/pipeline/partial-failure.node.test.ts:148:10
+  ❯ tipOf    test/pipeline/partial-failure.node.test.ts:165:45
+```
+
+**The mechanism.** `deploy.yml` pins `ref: ${{ github.event.workflow_run.head_sha }}` — deliberately,
+so that "the thing that was tested is the thing that ships" is true rather than usually true. A
+checkout by SHA is a **detached HEAD with no local `main` branch**. `npm run deploy` then runs
+`npm test`, and `test/pipeline/partial-failure.node.test.ts` builds its sandbox by cloning the
+checkout: the clone inherits no `main`, so `git rev-parse main` and `git push … main` both fail.
+
+CI does not hit this because `actions/checkout` on a `push` event checks out the branch, so `main`
+exists locally. **The suite is green in CI and red in Deploy on the identical commit** — which is
+why nothing caught it until a pipeline commit needed to deploy.
+
+**Not fixed here.** It is a pre-existing failure in a file this plan does not own, its cause is
+`deploy.yml` × 04-09's sandbox, and 04-10 had already spent its one in-scope repair on the census
+assertion the fortieth photograph broke. Working around it would also mean touching the one
+workflow whose header says its pinning must not be loosened.
+
+**The consequence, stated plainly: `wildlife-gentlegiants` is committed to `main` and its four
+variants are live in R2, but the site build that would show it has not shipped.** Criterion 5
+("the CDN serves the new bytes") is therefore not closed by 04-10.
+
+**Three candidate fixes, for whoever owns this next — the first is probably right:**
+
+1. **Give the sandbox its own branch name rather than assuming `main`.** `partial-failure`'s
+   sandbox already creates a bare origin and clones it; have it create and push an explicit branch
+   (or read `PUBLISH_BRANCH` and `git checkout -B` it in the clone) instead of relying on the
+   ambient checkout having one. Fixes the test in every checkout shape, changes no workflow.
+2. Have `deploy.yml` create a local branch at the pinned SHA (`git checkout -B main <sha>` after
+   checkout). Cheap, but it makes a test's requirement a property of the deploy job.
+3. Stop running the full suite in `npm run deploy` and rely on the CI gate that already ran.
+   Reduces what the deploy proves; the `deploy.yml` header's reasoning argues against it.

@@ -1,0 +1,320 @@
+/*
+ * The public shell — layout only, per QUAL-03.
+ * (Phase 5, plan 05-06. The ladder numbers are CARRIED from `05-UI-SPEC.md` §2.1/§2.2, which
+ * carried them from `00-PUBLIC-DESIGN-NOTES.md` §"Responsive shell".)
+ *
+ * ================================================================================================
+ * WHAT IS NOT ALLOWED IN THIS FILE
+ * ================================================================================================
+ *
+ * A colour. A type size. A font family. A spacing NUMBER. Every one of those is owned by
+ * `@akhil-saxena/design-system` and reached through a token — `var(--space-8)`, never `32px`.
+ * The one exception is the print `@page` margin (15mm), which is a paper measure the design system
+ * does not model.
+ *
+ * In particular there is NO colour anywhere inside `@media print`. `05-UI-SPEC.md` §11.3 and OQ-5
+ * both rule that out: restating the five surface and five ink tokens under `@media print` works
+ * today and drifts silently on the next theme release. The mode change is the inline theme script's
+ * `beforeprint` handler in `src/layouts/PublicLayout.astro`, not this file's job.
+ *
+ * ================================================================================================
+ * 1. THE GUTTER LADDER — one custom property, four rungs, five sites (§2.1)
+ * ================================================================================================
+ *
+ * `src/lib/layout-ladder.ts` holds the same four rungs as TypeScript, because `sizesFor` and
+ * 05-15's browser audit need them and CSS cannot be imported by a module. That duplication is
+ * unavoidable and it is closed by a gate rather than by hope:
+ *
+ *     node scripts/assert-gutter-ladder.mjs
+ *
+ * which parses the BUILT stylesheet in `dist/client/` — what actually shipped, after bundling and
+ * minification — and asserts it matches `GUTTER_RUNGS` rung for rung: same count, same
+ * breakpoints, same token names, in the same order. Change a number here and the gate names the
+ * rung. Do not change one side alone.
+ *
+ * THE FIVE SITES, named in `layout-ladder.ts`'s header and repeated here so a reader arriving at
+ * the stylesheet has the list rather than the warning:
+ *
+ *   1. `.pub-shell`            padding          — the ladder itself, where the property is declared
+ *   2. `.pub-bar`              negative margin  — the AppBar row breaking out of the shell
+ *   3. `.pub-bar .ds-atom-appbar`   padding     — paying the gutter back inside the bar
+ *   4. `.pub-footer`           negative margin  — the Footer row breaking out of the shell
+ *   5. `.pub-footer .ds-atom-footer` padding    — paying it back inside the footer
+ *
+ * **`.pub-footer` is the one that gets missed.** It is last in the file, nobody scrolls to it when
+ * checking a layout change, and it is visually identical to a correct footer until the page is
+ * 32px wider than the viewport — which presents as a horizontal scroll, i.e. the exact R-6
+ * violation the ladder exists to close, reintroduced by the fix for it.
+ *
+ * Sites 3 and 5 reach a design-system class from app CSS. That is deliberate and it is layout, not
+ * paint: `.ds-atom-appbar` ships `padding: 12px 20px` and `.ds-atom-footer[data-variant="compact"]`
+ * ships `padding: 16px 32px`, both fixed, and neither component exposes a padding prop. The
+ * override is scoped under the wrapper so it is (0,2,0) against the component's (0,1,0) and
+ * therefore wins on SPECIFICITY rather than on source order — an equal-specificity override that
+ * depends on import order is one stylesheet reshuffle away from silently losing. Only the INLINE
+ * padding is touched; the block padding stays the component's.
+ */
+
+/* ── 1a. The rungs. THE ONLY PLACE `--pub-gutter` IS DECLARED. ─────────────────────────────── */
+
+.pub-shell {
+  --pub-gutter: var(--space-4);
+}
+
+@media (min-width: 375px) {
+  .pub-shell {
+    --pub-gutter: var(--space-6);
+  }
+}
+
+@media (min-width: 673px) {
+  .pub-shell {
+    --pub-gutter: var(--space-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .pub-shell {
+    --pub-gutter: var(--space-12);
+  }
+}
+
+/* ── 1b. Site 1 — the shell pays the gutter. ───────────────────────────────────────────────── */
+
+/*
+ * THE PAGE SURFACE. Four declarations, every value a design-system token, and the shell is the
+ * only place that can carry them.
+ *
+ * 🔴 MEASURED, AND IT IS A GAP RATHER THAN AN OVERSIGHT ON THIS SIDE: the design system declares
+ * `--cream`, `--ink` and `--font` in both of `themes/monochrome.css`'s blocks, and NOTHING APPLIES
+ * ANY OF THEM TO THE PAGE. `primitives.css` (235,100 bytes) contains no `*`, `html` or `body`
+ * selector at all — every rule is scoped to a `.ds-atom-*` class. So a document built from the
+ * four prescribed stylesheets renders on the USER-AGENT's white canvas in the user agent's Times,
+ * and only the boxes that happen to be design-system components are themed.
+ *
+ * Seen in a real browser before this rule existed: in DARK mode the `<body>` computed
+ * `background-color: rgba(0, 0, 0, 0)`, so the page was WHITE with black serif text and one
+ * `#0d0d0f` footer bar across the bottom. It looks like a stylesheet that failed to load, and
+ * `npm run build`, `gate:ds` and every unit test were green.
+ *
+ * This is NOT a token restatement and QUAL-03 does not forbid it: there is no literal here. Every
+ * value is `var(--…)`, so the page surface follows the theme on the next release exactly as the
+ * components do. The alternative — `AppShell` — brings a sidebar grid this site does not have, and
+ * §5.1's route table specifies AppBar + main + Footer.
+ *
+ * Filed for `2.0.0-beta.2`: the theme, or a documented `.ds-page` class, should own the page
+ * surface. Four lines is not the cost; every consumer independently deciding what `<body>` looks
+ * like is, and the one who forgets ships a white page in dark mode.
+ */
+body {
+  /* No design-system reset ships a `body` rule (MEASURED, see above), so the UA's default 8px body
+     margin would sit OUTSIDE the ladder and put every rung 8px off. */
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font);
+  /* §3.3, CARRIED: its consequence is that Playfair at weight 400 must not carry a body role below
+     15px on a dark surface. The design system ships no font-smoothing rule of its own (MEASURED:
+     zero occurrences across tokens/primitives/utilities/themes). */
+  -webkit-font-smoothing: antialiased;
+}
+
+.pub-shell {
+  padding: 0 var(--pub-gutter);
+}
+
+/* ── 1c. Sites 2 and 3 — the bar breaks out and pays back. ─────────────────────────────────── */
+
+.pub-bar {
+  margin-inline: calc(var(--pub-gutter) * -1);
+}
+
+.pub-bar .ds-atom-appbar {
+  padding-inline: var(--pub-gutter);
+}
+
+/* ── 1d. Sites 4 and 5 — the footer breaks out and pays back. ──────────────────────────────── */
+
+.pub-footer {
+  margin-inline: calc(var(--pub-gutter) * -1);
+}
+
+.pub-footer .ds-atom-footer {
+  padding-inline: var(--pub-gutter);
+}
+
+/*
+ * ================================================================================================
+ * 2. THE FULL-VIEWPORT MECHANISM — a flex column, because `--ds-appbar-h` cannot be read (§6.2)
+ * ================================================================================================
+ *
+ * §6.2 prescribes `min-height: calc(100svh - var(--ds-appbar-h))` on a section under the bar, and
+ * calls the Phase 0 finding "closed upstream — do not re-measure".
+ *
+ * IT IS NOT CLOSED. MEASURED against the installed 2.0.0-beta.1, and then in a real browser:
+ * `--ds-appbar-h` is declared on `.ds-atom-appbar` (`dist/css/appbar.css:48`,
+ * `dist/primitives.css:5584`) and re-declared under `@media (pointer: coarse)` on
+ * `.ds-atom-appbar:has(a)`. Custom properties inherit to DESCENDANTS, not to SIBLINGS. A
+ * full-viewport section under `<main>` is a sibling of the bar, so `var(--ds-appbar-h)` there is
+ * an unresolved property: the whole `calc()` is invalid at computed-value time and `min-height`
+ * falls back to its initial `auto` — a plausible-looking page with no error anywhere. The
+ * component's own docstring names this exact use case as the one the property serves, so it is a
+ * design-system finding and it is filed for `2.0.0-beta.2`.
+ *
+ * DO NOT close it locally by re-declaring `--ds-appbar-h` at `:root`. That is a local restatement
+ * of a design-system number that drifts on the next release, and it would be WRONG on coarse
+ * pointers, where the bar is 69px and a `:root` copy would still say 47px.
+ *
+ * The mechanism below needs no number at all, and keeps all three of §6.2's load-bearing
+ * properties:
+ *
+ *   - `svh`, never `vh`, never `dvh`. `100vh` is the LARGE viewport — the height with the mobile
+ *     address bar retracted — so at first paint on iOS Safari and Android Chrome the scroll
+ *     prompt, whose entire job is to be visible at first paint, is pushed below the fold. `dvh` is
+ *     forbidden on any scroll-transition participant because it changes DURING the scroll, moving
+ *     the transition's own target distance mid-gesture.
+ *   - `min-height`, never `height`. A route opting in writes `flex: 1 0 auto`, which cannot
+ *     shrink, so content taller than the budget overflows VISIBLY. A visible overflow is a failure
+ *     a screenshot catches; a clip is one it hides.
+ *   - The chrome above comes out of the budget — STRUCTURALLY, because the bar is a flex sibling
+ *     consuming its own height, which is strictly more accurate than subtracting a constant that
+ *     is 47px on fine pointers and 69px on coarse.
+ *
+ * Plan 05-11 consumes this and owns `.hm-a`; the opt-in is one declaration:
+ *
+ *     .hm-a { flex: 1 0 auto; }
+ */
+
+.pub-shell {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pub-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-11);
+}
+
+/*
+ * ================================================================================================
+ * 3. PAGE MAXIMA (§2.2) — every one is `min(cap, 100%)`, so none needs a breakpoint
+ * ================================================================================================
+ *
+ * The px caps are the second half of `src/lib/layout-ladder.ts`'s `PAGE_MAX`, and
+ * `scripts/assert-gutter-ladder.mjs` checks these four rules against it by name, for the same
+ * reason it checks the rungs: two numbers that agree today are a duplication, not a contract.
+ *
+ * `min(cap, 100%)` rather than `max-width: cap` plus a media query: the `100%` half is what keeps
+ * the box inside the shell's content width at every viewport below the cap, and it is one
+ * declaration instead of four.
+ *
+ * `.pub-prose` is NOT in `PAGE_MAX` and is not gated. `68ch` is a typographic unit, not a pixel
+ * one, and putting it in a px-valued record would invite `min(68, ...)` arithmetic that means
+ * nothing (`layout-ladder.ts` says so at the point the number would have gone).
+ */
+
+.pub-max-home {
+  max-width: min(1080px, 100%);
+  margin-inline: auto;
+  width: 100%;
+}
+
+.pub-max-work {
+  max-width: min(1280px, 100%);
+  margin-inline: auto;
+  width: 100%;
+}
+
+.pub-max-photos {
+  max-width: min(1280px, 100%);
+  margin-inline: auto;
+  width: 100%;
+}
+
+.pub-max-band {
+  max-width: min(1080px, 100%);
+  margin-inline: auto;
+  width: 100%;
+}
+
+.pub-prose {
+  max-width: min(68ch, 100%);
+}
+
+/*
+ * ================================================================================================
+ * 4. MOTION (§12.2, PUB-13) — suppression is the DEFAULT, motion is the opt-in
+ * ================================================================================================
+ *
+ * `scroll-behavior: smooth` lives INSIDE `@media (prefers-reduced-motion: no-preference)`, and it
+ * is never written the other way round as `scroll-behavior: auto` inside a `reduce` query. Written
+ * that way the accessible path becomes the exception: every new animation added later has to
+ * remember to opt out, and the one that forgets ships. Written this way, an animation that forgets
+ * the query is visible in review as a rule outside the block.
+ *
+ * User-initiated scrolling is EXEMPT and must not be suppressed — this file suppresses only what
+ * the page generates. Every later Phase 5 plan adding a transition, a snap or a scroll effect adds
+ * it inside this same query.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/*
+ * ================================================================================================
+ * 5. PRINT (§11.3, PUB-11) — furniture removed; the MODE is the script's job, not this file's
+ * ================================================================================================
+ *
+ * Zero colour declarations below, deliberately. See the note at the top of this file.
+ */
+
+@media print {
+  @page {
+    margin: 15mm;
+  }
+
+  .pub-bar,
+  .pub-footer,
+  #pub-theme-toggle {
+    display: none;
+  }
+
+  .pub-shell {
+    display: block;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .pub-main {
+    display: block;
+    padding-top: 0;
+  }
+}
+
+/*
+ * ================================================================================================
+ * 6. THE 44px COARSE-POINTER HIT FLOOR (§2.3) — CHECKED, AND THE SHELL ADDS NOTHING
+ * ================================================================================================
+ *
+ * Recorded rather than assumed. The floor is reached by growing the ANCHOR BOX under
+ * `@media (pointer: coarse)` while the painted geometry stays put — never by growing the paint,
+ * never gated on WIDTH (a 1024px tablet and a 1024px laptop window want opposite answers) and
+ * never on `any-pointer` (a tablet in a keyboard case reports fine as attached while touch stays
+ * primary).
+ *
+ * MEASURED in the installed package — the design system already carries both of the shell's
+ * halves, so a rule here would be a duplicate that drifts:
+ *
+ *     dist/css/appbar.css:118   @media (pointer: coarse) { .ds-atom-appbar a { min-height: 44px;
+ *                               min-width: 44px; display: inline-flex; align-items: center } }
+ *     dist/primitives.css:5763  the same treatment for `.ds-atom-footer .ds-atom-footer-link`
+ *
+ * `FilterNav` is the one that still misses it (40px, OQ-4) — that is plan 05-07's surface, not the
+ * shell's, and the resolution is an upstream fix rather than a local override.
+ */

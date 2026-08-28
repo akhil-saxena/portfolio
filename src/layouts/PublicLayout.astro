@@ -1,0 +1,106 @@
+---
+/**
+ * The shell every public route sits in. Plan 05-06, Tasks 1 and 2.
+ *
+ * Five requirements live here rather than in any route, which is why one defect in this file is
+ * five broken routes: PUB-12 (no flash of the wrong theme), PUB-13 (reduced motion), PUB-11's
+ * print MODE, SEO-01's landing place, and PUB-14's "zero framework JavaScript", which is a
+ * property of the shell because the shell is what every route inherits.
+ *
+ * ================================================================================================
+ * THE ONE CSS IMPORT, AND THE ONE SCRIPT
+ * ================================================================================================
+ *
+ * `src/styles/design-system.css` is imported HERE and nowhere else in the repository (§1.2). It
+ * holds the four design-system stylesheets in dependency order; a page that imported three of the
+ * four would render with unthemed primitives and look merely "a bit off" rather than broken, which
+ * is the kind of defect that ships.
+ *
+ * There is exactly ONE `<script>` on any public route and it is the `is:inline` block below
+ * (§5.2). PUB-14 bans React hydration, not a hand-written script — but it bans a SECOND one, and
+ * it bans any `client:*` directive outside `/photos`.
+ *
+ * ================================================================================================
+ * WHAT IS NOT HERE
+ * ================================================================================================
+ *
+ * No `<title>`, no `<meta name="description">`, no canonical, no `og:*`. Those are `<Seo>`'s, and
+ * they arrive through the named `head` slot so that no page ever hand-writes a meta tag (SEO-01).
+ * A layout that emitted a default title would give every route that forgot `<Seo>` a plausible
+ * wrong one instead of a visibly missing one.
+ */
+
+import { Footer } from '@akhil-saxena/design-system/components/Footer';
+import homeConfig from '../../data/home_config.json';
+import { PublicNav } from '../components/public/PublicNav';
+import '../styles/design-system.css';
+import '../styles/public-shell.css';
+
+interface Props {
+  /** Extra class(es) for `<main>` — normally one of the `.pub-max-*` page maxima (§2.2). */
+  mainClass?: string;
+}
+
+const { mainClass } = Astro.props;
+
+/**
+ * The footer's links are `data/home_config.json`'s `socialLinks`, mapped to `Footer`'s shape.
+ *
+ * `Footer.links` is PLAIN DATA (`Array<{ label, href }>`), not a `ReactNode`, so it crosses the
+ * `.astro` → React boundary without the wrapper `PublicNav.tsx` needs. See that file's header for
+ * the measurement of where the boundary actually is.
+ *
+ * 🔴 A MEASURED DEFECT SHIPS HERE, DELIBERATELY, AND IT IS FILED UPSTREAM.
+ * §4.6b says "Phase 5 uses `variant='default'` in the footer, which is stylesheet-only and
+ * therefore correct." THAT ESCAPE DOES NOT EXIST. `Footer`'s own `renderLink` hardcodes
+ * `<Link variant="footer" className="ds-atom-footer-link">` (MEASURED, `chunk-23WQN7ZH.js.map`),
+ * and `Footer` exposes no per-item className, style or variant hook — `className` reaches the
+ * `<footer>` element only. So every consumer of `Footer.links` gets `variant="footer"`, whose
+ * INLINE `textDecorationColor: rgba(0,0,0,.25)` beats the dark-mode stylesheet rule that would set
+ * `rgba(255,255,255,.4)`. On `#0d0d0f` that underline is effectively invisible.
+ *
+ * NOT PATCHED LOCALLY. The only local fix is an `!important` reaching past a component into its
+ * internals, which is the workaround the Core Value forbids and which Phase 0 declined for the
+ * same class of defect (D-16-1). The link TEXT is `var(--ink)` and correct in both modes; only its
+ * underline is wrong, so this degrades appearance rather than function. Filed for
+ * `2.0.0-beta.2` — `Link`'s `footer`/`action` variants should move their colour and
+ * decoration into `primitives.css` where the `.dark` rule can win.
+ */
+const footerLinks = homeConfig.socialLinks.map((link) => ({
+  label: link.label,
+  href: link.url,
+}));
+
+/**
+ * DERIVED, never typed. The name comes from `home_config.json` (the same string the Home hero
+ * uses) and the year from the build clock, so neither can go stale in a file nobody re-reads.
+ * Evaluated during prerender, which runs in workerd — `Date` is available there; a filesystem read
+ * would not be (05-01).
+ */
+const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
+---
+
+<!doctype html>
+<html lang="en" data-brand="monochrome" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <!-- A real device-width viewport. The six-class responsive contract runs from a 344px folded
+         cover screen to 1440px+, and there is no fixed pixel width anywhere in this file. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <slot name="head" />
+  </head>
+  <body>
+    <div class="pub-shell">
+      <div class="pub-bar">
+        <PublicNav siteTitle={homeConfig.title} pathname={Astro.url.pathname} />
+      </div>
+      <main class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
+        <slot />
+      </main>
+      <div class="pub-footer">
+        <Footer variant="compact" copyright={copyright} links={footerLinks} />
+      </div>
+    </div>
+  </body>
+</html>

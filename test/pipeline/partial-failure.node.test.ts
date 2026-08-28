@@ -67,9 +67,11 @@
  * The reachable equivalent, used below, plants the defect in the CONTENT SET instead: a category
  * declared in `site_config.json` that no photograph uses fires RI-2. The properties under test are
  * unchanged — the gate refuses, the manifest is restored byte-for-byte, nothing is uploaded — and
- * the case additionally asserts `checked: 40 photo(s)` in the gate's own output, which proves the
- * candidate manifest really was written and really was read before being rolled back. Without
- * that, "the manifest is byte-identical" would also be satisfied by a job that never wrote it.
+ * the case additionally asserts the gate's own photograph census, which proves the candidate
+ * manifest really was written and really was read before being rolled back. Without that, "the
+ * manifest is byte-identical" would also be satisfied by a job that never wrote it. The census is
+ * DERIVED from the sandbox manifest the job started from, never written as a literal — see the
+ * comment at the assertion for the red-on-main this cost.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -571,9 +573,19 @@ describe('the composed pipeline', () => {
     expect(run.output).toMatch(/RI-2/); // the child's output names the rule
 
     // THE ANTI-VACUITY ASSERTION. The gate reports how many photographs it looked at, so this
-    // proves the candidate manifest was really written and really read — 40, not 39 — before
-    // being rolled back. Without it, "byte-identical" is also true of a job that never wrote.
-    expect(run.output).toMatch(/checked: 40 photo\(s\)/);
+    // proves the candidate manifest was really written and really read — one MORE than the job
+    // started with — before being rolled back. Without it, "byte-identical" is also true of a job
+    // that never wrote.
+    //
+    // DERIVED, never a literal. This read `checked: 40 photo(s)` when the committed manifest held
+    // 39 records, so the literal silently encoded "39 + the one this job stages". 04-10's live run
+    // published a fortieth photograph and turned this red ON MAIN, blocking the deploy — which is
+    // exactly the trap 04-01 removed from 15 assertions, reintroduced by a plan that had read the
+    // warning. Bumping 40 to 41 would move the same trap one photograph further along; the claim
+    // worth keeping is the RELATIONSHIP between what the job was given and what the gate counted.
+    const censusCase3 = (JSON.parse(before) as unknown[]).length + 1;
+    expect(censusCase3).toBeGreaterThan(1);
+    expect(run.output).toMatch(new RegExp(`checked: ${censusCase3} photo\\(s\\)`));
 
     expect(manifestBytes(sandbox)).toBe(before);
     expect(git(sandbox.work, ['status', '--porcelain', '--', 'data/portfolio_images.json'])).toBe(
@@ -648,7 +660,9 @@ describe('the composed pipeline', () => {
 
     // §6 measured that NOTHING else in this repository can see this: the record is schema-valid
     // and `astro sync` passed it at exit 0 one step earlier.
-    expect(run.output).toMatch(/checked: 40 photo\(s\)/);
+    const censusCase5 = (JSON.parse(before) as unknown[]).length + 1;
+    expect(censusCase5).toBeGreaterThan(1);
+    expect(run.output).toMatch(new RegExp(`checked: ${censusCase5} photo\\(s\\)`));
     expect(manifestBytes(sandbox)).toBe(before);
     expect(tipOf(sandbox)).toBe(tipBefore);
     expect(opsOf(state, 'delete')).toHaveLength(0);

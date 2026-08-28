@@ -21,6 +21,53 @@
  * it bans any `client:*` directive outside `/photos`.
  *
  * ================================================================================================
+ * WHY THE THEME SCRIPT EXISTS AT ALL — D-34, AND IT IS DELETABLE
+ * ================================================================================================
+ *
+ * `@akhil-saxena/design-system@2.0.0-beta.1` SHIPS NO THEME ENTRY POINT. MEASURED: its exports map
+ * is `.`, `./hooks`, `./icons`, `./components/*`, `./tokens.css`, `./primitives.css`,
+ * `./utilities.css`, `./themes/*.css`, `./fonts/*.css`, `./css/*` — there is no `applyTheme`, no
+ * `useTheme`, no `/theme`. D-34 was decided in DSGN-05 and Phase 1 did not ship it.
+ *
+ * DSGN-05's own reasoning is why this is a FINDING and not a preference: `.dark` and `data-brand`
+ * are the DESIGN SYSTEM's selectors, changed on its release schedule, so leaving every consumer to
+ * reinvent the script is how consumers drift out of sync with a contract they do not own. The
+ * portfolio and Cairn would each carry a copy.
+ *
+ * OQ-3 resolves this as: write it locally AND file the gap upstream for `2.0.0-beta.2`. The Core
+ * Value says a gap the design system exposes is a finding rather than a workaround; it does not say
+ * the finding must be fixed before the consumer ships, and the live site is down, which is a clock.
+ *
+ * >>> DELETE THE SCRIPT BELOW, AND THIS COMMENT, THE DAY THE PACKAGE SHIPS A THEME ENTRY POINT. <<<
+ *
+ * ================================================================================================
+ * THE CONTRACT THE SCRIPT MUST NOT BREAK
+ * ================================================================================================
+ *
+ *  - `data-brand` and `class="dark"` are SERVER-RENDERED ATTRIBUTES on <html>, not script-set. A
+ *    script that sets the brand paints one frame of the default brand first. In the markup they
+ *    are in the cascade before the first byte of body is parsed.
+ *  - DARK IS THE DEFAULT AND `prefers-color-scheme` IS NOT CONSULTED. `REQUIREMENTS.md` Out of
+ *    Scope: "Three-state theme toggle — Two states, dark by default, as designed." The script's
+ *    only theme job is to REMOVE `dark` for a returning light-mode visitor.
+ *  - The `localStorage` read is wrapped in `try`. Safari in private mode throws on ACCESS, and an
+ *    unhandled throw here aborts the script before the class is corrected — a flash caused by the
+ *    code that exists to prevent one, on the one path nobody exercises by accident.
+ *  - `beforeprint`/`afterprint` are OQ-5, and they restate NO TOKEN. `themes/monochrome.css`
+ *    contains zero at-rules by design and CSS cannot remove a class, so this is the smallest
+ *    correct mechanism and it works on every page rather than only on `/resume`.
+ *    RESIDUAL, RECORDED NOT HIDDEN: some headless print-to-PDF paths do not fire `beforeprint`.
+ *    That risk is accepted (OQ-5) and filed upstream as a request for a theme print block or a
+ *    `data-force-light` hook.
+ *  - PHASE 8: NO CSP IS CONFIGURED ON THIS SITE TODAY. If one is added, this script needs a hash
+ *    or a nonce. Written here so it is a scheduled cost rather than a discovery at cutover.
+ *
+ * The listener is DELEGATED from `document` rather than bound to the button by
+ * `DOMContentLoaded` + `getElementById`. The script runs in `<head>`, so the button does not exist
+ * yet; delegation is live from that instant, needs no second lifecycle event, and cannot miss a
+ * click landing between parse and `DOMContentLoaded`.
+ *
+ * ================================================================================================
  * WHAT IS NOT HERE
  * ================================================================================================
  *
@@ -84,10 +131,48 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
 <html lang="en" data-brand="monochrome" class="dark">
   <head>
     <meta charset="utf-8" />
-    <!-- A real device-width viewport. The six-class responsive contract runs from a 344px folded
-         cover screen to 1440px+, and there is no fixed pixel width anywhere in this file. -->
+    {
+      /* A real device-width viewport. The six-class responsive contract runs from a 344px folded
+        cover screen to 1440px+, and there is no fixed pixel width anywhere in this file. A brace
+        comment rather than an HTML one: an HTML comment SHIPS to every page, and this note is for
+        the author. (Do not spell the delimiters out here — a nested terminator ends the comment
+        early and the compiler reports only "Unexpected token" at the line after.) */
+    }
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script is:inline>
+      /* D-34 · the design system ships no theme entry point at 2.0.0-beta.1, so this is a local
+         copy of a selector contract this repository does not own. Filed upstream for
+         2.0.0-beta.2; delete it the day `@akhil-saxena/design-system/theme` exists.
+         Phase 8: no CSP today — adding one requires a hash or a nonce for this block.
+         Full rationale, and the residual on headless print, in this file's frontmatter. */
+      (function () {
+        var d = document.documentElement;
+        var s = null;
+        try {
+          s = localStorage.getItem('theme');
+        } catch (e) {
+          /* Safari private mode throws on access. Falling through leaves the default dark. */
+        }
+        if (s === 'light') d.classList.remove('dark');
+        addEventListener('beforeprint', function () {
+          d.classList.remove('dark');
+        });
+        addEventListener('afterprint', function () {
+          if (s !== 'light') d.classList.add('dark');
+        });
+        document.addEventListener('click', function (ev) {
+          var t = ev.target;
+          if (!t || !t.closest || !t.closest('#pub-theme-toggle')) return;
+          s = d.classList.toggle('dark') ? 'dark' : 'light';
+          try {
+            localStorage.setItem('theme', s);
+          } catch (e) {
+            /* Storage denied: the class still flipped, the choice just will not survive a reload. */
+          }
+        });
+      })();
+    </script>
     <slot name="head" />
   </head>
   <body>

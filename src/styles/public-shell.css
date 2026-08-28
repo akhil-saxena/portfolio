@@ -318,3 +318,41 @@ body {
  * `FilterNav` is the one that still misses it (40px, OQ-4) — that is plan 05-07's surface, not the
  * shell's, and the resolution is an upstream fix rather than a local override.
  */
+
+/*
+ * ================================================================================================
+ * 7. THE THEME TOGGLE'S TWO GLYPHS — the swap is CSS, so it cannot flash (§12.1)
+ * ================================================================================================
+ *
+ * `PublicNav.tsx` renders BOTH a sun and a moon inside the one `IconButton`; this shows exactly
+ * one, keyed off `.dark` on `<html>` — the same class the theme itself is scoped to and the same
+ * class the inline script flips.
+ *
+ * WHY NOT SWAP THE ICON IN SCRIPT. The class on `<html>` is server-rendered and corrected in
+ * `<head>` before any body content is parsed, so a CSS-driven glyph is right on the FIRST painted
+ * frame. A script that swapped `innerHTML` after parse would paint the wrong glyph first for
+ * exactly the visitor PUB-12 is about — a returning light-mode one — which is the flash the whole
+ * mechanism exists to prevent, relocated into the icon and much harder to see in review.
+ *
+ * Dark is the default, so dark shows the SUN: the glyph names where the button takes you, not
+ * where you are. The button's accessible name is state-neutral and says both (`PublicNav.tsx`).
+ *
+ * `display` only. No colour: `.ds-atom-iconbtn` already carries `color: var(--ink-2)` and the
+ * lucide glyphs are `currentColor`.
+ */
+
+.pub-theme-icon {
+  display: none;
+}
+
+.pub-theme-icon-moon {
+  display: block;
+}
+
+.dark .pub-theme-icon-sun {
+  display: block;
+}
+
+.dark .pub-theme-icon-moon {
+  display: none;
+}

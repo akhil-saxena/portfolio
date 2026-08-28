@@ -51,7 +51,9 @@
  */
 
 import { AppBar } from '@akhil-saxena/design-system/components/AppBar';
+import { IconButton } from '@akhil-saxena/design-system/components/IconButton';
 import { Link } from '@akhil-saxena/design-system/components/Link';
+import { Moon, Sun } from '@akhil-saxena/design-system/icons';
 
 /**
  * The nav, per OQ-6b: **work, photographs, résumé** — three items, not two.
@@ -68,6 +70,9 @@ export const NAV_ITEMS: ReadonlyArray<{ readonly href: string; readonly label: s
   { href: '/photos', label: 'photographs' },
   { href: '/resume', label: 'résumé' },
 ];
+
+/** The id the inline theme script binds its click listener to (`PublicLayout.astro`). */
+export const THEME_TOGGLE_ID = 'pub-theme-toggle';
 
 export interface PublicNavProps {
   /** The site name, from `data/home_config.json`. Never typed here — see the layout. */
@@ -111,6 +116,32 @@ export function PublicNav({ siteTitle, pathname }: PublicNavProps) {
           {item.label}
         </Link>
       ))}
+      actions={
+        <IconButton
+          id={THEME_TOGGLE_ID}
+          /* `label` IS the accessible name — IconButton maps it to `aria-label` and marks the
+             glyph `aria-hidden`. It is deliberately state-neutral: the button is static HTML and
+             the inline script only toggles a class, so a name saying "Switch to light" would be a
+             lie in one of the two states, on every page, with nothing to catch it. */
+          label="Switch between the dark and light theme"
+          /* BOTH glyphs are rendered and CSS shows one, keyed off `.dark` on <html>. That is what
+             keeps the toggle correct with ZERO JavaScript beyond the class flip: swapping the icon
+             in script would mean the first painted frame shows the wrong glyph for a returning
+             light-mode visitor — the same flash PUB-12 exists to prevent, moved into the icon.
+             The spans, rather than a className on the icon itself, so this does not depend on
+             whether the design system's `Icon` forwards `className` to its lucide child. */
+          icon={
+            <>
+              <span className="pub-theme-icon pub-theme-icon-sun">
+                <Sun size={16} />
+              </span>
+              <span className="pub-theme-icon pub-theme-icon-moon">
+                <Moon size={16} />
+              </span>
+            </>
+          }
+        />
+      }
     />
   );
 }

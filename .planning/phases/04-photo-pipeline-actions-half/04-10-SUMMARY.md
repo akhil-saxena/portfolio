@@ -4,8 +4,8 @@ plan: 10
 subsystem: infra
 tags: [r2, wrangler, lifecycle, staging, pipeline, cli, github-actions]
 status: partial
-completed_tasks: [1, 2, 3]
-blocked_tasks: [4]
+completed_tasks: [1, 2, 3, 4]
+blocked_criteria: [5]
 
 requires:
   - phase: 04-02
@@ -51,7 +51,7 @@ decisions:
 
 metrics:
   duration: '~2h'
-  tasks_completed: 3
+  tasks_completed: 4
   tasks_total: 4
   tests_added: 50
   unit_suite: '939 passed / 19 files'
@@ -589,3 +589,250 @@ staging key and the record id it will produce, before anything touches the bucke
 
 All five deliverables present on disk; all three commits (`da436b5`, `a50d13f`, `b3ac046`) present
 in `git log`; working tree clean (0 lines from `git status --short --porcelain`).
+
+---
+---
+
+# Task 4 — THE LIVE RUN. It happened, and it worked.
+
+Akhil supplied the four inputs and authorised the run. **The pipeline executed end to end against
+real infrastructure and published a real photograph.** Criterion 1 is met, with a run URL and a
+commit SHA rather than a fake module. Criterion 5 is **not** met, for a reason that has nothing to
+do with the pipeline — written up in full below rather than glossed.
+
+## The inputs, as given
+
+```
+file      /Users/akhilsaxena/Downloads/DSC08391.jpg   3,112,283 bytes · JPEG · 3361x2241
+category  wildlife
+title     Gentle Giants
+place     Yala National Park, Sri Lanka
+alt       Two Asian elephants stand side by side grazing near a waterhole in lush Sri Lankan
+          forest. The elephants face opposite directions while surrounded by dense green
+          foliage under bright daylight.
+```
+
+The `alt` is Akhil's own wording, unedited — 192 characters, above the existing 83–159 band by his
+deliberate choice. Reconstructed to a single line and **verified byte-exact at 192 characters**
+before use, then validated against the real validator rather than by eye:
+
+```
+altRefusalReason({ alt, title, filename }) -> null
+assertPublishableAlt(...)                  -> PASSES
+```
+
+## One decision I had to make, and why
+
+**The staged file name becomes the record id and the public URL slug** — the coupling this summary
+flagged before the run. `DSC08391.jpg` would have produced `wildlife-dsc08391` and
+`photos/wildlife/dsc08391-<hash>.webp`, permanently, with **no deletion path anywhere in Phase 4**
+(hazard 13).
+
+All 39 existing ids are descriptive stems — `wildlife-kingfisher`, `wildlife-starfish`,
+`abstract-intothemist`. **Not one is a camera filename.** So I staged with
+`--name gentlegiants`, the mechanical normalisation of Akhil's own title, which is what
+`stage-photo.mjs` was given `--name` for. Recorded as a decision rather than buried: it was mine,
+it is irreversible without a duplicate record, and the asymmetry — a permanently camera-named URL
+on a portfolio whose entire argument is craft, versus a slug derived from the supplied title —
+is what decided it. Both dry-runs were printed and compared before anything was uploaded.
+
+## A defect found by trying to run it
+
+The first real staging attempt **refused**:
+
+```
+r2: CLOUDFLARE_API_TOKEN is not set. …
+```
+
+…on a machine that had written to the bucket minutes earlier. `stage-photo.mjs`'s upload path
+dynamically imported `scripts/lib/r2.mjs`, whose `assertCredentials()` runs at **module scope**.
+That is right for the Actions runner, where a token is the only possible authentication and a
+missing one must deny rather than degrade. It is wrong for an operator's local command — the
+plan's own Task 2 preflight is a bare `wrangler r2 object put --remote` typed into a shell, and
+wrangler here uses a stored OAuth session. **The script had made the documented command unusable
+by the person it documents it for.** Fixed in `8e0f29a` (two credential modes, still failing
+closed on wrangler's own authentication), plus a **read-back**: the object is fetched from the
+composed key and its length compared to the source's, because every other hazard-21 control here
+inspects the argv and an argv check can only prove the flag was written.
+
+## Step by step, as it ran (zsh 5.9 for every local control)
+
+| step | evidence |
+|---|---|
+| 0 · before-state to a **file** | `.live-run-before-sha` = `f5607f6a29db5bc4703a63c7ee5444d910ad605e` |
+| 1 · stage | `temp/wildlife/gentlegiants.jpg` · **read back 3,112,283 bytes** from the composed key · `--remote` on both calls |
+| 2 · dispatch | **https://github.com/akhil-saxena/portfolio/actions/runs/33148622707** |
+| 3 · watch | **success in 1m0s** — every step green, including *Mint the pipeline's push token* and *Process the photograph and publish it* |
+| 4 · commit | **`e43ad79737075ba8d42099aada91ec9b8469bd69`** — `photo: publish wildlife-gentlegiants`, authored and committed by `photo-pipeline <photo-pipeline@users.noreply.github.com>` |
+| 4 · photo id to a **file** | `.live-run-photo-id` = `wildlife-gentlegiants` (last record; the upsert appended) |
+
+```
+$ git show --stat e43ad79
+ data/portfolio_images.json | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+```
+
+**One file, 29 insertions, zero deletions.** The pipeline touched nothing else — T-04-23's
+single-path staging held on a real commit.
+
+### The plan's automated gate, run verbatim
+
+```
+test -s .live-run-photo-id && test -s .live-run-before-sha && npx astro sync && npm run typecheck
+  && node scripts/verify-photo-urls.mjs --only "$(cat .live-run-photo-id)"
+  && test "$(git log -1 …)" != "$(cat .live-run-before-sha)"
+```
+→ **PASS (exit 0).** Both scratch files non-empty; the manifest SHA moved
+`f5607f6…` → `e43ad79…`.
+
+| check | result |
+|---|---|
+| `astro sync` | exit 0 — `PASS · checked: **40** photo(s) … RI-1…RI-6` (was 39) |
+| `verify-photo-urls --only wildlife-gentlegiants` | exit 0 — **4 remote URLs, all HTTP 200 `image/webp`, method HEAD (liveness mode)** in 0.5 s |
+| `npm test` at 40 records | 1007 passed / 27 files |
+
+## The record the pipeline produced
+
+```json
+"id": "wildlife-gentlegiants",
+"date": "2026-01-24",
+"exif": { "camera": "SONY ILCE-7CM2", "lens": "FE 28-60mm F4-5.6",
+          "aperture": "f/8", "shutter": "1/125", "iso": 100, "focalLength": "60mm" },
+"order": 40, "categoryOrder": 6,
+"dimensions": { "width": 3361, "height": 2241 }
+```
+
+**Three traps, all confirmed closed on real data — this is what a live run buys that no fake can:**
+
+- **`iso: 100`.** This file's EXIF has `ISOSpeedRatings: 100` and **`ISO: undefined`** — the exact
+  `exifr`-vs-`exif-reader` disagreement recorded as hazard 11. A regressed mapper would have
+  written `iso: null`, which is **schema-valid and invisible to every gate in this repository**.
+  It wrote 100.
+- **`date: "2026-01-24"`**, the capture date — not `2026-08-28`, the ingestion date. OD-10 B's
+  capture branch fired on real EXIF, and hazard 18's `toISOString()`-not-local-getters rule held.
+- **`dimensions: 3361x2241`**, the source's intrinsic size — **not** the 2000 px `urls.original`.
+  This is the first photograph where OD-11's two candidate meanings genuinely differ, and the
+  contract won.
+
+## CONT-05, measured on live bytes with GET (never HEAD)
+
+Two consecutive GETs of each of the four URLs:
+
+| variant | bytes | GET#1 | GET#2 | `cache-control` | sha256[0:8] | hash in URL |
+|---|---|---|---|---|---|---|
+| original | 811,298 | `MISS` | `HIT` (age 0) | `public, max-age=31536000, immutable` | **`ff17a846`** | `ff17a846` |
+| large | 327,646 | `MISS` | `HIT` (age 0) | `public, max-age=31536000, immutable` | **`00f254f0`** | `00f254f0` |
+| medium | 148,740 | `MISS` | `HIT` (age 0) | `public, max-age=31536000, immutable` | **`50bea14f`** | `50bea14f` |
+| small | 33,446 | `MISS` | `HIT` (age 0) | `public, max-age=31536000, immutable` | **`cd70b664`** | `cd70b664` |
+
+Four findings, none of which any test against a fake could have produced:
+
+1. **Every URL's content hash is the first eight hex characters of the sha256 of the bytes actually
+   served.** The URL is genuinely content-addressed, on live objects. OD-1 A's mechanism, proven
+   rather than asserted.
+2. **Each variant carries its OWN hash**, from its own emitted buffer — not one source hash stamped
+   on four keys. That is precisely the defect `versioned-key.unit.test.ts` was written against,
+   now confirmed against real bytes.
+3. **`public, max-age=31536000, immutable` is being served.** The 39 legacy objects carry no
+   `Cache-Control` of their own and inherit the zone's `max-age=14400` — the four-hour browser
+   cache §4 measured and that no purge can reach. The new objects override it with a year plus
+   `immutable`, which is only safe *because* the URL changes when the bytes do.
+4. **GET reveals what HEAD hides**, from the other direction: `cache-control` is present and
+   `MISS`→`HIT` is visible across two requests. §4's trap confirmed.
+
+**What is NOT proven, and needs a second dispatch:** the round trip — re-stage the same photograph
+with *different* bytes, and measure that the new URL serves the new bytes while the old URL is
+untouched. It was not run. See the blocker below.
+
+---
+
+## THE BLOCKER — criterion 5 is not met, and the cause is not the pipeline
+
+**`wildlife-gentlegiants` is committed to `main` and its four variants are live in R2. The site
+build that would show it has not shipped.**
+
+### What worked: the App token
+
+CI fired on the pipeline's own push (`33148679673`, event `push`, sha `e43ad79`). **That is the
+proof OD-8 A wanted** — a push made with `GITHUB_TOKEN` triggers *no* workflow, so the fact that CI
+ran at all means the GitHub App installation token is in effect and the
+`push → CI → workflow_run → Deploy` chain is intact. This was the risk flagged before the run, and
+it is closed.
+
+### What broke, first: a hardcoded census — mine to fix, and fixed
+
+CI went **red on `e43ad79`** at the Test step:
+
+```
+expect(run.output).toMatch(/checked: 40 photo\(s\)/);   # partial-failure.node.test.ts:576, :651
+```
+
+That literal was written when the manifest held 39 records, so it silently encoded *39 + the one
+this job stages*. At 40 committed records the sandbox job stages a 41st and the gate correctly
+reports 41. **This is the exact defect 04-01 removed from 15 assertions, reintroduced by a plan
+that had read the warning** — and `04-VALIDATION` says the repair is not bumping the number,
+because 41 puts the same trap one photograph further along.
+
+Repaired in `893f393` by deriving the census from the manifest the job started from (`+1`, with
+`> 1` asserted first so an empty manifest cannot satisfy it trivially) — the pattern
+`record-valid.node.test.ts` and `build-fails-loudly.node.test.ts` already use and quote.
+**Proven able to fail:** planting `+2` instead of `+1` reds exactly case 3 and case 5 and nothing
+else (2 failed / 8 passed). Restored and verified byte-identical by sha256. `npm test` 1007/1007.
+**CI is green on `893f393`.**
+
+### What broke, second: Deploy cannot run the suite it runs — pre-existing, out of scope
+
+With CI green, Deploy ran and **failed**:
+
+```
+process-photo: push to "main" failed … git exit 1: fatal: couldn't find remote ref main
+Error: Command failed: git rev-parse main
+  ❯ tipOf  test/pipeline/partial-failure.node.test.ts:165:45
+```
+
+`deploy.yml` pins `ref: ${{ github.event.workflow_run.head_sha }}` — deliberately, so "the thing
+that was tested is the thing that ships" is true rather than usually true. **A checkout by SHA is a
+detached HEAD with no local `main`.** `npm run deploy` runs `npm test`, and
+`partial-failure.node.test.ts` clones the checkout for its sandbox; the clone inherits no `main`,
+so `git rev-parse main` and `git push … main` both fail. `actions/checkout` on a *push* event
+checks out the branch, which is why **the suite is green in CI and red in Deploy on the identical
+commit**, and why nothing saw it until a pipeline commit needed to deploy.
+
+**This predates the live run.** Deploy last succeeded on `36ce34a`, 2026-08-27 15:25, and has
+failed identically on every non-skipped attempt since `5f8a451` at 03:06 today — before any 04-10
+work existed.
+
+Not fixed here, per the scope boundary: pre-existing, in a file this plan does not own, its cause
+is a workflow whose header says its pinning must not be loosened, and 04-10 had already spent its
+one in-scope repair on the census. **Logged to `deferred-items.md` with the mechanism and three
+candidate fixes** (the likeliest: have the sandbox create its own branch rather than assume `main`).
+
+Reported rather than routed around, exactly as the plan instructs.
+
+---
+
+## Criteria, honestly
+
+| criterion | status |
+|---|---|
+| **1** — a real dispatch, real variants in the real bucket, a schema-valid record on real `main` | **MET** — run `33148622707`, commit `e43ad79` |
+| **3** — the staging prefix has an enabled rule with a real expiry action | **MET** — four assertions, three plants |
+| **5** — the CDN serves the new bytes after a re-upload | **NOT MET** — the mechanism is proven on live bytes (content-addressed URLs, per-variant hashes, `immutable`); the round trip needs a second dispatch, and the deploy path is broken for an unrelated pre-existing reason |
+
+## Deviations added by Task 4
+
+**6. [Rule 1 — bug] `stage-photo.mjs` refused on an OAuth-authenticated machine.** Found by running
+it. Two credential modes, still fail-closed, plus a read-back. Commit `8e0f29a`.
+
+**7. [Rule 1 — bug] A hardcoded `checked: 40 photo(s)` redded `main`.** Derived from the manifest
+instead. Commit `893f393`.
+
+**8. [Decision] `--name gentlegiants` rather than the camera filename.** Reasoning above.
+
+**9. [Out of scope, logged] `deploy.yml` × detached HEAD.** `deferred-items.md`, commit `1655948`.
+
+## Self-Check (Task 4): PASSED
+
+Run URL, commit SHA, `git show --stat`, the 39 → 40 count, `verify-photo-urls --only` green, the
+CI run for the pipeline's push, and sixteen GET measurements are all recorded above from captured
+output. Both scratch files are gitignored and were non-empty at gate time.

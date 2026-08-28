@@ -27,3 +27,30 @@ plan that owns it.
   the new field named as the exception, in the same shape the existing `except the OD-6 field`
   clause uses. Deleting the assertions would delete the proof.
 - **Status: RED on `main` right now.** It must be resolved before the phase closes.
+
+---
+
+## `npm run check` has three pre-existing findings, none of them 05-05's
+
+- **Found by:** 05-05, during Task 1's verification run (2026-08-28).
+- **Owner:** unassigned — they predate this plan and belong to whoever owns those files.
+- **Measured:** every one of these files is byte-identical to `HEAD` in 05-05's working tree
+  (`git diff --quiet HEAD -- <file>` exits 0 for all three), so the findings exist on `main`
+  independently of anything this plan did.
+
+  ```
+  scripts/lib/r2.mjs:469:9                      lint/style/useTemplate            FIXABLE
+  scripts/assert-ds-import-contract.mjs:566:5   lint/correctness/noUnusedVariables FIXABLE
+  test/pipeline/workflow-contract.unit.test.ts  lint/suspicious/noTemplateCurlyInString ×5
+                                                (lines 672, 673, 674, 684, 685)
+  ```
+
+- **Why 05-05 did not fix them:** `npm run check` is not in `npm run build`, so none of these
+  blocks the phase today — but 05-01's SUMMARY records `npm run check` at **exit 0**, which means
+  all three arrived between 05-01 and wave 2. The five `noTemplateCurlyInString` findings are
+  almost certainly intentional (a workflow-contract test asserting on literal `${{ }}` GitHub
+  Actions expressions) and want a scoped biome ignore with a reason, not an autofix. The two
+  FIXABLE ones are one `biome check --write` away.
+- **Why not just run the autofix:** four plans shared this index during wave 2. `biome check
+  --write` on files another plan is mid-edit is the 04-06 index-sweep failure with a different
+  tool. 05-05 formatted only its own five files, by explicit path.

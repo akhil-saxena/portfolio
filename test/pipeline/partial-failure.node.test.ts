@@ -279,6 +279,25 @@ function makeSandbox(): Sandbox {
   // NEVER a cp -r: hazard 3. Two clones, so `work`'s origin is the throwaway bare repository and
   // never this repository — a pushing bug must not be able to reach the real `main`.
   git(root, ['clone', '--bare', '--no-hardlinks', REPO_ROOT, origin]);
+
+  // CONSTRUCT `BRANCH` IN THE SANDBOX RATHER THAN INHERITING IT.
+  //
+  // `clone --bare` copies whatever refs REPO_ROOT happens to have. In CI the checkout is on a
+  // branch, so `main` comes along and everything below works. In the DEPLOY job it does not:
+  // `deploy.yml` pins `ref: ${{ github.event.workflow_run.head_sha }}`, which is a DETACHED HEAD
+  // with no local branch — so the bare clone has no `refs/heads/main`, and every `rev-parse main`
+  // in this file dies with `ambiguous argument 'main'`.
+  //
+  // Measured, and this is why it looked like a flake: the SAME commit is green in CI and red in
+  // Deploy, and Deploy has failed identically since 5f8a451 at 03:06 — before any 04-10 work
+  // existed. Nothing about the pipeline was wrong; the fixture was reading the ambient checkout's
+  // branch state as if it were its own.
+  //
+  // A fixture constructs its own refs. Point BRANCH at whatever HEAD was cloned and make it the
+  // default, so the second clone checks it out regardless of how the outer repo is checked out.
+  git(origin, ['branch', '--force', BRANCH, 'HEAD']);
+  git(origin, ['symbolic-ref', 'HEAD', `refs/heads/${BRANCH}`]);
+
   git(root, ['clone', '--no-hardlinks', origin, work]);
 
   const remote = git(work, ['remote', 'get-url', 'origin']);

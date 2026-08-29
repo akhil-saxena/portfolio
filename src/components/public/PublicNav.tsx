@@ -74,6 +74,58 @@ export const NAV_ITEMS: ReadonlyArray<{ readonly href: string; readonly label: s
 /** The id the inline theme script binds its click listener to (`PublicLayout.astro`). */
 export const THEME_TOGGLE_ID = 'pub-theme-toggle';
 
+/**
+ * The one route that carries NO wordmark in the bar. 05-16, and it is a design decision with a
+ * source and a measurement rather than a tidy-up.
+ *
+ * ================================================================================================
+ * THE HANDOFF SUPPRESSES THE WORDMARK ON HOME AND ONLY ON HOME — MEASURED, NOT INFERRED
+ * ================================================================================================
+ *
+ *     design_handoff_portfolio/Work.dc.html:24    <a href="…Home…">akhil saxena</a>   present
+ *     design_handoff_portfolio/Photos.dc.html:24  <a href="…Home…">akhil saxena</a>   present
+ *     design_handoff_portfolio/Akhil Saxena - Home.dc.html:24                          ABSENT
+ *
+ * On Home the bar carries `work` and `photographs` and nothing else. That is consistent across
+ * three files rather than an omission in one, and the reason is visible in any capture: Home's
+ * `<h1>` is the SAME STRING at 60px, one hundred pixels below the bar. The wordmark is a way home
+ * from everywhere else; on the page it points at, it is the site's name printed twice in one
+ * viewport, and the smaller of the two is a link to where the reader already is.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * AND IT HAS A MEASURED COST, WHICH IS WHAT MOVED THIS FROM PREFERENCE TO DECISION
+ * ------------------------------------------------------------------------------------------------
+ *
+ * MEASURED in Chromium on the built artefact, four widths x both pointers:
+ *
+ *     344 fine   bar 67px   --ds-appbar-h 57px   logo 63x42   anchors on 2 ROWS
+ *     390 fine   bar 67px   --ds-appbar-h 57px   logo 61x42   anchors on 2 ROWS
+ *     673 fine   bar 57px   --ds-appbar-h 57px   logo 92x21   anchors on 1 row
+ *    1440 fine   bar 57px   --ds-appbar-h 57px   logo 92x21   anchors on 1 row
+ *
+ * The wordmark is the element that wraps: 92px of label into a 63px box, two lines, and the bar
+ * paints 10px taller than the property that exists to tell a full-viewport section how much to
+ * subtract. That is the one case `--ds-appbar-h`'s own docstring says it cannot promise ("squeeze
+ * the row until it wraps and the bar will be taller than the property says"), and it is why
+ * `home.css` §1's `--hm-bar-allowance` over-estimates by 15px at ten of twelve cells.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * WHAT IS *NOT* CHANGED: THE THIRD NAV LINK STAYS. THE HANDOFF SHIPS TWO AND WE SHIP THREE.
+ * ------------------------------------------------------------------------------------------------
+ *
+ * The handoff's bar is `work` + `photographs` on all three pages; the résumé is reached from Act
+ * 2's `RÉSUMÉ →` strip. Its README says so explicitly — *"No résumé button on home hero; résumé
+ * linked from Act-2 strip"* — and that sentence is about the HERO and is already satisfied: there
+ * is no résumé control in Act 1, and `RÉSUMÉ →` is exactly where it says.
+ *
+ * The nav is a separate question and it was answered LATER, by Akhil, as OQ-6b: three items, not
+ * two, "because a recruiter should not have to scroll Home to find the résumé". A recorded owner
+ * decision that postdates the design source and answers the same question wins over it. The nav
+ * is also site-wide — 52 documents — and 05-16's scope is Home. So the divergence is reported and
+ * kept, not silently reconciled in either direction.
+ */
+const WORDMARK_SUPPRESSED_ON = '/';
+
 export interface PublicNavProps {
   /** The site name, from `data/home_config.json`. Never typed here — see the layout. */
   siteTitle: string;
@@ -94,12 +146,31 @@ function isCurrent(pathname: string, href: string): boolean {
 }
 
 export function PublicNav({ siteTitle, pathname }: PublicNavProps) {
+  const showWordmark = pathname !== WORDMARK_SUPPRESSED_ON;
+
   return (
     <AppBar
+      /*
+       * `false`, NOT `undefined` — and the difference is a design-system finding, filed as D-23.
+       *
+       * MEASURED, `chunk-Q7KBVLX4.js:77`: `const logoNode = logo ?? <DefaultLogo />`. Nullish
+       * coalescing, so OMITTING the prop does not mean "no wordmark" — it means "render the design
+       * system's own ink box captioned DS", on the consumer's primary route. There is no
+       * `logo={null}` path either, for the same reason.
+       *
+       * `false` is a member of `ReactNode`, is not nullish, and React renders nothing for it, so
+       * this is the one spelling inside the component's declared contract that produces an empty
+       * lead. It is a gap in the API rather than a workaround around it — `AppBar` should take a
+       * surface with no wordmark as a first-class case — and it is filed rather than absorbed (D-23).
+       */
       logo={
-        <Link href="/" variant="default" className="pub-logo">
-          {siteTitle}
-        </Link>
+        showWordmark ? (
+          <Link href="/" variant="default" className="pub-logo">
+            {siteTitle}
+          </Link>
+        ) : (
+          false
+        )
       }
       nav={NAV_ITEMS.map((item) => (
         <Link

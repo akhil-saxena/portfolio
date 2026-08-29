@@ -354,10 +354,19 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
      * so an `class="hm-intro"` equality would have matched nothing and this test would have failed
      * on correct code. `\b…\b` around the class, so the inline `<style>` block's own `hm-intro{…}`
      * cannot satisfy it either.
+     *
+     * 🔴 THE SUBTITLE'S SLICE WAS `class="hm-subtitle"` — AN EQUALITY — AND 05-16 HAD TO WIDEN IT.
+     * That is a change to the SLICE and not to the ASSERTION, and the distinction is the whole
+     * point of this file: the string is still compared with `toBe` against the record. The subtitle
+     * used to be a hand-written `<p>`, which is why an equality worked; it is now a design-system
+     * `Text` — the Core Value, on the one Act-1 line that was still bypassing the design system —
+     * and `Text` prepends `ds-atom-text` to every `className` it is given. Left as an equality this
+     * test would have failed on correct code, exactly as it would have for the intro. It is now the
+     * same shape as the intro's, which is the shape a `className`-concatenating component needs.
      */
     const fields: ReadonlyArray<[string, string, RegExp]> = [
       ['title', home.title, /<h1[^>]*data-home-marker="[^"]*"[^>]*>([\s\S]*?)<\/h1>/],
-      ['subtitle', home.subtitle, /<p class="hm-subtitle"[^>]*>([\s\S]*?)<\/p>/],
+      ['subtitle', home.subtitle, /<p[^>]*class="[^"]*\bhm-subtitle\b[^"]*"[^>]*>([\s\S]*?)<\/p>/],
       ['intro', home.intro, /<p[^>]*class="[^"]*\bhm-intro\b[^"]*"[^>]*>([\s\S]*?)<\/p>/],
     ];
 
@@ -375,12 +384,49 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
     );
   });
 
-  it('renders the site title in the AppBar logo, from the same record', async () => {
+  /*
+   * ══ THE WORDMARK — ABSENT ON HOME, PRESENT EVERYWHERE ELSE, AND BOTH HALVES ARE PINNED ═══════
+   *
+   * This test used to assert the logo on `/` alone. 05-16 suppressed the wordmark on Home and only
+   * on Home, and both halves of that decision are now asserted, because an absence nobody checks
+   * is indistinguishable from a regression:
+   *
+   *   - the DESIGN SOURCE. `Work.dc.html:24` and `Photos.dc.html:24` both carry
+   *     `<a href="…Home…">akhil saxena</a>`; `Akhil Saxena - Home.dc.html` carries none. Three
+   *     files, consistent, and the reason is that Home's `<h1>` IS the wordmark at 60px.
+   *   - the MEASUREMENT. At 344 and 390 on a fine pointer the wordmark wraps to two lines and the
+   *     bar paints 67px against `--ds-appbar-h`'s declared 57 — the one case the design system's
+   *     own docstring says the property cannot promise.
+   *
+   * `/work` is the positive half, and it is what keeps this from being a test that passes because
+   * the wordmark was deleted site-wide. `PublicNav.tsx` records the full reasoning.
+   */
+  it('renders NO wordmark on Home — the <h1> is the wordmark there (05-16)', async () => {
     const page = await load('/');
     const bar =
       navMarkup || (page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/) ?? [''])[0];
+    expect(bar, 'no .ds-atom-appbar in the served document').toBeTruthy();
+    expect(
+      (bar as string).match(/\bpub-logo\b/),
+      'Home ships a wordmark in the bar; the design handoff suppresses it on this route alone'
+    ).toBeNull();
+
+    // ANTI-VACUITY, and it is the half that matters: an AppBar rendered with NO `logo` prop falls
+    // back to the design system's own ink box captioned "DS" (`logo ?? <DefaultLogo />`), which
+    // would satisfy the absence above while shipping someone else's placeholder on the site's
+    // primary route. See D-23.
+    expect((bar as string).includes('>DS<'), 'the DefaultLogo placeholder shipped').toBe(false);
+  });
+
+  it('renders the site title in the AppBar logo on every other route, from the same record', async () => {
+    const page = await load('/work');
+    const bar = (page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/) ?? [''])[0];
     const logo = (bar as string).match(/<a[^>]*class="[^"]*pub-logo[^"]*"[^>]*>([\s\S]*?)<\/a>/);
-    expect(logo, 'no .pub-logo anchor in the served AppBar').not.toBeNull();
+    expect(logo, 'no .pub-logo anchor in /work’s served AppBar').not.toBeNull();
     expect(text((logo as RegExpMatchArray)[1] as string)).toBe(home.title);
+    expect(
+      /href="\/"/.test((logo as RegExpMatchArray)[0] as string),
+      'the wordmark points home'
+    ).toBe(true);
   });
 });

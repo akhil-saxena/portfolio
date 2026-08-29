@@ -391,33 +391,61 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
     expect(css.length).toBeGreaterThan(0);
     expect(css).toContain('.ph-masonry');
 
-    const minima = new Set<number>();
-    let depth = 0;
-    const stack: string[] = [];
-    let buffer = '';
-    for (const character of css) {
-      if (character === '{') {
-        stack[depth] = buffer.trim();
-        depth++;
-        buffer = '';
-        continue;
-      }
-      if (character === '}') {
-        depth = Math.max(0, depth - 1);
-        buffer = '';
-        continue;
-      }
-      if (character === ';') {
-        buffer = '';
-        continue;
-      }
-      buffer += character;
-      if (buffer.includes('.ph-masonry')) {
-        // The selector currently being read; its enclosing at-rules are everything below it.
-        for (const prelude of stack.slice(0, depth)) {
-          const match = /(?:min-width\s*:\s*|width\s*>=\s*)(\d+)px/.exec(prelude);
-          if (match) minima.add(Number(match[1]));
+    /*
+     * A brace walker that yields every declaration with the AT-RULE PRELUDES enclosing it. It
+     * carries its own canaries, checked on every run: a rule that cannot fire is not a rule, and
+     * this file's FIRST attempt at the rail assertion below could not fire — see its comment.
+     */
+    type Decl = { selector: string; atRules: string[]; prop: string; value: string };
+    function declarations(sheet: string): Decl[] {
+      const found: Decl[] = [];
+      const stack: string[] = [];
+      let buffer = '';
+      for (const character of sheet) {
+        if (character === '{') {
+          stack.push(buffer.trim());
+          buffer = '';
+          continue;
         }
+        if (character === '}' || character === ';') {
+          const text = buffer.trim();
+          buffer = '';
+          const top = stack[stack.length - 1];
+          if (text && top && !top.startsWith('@')) {
+            const colon = text.indexOf(':');
+            if (colon > 0) {
+              found.push({
+                selector: top,
+                atRules: stack.filter((prelude) => prelude.startsWith('@')),
+                prop: text.slice(0, colon).trim(),
+                value: text.slice(colon + 1).trim(),
+              });
+            }
+          }
+          if (character === '}') stack.pop();
+          continue;
+        }
+        buffer += character;
+      }
+      return found;
+    }
+
+    const canary = declarations('@media (width>=1px){.a{b:1}}.c{d:2}');
+    expect(canary).toHaveLength(2);
+    expect(canary[0].atRules).toHaveLength(1);
+    expect(canary[1].atRules).toHaveLength(0);
+    expect(canary[0].selector).toBe('.a');
+
+    const decls = declarations(css);
+    expect(decls.length).toBeGreaterThan(100);
+
+    const masonry = decls.filter((d) => d.selector.includes('.ph-masonry'));
+    expect(masonry.length).toBeGreaterThan(0);
+    const minima = new Set<number>();
+    for (const decl of masonry) {
+      for (const prelude of decl.atRules) {
+        const match = /(?:min-width\s*:\s*|width\s*>=\s*)(\d+)px/.exec(prelude);
+        if (match) minima.add(Number(match[1]));
       }
     }
 
@@ -432,5 +460,34 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
     // The two rungs that actually change the column count.
     expect(minima.has(BREAKPOINTS[0])).toBe(true);
     expect(minima.has(BREAKPOINTS[1])).toBe(true);
+
+    /*
+     * THE RAIL IS NOT WIDTH-SCOPED, AND THIS ASSERTION EXISTS BECAUSE THE SCOPED VERSION SHIPPED.
+     *
+     * §8.3 puts `overflow-x: auto` inside `@media (max-width: 672px)`. MEASURED in Chromium against
+     * that build: at 673, 700 and 800px the eight pills need ~873px, the rail rule was off, and
+     * `document.documentElement.scrollWidth` read 873 against a 673px viewport — 200px of
+     * horizontal scroll on three device classes and all eight routes, with nothing else wrong.
+     *
+     * 🔴 THE FIRST VERSION OF THIS ASSERTION COULD NOT FAIL, and the control caught it. It took the
+     * FIRST `.ph-filters{` in the sheet and checked its brace depth — and with `max-width: 100%`
+     * still unconditional, that first block is at depth 0 whatever the rail is scoped to. Planted
+     * against a deliberately re-scoped stylesheet it reported "depth 0" and passed. This version
+     * asks the question that was meant: is the `overflow-x` DECLARATION ON `.ph-filters` inside any
+     * at-rule at all.
+     */
+    const railOverflow = decls.filter(
+      (d) => d.selector.includes('.ph-filters') && d.prop === 'overflow-x'
+    );
+    report(
+      `.ph-filters overflow-x declarations: ${railOverflow
+        .map((d) => `${d.value} under [${d.atRules.join(' ') || 'no at-rule'}]`)
+        .join('; ')}`
+    );
+    expect(railOverflow.length).toBeGreaterThan(0);
+    for (const decl of railOverflow) {
+      expect(decl.value).toBe('auto');
+      expect(decl.atRules).toHaveLength(0);
+    }
   });
 });

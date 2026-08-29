@@ -18,8 +18,13 @@
  * execute against the public site at build time, when there is no Access JWT and no
  * request to have one — turning the homepage into a 401 baked into static HTML, or failing
  * the build outright. `test/auth/deny-unauthenticated.node.test.ts` catches it
- * behaviourally (`GET /` must be 200 and contain `stack-proof-ok`), and a passing
+ * behaviourally (`GET /` must be 200 and contain `home-render-ok`), and a passing
  * `astro build` is the other half of that evidence. (threat T-02-35)
+ *
+ * That marker was `stack-proof-ok` until plan 05-11 replaced the Phase 2 scaffold with the
+ * real Home. It is now the `data-home-marker` attribute on Home's `<h1>`, defined in
+ * `src/pages/index.astro`; the contract it stands for — a prerendered public route reaching
+ * the reader intact — is unchanged, and both suites moved in the same commit as the deletion.
  *
  * ## Why the prefix list is a copy of `run_worker_first`
  *

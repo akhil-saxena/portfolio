@@ -1,0 +1,159 @@
+---
+/**
+ * The six-photograph peek grid — state A's gallery region. Plan 05-11, Task 1.
+ *
+ * ================================================================================================
+ * SIX RENDER AT EVERY CLASS. THE GRID REFLOWS; IT NEVER TRUNCATES.
+ * ================================================================================================
+ *
+ * `home_config.peekIds` is the source, and the count is DERIVED from it — never a literal. R-6:
+ * dropping to four on a narrow screen means two of the six photographs Akhil chose do not exist on
+ * that class, and there is no summary edition of a portfolio to fall back to. The arrangement
+ * ladder lives in `src/styles/home.css`; nothing here or there hides a tile.
+ *
+ * A grid at every class and never a horizontal rail — the reason is the vertical snap container
+ * this page has and `/photos` does not. See `home.css` §2.
+ *
+ * ================================================================================================
+ * `alt` IS THE PHOTOGRAPH'S OWN `alt`, NEVER ITS `title` — D-24-1, AND IT IS A PUBLIC DEFECT
+ * ================================================================================================
+ *
+ * `deferred-items.md` D-24-1 records the legacy `home.astro:154 alt={p.title}` as a defect on the
+ * site's primary route: six images announcing their NAME where their DESCRIPTION belongs, to
+ * exactly the readers who cannot see them. All 40 `alt` strings are committed and reviewed.
+ * `test/public/home.node.test.ts` asserts it in both directions — that every chosen photograph's
+ * `alt` is present, and that no image on the page uses a photograph's `title` as its `alt`.
+ *
+ * ================================================================================================
+ * WHY `sizesFor` IS NOT CALLED HERE, AND WHY THAT IS NOT A RE-DERIVATION
+ * ================================================================================================
+ *
+ * 05-05 exports `sizesFor(columns)` and wave 4 is told to import rather than re-derive. It is
+ * imported by `/photos`, and it is the WRONG function for this grid: it is built for the masonry's
+ * own column ladder (1 column at base, 2 at the first breakpoint, `columns` above) against
+ * `PAGE_MAX.photos` (1280). The peek grid is 2 columns at base, 3 from 673, against
+ * `PAGE_MAX.home` (1080). Calling it here would emit a `sizes` string that is silently wrong —
+ * the browser would download a different variant of all six photographs with no visual symptom and
+ * no error, which is the exact failure `sizesFor`'s own docstring refuses a bad column count over.
+ *
+ * So the arrangement differs and the SOURCE OF TRUTH does not: `peekSizes()` below is composed
+ * from the same `GUTTER_RUNGS`, `MASONRY_GAP` and `PAGE_MAX` that `sizesFor` composes, in the same
+ * descending, first-match-wins clause order. No breakpoint, gutter, gap or cap is typed here.
+ * `srcsetFor` IS imported unchanged — it is arrangement-independent.
+ *
+ * Recorded as a finding for whoever needs a third grid: `sizesFor` cannot be reused across
+ * arrangements, and the honest fix is to give it the ladder as a parameter rather than to copy it.
+ */
+import homeConfig from '../../../data/home_config.json';
+import manifest from '../../../data/portfolio_images.json';
+import { GUTTER_RUNGS, MASONRY_GAP, PAGE_MAX } from '../../lib/layout-ladder';
+import { srcsetFor } from '../../lib/photo-srcset';
+import { DEFAULT_FOCAL_POINT } from '../../schemas/photo';
+
+/**
+ * The peek arrangement, as data rather than as prose, so the `sizes` string and the stylesheet's
+ * media queries cannot disagree about it silently. `test/public/home.node.test.ts` asserts that
+ * every `minWidth` here is one of `BREAKPOINTS` and that `home.css` steps at the same rung.
+ */
+const PEEK_COLUMNS: ReadonlyArray<{ minWidth: number | null; columns: number }> = [
+  { minWidth: null, columns: 2 },
+  { minWidth: 673, columns: 3 },
+];
+
+/** The column count in force at a gutter rung. */
+function peekColumnsAt(width: number | null): number {
+  let inForce = PEEK_COLUMNS[0].columns;
+  for (const step of PEEK_COLUMNS) {
+    if (step.minWidth === null) continue;
+    if (width !== null && width >= step.minWidth) inForce = step.columns;
+  }
+  return inForce;
+}
+
+/**
+ * The `sizes` attribute for a peek tile. Descending by `min-width`, because a `sizes` list is
+ * first-match-wins, and every term is derived: the gutter from `GUTTER_RUNGS`, the inter-tile gap
+ * from `MASONRY_GAP`, the cap from `PAGE_MAX.home`.
+ */
+function peekSizes(): string {
+  const conditioned = GUTTER_RUNGS.filter((rung) => rung.minWidth !== null);
+  const pad = Math.max(...conditioned.map((rung) => String(rung.minWidth).length));
+  const descending = [...conditioned].reverse();
+  const widest = descending[0];
+
+  const clauses = descending.map((rung) => {
+    const cols = peekColumnsAt(rung.minWidth);
+    const content = rung === widest ? `min(100vw, ${PAGE_MAX.home}px)` : '100vw';
+    const gutterTerm = 2 * rung.px;
+    const gapTerm = (cols - 1) * MASONRY_GAP.px;
+    const condition = `(min-width:${String(rung.minWidth).padStart(pad)}px)`;
+    return `${condition} calc((${content} - ${gutterTerm}px - ${gapTerm}px) / ${cols})`;
+  });
+
+  const base = GUTTER_RUNGS.find((rung) => rung.minWidth === null);
+  if (!base) {
+    throw new Error(
+      'PeekGrid: GUTTER_RUNGS has no unconditioned base rung, so there is no fallback clause. A ' +
+        'viewport below the first breakpoint would get no match and the browser would fall back ' +
+        'to 100vw, which is wider than the gutters allow.'
+    );
+  }
+  const baseCols = peekColumnsAt(null);
+  clauses.push(
+    `calc((100vw - ${2 * base.px}px - ${(baseCols - 1) * MASONRY_GAP.px}px) / ${baseCols})`
+  );
+
+  return clauses.join(', ');
+}
+
+const SIZES = peekSizes();
+
+/**
+ * The chosen photographs, resolved against the manifest. An unknown id THROWS rather than being
+ * skipped: a silently-dropped peek id is five photographs where six were chosen, and the page
+ * still renders. The count is never compared to a literal — 05-UI-SPEC says 39 and the manifest is
+ * at 40, and a hardcoded count turned `main` red in Phase 4 the moment a real photograph landed.
+ */
+const peekPhotos = homeConfig.peekIds.map((id) => {
+  const photo = manifest.find((record) => record.id === id);
+  if (!photo) {
+    throw new Error(
+      `PeekGrid: home_config.peekIds names "${id}", which is not in data/portfolio_images.json. ` +
+        'Rendering the other five would put a portfolio on the site\'s primary route that is ' +
+        'missing a photograph its owner chose, with no error anywhere.'
+    );
+  }
+  return photo;
+});
+
+/** `home_config.peekPositions` overrides, defaulting to the schema's own constant (OD-5). */
+const positions = homeConfig.peekPositions as Record<string, string | undefined>;
+---
+
+{/* §6.6.4 — one of the three named landmarks. `aria-label` names the region; state A itself is a
+    plain <div>, so the page carries exactly three and not four. */}
+<section class="hm-peek" aria-label="Photographs">
+  <ul class="hm-peek-grid" data-peek-count={peekPhotos.length}>
+    {
+      peekPhotos.map((photo) => (
+        <li class="hm-peek-item">
+          <div
+            class="hm-tile"
+            style={`background-image: url("${photo.urls.thumb}")`}
+          >
+            <img
+              src={photo.urls.medium}
+              srcset={srcsetFor(photo)}
+              sizes={SIZES}
+              alt={photo.alt}
+              loading="eager"
+              decoding="async"
+              style={`object-position: ${positions[photo.id] ?? DEFAULT_FOCAL_POINT}`}
+            />
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+

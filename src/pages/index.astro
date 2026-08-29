@@ -1,58 +1,127 @@
 ---
-// No `prerender` export. Static is the default in Astro 7, and the Cloudflare adapter
-// does not change that — it only unlocks `export const prerender = false` on the routes
-// that need it. This page is built to HTML and served straight off the CDN.
-//
-// StackProof is imported and rendered with NO client:* directive. That is the whole
-// point of this route: it proves a React 19 component becomes static HTML.
-import { StackProof } from '../components/StackProof';
+/**
+ * Home — the two-act landing. PUB-01, PUB-13, SEO-01. Plan 05-11.
+ *
+ * This route replaces the Phase 2 scaffold, and with it `src/components/StackProof.tsx`.
+ *
+ * ================================================================================================
+ * THE MARKER. `stack-proof-ok` WAS A BEHAVIOURAL CONTRACT AND IT HAS BEEN MIGRATED, NOT REMOVED.
+ * ================================================================================================
+ *
+ * `GET /` returning a known marker is asserted by two suites and described in a third file:
+ *
+ *     test/harness/preview-reachable.node.test.ts   the built site is reachable over real workerd
+ *     test/auth/deny-unauthenticated.node.test.ts   the AUTH-01/AUTH-04 suite — the middleware did
+ *                                                   NOT run at build time and bake a 401 into the
+ *                                                   public site's static HTML (threat T-02-35)
+ *     src/middleware.ts                             states the contract in its own header
+ *
+ * The marker is now **`home-render-ok`**, carried by `data-home-marker` on this page's `<h1>`, and
+ * all three sites moved in the same commit as the deletion.
+ *
+ * It is on the `<h1>` on purpose, and the `<h1>` is a design-system `Heading` — a React 19
+ * component rendered with NO `client:*` directive. That preserves everything the old marker
+ * proved, in one assertion: the build ran, a React component became static HTML with no hydration
+ * script, the output was served by workerd, and the middleware let the prerendered route through.
+ * A marker on a hand-written element would have proved less.
+ *
+ * It is an ATTRIBUTE rather than the heading's text. The heading's text is
+ * `home_config.json`'s `title`, which is reviewed content an editor may legitimately change; an
+ * attribute in code cannot be edited out of the CMS by accident.
+ *
+ * ================================================================================================
+ * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 1)
+ * ================================================================================================
+ *
+ * No `client:*` directive appears on this page or in either component. Every design-system
+ * component below is server-rendered to static HTML. The two acts are `min-height`, DOM order and
+ * a real `<a href="#work">` — there is nothing to hydrate, which is also why there is nothing to
+ * trap a keyboard user in.
+ *
+ * ================================================================================================
+ * THE 60px NAME — AN UPSTREAM FINDING, TAKEN THE ONLY WAY THAT WORKS
+ * ================================================================================================
+ *
+ * §3.1: Playfair `--text-5xl` (60px) / 700 / `--lh-tight` (0.94) / `--ls-tighter`.
+ *
+ * MEASURED, `dist/components/Heading.d.ts`: `HeadingSizeToken` is `"2xs" … "4xl"` and STOPS at
+ * `4xl` (44px). The scale itself ships `--text-4xl-plus` (52) and `--text-5xl` (60) — both
+ * confirmed in `dist/tokens.css` — so the component's token union does not expose two steps its
+ * own type scale defines. Filed for `2.0.0-beta.2`.
+ *
+ * Consequence, and why the class path is not available: MEASURED in `chunk-DQHLFJNO.js`, the
+ * numeric `size` path inlines `fontSize`, `lineHeight: 1` and a size-derived `letterSpacing`,
+ * while the token path emits `data-size` and inlines nothing. `Heading` does concatenate
+ * `className` — but its DEFAULT size is the number 28, so a bare `<Heading className="hm-name">`
+ * inlines `font-size: 28px`, which no class rule can beat. Passing a token size instead would emit
+ * `data-size`, whose `.ds-atom-heading[data-size=…]` rule is (0,2,0) against a class's (0,1,0), so
+ * the class loses that way too.
+ *
+ * So the legacy numeric path is used: `size={60}` puts 60px inline and its own derivation lands on
+ * `var(--ls-tighter)` above 28px, which is exactly what §3.1 asks for. The one thing it gets wrong
+ * is `line-height: 1` where §3.1 wants `--lh-tight`, and `style` spreads LAST in the component, so
+ * the correction goes through the component's own prop rather than through a stylesheet that could
+ * not win. Both values are tokens; neither is a literal.
+ */
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Text } from '@akhil-saxena/design-system/components/Text';
+import homeConfig from '../../data/home_config.json';
+import PeekGrid from '../components/public/PeekGrid.astro';
+import Seo from '../components/public/Seo.astro';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import '../styles/home.css';
+
+/**
+ * §13.2, the copy contract's Home row, verbatim including the arrow. It is the page's only CTA in
+ * state A and the only focusable element there, which is what makes "one Tab and one Enter from
+ * the landing" true.
+ */
+const SCROLL_PROMPT = 'SCROLL FOR THE WORK ↓';
+
+/**
+ * The behavioural marker `GET /` must carry. See this file's header, and `src/middleware.ts`,
+ * which names the same string.
+ */
+const HOME_RENDER_MARKER = 'home-render-ok';
+
+const { title, subtitle, intro } = homeConfig;
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <!-- A real device-width viewport, not a desktop assumption. Phase 5 implements the
-         six-class responsive contract (344px folded cover screen through 1440px+
-         desktop); this placeholder's only obligation to it is to not require a
-         retrofit, so there are no fixed pixel widths and no media queries below. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>akhilsaxena.com — rebuild in progress</title>
-    <meta
-      name="description"
-      content="Portfolio rebuild in progress. Astro, React and Cloudflare Workers."
-    />
-  </head>
-  <body>
-    <main>
-      <h1>akhilsaxena.com</h1>
-      <p>
-        The site is being rebuilt from scratch on Astro with React islands, consuming its own
-        published design system. This page is the scaffold that proves the build works end to end;
-        the real Home arrives with the public pages.
-      </p>
-      <StackProof />
-    </main>
-  </body>
-</html>
+<PublicLayout mainClass="pub-max-home">
+  <Seo
+    slot="head"
+    title={`${title} — ${subtitle}`}
+    description={intro}
+    canonical="/"
+  />
 
-<style>
-  /* Layout only, and intentionally tiny. No design-system import in Phase 2 (public
-     pages are Phase 5's), no fixed widths, no media queries — `ch` and `rem` are
-     intrinsic units, so this reads correctly from a folded cover screen upward. */
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    line-height: 1.5;
-  }
+  {/*
+    State A is a plain <div>, not a <section>: an unnamed <section> is not exposed as a region, and
+    a named one here would make FOUR landmarks where §6.6.4 specifies three. The gallery inside it
+    carries `aria-label="Photographs"`.
 
-  main {
-    max-inline-size: 68ch;
-    margin-inline: auto;
-    padding: 2rem 1rem;
-  }
+    Nothing in either state is hidden from assistive technology. State A moving out of view is a
+    SCROLL POSITION — `display: none`, `visibility: hidden`, `aria-hidden` and `inert` are all
+    forbidden on both states, and a screen-reader user reads photographs → work → résumé linearly
+    and never encounters the two-state framing at all.
+  */}
+  <div class="hm-a">
+    <div class="hm-identity">
+      <Heading
+        level={1}
+        size={60}
+        weight={700}
+        style={{ lineHeight: 'var(--lh-tight)' }}
+        data-home-marker={HOME_RENDER_MARKER}
+      >
+        {title}
+      </Heading>
+      <p class="hm-subtitle">{subtitle}</p>
+      <Text className="hm-intro" size="base" tone="secondary">{intro}</Text>
+    </div>
 
-  dt {
-    font-weight: 600;
-  }
-</style>
+    <PeekGrid />
+
+    <a class="hm-prompt" href="#work">{SCROLL_PROMPT}</a>
+  </div>
+</PublicLayout>

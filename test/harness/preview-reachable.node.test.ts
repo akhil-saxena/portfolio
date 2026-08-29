@@ -26,11 +26,14 @@ describe('the built site is served over HTTP by real workerd', () => {
 
     expect(response.status).toBe(200);
 
-    // `stack-proof-ok` is rendered by src/components/StackProof.tsx, a React 19 component
-    // with no client directive. Finding it in the response body proves the whole chain in
-    // one assertion: the build ran, the component was rendered to static HTML, the output
-    // was served, and this process read it off a real socket.
+    // MARKER MIGRATION, plan 05-11. This assertion used to read `stack-proof-ok`, emitted
+    // by a scaffold component that the real Home replaced. The contract did not change and
+    // was not dropped: `home-render-ok` is the `data-home-marker` attribute on Home's <h1>,
+    // which is a design-system `Heading` — a React 19 component rendered with no client
+    // directive. So finding it still proves the whole chain in one assertion: the build ran,
+    // a React component was rendered to static HTML, the output was served, and this process
+    // read it off a real socket. The marker's definition is in src/pages/index.astro.
     const body = await response.text();
-    expect(body).toContain('stack-proof-ok');
+    expect(body).toContain('home-render-ok');
   });
 });

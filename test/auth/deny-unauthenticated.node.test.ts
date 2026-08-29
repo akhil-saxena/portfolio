@@ -125,14 +125,19 @@ describe('the middleware did not run at build time', () => {
   // The build-time trap, caught behaviourally. Astro middleware runs during `astro build`
   // for every prerendered page, so a guard not gated on `context.isPrerendered` would have
   // denied the public site AT BUILD TIME — this page would be a 401 body baked into static
-  // HTML, or the build would have failed outright. `stack-proof-ok` comes from a React 19
-  // component rendered with no client directive, so finding it proves the page was built
-  // and served intact. (threat T-02-35)
+  // HTML, or the build would have failed outright. (threat T-02-35)
+  //
+  // MARKER MIGRATION, plan 05-11. This read `stack-proof-ok` until the real Home replaced
+  // the scaffold that emitted it; the contract is unchanged and was moved in the same commit
+  // as the deletion. `home-render-ok` is the `data-home-marker` attribute on Home's <h1>,
+  // which is a design-system `Heading` rendered with no client directive — so finding it
+  // still proves a React 19 component became static HTML and the page was served intact.
+  // The marker's definition is in src/pages/index.astro.
   it('serves GET / with 200 and the static build marker', async () => {
     const response = await fetch(`${previewBaseUrl}/`);
 
     expect(response.status).toBe(200);
-    expect(await response.text()).toContain('stack-proof-ok');
+    expect(await response.text()).toContain('home-render-ok');
   });
 });
 

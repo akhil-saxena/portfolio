@@ -1,0 +1,257 @@
+/*
+ * Home — layout only, per QUAL-03. Plan 05-11.
+ *
+ * No colour, no type size, no font family, no spacing NUMBER: every value is a design-system
+ * token reached through `var(--…)`. The two exceptions are stated where they occur and each is a
+ * measurement rather than a style choice — the media-query BREAKPOINTS (a media query cannot
+ * contain a `var()`, so the rungs are literals here and are asserted against
+ * `src/lib/layout-ladder.ts` by `test/public/home.node.test.ts`), and the tile aspect ratios.
+ *
+ * ================================================================================================
+ * THIS FILE IS GLOBAL, SO §6.5's `:global()` IS NOT WRITTEN HERE — AND THAT IS DELIBERATE
+ * ================================================================================================
+ *
+ * §6.5 and the plan both warn about the Astro scoping trap: a page's `<style>` block is scoped
+ * with that file's own `data-astro-cid-*`, so a bare `#work { }` written inside `index.astro`
+ * cannot reach `HomeActTwo.astro`'s root element, `getComputedStyle(work).scrollSnapAlign` reads
+ * `none`, and the source looks correct. **That defect has appeared twice in this project.**
+ *
+ * The mechanism that closes it here is not `:global()` — it is that this is a plain `.css` file
+ * imported from `index.astro`'s frontmatter, exactly as `design-system.css` and `public-shell.css`
+ * are imported from the layout. An imported stylesheet is NOT scoped: no `data-astro-cid-*`
+ * attribute is added to its selectors, so `#work` reaches `HomeActTwo.astro`'s root from here.
+ *
+ * `:global()` MUST NOT be written in this file. It is Astro `<style>` syntax; in a plain
+ * stylesheet it is an unknown pseudo-class, which makes the whole selector invalid and drops the
+ * rule — the exact failure it was meant to prevent, arriving through the fix for it. The
+ * computed-style read the plan requires is recorded in this plan's SUMMARY.
+ *
+ * ================================================================================================
+ * THE STATE-A HEIGHT BUDGET — WHY IT IS NOT `flex: 1 0 auto` ALONE (a finding, see the SUMMARY)
+ * ================================================================================================
+ *
+ * `public-shell.css` §2 establishes a flex column and tells this plan the opt-in is one
+ * declaration, `.hm-a { flex: 1 0 auto }`. **On a one-section page that is right. On the two-act
+ * Home it cannot work, and the reason is arithmetic rather than a defect in the shell:**
+ *
+ *     .pub-shell { min-height: 100svh; display: flex; flex-direction: column }
+ *     .pub-main  { flex: 1 1 auto;     display: flex; flex-direction: column }
+ *
+ * Flexbox distributes FREE SPACE, and free space exists only while the container is taller than
+ * its content. `.pub-main`'s content is `.hm-a` plus `.hm-b`, and `.hm-b` is `min-height: 100svh`
+ * (required — see §5 below). So the shell's content is already taller than `100svh`, `min-height`
+ * is satisfied with nothing left over, `.pub-main`'s height is content-determined, and
+ * `flex-grow: 1` on `.hm-a` distributes zero. State A would be exactly as tall as its own content.
+ *
+ * `flex: 1 0 auto` is kept because its OTHER half is load-bearing and unaffected: `flex-shrink: 0`
+ * is what makes content taller than the budget overflow VISIBLY rather than being squeezed — the
+ * `min-height`-never-`height` property §6.2 names. The grow half is inert on this page.
+ *
+ * So the budget is an explicit `min-height`, and the chrome above state A is subtracted:
+ *
+ *   - `svh`, never `vh`, never `dvh`. `100vh` is the LARGE viewport, so at first paint on iOS
+ *     Safari and Android Chrome the scroll prompt — the one element whose entire job is to be
+ *     visible at first paint — is pushed below the fold. `dvh` changes DURING a scroll, moving a
+ *     transition's own target distance mid-gesture.
+ *   - `min-height`, never `height`. A visible overflow is a failure a screenshot catches; a clip
+ *     is one it hides.
+ *
+ * `--hm-above` is NOT `calc(var(--ds-appbar-h) + var(--space-11))`. 05-06 measured, in Chromium,
+ * that `--ds-appbar-h` is declared on `.ds-atom-appbar` and custom properties inherit to
+ * DESCENDANTS, not siblings — a section under `<main>` reads nothing, the `calc()` is invalid at
+ * computed-value time, and `min-height` silently falls back to `auto`. That finding is NOT closed
+ * upstream, whatever the UI-SPEC says.
+ *
+ * It is composed instead of two terms, and the second is an ALLOWANCE rather than a copy:
+ *
+ *   1. `--space-11` — `.pub-main`'s own `padding-top`, declared in `public-shell.css` §2. This
+ *      page is entitled to that number: it is the shell's, not the design system's.
+ *   2. `--hm-bar-allowance` — an over-estimate of the AppBar. It is deliberately NOT a local
+ *      re-declaration of `--ds-appbar-h`, which `public-shell.css` forbids by name and which
+ *      would be wrong on one pointer type or drift on the next design-system release.
+ *
+ * **The two errors are not symmetric, which is why an over-estimate is the right kind of wrong.**
+ * Under-estimating pushes the scroll prompt below the fold — the single failure the subtraction
+ * exists to prevent. Over-estimating ends state A a few pixels early, inside §3's leading
+ * whitespace on Act 2, where nothing is drawn. The allowance is therefore sized against the
+ * TALLER bar (coarse pointers) and used at both.
+ *
+ * The measured bar heights, and the FILLS/DEPARTS reading at all six classes, are in the SUMMARY.
+ */
+
+/* ══ 1. STATE A — the height budget, and the identity block ═════════════════════════════════ */
+
+.hm-a {
+  /* MEASURED (see the SUMMARY): `.ds-atom-appbar` renders 47px on a fine pointer and 69px on a
+     coarse one in this shell. `--space-16` (64px) + `--space-2` (8px) = 72px clears the taller of
+     the two with 3px to spare and needs no pointer branch of its own. */
+  --hm-bar-allowance: calc(var(--space-16) + var(--space-2));
+  --hm-above: calc(var(--space-11) + var(--hm-bar-allowance));
+
+  /* The grow half is inert here and the shrink half is not — see this file's header. */
+  flex: 1 0 auto;
+  min-height: calc(100svh - var(--hm-above));
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-block-end: var(--space-6);
+}
+
+.hm-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/*
+ * §3.1 — the 60px name. `Heading`'s numeric `size` path inlines `font-size`, `line-height: 1` and
+ * a `letter-spacing` derived from the size; the derivation lands on `--ls-tighter` above 28px,
+ * which is what §3.1 asks for, and the line-height does not — §3.1 wants `--lh-tight` (0.94).
+ * An inline style cannot be beaten by a class, so the correction is passed through `Heading`'s own
+ * `style` prop at the call site in `index.astro`, which spreads last. Recorded there and in the
+ * SUMMARY as an upstream finding: `HeadingSizeToken` stops at `4xl`, so the scale's own
+ * `--text-4xl-plus` (52) and `--text-5xl` (60) steps are unreachable through the token path.
+ */
+.hm-subtitle {
+  font-family: var(--display);
+  font-style: italic;
+  font-size: var(--text-xl);
+  font-weight: 400;
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tight);
+  color: var(--ink-2);
+}
+
+.hm-intro {
+  max-width: min(56ch, 100%);
+}
+
+/* ══ 2. THE PEEK GRID — column count on WIDTH, tile aspect on HEIGHT ════════════════════════ */
+
+/*
+ * The naive instinct is backwards: fewer columns means more rows means TALLER. CARRIED from §6.3,
+ * measured in a real browser at all six classes, and this ladder reproduces every one of the six
+ * measured tile widths exactly against the gutter ladder in `public-shell.css`:
+ *
+ *     class  viewport    gutter  content  cols  tile w   aspect  gallery h
+ *     1      344 × 882     16      312     2     148      3:2       329
+ *     2      390 × 844     24      342     2     163      3:2       359
+ *     3      673 × 620     32      609     3     192     16:9       232
+ *     4      768 × 1024    32      704     3     224      3:2       314
+ *     5      1024 × 768    48      928     3     299     16:9       352
+ *     6      1440 × 900    48     1080*    3     349      3:2       482   (* .pub-max-home caps)
+ *
+ * **Tile aspect steps on a HEIGHT rung at 800px, and that is not an aspect-ratio branch** — it is
+ * a query on the axis the budget is denominated in. Nothing in this file branches on aspect ratio:
+ * an aspect-ratio branch flips mid-gesture on a foldable, which is the single most demanding
+ * property in the responsive contract and the whole reason §6.1 chose document scroll.
+ *
+ * `aspect-ratio` appears only on the tile, for its own intrinsic box. It is never a media
+ * condition. `grep -n "aspect-ratio" src/styles/home.css` is quoted in the SUMMARY.
+ *
+ * **This is a grid at every class and NEVER a horizontal rail.** A rail fits any budget, which is
+ * what makes it tempting, and it nests a horizontal scroller inside this page's vertical snap
+ * container — on iOS a horizontal rail readily steals the vertical gesture. `/photos` IS a rail at
+ * classes 1–2 precisely because it has no vertical snap container. Same pattern, opposite verdict,
+ * and the reason is the container.
+ *
+ * All six render at every class. **Reflow, never hide:** dropping to four on a narrow screen means
+ * two of the six photographs Akhil chose do not exist on that class, and there is no summary
+ * edition of a portfolio to fall back to. Nothing below sets `display: none` on a tile.
+ */
+
+.hm-peek-grid {
+  /* A <ul>, because six photographs are a list and a screen reader should be told how many. The
+     reset lives here rather than in a scoped <style> block in PeekGrid.astro so that one element's
+     rules are in one file. */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: grid;
+  /* MASONRY_GAP / GUTTER_RUNGS[0] — `--space-4` at every class, so the two grids on this page
+     agree with each other and with the gallery. */
+  gap: var(--space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* BREAKPOINTS[1] — 673. The 375 and 1024 rungs change the gutter but not the column count; the
+   measured arrangement steps from 2 to 3 here and nowhere else. */
+@media (min-width: 673px) {
+  .hm-peek-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.hm-tile {
+  display: block;
+  /* The short-viewport tile. 16:9 is what fits class 3 (620 tall) and class 5 (768 tall). */
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  /* §7.3 — the LQIP is the tile's own background, sized cover; the <img> paints over it when its
+     bytes decode. `--cream-2`, never white: a white-backed placeholder flashes hard on `#0d0d0f`. */
+  background-color: var(--cream-2);
+  background-size: cover;
+  background-position: center;
+}
+
+/* §4.4 rule 2 — photographs need an edge on dark that they did not need on ivory. */
+.dark .hm-tile {
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+/* THE HEIGHT RUNG. Not a width, not an aspect ratio — the budget is denominated in height, so the
+   query is on height. 3:2 at 1024 × 768 needs 418px of gallery against 637px minus the chrome; it
+   does not fit, and at 900px tall it does. */
+@media (min-height: 800px) {
+  .hm-tile {
+    aspect-ratio: 3 / 2;
+  }
+}
+
+.hm-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `object-position` is per-photograph and comes from `home_config.peekPositions`, defaulting to
+     `DEFAULT_FOCAL_POINT` — applied as an inline style at the point of use in PeekGrid.astro,
+     because it is data, not design. */
+  object-fit: cover;
+}
+
+/* ══ 3. THE SCROLL PROMPT — a real anchor, and accent item 4 ════════════════════════════════ */
+
+/*
+ * `<a href="#work">`, not a chevron, not a `<div onclick>`, not a button calling `scrollIntoView`.
+ * One Tab and one Enter, works with zero JavaScript, appears in the accessibility tree, and
+ * functions as a skip link. It is the ONLY focusable thing in state A, which is what makes the
+ * measured "one Tab and one Enter from the landing" property true — see the SUMMARY for why the
+ * peek photographs are deliberately not links.
+ */
+.hm-prompt {
+  align-self: start;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-wide);
+  /* §4.3 item 4 — one of the six places the accent is allowed. */
+  color: var(--ochre-d);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  margin-block-start: auto;
+}
+
+/* §2.3 — the floor is reached by growing the ANCHOR BOX while the painted geometry stays put, and
+   it is gated on POINTER, never on width: a 1024px tablet and a 1024px laptop window want opposite
+   answers, and `any-pointer` reports fine for a tablet in a keyboard case while touch stays
+   primary. */
+@media (pointer: coarse) {
+  .hm-prompt {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}

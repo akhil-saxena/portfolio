@@ -1,0 +1,76 @@
+---
+/**
+ * `/work` — PUB-02, SEO-01. Plan 05-09.
+ *
+ * ================================================================================================
+ * THE SHAPE OF THE PAGE, AND WHERE EVERY STRING ON IT COMES FROM
+ * ================================================================================================
+ *
+ * §10, as reviewed at 1440 on 2026-08-22: a 44px header whose full stop is the accent, a
+ * sub-paragraph capped at 480px, the `PROFESSIONAL EXPERIENCE` eyebrow, the employment band, the
+ * `PROJECTS` eyebrow with a derived count line, the card grid, and the italic serif cross-link
+ * above the footer.
+ *
+ * The header and the sub-paragraph are the reviewed page copy, transcribed from
+ * `design_handoff_portfolio/Work.dc.html` — they exist in no data file and belong to no record.
+ * Everything else on the page is read at build time: the three employment rows from
+ * `data/resume.json`, the five cards from `data/projects.json`, and the project count from the
+ * length of that array.
+ *
+ * ================================================================================================
+ * NOT ONE COUNT ON THIS PAGE IS A LITERAL
+ * ================================================================================================
+ *
+ * No count is RENDERED as a literal and none is ASSERTED as one — not in this file, in
+ * `EmploymentBand.astro`, in `ProjectCard.astro`, in `work.css` or in
+ * `test/public/work.node.test.ts`. (The figures named in these comments are prose describing the
+ * fixture on the day it was written; nothing reads them.) §13.3 is explicit that
+ * no hand-maintained copy of a count may exist, and this project has already paid for it twice:
+ * the design system's component figure went stale three times in nine days, and plan 04-09 turned
+ * `main` red by writing a count that 04-01 had re-scoped.
+ *
+ * ================================================================================================
+ * ZERO FRAMEWORK JAVASCRIPT (§5.1 route 2)
+ * ================================================================================================
+ *
+ * `Card`, `Chip`, `StatusPill` and `Link` are React components rendered to static markup at build
+ * time — no `client:*` directive anywhere on this route, so no island, no hydration and no module
+ * script. The only `<script>` the page carries is the shell's single inline theme block, which
+ * §5.2 permits by name. The suite asserts all of that against the served bytes.
+ */
+
+import PublicLayout from '../layouts/PublicLayout.astro';
+import EmploymentBand from '../components/public/EmploymentBand.astro';
+import Seo from '../components/public/Seo.astro';
+import { resume } from '../lib/content';
+import '../styles/work.css';
+
+/** The route's own path, in one place: the canonical and the `<Seo>` call sit beside it. */
+const WORK_PATH = '/work';
+---
+
+<PublicLayout mainClass="pub-max-work wk-page">
+  <Seo
+    slot="head"
+    title="Work — Akhil Saxena"
+    description="Products shipped on my own — a component system and a few apps — alongside frontend engineering at Brevo."
+    canonical={WORK_PATH}
+  />
+
+  <header class="wk-header">
+    {
+      /* §4.3 item 1: the full stop is the FIRST of the six elements the accent is reserved for,
+        and it is the stop alone — the heading takes the ink ramp. A span, not a coloured `h1`. */
+    }
+    <h1 class="wk-title">Things I design and build<span class="wk-stop">.</span></h1>
+    <p class="wk-lede">
+      Products shipped on my own — a component system and a few apps — alongside frontend
+      engineering at Brevo.
+    </p>
+  </header>
+
+  <section class="wk-section">
+    <h2 class="wk-eyebrow">Professional experience</h2>
+    <EmploymentBand entries={resume.experience} />
+  </section>
+</PublicLayout>

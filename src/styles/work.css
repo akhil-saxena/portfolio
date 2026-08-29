@@ -1,0 +1,223 @@
+/*
+ * `/work` — the page's own layout and type roles. Plan 05-09.
+ *
+ * ================================================================================================
+ * WHAT MAY LIVE IN THIS FILE
+ * ================================================================================================
+ *
+ * Layout and the §3.1 type roles, and nothing that the design system already owns. QUAL-03 permits
+ * app CSS for layout; every colour below is a token read from the monochrome theme, and not one
+ * literal colour value appears in this file. The vivid amber marker step of the ramp appears
+ * nowhere: it is the same literal in both modes and measures 3.11 / 3.19 / 2.96 in light, failing
+ * AA as text on every surface (§4.2), so it is a marker and never text. Its token name is not
+ * written out even in this comment, because the task's own criterion is a plain grep for that
+ * token name over this file, and a grep cannot tell prose from a declaration — MEASURED: it fired
+ * on this sentence in its first form, twice. That is the loud-and-fixable failure direction, so
+ * the check is left exactly as it is and the prose moved instead.
+ *
+ * ================================================================================================
+ * THE SPECIFICITY PRE-FLIGHT, WHICH IS NOT OPTIONAL ON THIS PROJECT
+ * ================================================================================================
+ *
+ * STATE.md records this as a three-for-three defect class: *"a CSS rule losing silently to an
+ * existing rule declared lower in `primitives.css`… tie on specificity means source order decides,
+ * and jsdom cannot see it."* Two rules on this page overlap rules the design system already ships,
+ * and each was GREPPED for before it was written. The arithmetic is stated at each site rather
+ * than inferred, because the failure mode is a page that looks plausible and a suite that is green.
+ *
+ *   primitives.css:1133  .ds-atom-card[data-variant="glass"]              (0,2,0)  border: --rule
+ *   primitives.css:7126  .ds-atom-card[data-hover="elevate"]:hover        (0,3,0)  border: rgba(...)
+ *   primitives.css:7130  .dark .ds-atom-card[data-hover="elevate"]:hover  (0,4,0)  border: --ink-4
+ *
+ * ================================================================================================
+ * THE THREE-RUNG GRID, AND WHY ITS BREAKPOINTS ARE WRITTEN HERE
+ * ================================================================================================
+ *
+ * §10 item 6 asks for one column at classes 1–2, two at 3–4 and three at 5–6 — the same three
+ * widths the shell's gutter ladder steps at, so the page and the shell never disagree about which
+ * class they are in. Those widths are `BREAKPOINTS` in `src/lib/layout-ladder.ts`.
+ *
+ * A CSS media query cannot read a custom property, let alone a TypeScript constant, so the two
+ * numbers below are the SECOND copy — exactly the situation `src/styles/public-shell.css` is in,
+ * and it is resolved the same way: `test/public/work.node.test.ts` reads the SERVED stylesheet and
+ * compares each `.wk-grid` media query against `BREAKPOINTS` at test time. A divergence is a red
+ * test rather than a silent disagreement, which is the most CSS can be given here.
+ */
+
+/* ── 1. The page column ─────────────────────────────────────────────────────────────────────── */
+
+/*
+ * The page maximum is `.pub-max-work` (1280px), applied in `work.astro` through the layout's
+ * `mainClass` — NOT a number in this file. It is `PAGE_MAX.work` in `src/lib/layout-ladder.ts` and
+ * one of the four rules `scripts/assert-gutter-ladder.mjs` checks against that record.
+ */
+.wk-page {
+  display: block;
+  padding-bottom: var(--space-16);
+}
+
+/* ── 2. The header ──────────────────────────────────────────────────────────────────────────── */
+
+.wk-header {
+  margin-bottom: var(--space-12);
+}
+
+/*
+ * §3.1 "Page header — Work, Photos": Playfair `--text-4xl` 44 / 700 / `--lh-snug` / `--ls-tighter`.
+ *
+ * 44 AND NOT 52. J1 was CONFIRMED at 44 on 2026-08-19 — Playfair's larger x-height and heavier
+ * stems already carry the weight the handoff got from Newsreader at 52. `--text-4xl-plus` (52)
+ * ships in the scale and this page does not use it.
+ */
+.wk-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tighter);
+  color: var(--ink);
+}
+
+/* §4.3 item 1 — the accent, on the full stop and on nothing else in this heading. */
+.wk-stop {
+  color: var(--ochre-d);
+}
+
+/*
+ * §3.1 "Body — one-liner, tagline, sub-paragraph": DM Sans `--text-base` 13 / relaxed.
+ * §10 item 2 caps it at 480px. That is a copy measure rather than a layout maximum, so it is not
+ * in `PAGE_MAX` and is not gated — `layout-ladder.ts` says at the point the number would have gone
+ * that a px-valued record is for page maxima, and 480px here is the width of one sentence.
+ */
+.wk-lede {
+  max-width: min(480px, 100%);
+  margin: var(--space-4) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-relaxed);
+  letter-spacing: var(--ls-base);
+  color: var(--ink-3);
+}
+
+/* ── 3. Sections and the mono eyebrow ───────────────────────────────────────────────────────── */
+
+.wk-section {
+  margin-top: var(--space-12);
+}
+
+/*
+ * §3.1 "Eyebrow · metric · counter": IBM Plex Mono `--text-xs` 11 / 500 / `--ls-wide`.
+ *
+ * It is an `<h2>` and not the design system's `Eyebrow`, and that is a MEASURED constraint rather
+ * than a preference: `EyebrowProps extends HTMLAttributes<HTMLSpanElement>` with `size`, `color`
+ * and `tone` and no `as` prop, so it cannot carry heading semantics and the page would lose its
+ * outline. `/resume` reached the same conclusion for the same reason in 05-10. Recorded upstream.
+ */
+.wk-eyebrow {
+  margin: 0 0 var(--space-6);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── 4. The employment band (§10 item 4) ────────────────────────────────────────────────────── */
+
+/*
+ * `--wk-band-max` is set as an inline custom property by `EmploymentBand.astro` from
+ * `PAGE_MAX.band`, so 1080 is written once in the repository and this file does not carry a copy
+ * of it. See that component's header for why `.pub-max-band` was rejected: it centres.
+ */
+.wk-band {
+  max-width: min(var(--wk-band-max), 100%);
+}
+
+/*
+ * A hairline between rows, and none under the last — §10 item 4 says "hairline-separated", which
+ * is a separator rather than a border on each row. `--rule` is the hairline token (§4.2); `--wire`
+ * is the CONTROL border and belongs on the cards, not here.
+ */
+.wk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.wk-row:last-child {
+  border-bottom: 0;
+}
+
+.wk-identity {
+  min-width: 0;
+}
+
+/* §3.1 "Project / card / photo title": Playfair `--text-xl` 22 / 700 / `--lh-snug` / `--ls-tight`. */
+.wk-company {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tight);
+  color: var(--ink);
+}
+
+/*
+ * §10 item 4: "role · period in DM Sans 13px `--ink-3`". `--ink-3` measures 8.21 / 7.56 / 7.02 on
+ * dark and 7.44 / 7.63 / 7.06 on light — AAA on every surface of both modes (§4.2).
+ */
+.wk-role {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-base);
+  color: var(--ink-3);
+}
+
+/*
+ * THE METRIC — §4.3 item 2, and the same treatment plan 05-10 gave it on `/resume`.
+ *
+ * IBM Plex Mono `--text-xs` 11 / 500 / `--ls-wide`, right-aligned, the VALUE in `--ochre-d-strong`
+ * (the AAA step: 9.00 / 8.29 / 7.70 dark, 7.92 / 8.13 / 7.52 light) and the LABEL on the ink ramp.
+ * `src/styles/resume.css` declares the identical pair on `.rs-metric` / `.rs-metric-value`; the two
+ * routes render the same three records and must not render them two ways.
+ *
+ * 🔴 THE ONE DELIBERATE DIFFERENCE: THE SEPARATOR.
+ * `/resume` emits the two spans with NOTHING between them — MEASURED in the built
+ * `dist/client/resume/index.html`, where the value and the label run together into one word.
+ * Astro's `compressHTML` (on by default) removes the newline the source carries between the two
+ * spans, so a whitespace-only separator in a template does not survive the build. The gap is
+ * declared here in CSS, where compression cannot reach it. The reviewed capture
+ * (`design_handoff_portfolio/Work.dc.html`) puts a space between the two halves, so the space is
+ * the reviewed intent on both routes; `/resume` losing it is a defect in that page, reported
+ * rather than fixed from here — it is plan 05-10's file.
+ *
+ * NOTHING BELOW ENCODES THE WORDING. The three values on disk are placeholders Akhil intends to
+ * revise (OQ-1b); no rule here depends on their length, their case or their content.
+ */
+.wk-metric {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-wide);
+  text-align: right;
+  color: var(--ink-3);
+}
+
+.wk-metric-value {
+  margin-right: var(--space-2);
+  color: var(--ochre-d-strong);
+}

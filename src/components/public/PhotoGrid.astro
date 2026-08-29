@@ -1,0 +1,90 @@
+---
+/**
+ * The masonry container. Plan 05-07, Task 1. (§7.1, §7.4, §7.5.)
+ *
+ * ================================================================================================
+ * WHY THE `sizes` STRING IS COMPUTED HERE AND NOT IN THE TILE
+ * ================================================================================================
+ *
+ * `sizes` is a property of the LAYOUT, not of the photograph: every tile in one gallery carries the
+ * same string, and it depends only on the column count. Computing it once per page also means
+ * `sizesFor`'s refusal — it accepts only the column counts `site_config.json` really uses — fires
+ * ONCE, at the top of the build, rather than forty times inside a map where the first throw is the
+ * only one anybody reads.
+ *
+ * A `sizes` that disagrees with the stylesheet is a SILENTLY wrong download size: nothing renders
+ * incorrectly, the browser just fetches the wrong file. That is why both this file's `data-cols`
+ * and `sizesFor`'s arithmetic take the SAME `columns` argument, and why the ladder they encode is
+ * gated against the built stylesheet by `scripts/assert-gutter-ladder.mjs`.
+ *
+ * ================================================================================================
+ * `EAGER_TILE_COUNT` — DERIVED FROM THE INDEX, AND CAPPED BY THE LIST
+ * ================================================================================================
+ *
+ * §7.5: `loading="lazy" decoding="async"` on every tile except the first four, which take
+ * `loading="eager" fetchpriority="high"` so the LCP candidate is not deferred.
+ *
+ * "The first four" is a POSITION, so it is read off the index — never a hand-marked flag on a
+ * record, which would be a fifth place the manifest's order is encoded and the one nobody updates
+ * when a photograph is reordered.
+ *
+ * IT IS CAPPED BY THE LIST, AND THAT IS NOT A DEFENSIVE FLOURISH. MEASURED: `portraits` and
+ * `product` hold TWO photographs each, so a rule stated as "exactly four eager tiles" is false on
+ * two of the seven category routes today, and on any category Phase 7 adds before its fourth
+ * photograph. `index < EAGER_TILE_COUNT` yields `min(4, n)` structurally, which is the claim that
+ * is true on all eight routes.
+ */
+
+import PhotoTile from './PhotoTile.astro';
+import { sizesFor } from '../../lib/photo-srcset';
+import type { PhotoIdentity, PhotoSources } from '../../lib/photo-srcset';
+
+/** §7.5. The only place this number is written on the rendering side. */
+const EAGER_TILE_COUNT = 4;
+
+/**
+ * The subset a tile reads. NAMED rather than written inline in `Props`: `astro check` reported both
+ * `.map` parameters as implicit `any` when the intersection was spelled inside the interface
+ * (MEASURED — `ts(7006)` on `photo` and on `index`), so the callback carries explicit annotations
+ * and they need something to refer to. `title` is deliberately absent — see `PhotoTile.astro`.
+ */
+type GalleryPhoto = PhotoIdentity &
+  PhotoSources & {
+    readonly alt: string;
+    readonly urls: Readonly<Record<string, string>>;
+  };
+
+interface Props {
+  /** ALREADY SORTED by the caller — `order` on /photos, `categoryOrder` on a category route. */
+  photos: readonly GalleryPhoto[];
+  /** The category's class-5/6 column count, from `data/site_config.json`. */
+  columns: number;
+}
+
+const { photos, columns } = Astro.props;
+
+/*
+ * ANTI-VACUITY. A grid rendered over an empty list is a container with no children and no error,
+ * and it looks exactly like a gallery whose CSS failed. The two routes each own an explicit empty
+ * state (§13.2) and must choose it BEFORE reaching this component, so an empty list arriving here
+ * is a caller bug rather than a content state.
+ */
+if (photos.length === 0) {
+  throw new Error(
+    'PhotoGrid: rendered with zero photographs. That is not a content state — §13.2 gives the ' +
+      'empty gallery its own copy, and the route is what chooses between the two. An empty grid ' +
+      'here would ship a page that is silently blank instead of one that explains itself.'
+  );
+}
+
+/* Computed once. See the header — and `sizesFor` refuses a column count the site does not use. */
+const sizes = sizesFor(columns);
+---
+
+<div class="ph-masonry" data-cols={String(columns)}>
+  {
+    photos.map((photo: GalleryPhoto, index: number) => (
+      <PhotoTile photo={photo} sizes={sizes} eager={index < EAGER_TILE_COUNT} />
+    ))
+  }
+</div>

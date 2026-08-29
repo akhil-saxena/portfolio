@@ -1,0 +1,124 @@
+---
+/**
+ * One photograph in the gallery: a real link, a reserved box, and a blur-up that hydrates nothing.
+ * Plan 05-07, Task 1. (§7.2, §7.3, §7.5.)
+ *
+ * ================================================================================================
+ * THE HREF IS IMPORTED. IT IS NEVER RE-DERIVED HERE. (BL-8)
+ * ================================================================================================
+ *
+ * `photoHref` is the SINGLE definition of `/photos/<category>/<slug>` and it lives in
+ * `src/lib/photo-srcset.ts` (05-05). Plan 05-08 builds the detail pages' `getStaticPaths` from the
+ * same function. Both are wave 4, so neither can read the other's output, and NO GATE IN THIS PHASE
+ * compares an emitted tile href against an emitted page. Two independent derivations that disagree
+ * produce every tile 404ing against a page that exists under a different slug — with a green build,
+ * a green suite and a green gate, first detected by a human clicking a tile in wave 7.
+ *
+ * So: no template literal composing a URL, and no `photo.id.slice(...)` anywhere in this file.
+ *
+ * ================================================================================================
+ * NO `width` AND NO `height` ATTRIBUTE (§7.2's ruling)
+ * ================================================================================================
+ *
+ * `dimensions` supplies the RATIO and the srcset arithmetic, and nothing else. It is the intrinsic
+ * size of the SOURCE photograph, not of `urls.original` — writing `width={photo.dimensions.width}`
+ * on an `<img>` whose src is a 2000px file states 4608, which is harmless for layout and wrong for
+ * anything reasoning about bytes. `aspect-ratio` plus `width: 100%` (photos.css) reserves the box.
+ *
+ * MEASURED (§0.4): across all 40 records the manifest ratio and the served ratio deviate by 0%
+ * above the 1% threshold, and the single record whose absolute sizes differ deviates by 0.025% in
+ * ratio.
+ *
+ * OPEN, CARRIED FORWARD TO PHASE 8's QUAL-01 RUN, NOT PRE-EMPTIVELY "FIXED": §7.2 records as
+ * UNVERIFIED whether Lighthouse's `unsized-images` audit accepts a CSS `aspect-ratio` on a
+ * width-constrained image. If it flags, the fix §7.2 names is to emit the SERVED variant's size —
+ * `Math.min(800, d.width)` and its derived height — never the manifest's raw numbers. Adding
+ * attributes now to satisfy a guess would ship the exact wrong-bytes claim the ruling forbids.
+ *
+ * ================================================================================================
+ * `alt` IS THE PHOTOGRAPH'S OWN `alt`, NEVER ITS `title`
+ * ================================================================================================
+ *
+ * `deferred-items.md` D-24-1 records `home.astro:154 alt={p.title}` as a PUBLIC defect on the
+ * site's primary route: six images announcing their name where their description belongs, to
+ * exactly the readers who cannot see them. All 40 `alt` strings are committed and reviewed, the
+ * shortest measured at 83 characters. `title` is not read by this component at all — it is not even
+ * in `Props`, so the mistake is unrepresentable here rather than merely discouraged.
+ */
+
+import { photoHref, srcsetFor } from '../../lib/photo-srcset';
+import type { PhotoIdentity, PhotoSources } from '../../lib/photo-srcset';
+
+interface Props {
+  /**
+   * Structurally the subset this component reads. `title` is deliberately ABSENT — see the header.
+   * A real `Photo` from `src/schemas/photo.ts` satisfies this; it is a subset of that shape, not a
+   * rival declaration of it, so `gate:schema`'s single-definition rule is not being worked around.
+   */
+  photo: PhotoIdentity &
+    PhotoSources & {
+      readonly alt: string;
+      readonly urls: Readonly<Record<string, string>>;
+    };
+  /** The `sizes` attribute, computed ONCE per page by `PhotoGrid` from `sizesFor`. */
+  sizes: string;
+  /**
+   * The LCP treatment (§7.5). `PhotoGrid` owns the decision, because "first in document order" is
+   * a property of the list and not of any tile.
+   */
+  eager: boolean;
+}
+
+const { photo, sizes, eager } = Astro.props;
+
+/**
+ * THE LQIP GUARD — T-05-07-01's mitigation, and it is not defensive coding.
+ *
+ * `thumb` is the one manifest value that lands inside a CSS `url()` rather than in an ordinary
+ * attribute. Astro escapes the ATTRIBUTE, which stops a value breaking out of `style="…"` — but a
+ * bare apostrophe inside the value would still terminate the `url('…')` token and let everything
+ * after it be read as further CSS declarations, inside an attribute the escaper considers clean.
+ *
+ * `PhotoUrlsSchema` already requires the `data:image/webp;base64,` prefix (`THUMB_PREFIX`). This
+ * requires the WHOLE value to be that prefix followed by nothing but the base64 alphabet, so there
+ * is no character left that could close the token. Both checks stand: the schema guards the file,
+ * this guards the interpolation site, and neither ratifies the other.
+ */
+const THUMB_URI = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
+const thumb = photo.urls.thumb;
+if (typeof thumb !== 'string' || !THUMB_URI.test(thumb)) {
+  throw new Error(
+    `PhotoTile: urls.thumb on ${JSON.stringify(photo.id)} is not a plain base64 WebP data URI. ` +
+      'It is interpolated into a CSS `url()` inside the `style` attribute, where a quote or a ' +
+      'parenthesis closes the token and everything after it is read as further declarations. ' +
+      `Received ${JSON.stringify(String(thumb).slice(0, 48))}…`
+  );
+}
+
+const medium = photo.urls.medium;
+if (typeof medium !== 'string' || medium.length === 0) {
+  throw new Error(
+    `PhotoTile: urls.medium on ${JSON.stringify(photo.id)} is missing, so the tile would emit ` +
+      '`src="undefined"`. A browser resolves that against the page and requests a real URL that ' +
+      '404s, which looks like a broken photograph rather than a broken record.'
+  );
+}
+
+const { width, height } = photo.dimensions;
+---
+
+<a
+  class="ph-tile"
+  href={photoHref(photo)}
+  style={`aspect-ratio: ${width} / ${height}; background-image: url('${thumb}')`}
+>
+  <img
+    src={medium}
+    srcset={srcsetFor(photo)}
+    sizes={sizes}
+    alt={photo.alt}
+    loading={eager ? 'eager' : 'lazy'}
+    decoding="async"
+    fetchpriority={eager ? 'high' : undefined}
+  />
+</a>

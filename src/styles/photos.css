@@ -1,0 +1,154 @@
+/*
+ * The gallery — layout only, per QUAL-03. Plan 05-07.
+ * (Rules CARRIED verbatim from `05-UI-SPEC.md` §7.1, §7.3 and §8.3. The column ladder's
+ * breakpoints are §2.1's, the same three `src/lib/layout-ladder.ts` declares.)
+ *
+ * ================================================================================================
+ * WHAT IS NOT ALLOWED IN THIS FILE
+ * ================================================================================================
+ *
+ * A colour literal, a type size, a font family, a spacing number. Every one of those is owned by
+ * `@akhil-saxena/design-system` and reached through a token — `var(--space-4)`, never `16px`.
+ *
+ * TWO LITERALS SURVIVE, AND BOTH ARE RECORDED RATHER THAN HIDDEN:
+ *
+ *   1. THE THREE BREAKPOINT MINIMA (375 / 673 / 1024). CSS cannot import `layout-ladder.ts`, which
+ *      is the whole reason `scripts/assert-gutter-ladder.mjs` exists. Those three numbers are the
+ *      SAME three the ladder declares, and the gate reads them out of the BUILT stylesheet — but
+ *      only where they carry a `--pub-gutter` declaration, so the masonry queries below are NOT
+ *      covered by it. They are covered by `test/public/photos-routes.node.test.ts`, which reads
+ *      `BREAKPOINTS` from the module and asserts this file's queries against it.
+ *
+ *   2. `border-radius: 10px` ON `.ph-tile`. §7.3 prescribes 10px, and it was reviewed at 1440 and
+ *      390 on 2026-08-22. MEASURED: the design system's `tokens.css` has no 10px rung —
+ *      `--radius-sm: 4px`, `--radius-md: 8px`, `--radius-lg: 12px`, `--radius-xl: 16px`,
+ *      `--radius-pill: 999px`. Substituting 8px or 12px would be a silent visual change to
+ *      reviewed work in order to satisfy a rule about spacing, so the reviewed value is carried and
+ *      the gap is filed upstream (a `--radius` rung between 8 and 12) rather than papered over.
+ *
+ * ================================================================================================
+ * 1. THE MASONRY (§7.1) — `column-count`, because it is the only zero-JS masonry
+ * ================================================================================================
+ *
+ * G-10 accepted that masonry has no design-system component, and QUAL-03 permits layout CSS.
+ * `column-count`'s cost is column-major DOM order, which is also the reading order of a column
+ * layout, so nothing is lost.
+ *
+ * `data-cols` is the CATEGORY'S OWN class-5/6 column count, from `data/site_config.json`.
+ * MEASURED: only `2` and `3` ever occur (3 for abstract and architecture, 2 for the other five,
+ * `defaultColumns: 3`), so two explicit rules cover every case — no `min()` inside `column-count`,
+ * no math function, no risk. `sizesFor` in `src/lib/photo-srcset.ts` REFUSES any other value, so a
+ * config that grew a `4` fails the build rather than shipping a `sizes` string that disagrees with
+ * this file.
+ *
+ * The ladder, §7.1, and the reason the >=375 rule is NOT keyed on `data-cols`: at the first
+ * breakpoint every category is two columns, including a three-column one. A three-column category
+ * does not reach its third column until >=673.
+ *
+ *   class            columns:2 category   columns:3 category
+ *   1 (<=374)                1                    1
+ *   2 (375-672)              2                    2
+ *   3-4 (673-1023)           2                    3
+ *   5-6 (>=1024)             2                    3
+ */
+
+.ph-masonry {
+  column-count: 1;
+  column-gap: var(--space-4);
+}
+
+/*
+ * `break-inside: avoid` is the declaration that makes this a masonry rather than a shredder: a
+ * multi-column container will otherwise split a tile's box across a column boundary, and with an
+ * `aspect-ratio` box holding a `background-image` the halves each paint the whole LQIP.
+ */
+.ph-masonry > * {
+  break-inside: avoid;
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 375px) {
+  .ph-masonry {
+    column-count: 2;
+  }
+}
+
+@media (min-width: 673px) {
+  .ph-masonry[data-cols="3"] {
+    column-count: 3;
+  }
+}
+
+/*
+ * §7.1 states this rung explicitly and it is carried explicitly. MEASURED CONTRADICTION, RECORDED
+ * RATHER THAN SILENTLY DROPPED: it is a NO-OP against the rule above it — the >=673 rule already
+ * holds at >=1024, and both say 3. It is kept because §7.1's table has a class-5/6 row and a
+ * stylesheet that answers three of four rows invites the reader to conclude the fourth was
+ * forgotten. If the ladder ever gains a four-column class this is the line that changes.
+ */
+@media (min-width: 1024px) {
+  .ph-masonry[data-cols="3"] {
+    column-count: 3;
+  }
+}
+
+/*
+ * ================================================================================================
+ * 2. THE TILE (§7.2, §7.3, §4.4 rule 2) — the box is reserved before the bytes arrive
+ * ================================================================================================
+ *
+ * `aspect-ratio` and `background-image` are INLINE on the element (`PhotoTile.astro`), because both
+ * are per-photograph values. Everything that is the same for all forty is here.
+ *
+ * THE BLUR-UP HAS NOTHING TO HYDRATE. The LQIP is the tile's own `background-image`, sized `cover`;
+ * the `<img>` sits on top and paints over its own background when its bytes decode. There is no
+ * `load` event to listen for, and the browser's upscaling of a 40px-wide WebP supplies the blur
+ * without a `filter`.
+ *
+ * `background-color: var(--cream-2)`, NOT white. The base64 URI decodes essentially instantly, but
+ * the surface underneath it must still be a page colour: a white-backed placeholder flashes hard on
+ * `#0d0d0f`, and that has been a recorded build note since the ivory-to-charcoal resolution.
+ *
+ * THE INSET HAIRLINE IS DARK-ONLY (§4.4 rule 2). The gallery skews dark — architecture at night,
+ * `abstract-intothemist`, wildlife — so photographs need an edge on dark they did not need on
+ * ivory. `--rule` and not `--wire`: a photograph is not an interactive control, so the 3:1
+ * non-text-contrast floor that governs a filter pill's border does not apply to it. Reviewed and
+ * PASSED at 1440 and 390 on 2026-08-22.
+ */
+
+.ph-tile {
+  display: block;
+  background-color: var(--cream-2);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  /* See literal 2 in this file's header: §7.3's reviewed value, with no token to carry it. */
+  border-radius: 10px;
+}
+
+.dark .ph-tile {
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+/*
+ * `width: 100%` is the second half of the CLS reservation. `aspect-ratio` alone reserves nothing
+ * until one axis is resolved; the width comes from the column, and the height follows from the
+ * ratio. NO `width`/`height` ATTRIBUTE IS EMITTED ON THE IMAGE — see `PhotoTile.astro`.
+ *
+ * `height: auto` rather than `100%`: a percentage height against a parent whose own height is
+ * derived from `aspect-ratio` is the circular case, and it resolves to `auto` in some engines and
+ * to zero in others.
+ */
+.ph-tile img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * ================================================================================================
+ * 3. THE PAGE HEAD AND THE FILTER RAIL (§8.3)
+ * ================================================================================================
+ *
+ * Filled in by Task 3.
+ */

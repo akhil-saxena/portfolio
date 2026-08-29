@@ -874,15 +874,25 @@ for (const c of CLASSES) {
       ).toBeGreaterThanOrEqual(44);
 
       /*
-       * 🔴 OQ-4 — THE RECORDED SHORTFALL, ASSERTED AT ITS SHORTFALL.
+       * ✅ OQ-4 / D-3 — THE SHORTFALL IS FIXED UPSTREAM, AND THIS LINE IS HOW WE FOUND OUT.
        *
-       * `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn { height: 40px }` and
-       * `primitives.css` carries no `pointer: coarse` rule touching it. `FilterNav`'s `className`
-       * reaches the `<nav>` only, so a consumer cannot add one without reaching a design-system
-       * class name — which belongs in OQ-4, not in a workaround here.
+       * Against 2.0.0-beta.1 this asserted 40 — the shortfall itself, not ">= 44" and not
+       * ">= 40" — precisely so that the day the upstream fix landed it would fail and say so.
+       * It did: `2.0.0-beta.2` added
        *
-       * Asserted at 40, not at ">= 44" and not at ">= 40". The day the upstream `min-height: 44px`
-       * lands, this line fails and tells you the good news.
+       *     @media (pointer: coarse) { .ds-atom-segmented-btn { min-height: 44px } }
+       *
+       * at `primitives.css:3742`, this line redded on all ten coarse cells (alongside D-21's two),
+       * and the twelve failures were the good news. It now asserts 44 for the same reason it once
+       * asserted 40: an equality reports a regression in EITHER direction, where ">= 44" would go
+       * quietly green if a future release raised the floor to 48 and silently green if it kept 44
+       * by accident.
+       *
+       * The rule wins by `max(min-height, height)` over `[data-size="lg"]`'s `height: 40px` at
+       * (0,3,0) — a different property, so no specificity contest — which is why the drawn geometry
+       * is unchanged and only the hit box grew.
+       *
+       * Class 6 is fine-pointer and returns above; the pill is 40 there and the floor does not bind.
        */
       expect(
         boxes.pill,

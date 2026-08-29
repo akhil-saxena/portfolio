@@ -41,16 +41,46 @@
  * (it concatenates, against 2.0.0-beta.1). Nothing here needs a `Chip`, and the cheapest response
  * to a contested claim is not to depend on it either way.
  *
- * NO LOCAL FIX FOR OQ-4's 44px HIT FLOOR. MEASURED, re-confirmed this plan:
- * `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn` is `height: 40px`
- * (`primitives.css:3638-3642`, one occurrence), and of the TWO `@media (pointer: coarse)` blocks in
- * that file NEITHER mentions `segmented` or `filternav` — while `AppBar` and `Footer` links both
- * have one. Five of the six device classes are coarse-pointer, so the four-pixel shortfall is the
- * common case. It SHIPS, and it is filed upstream. A clean screenshot bought by a local override is
- * evidence of a fix that does not exist, which is why Phase 0 left D-16-1's design-system half
- * unfixed rather than patching it. The upstream patch is ONE RULE, not a refactor: `min-height:44px`
- * under `@media (pointer: coarse)` wins over the existing `height: 40px`, because used height is
- * `max(min-height, height)`.
+ * NO LOCAL FIX FOR OQ-4's 44px HIT FLOOR WAS EVER ADDED — AND THE FLOOR IS NOW MET UPSTREAM.
+ *
+ * Against `2.0.0-beta.1`: `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn` was
+ * `height: 40px` (`primitives.css:3638-3642`), and of the TWO `@media (pointer: coarse)` blocks in
+ * that file NEITHER mentioned `segmented` or `filternav` — while `AppBar` and `Footer` links both
+ * had one. Five of the six device classes are coarse-pointer, so the shortfall was the common case.
+ * It SHIPPED, and it was filed upstream as D-3.
+ *
+ * ✅ FIXED IN `2.0.0-beta.2`, and it is the ONE RULE this comment predicted, unchanged.
+ * `primitives.css:3742`:
+ *
+ *     @media (pointer: coarse) {
+ *       .ds-atom-segmented-btn { box-sizing: border-box; min-height: 44px; }
+ *     }
+ *
+ * It wins over `[data-size="lg"]`'s `height: 40px` at (0,3,0) without entering a specificity
+ * contest at all, because used height is `max(min-height, height)` — a different property, no
+ * contest to lose — and it leaves the drawn geometry untouched. MEASURED here 2026-08-29 on the
+ * built `/photos`: the pill is 44px at all five coarse classes and 40px at 1440 fine, where the
+ * floor does not bind. The declaration is now at `primitives.css:3702`; the line numbers above are
+ * beta.1's and are left as they were measured.
+ *
+ * THE SHORTFALL WAS WORSE THAN THE "four pixels" THIS COMMENT USED TO CLAIM. This site runs
+ * `size="lg"` (40px), so it was 4px short here — but the component's DEFAULT is `md`, which is
+ * 32px, and `sm` is 28px. Every one of the three declared sizes was under the floor, and a consumer
+ * on the default was 12px short. The fix is on the shared `.ds-atom-segmented-btn` class precisely
+ * so it covers all three.
+ *
+ * ONE RESIDUAL, AND IT DOES NOT REACH THIS SITE. Upstream deliberately did NOT floor the WIDTH,
+ * recording that a short `md` label ("All") measures 42.98px against 44 and that a min-width would
+ * visibly redraw a control whose segments are sized to their labels. Every pill here measures
+ * 77.09px wide, because each label carries its `· n` count — so the un-floored axis is not reached.
+ *
+ * WHY THE NO-LOCAL-FIX DECISION IS WHAT MADE THIS CHEAP. A clean screenshot bought by a local
+ * override is evidence of a fix that does not exist, which is why Phase 0 left D-16-1's
+ * design-system half unfixed rather than patching it. Had this file carried a `min-height: 44px`
+ * reaching into `.ds-atom-segmented-btn`, consuming beta.2 would now mean finding and removing it;
+ * instead the fix arrived by version number and this comment became a changelog. The rail's OTHER
+ * half — `scroll-snap-align` on the anchors — was NOT shipped in beta.2 (`scroll-snap` occurs zero
+ * times in `primitives.css`), so the descendant selector above is still the only route to it.
  */
 
 import type { FilterNavItem } from '@akhil-saxena/design-system/components/FilterNav';

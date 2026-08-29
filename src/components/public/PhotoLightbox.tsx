@@ -19,33 +19,48 @@
  * document listener, wrap-around navigation — and G-14 is CLOSED. None of it is repeated here.
  *
  * ================================================================================================
- * 🔴 THE SHIPPED SWIPE NAVIGATES. IT DOES NOT DISMISS. MEASURED IN `chunk-4I5ZCPSS.js`.
+ * ✅ SWIPE-TO-DISMISS SHIPS AS OF `2.0.0-beta.2`. PUB-06 IS MET IN FULL.
  * ================================================================================================
  *
- * PUB-06 asks for "keyboard, backdrop and swipe dismissal". The component's pointer handlers read:
+ * PUB-06 asks for "keyboard, backdrop and swipe dismissal". Against `2.0.0-beta.1` the third one
+ * did not exist, and this block used to say so at length. It was filed as D-16, fixed upstream,
+ * published, and consumed here by version number — which is the disposition, working.
  *
- *     var BACKDROP_TAP_SLOP_PX = 10;
- *     var SWIPE_MIN_DISTANCE_PX = 44;
- *     var SWIPE_HORIZONTAL_DOMINANCE = 1.5;
- *     ...
+ * WHAT WAS WRONG (beta.1, `chunk-4I5ZCPSS.js`). `onPointerUp` implemented swipe-to-NAVIGATE only:
+ *
  *     if (Math.abs(dx) < SWIPE_MIN_DISTANCE_PX) return;
  *     if (Math.abs(dx) < Math.abs(dy) * SWIPE_HORIZONTAL_DOMINANCE) return;
  *     if (dx < 0) goNext(); else goPrev();
  *
- * A horizontal swipe NAVIGATES, with wrap-around. A vertical drag does nothing: `dx` is small, so
- * the navigation branch returns, and `backdropTapRef` is false because the gesture travelled more
- * than the 10px tap slop, so the backdrop-click branch returns too. There is no swipe-to-dismiss in
- * the component, and the always-dark backdrop declares `touch-action: pan-y`, which deliberately
- * hands the vertical axis to the browser — so a consumer cannot add one without fighting a rule the
- * design system wrote on purpose.
+ * A vertical drag hit neither branch — `dx` was too small to navigate, and `backdropTapRef` was
+ * false because the gesture had travelled past the 10px tap slop, so the backdrop-close branch
+ * returned too. The drag did nothing at all.
  *
- * NO LOCAL GESTURE LAYER IS ADDED HERE, and that is a decision rather than an omission. §9.1 says
- * "G-14 is closed. Do not re-implement any part of it", and the Core Value says a gap the site
- * exposes is a FINDING rather than a workaround — the same disposition OQ-4's 40px filter pill and
- * `Eyebrow`'s inline weight already ship under. What the touch reader HAS today is measured and
- * recorded in the summary: a backdrop tap closes, the close button closes, Escape closes from a
- * keyboard, and the Back button closes because of the history entry below. The upstream ask is
- * written out in full in the summary; it is a handful of lines in the component, not a refactor.
+ * WHAT SHIPS NOW (beta.2, `chunk-DHAIXPZQ.js:15,71`). The dismiss branch sits BEFORE the horizontal
+ * test and is mutually exclusive with it by construction:
+ *
+ *     var SWIPE_DISMISS_MIN_DISTANCE_PX = SWIPE_MIN_DISTANCE_PX;   // 44
+ *     if (dy >= SWIPE_DISMISS_MIN_DISTANCE_PX && dy > Math.abs(dx) * SWIPE_HORIZONTAL_DOMINANCE)
+ *
+ * AND THE CSS HALF, WHICH IS THE ONE THAT MADE THIS UNFIXABLE FROM HERE. The always-dark backdrop
+ * declared `touch-action: pan-y`, handing the vertical axis to the browser; it now declares
+ * `pinch-zoom`, claiming both pan axes and handing back only pinch. Upstream measured that the
+ * JavaScript branch ALONE does nothing — with the branch present and `pan-y` still declared, a
+ * 350px downward swipe left the overlay open, because the browser consumed the drag as a scroll
+ * before `pointerup` ever reached the component. It also measured that `pan-x`, which the finding
+ * offered as an alternative, fixes the dismiss and BREAKS navigation.
+ *
+ * MEASURED HERE, 2026-08-29, in Chromium at 390x844 with a coarse pointer, on the built artefact:
+ * a 350px downward drag CLOSES the overlay; a 180px leftward drag still NAVIGATES and leaves it
+ * open. `.ds-atom-lightbox-backdrop` computes `touch-action: pinch-zoom` at 344, 390 and 1440.
+ * The three controls, which were 32x32 at both pointers (D-17), are now 44x44 coarse / 40x40 fine.
+ * The table is in `05-AUDIT.md` §8a.
+ *
+ * NO LOCAL GESTURE LAYER WAS EVER ADDED HERE, and that decision is why this comment can be a
+ * changelog instead of a migration. §9.1 says "G-14 is closed. Do not re-implement any part of it",
+ * and the Core Value says a gap the site exposes is a FINDING rather than a workaround. Had this
+ * file shipped a local `onPointerUp`, beta.2's branch would now be fighting it for the same
+ * gesture. DO NOT ADD ONE NOW EITHER: the component owns this, and it works.
  *
  * ================================================================================================
  * WHY THE ISLAND BUILDS THE CAPTION AND THE PAGE DOES NOT

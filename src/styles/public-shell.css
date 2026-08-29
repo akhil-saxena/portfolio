@@ -148,22 +148,36 @@ body {
  * 2. THE FULL-VIEWPORT MECHANISM — a flex column, because `--ds-appbar-h` cannot be read (§6.2)
  * ================================================================================================
  *
- * §6.2 prescribes `min-height: calc(100svh - var(--ds-appbar-h))` on a section under the bar, and
- * calls the Phase 0 finding "closed upstream — do not re-measure".
+ * §6.2 prescribed `min-height: calc(100svh - var(--ds-appbar-h))` on a section under the bar, and
+ * called the Phase 0 finding "closed upstream - do not re-measure".
  *
- * IT IS NOT CLOSED. MEASURED against the installed 2.0.0-beta.1, and then in a real browser:
- * `--ds-appbar-h` is declared on `.ds-atom-appbar` (`dist/css/appbar.css:48`,
- * `dist/primitives.css:5584`) and re-declared under `@media (pointer: coarse)` on
- * `.ds-atom-appbar:has(a)`. Custom properties inherit to DESCENDANTS, not to SIBLINGS. A
- * full-viewport section under `<main>` is a sibling of the bar, so `var(--ds-appbar-h)` there is
- * an unresolved property: the whole `calc()` is invalid at computed-value time and `min-height`
- * falls back to its initial `auto` — a plausible-looking page with no error anywhere. The
- * component's own docstring names this exact use case as the one the property serves, so it is a
- * design-system finding and it is filed for `2.0.0-beta.2`.
+ * IT WAS NOT CLOSED, AND IT IS NOW. MEASURED against the installed 2.0.0-beta.1, and then in a real
+ * browser three separate times (05-06, 05-11, 05-15): `--ds-appbar-h` was declared on
+ * `.ds-atom-appbar` (`dist/css/appbar.css:48`, `dist/primitives.css:5584`) and re-declared under
+ * `@media (pointer: coarse)` on `.ds-atom-appbar:has(a)`. Custom properties inherit to DESCENDANTS,
+ * not to SIBLINGS. A full-viewport section under `<main>` is a sibling of the bar, so
+ * `var(--ds-appbar-h)` there was an unresolved property: the whole `calc()` was invalid at
+ * computed-value time and `min-height` fell back to its initial `auto` - a plausible-looking page
+ * with no error anywhere. The component's own docstring named this exact use case as the one the
+ * property serves, so it was a design-system finding, and it was filed as D-2 for `2.0.0-beta.2`.
  *
- * DO NOT close it locally by re-declaring `--ds-appbar-h` at `:root`. That is a local restatement
- * of a design-system number that drifts on the next release, and it would be WRONG on coarse
- * pointers, where the bar is 69px and a `:root` copy would still say 47px.
+ * FIXED IN `2.0.0-beta.2`, consumed at commit `2015b4d`. The declaration moved to `:root`
+ * (`primitives.css:5715`), with `:root:has(.ds-atom-appbar[data-variant="withSearch"])` at 5721 and
+ * `:root:has(.ds-atom-appbar a)` at 5907 under the coarse query; the value moved 47 -> 57, and the
+ * bar's own `min-height` now READS the property so the number is self-fulfilling. MEASURED here
+ * 2026-08-29 at six widths x both pointers: `:root`, the bar and `<main>` - a SIBLING - all return
+ * the same value in all twelve cells, and the sibling reads "" in none.
+ *
+ * THE MECHANISM BELOW IS NOT CHANGED, AND THAT IS DELIBERATE. The property being readable does not
+ * make subtracting a constant better than a flex column that consumes the bar's ACTUAL height. At
+ * 344 and 390 on a fine pointer the bar still paints 67px against a declared 57, because the row
+ * does not fit and the logo label wraps to two lines - the one case beta.2's own docstring says it
+ * cannot promise. A structural mechanism is right at every width; a subtraction is right at ten of
+ * twelve.
+ *
+ * SO: STILL DO NOT re-declare `--ds-appbar-h` at `:root` here. The reason has changed - it is no
+ * longer "the property is unreadable" but "the property is now correct at source, and a local
+ * restatement is a stale copy of a number someone else maintains". The prohibition is the same.
  *
  * The mechanism below needs no number at all, and keeps all three of §6.2's load-bearing
  * properties:

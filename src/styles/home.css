@@ -57,10 +57,17 @@
  *     is one it hides.
  *
  * `--hm-above` is NOT `calc(var(--ds-appbar-h) + var(--space-11))`. 05-06 measured, in Chromium,
- * that `--ds-appbar-h` is declared on `.ds-atom-appbar` and custom properties inherit to
- * DESCENDANTS, not siblings — a section under `<main>` reads nothing, the `calc()` is invalid at
- * computed-value time, and `min-height` silently falls back to `auto`. That finding is NOT closed
- * upstream, whatever the UI-SPEC says.
+ * that `--ds-appbar-h` was declared on `.ds-atom-appbar` and custom properties inherit to
+ * DESCENDANTS, not siblings — a section under `<main>` read nothing, the `calc()` was invalid at
+ * computed-value time, and `min-height` silently fell back to `auto`. 05-11 and 05-15 reproduced
+ * it. It was filed as D-2 and FIXED IN `2.0.0-beta.2`: the declaration is now on `:root` and a
+ * sibling reads it correctly (measured 2026-08-29, twelve cells, all twelve agree).
+ *
+ * THE COMPOSITION BELOW STAYS ANYWAY, on the second of its two reasons rather than the first.
+ * Reading the property would now work; it would still be worse. See the allowance note below — at
+ * 344 and 390 on a FINE pointer the bar paints 67px against the property's declared 57, because the
+ * row does not fit and the logo label wraps, and beta.2's own docstring names that as the case it
+ * cannot promise. An over-estimate is right at every width; the property is right at ten of twelve.
  *
  * It is composed instead of two terms, and the second is an ALLOWANCE rather than a copy:
  *
@@ -82,9 +89,19 @@
 /* ══ 1. STATE A — the height budget, and the identity block ═════════════════════════════════ */
 
 .hm-a {
-  /* MEASURED (see the SUMMARY): `.ds-atom-appbar` renders 47px on a fine pointer and 69px on a
-     coarse one in this shell. `--space-16` (64px) + `--space-2` (8px) = 72px clears the taller of
-     the two with 3px to spare and needs no pointer branch of its own. */
+  /* RE-MEASURED 2026-08-29 against 2.0.0-beta.2, on the built artefact, at six widths x both
+     pointers. The number this comment used to carry — "renders 47px on a fine pointer" — was the
+     property's DECLARED value, not the bar's PAINTED height, and the two were never the same:
+
+       fine    344 -> 67   390 -> 67   768/841/1024/1440 -> 57
+       coarse  344..1440   -> 69 at every width
+
+     `--space-16` (64px) + `--space-2` (8px) = 72px clears the TALLEST painted value (69) with 3px
+     to spare and needs no pointer branch of its own. It also clears 67, which is the value the
+     bar takes at the two narrowest fine cells where the logo label wraps to two lines.
+
+     The allowance is deliberately sized against the taller bar and used at both pointers, because
+     the two errors are not symmetric — see this block's header. */
   --hm-bar-allowance: calc(var(--space-16) + var(--space-2));
   --hm-above: calc(var(--space-11) + var(--hm-bar-allowance));
 

@@ -1,0 +1,191 @@
+---
+/**
+ * One project card on `/work` — §10 items 6, 10.1, 10.2 and 10.3. Plan 05-09, task 2.
+ *
+ * ================================================================================================
+ * THE ANCHOR STRUCTURE, AND WHY IT IS A STRETCHED LINK RATHER THAN A CARD-SHAPED ANCHOR
+ * ================================================================================================
+ *
+ * §10.1 asks for two things that cannot both be literal HTML: the WHOLE CARD SURFACE links to
+ * `project.href`, and `badges[]` is a row of outbound links. An `<a>` inside an `<a>` is invalid,
+ * and the parser does not merely tolerate it — it CLOSES the outer anchor at the inner one, so the
+ * badge row would silently fall outside the card link and the DOM would stop matching the source.
+ *
+ * Two structures were available. The card rendered AS an anchor with the badge row moved outside
+ * it was rejected: the badges are part of the card's composition and moving them out of the
+ * bordered box changes the reviewed design to satisfy an implementation constraint.
+ *
+ * So: the TITLE is the anchor, and it is stretched over the card with a positioned `::after`.
+ * The accessibility reasoning, stated because it is the reason and not a side effect:
+ *
+ *   - The accessible NAME of the card's destination is the project title plus the visually-hidden
+ *     "(opens in a new tab)". A card-shaped anchor would have taken the title, the status, the
+ *     whole description and every tech chip into one link name — a screen-reader user would hear
+ *     forty words to learn where one link goes.
+ *   - There is exactly ONE anchor per card for the card's own destination, so the link list a
+ *     screen reader builds has one entry per project rather than one entry plus a duplicate.
+ *   - The badge links stay SIBLINGS of the stretched anchor, not descendants, so they are
+ *     independently focusable and reachable, and tab order reads title → badges → next card.
+ *   - The focus ring is drawn on the anchor's own inline box (`box-shadow` paints on the element,
+ *     not on its `::after`), so a keyboard user sees a ring around the title rather than an
+ *     invisible ring around the whole card.
+ *
+ * THE TRADEOFF, RECORDED RATHER THAN HIDDEN: the overlay sits above the description, so text
+ * inside the card cannot be selected with the mouse. That is inherent to every stretched-link
+ * implementation. It is accepted here because the card's text is a two-sentence summary that also
+ * exists on the destination, and because the alternative structures cost more.
+ *
+ * ================================================================================================
+ * `StatusPill`, NOT `Badge` (§10.2) — AND WHAT THE MAPPING ACTUALLY BUYS, MEASURED
+ * ================================================================================================
+ *
+ * The generic path always renders a `<span>`; its own docstring names this exact surface: *"A
+ * status read out of content is not a control — a Live / Maintained / Archived label on a public
+ * Work card has nothing to activate."* `Badge`'s docstring points here for the three-way case.
+ *
+ * The tone mapping is §10.2's, unchanged. What it buys is narrower than §10.2 claims, and this was
+ * MEASURED against the installed `2.0.0-beta.1` rather than read:
+ *
+ *     TONE_STEP (dist/chunk-TYSPT6SD.js)   muted: 1 · success: 1 · secondary: 2 · accent: 2 ·
+ *                                          primary: 3 · danger: 3
+ *
+ * so `live`→`success` and `maintained`→`muted` both resolve to `data-step="1"`, which is the SAME
+ * fill (`color-mix(--ink 7%, --paper)` in dark) and the SAME marker shape (hollow ring). The
+ * shape-bearing split the docstring promises is therefore a TWO-way split on this page, not a
+ * three-way one: `archived` separates by shape and fill, `live` and `maintained` separate only by
+ * their marker hue (`--green` against `--ink-5`) and by their words. Reported as a finding rather
+ * than worked around — §10.2's mapping is a reviewed decision and this component is not the place
+ * to overrule it.
+ *
+ * ================================================================================================
+ * `badges[]` HAS NO ICON, AND THAT IS A DESIGN-SYSTEM GAP RATHER THAN AN OMISSION
+ * ================================================================================================
+ *
+ * §10.1 and this plan both ask for `badge.icon` mapped to a lucide icon from
+ * `@akhil-saxena/design-system/icons`. MEASURED against the installed package: that subpath
+ * exports 32 named wrappers and NONE of the four stored icon names has one —
+ * `arrow-up-right`, `play-store`, `github` and `chrome-store` are all absent, there is no
+ * `ExternalLink` or `ArrowUpRight`, and the generic `Icon` component (which takes a `LucideIcon`)
+ * is not exported from any public subpath. lucide itself dropped brand glyphs at v1, so `Github`
+ * and `Chrome` do not exist to re-export.
+ *
+ * Reaching around the design system into its transitive `lucide-react` was NOT taken: it is not a
+ * dependency of this repository, and the Core Value settles exactly this trade. The badges
+ * therefore render as text links carrying `badge.label` — which already reads "Play Store",
+ * "GitHub", "Chrome Store" — and the gap is filed. `badges[]` is a LINK LIST and never the status.
+ *
+ * ================================================================================================
+ * THE DESIGN SYSTEM'S INLINE STYLES, AND THE THREE OVERRIDES THAT FOLLOW FROM THEM
+ * ================================================================================================
+ *
+ * MEASURED through `renderToStaticMarkup` with the installed build: `Link` emits
+ * `style="font-family:var(--font);cursor:pointer"` on EVERY variant. An inline declaration cannot
+ * be beaten by any app stylesheet rule, at any specificity, without `!important` — so a serif or
+ * mono link is not expressible from CSS at all. `Link` DOES merge a consumer `style` object over
+ * its own (measured: `fontFamily` was replaced and `cursor` retained), and it has a `color` prop,
+ * so the overrides go through the component's own API rather than through `!important`.
+ * This is why the card title carries a `style` and a `color` and the badges do not: the badges are
+ * DM Sans, which is what `var(--font)` already resolves to.
+ *
+ * The badges take `variant="default"` and NOT `quiet` for the same reason, in reverse: `default` is
+ * the stylesheet-only variant that already paints an underline, `--ink-2`, 1px thickness and a 2px
+ * offset, so the design system supplies the whole affordance and this page overrides nothing. On a
+ * card whose entire surface is already a link, a badge with no underline would be indistinguishable
+ * from the words beside it — and the badge row is the only route to a project's source. §4.6b's
+ * inline-`textDecorationColor` defect belongs to `footer` and `action`, not to `default`, so this
+ * variant is also the one that is correct on a dark field.
+ */
+
+import { Card } from '@akhil-saxena/design-system/components/Card';
+import { Chip } from '@akhil-saxena/design-system/components/Chip';
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import { StatusPill } from '@akhil-saxena/design-system/components/StatusPill';
+import type { Project } from '../../schemas';
+
+interface Props {
+  project: Project;
+  /** `project.description` with `{{ds.*}}` already resolved — see `work.astro`. */
+  description: string;
+}
+
+const { project, description } = Astro.props;
+
+/**
+ * §10.2's mapping, and the only thing on this page that is not derivable from the data.
+ *
+ * The record is typed by the `status` union, so adding a fourth value to `ProjectSchema` is a
+ * TypeScript error here rather than an unmapped tone at runtime — which is the failure mode worth
+ * catching, because an unmapped tone renders a pill with no fill and no marker and looks like a
+ * styling bug three files away.
+ */
+const STATUS_TONE = {
+  live: 'success',
+  maintained: 'muted',
+  archived: 'secondary',
+} as const satisfies Record<Project['status'], 'success' | 'muted' | 'secondary'>;
+
+/**
+ * The label IS the stored status, capitalised — not a second copy of it.
+ *
+ * §10.2 writes the three labels out as `Live` / `Maintained` / `Archived`, which are exactly the
+ * three enum values with an initial capital. Typing them again would be a hand-maintained copy of
+ * data, which §13.3 is about; deriving them means a schema change cannot leave a stale label.
+ */
+const statusLabel = project.status.charAt(0).toUpperCase() + project.status.slice(1);
+
+/**
+ * The announcement §10.1 requires, in one place so the anchors cannot drift apart.
+ * `.ds-visually-hidden` is the design system's own utility (`primitives.css`) — measured present,
+ * `clip-path: inset(50%)` on a 1px box, which is the current recommended form. No app rule is
+ * written for it, so QUAL-03's layout allowance is not spent here.
+ */
+const NEW_TAB = '(opens in a new tab)';
+---
+
+<Card className="wk-card" variant="glass" padding="lg" hover>
+  <div class="wk-card-head">
+    <h3 class="wk-card-title">
+      <Link
+        className="wk-card-link"
+        href={project.href}
+        variant="quiet"
+        color="var(--ink)"
+        style={{ fontFamily: 'var(--font-display)' }}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {project.title}<span class="ds-visually-hidden"> {NEW_TAB}</span>
+      </Link>
+    </h3>
+    <StatusPill tone={STATUS_TONE[project.status]} label={statusLabel} />
+  </div>
+
+  <p class="wk-card-desc">{description}</p>
+
+  <ul class="wk-tags">
+    {
+      /* `Chip` is WRAPPED rather than given a `className`. §4.6c records the atom hook being
+        clobbered by a consumer class; it CONCATENATES in the installed 2.0.0-beta.1 (measured), so
+        the record is stale — but wrapping costs one element and cannot regress either way. */
+    }
+    {project.tech.map((tech) => <li><Chip>{tech}</Chip></li>)}
+  </ul>
+
+  <ul class="wk-badges">
+    {
+      project.badges.map((badge) => (
+        <li>
+          <Link
+            className="wk-badge"
+            href={badge.href}
+            variant="default"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {badge.label}<span class="ds-visually-hidden"> {NEW_TAB}</span>
+          </Link>
+        </li>
+      ))
+    }
+  </ul>
+</Card>

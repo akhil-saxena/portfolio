@@ -39,14 +39,115 @@
  * §5.2 permits by name. The suite asserts all of that against the served bytes.
  */
 
+import { getCollection } from 'astro:content';
+import rawProjects from '../../data/projects.json';
 import PublicLayout from '../layouts/PublicLayout.astro';
 import EmploymentBand from '../components/public/EmploymentBand.astro';
+import ProjectCard from '../components/public/ProjectCard.astro';
 import Seo from '../components/public/Seo.astro';
 import { resume } from '../lib/content';
+import { resolveDsTokens } from '../lib/ds-component-count';
 import '../styles/work.css';
 
 /** The route's own path, in one place: the canonical and the `<Seo>` call sit beside it. */
 const WORK_PATH = '/work';
+
+/*
+ * The projects come through the `projects` CONTENT COLLECTION rather than a raw JSON import, so the
+ * records this page renders are the ones `ProjectSchema` validated. `src/content.config.ts` records
+ * why that matters: content sync runs before the build whether or not a page reads a collection,
+ * which is the property a module-scope parse turned out NOT to have (03-08 measured it).
+ *
+ * 🔴 AND `getCollection` DOES NOT PRESERVE THE FILE'S ORDER. MEASURED, against this build: it
+ * returns the five records sorted by `id` — cairn, design-system, hued, momentum, timeshift —
+ * where `data/projects.json` stores them cairn, hued, momentum, timeshift, design-system. The
+ * page rendered the design-system card SECOND on its first build, which is not §10.1's order and
+ * is not an order anybody chose. Worse, it is an order that MOVES: renaming a project's `id`
+ * silently reshuffles the reviewed grid.
+ *
+ * So the collection remains the source of the RECORDS and the file is read for their ORDER, which
+ * is the one thing the store does not carry. `rawProjects` is used for nothing else — every field
+ * rendered on this page comes from the validated entry.
+ */
+const orderOnDisk = (rawProjects as ReadonlyArray<{ id: string }>).map((record) => record.id);
+const projects = (await getCollection('projects'))
+  .map((entry) => entry.data)
+  .sort((a, b) => orderOnDisk.indexOf(a.id) - orderOnDisk.indexOf(b.id));
+
+/*
+ * ANTI-VACUITY. `ProjectsSchema` refuses an empty array upstream, and the `file()` loader does NOT:
+ * `src/content.config.ts`'s header records, read out of the loader's own source, that a missing or
+ * unparseable file is LOGGED rather than thrown and an empty array is a warning. So a deleted
+ * `data/projects.json` would reach this line as `[]`, and the page would ship an eyebrow, the word
+ * for zero — which `spellCount` refuses — and an empty grid.
+ */
+if (projects.length === 0) {
+  throw new Error(
+    'work.astro: the `projects` collection is empty. The file() loader logs a missing or ' +
+      'unreadable data/projects.json rather than throwing, so an empty collection here means the ' +
+      'file is gone or unparseable, not that there are no projects.',
+  );
+}
+
+/*
+ * §6.7 — `{{ds.componentCount}}` / `{{ds.categoryCount}}` resolved from the INSTALLED design
+ * system's own README. `resolveDsTokens` throws on any `{{…}}` token it cannot resolve, and that
+ * throw is the point: `ProjectSchema` bans the literal FIGURE, not the token, so this call is the
+ * only thing between a stored token and the page a hiring manager reads first.
+ */
+const cards = projects.map((project) => ({
+  project,
+  description: resolveDsTokens(project.description),
+}));
+
+/*
+ * The one-liner is Home's string (§13.1) and this page does not render it — it is resolved here as
+ * a GUARD, because both fields carry the token and `ProjectSchema`'s OD-6 refusal follows the
+ * sentence rather than the field. A typo'd token stored in `oneLiner` fails this build, naming the
+ * token and the input, instead of surfacing later on a route that renders it.
+ */
+for (const project of projects) resolveDsTokens(project.oneLiner);
+
+/**
+ * The count in §10 item 5's line is DERIVED and spelled, and above this range it THROWS.
+ *
+ * §13.3: no hand-maintained copy of a count may exist. 04-09 turned `main` red by writing one after
+ * 04-01 had re-scoped fifteen records, and `data/projects.json` is content Akhil edits.
+ *
+ * It throws rather than falling back to digits because the fallback is the dangerous branch: a
+ * silent `13 — SHIPPED ON MY OWN` set in Playfair and mono is a defect nobody notices, while a
+ * refused build is a five-minute edit to this array. The word list stops at twelve because that is
+ * where "a few projects, shipped on my own" stops being the sentence this line is part of.
+ */
+const SPELLED_COUNT = [
+  'one',
+  'two',
+  'three',
+  'four',
+  'five',
+  'six',
+  'seven',
+  'eight',
+  'nine',
+  'ten',
+  'eleven',
+  'twelve',
+] as const;
+
+function spellCount(n: number): string {
+  if (!Number.isInteger(n) || n < 1 || n > SPELLED_COUNT.length) {
+    throw new RangeError(
+      `work.astro: spellCount(${n}) - the projects count line spells 1 to ${SPELLED_COUNT.length} ` +
+        'in words and refuses anything outside that range. Falling back to digits would ship ' +
+        'a bare numeral in a Playfair-and-mono line where nobody would notice it. Extend ' +
+        'SPELLED_COUNT, or reword the line.',
+    );
+  }
+  return SPELLED_COUNT[n - 1] as string;
+}
+
+/** §10 item 5's reviewed line. The number is derived; the rest is the reviewed copy. */
+const projectCountLine = `${spellCount(cards.length)} — shipped on my own`;
 ---
 
 <PublicLayout mainClass="pub-max-work wk-page">
@@ -70,7 +171,23 @@ const WORK_PATH = '/work';
   </header>
 
   <section class="wk-section">
-    <h2 class="wk-eyebrow">Professional experience</h2>
+    <div class="wk-section-head">
+      <h2 class="wk-eyebrow">Professional experience</h2>
+    </div>
     <EmploymentBand entries={resume.experience} />
+  </section>
+
+  <section class="wk-section">
+    <div class="wk-section-head">
+      <h2 class="wk-eyebrow">Projects</h2>
+      <p class="wk-count">{projectCountLine}</p>
+    </div>
+    <div class="wk-grid">
+      {
+        cards.map(({ project, description }) => (
+          <ProjectCard project={project} description={description} />
+        ))
+      }
+    </div>
   </section>
 </PublicLayout>

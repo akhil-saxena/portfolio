@@ -107,17 +107,36 @@
 }
 
 /*
+ * The rule under a section's heading row. §10 item 5 puts the `PROJECTS` eyebrow and the derived
+ * count line on ONE line with the count right-aligned, so the rule belongs to the row rather than
+ * to the heading — one declaration serves both sections and the experience band's heading, which
+ * has no count beside it, keeps exactly the same rule and spacing.
+ */
+.wk-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  margin-bottom: var(--space-6);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--rule);
+}
+
+/*
  * §3.1 "Eyebrow · metric · counter": IBM Plex Mono `--text-xs` 11 / 500 / `--ls-wide`.
  *
  * It is an `<h2>` and not the design system's `Eyebrow`, and that is a MEASURED constraint rather
  * than a preference: `EyebrowProps extends HTMLAttributes<HTMLSpanElement>` with `size`, `color`
  * and `tone` and no `as` prop, so it cannot carry heading semantics and the page would lose its
  * outline. `/resume` reached the same conclusion for the same reason in 05-10. Recorded upstream.
+ *
+ * The count line takes the same role — §3.1 lists "eyebrow · metric · counter" as ONE row, so they
+ * share one declaration rather than two that agree today.
  */
-.wk-eyebrow {
-  margin: 0 0 var(--space-6);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--rule);
+.wk-eyebrow,
+.wk-count {
+  margin: 0;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
@@ -125,6 +144,10 @@
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+.wk-count {
+  text-align: right;
 }
 
 /* ── 4. The employment band (§10 item 4) ────────────────────────────────────────────────────── */
@@ -220,4 +243,187 @@
 .wk-metric-value {
   margin-right: var(--space-2);
   color: var(--ochre-d-strong);
+}
+
+/* ── 5. The project grid (§10 item 6) ───────────────────────────────────────────────────────── */
+
+/*
+ * One column at classes 1–2, two at 3–4, three at 5–6 — the same three widths the shell's gutter
+ * ladder steps at, so the page and the shell never disagree about which class they are in. See the
+ * file header for why these two numbers are written here and how they are held to
+ * `BREAKPOINTS` in `src/lib/layout-ladder.ts`.
+ *
+ * `minmax(0, 1fr)` and not `1fr`: a grid item's default `min-width: auto` is its content's
+ * min-content width, so a long unbroken token in a description would push the column wider than
+ * its track and overflow the page — the R-6 horizontal-scroll failure the ladder exists to close.
+ */
+.wk-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+@media (min-width: 673px) {
+  .wk-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .wk-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* ── 6. One project card (§10.3) ────────────────────────────────────────────────────────────── */
+
+/*
+ * `Card` CONCATENATES `className` and no longer inlines `display` (MEASURED against the installed
+ * build: it renders `class="ds-atom-card wk-card"`), so this rule applies and `.wk-tags`'s
+ * `margin-top: auto` bottom-aligns the tech chips as designed. Both were broken in Phase 0 and both
+ * were CONSUMER errors — `class` instead of `className` — rather than component defects;
+ * `scripts/assert-ds-import-contract.mjs` [DS-CLASS] now makes that class of error a build failure.
+ *
+ * `position: relative` is what the stretched title link is stretched against. `height: 100%` makes
+ * every card in a grid row the same height, so the chips of adjacent cards line up.
+ */
+.wk-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  height: 100%;
+}
+
+/*
+ * §4.4 rule 1 — ON DARK A CARD'S BOUNDARY IS ITS BORDER, NOT ITS FILL.
+ * `--cream-2` over `--cream` in dark is a ~1.1:1 delta, so the fill draws nothing and the border
+ * has to carry the edge: `--wire` (3.78 / 3.48 / 3.23 — clears the 3:1 non-text floor) and not
+ * `--rule` (1.36 / 1.25 / 1.16, which is a hairline for separating rows, not for bounding a box).
+ *
+ * SPECIFICITY, stated because a tie here is invisible: this is (0,4,0) against
+ * `primitives.css:1133 .ds-atom-card[data-variant="glass"]` at (0,2,0). It wins on specificity, so
+ * it does not depend on which stylesheet the bundler emits first — which is the exact defect class
+ * STATE.md records three consecutive plans hitting in Phase 1.
+ */
+.dark .wk-grid .wk-card[data-variant="glass"] {
+  border-color: var(--wire);
+}
+
+/*
+ * §4.3 item 5 — the card hover border is the accent, and it is one of only six elements that may
+ * be. `:focus-within` carries the same paint for a keyboard user, because the affordance is about
+ * "this card is the one you are on" and not about the mouse.
+ *
+ * SPECIFICITY: the light pair is (0,4,0) against `primitives.css:7126` (0,3,0); the dark pair is
+ * (0,5,0) against `primitives.css:7130 .dark .ds-atom-card[data-hover="elevate"]:hover` at (0,4,0),
+ * which paints `--ink-4` and would otherwise win the tie by source order. Both were grepped for
+ * before this rule was written.
+ */
+.wk-grid .wk-card[data-hover="elevate"]:hover,
+.wk-grid .wk-card[data-hover="elevate"]:focus-within,
+.dark .wk-grid .wk-card[data-hover="elevate"]:hover,
+.dark .wk-grid .wk-card[data-hover="elevate"]:focus-within {
+  border-color: var(--ochre-d);
+}
+
+/*
+ * §12.2 (PUB-13) — the card hover border transition is inside the no-preference query.
+ *
+ * 🔴 AND THE `reduce` BLOCK IS LOAD-BEARING, NOT BELT-AND-BRACES. The design system declares
+ * `transition: box-shadow 0.15s, border-color 0.15s` on `.ds-atom-card[data-hover="elevate"]`
+ * (`primitives.css:7124`) OUTSIDE any motion query, so declaring this page's transition inside
+ * `no-preference` does not remove the animation under `reduce` — the component's own would still
+ * run. Both blocks are (0,4,0) and beat it. Reported upstream; the local reset is here because
+ * PUB-13 is this site's requirement and a colour transition is the smallest possible instance of it.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .wk-page .wk-grid .wk-card[data-hover="elevate"] {
+    transition:
+      border-color 0.25s ease,
+      box-shadow 0.15s ease;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wk-page .wk-grid .wk-card[data-hover="elevate"] {
+    transition: none;
+  }
+}
+
+.wk-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/* §3.1 "Project / card / photo title": Playfair `--text-xl` 22 / 700 / `--lh-snug` / `--ls-tight`. */
+.wk-card-title {
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--ls-tight);
+  color: var(--ink);
+}
+
+/*
+ * THE STRETCHED LINK. See `ProjectCard.astro`'s header for the accessibility reasoning and for the
+ * text-selection tradeoff this accepts. The overlay is transparent and carries no `z-index`, so the
+ * badge row — which is positioned and later in the DOM — paints and receives pointer events above
+ * it without either needing a stacking-context number nobody would remember to maintain.
+ */
+.wk-card-link::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+/* §3.1 "Body — card description, résumé bullet": DM Sans `--text-md` 15 / relaxed. */
+.wk-card-desc {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  line-height: var(--lh-relaxed);
+  letter-spacing: var(--ls-base);
+  color: var(--ink-3);
+}
+
+/*
+ * `margin-top: auto` is what bottom-aligns the chip row inside the flex column, and it carries the
+ * badge row with it because the badges follow in source order. §10.3 names this behaviour as the
+ * thing the `class`→`className` fix restored.
+ */
+.wk-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * §3.1 "Footer / meta": DM Sans `--text-sm` 12.5. The size is declared on the list and inherited by
+ * the anchors — the design system's `Link` resets `font: inherit` and inline-sets only
+ * `font-family`, which already resolves to DM Sans, so no override is needed here at all.
+ *
+ * `position: relative` lifts the row above the stretched card link so the badges stay clickable.
+ */
+.wk-badges {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.wk-badge {
+  white-space: nowrap;
 }

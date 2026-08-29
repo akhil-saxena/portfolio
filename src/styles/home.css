@@ -1,381 +1,359 @@
 /*
- * Home — layout only, per QUAL-03. Plans 05-11 and 05-16.
+ * Home — layout only, per QUAL-03. Plans 05-11, 05-16 and 05-17.
  *
- * No colour, no type size, no font family, no spacing NUMBER: every value is a design-system
+ * No colour, no type size, no font family, no radius, no duration: every value is a design-system
  * token reached through `var(--…)`. The exceptions are stated where they occur and each is a
  * measurement rather than a style choice — the media-query BREAKPOINTS (a media query cannot
  * contain a `var()`, so the rungs are literals here and are asserted against
- * `src/lib/layout-ladder.ts` by `test/public/home.node.test.ts`), the tile aspect ratios, the
- * `10px` block radius (registered as DEBT-RADIUS-10) and Act 1's `800px` column, which is
- * `ACT_ONE_MAX` and is asserted against it by the same file.
+ * `src/lib/layout-ladder.ts` by `test/public/home.node.test.ts`), the tile aspect ratios, Act 1's
+ * `1000px` column (which is `ACT_ONE_MAX` and is asserted against it by the same file) and the
+ * scroll-range lengths in §4, which are viewport fractions in `svh` — the same class of arithmetic
+ * as `min-height: 100svh` and the same one `gate:app-css` already permits there.
  *
  * ================================================================================================
- * 🔴 ACT 1 IS THE LEGACY COMPOSITION. THIS FILE WAS REWRITTEN BECAUSE THE SPEC HAD DRIFTED.
+ * 🔴 THIS FILE WAS REWRITTEN AGAIN, AND THE REASON IS THAT 05-16 WORKED FROM THE WRONG SOURCE
  * ================================================================================================
  *
- * Phase 5 built Home from `05-UI-SPEC.md`, which had drifted from the design handoff nobody
- * diffed it against. Akhil compared the result with the site it replaced — "miles better, more
- * polished and clean" — and he is right. The two authoritative sources are both in the repository
- * and the rule applied is **legacy for LAYOUT, handoff for DETAIL**:
+ * 05-11 built Home from `05-UI-SPEC.md`. 05-16 found that the spec had drifted, and rebuilt Act 1
+ * from **the legacy stylesheet** with the handoff used only for detail — "legacy for LAYOUT,
+ * handoff for DETAIL". Akhil rejected that too: *"rudimentary… like something made by a ten year
+ * old."*
  *
- *     git show legacy/nextjs-portfolio:src/styles/home.css      the site he liked
- *     design_handoff_portfolio/Akhil Saxena - Home.dc.html      the approved high-fidelity design
+ * The mistake both times was the same one, and it is worth naming precisely because it is not a
+ * taste failure: **neither plan opened the design.** `design_handoff_portfolio/Akhil Saxena -
+ * Home.dc.html` is not a description of the approved design, it is a WORKING PROTOTYPE OF IT — it
+ * renders in a browser. 05-16 read its README and its markup and reproduced individual values from
+ * them, and got the composition wrong anyway, because the composition is not a list of values.
  *
- * The legacy Act 1, measured, is the composition §1 reproduces:
+ * So every number below is MEASURED IN CHROMIUM at 1280x860 against that file, rendered, and the
+ * measurements are recorded beside the rules they produced. Where the prototype and
+ * `05-UI-SPEC.md` disagree, THE PROTOTYPE WINS and the divergence is named.
  *
- *     .home-d      max-width 800px · margin 0 auto · min-height 100vh
- *                  display flex · column · align-items center · justify-content center
- *     .hd-hero     text-align center
- *     .hd-name     serif 3rem/700 · letter-spacing -0.02em
- *     .hd-tagline  serif 1.125rem ITALIC · muted
- *     .hd-intro    serif 1rem · body            <- SERIF. Phase 5 shipped sans --text-base.
- *     .hd-gallery  grid 3 cols · gap 0.5rem · border-radius 10px · overflow hidden
- *     .hd-ctas     flex · gap 1rem · two buttons
- *     @600px       name 2.25rem · gallery 2 cols · CTAs stack
+ * ------------------------------------------------------------------------------------------------
+ * WHAT 05-16 SHIPPED vs WHAT THE PROTOTYPE DOES — the four that changed the page
+ * ------------------------------------------------------------------------------------------------
  *
- * **Everything is centred, horizontally and vertically, in one viewport.** What Phase 5 shipped
- * was left-aligned at 1080px with a dead band above the fold, and that is the whole complaint.
+ *                        05-16 shipped                    prototype, MEASURED
+ *   the top row          `AppBar`: a --surf-2 band        no bar. Two quiet links + a bordered
+ *                        with a hard bottom edge          circle, on the page background
+ *   the photo block      gap 8px, radius+clip on the      gap 14px, radius 8px ON EACH TILE —
+ *                        CONTAINER: one flush slab        six separated photographs
+ *   Act 1's column       800px (`.home-d`, legacy)        1000px (grid content, x=140..1140)
+ *   the scroll cue       `SCROLL FOR THE WORK ↓`,         `↓ THE WORK`, mono 10.5px, muted, no
+ *                        underlined, ochre                underline, breathing at 2.2s
  *
- * 🔴 AND THE ONE DETAIL THAT MATTERS MOST: `border-radius` AND `overflow` ARE ON THE CONTAINER.
- * Only the block's four outer corners are rounded and the twenty interior ones are square, so six
- * photographs read as ONE flush object. Phase 5 put the radius on the TILE — six separately
- * rounded cards — and that single difference is most of why the original looks composed. It only
- * survives a TIGHT gap, which is why `PEEK_GAP` (8px) exists and is not `MASONRY_GAP` (16px).
- *
- * ================================================================================================
- * THIS FILE IS GLOBAL, SO §6.5's `:global()` IS NOT WRITTEN HERE — AND THAT IS DELIBERATE
- * ================================================================================================
- *
- * §6.5 and the plan both warn about the Astro scoping trap: a page's `<style>` block is scoped
- * with that file's own `data-astro-cid-*`, so a bare `#work { }` written inside `index.astro`
- * cannot reach `HomeActTwo.astro`'s root element, `getComputedStyle(work).scrollSnapAlign` reads
- * `none`, and the source looks correct. **That defect has appeared twice in this project.**
- *
- * The mechanism that closes it here is not `:global()` — it is that this is a plain `.css` file
- * imported from `index.astro`'s frontmatter, exactly as `design-system.css` and `public-shell.css`
- * are imported from the layout. An imported stylesheet is NOT scoped: no `data-astro-cid-*`
- * attribute is added to its selectors, so `#work` reaches `HomeActTwo.astro`'s root from here.
- *
- * `:global()` MUST NOT be written in this file. It is Astro `<style>` syntax; in a plain
- * stylesheet it is an unknown pseudo-class, which makes the whole selector invalid and drops the
- * rule — the exact failure it was meant to prevent, arriving through the fix for it.
+ * The first three are this file's §1, §3 and §2. The fourth is §5.
  *
  * ================================================================================================
- * THE STATE-A HEIGHT BUDGET — WHY IT IS NOT `flex: 1 0 auto` ALONE (a finding, see the SUMMARY)
+ * §0. WHAT IS NOT HERE ANY MORE — THE STICKY REVEAL, AND WHY REMOVING IT IS THE FIX
  * ================================================================================================
  *
- * `public-shell.css` §2 establishes a flex column and tells this plan the opt-in is one
- * declaration, `.hm-a { flex: 1 0 auto }`. **On a one-section page that is right. On the two-act
- * Home it cannot work, and the reason is arithmetic rather than a defect in the shell:**
+ * 05-16 made `.hm-a` `position: sticky; top: 0` and gave `.hm-b` an opaque background and a
+ * `z-index`, so Act 2 scrolled OVER a pinned Act 1. Akhil's complaint about it was specific:
+ * *"I should be able to scroll in a single go from the first section to the second section."*
  *
- *     .pub-shell { min-height: 100svh; display: flex; flex-direction: column }
- *     .pub-main  { flex: 1 1 auto;     display: flex; flex-direction: column }
+ * MEASURED on the rebuilt page in Chromium at 1280x860, `document.scrollHeight` 1792:
  *
- * Flexbox distributes FREE SPACE, and free space exists only while the container is taller than
- * its content. `.pub-main`'s content is `.hm-a` plus `.hm-b`, and `.hm-b` is `min-height: 100svh`
- * (required — see §4). So the shell's content is already taller than `100svh`, `min-height` is
- * satisfied with nothing left over, `.pub-main`'s height is content-determined, and `flex-grow: 1`
- * on `.hm-a` distributes zero. State A would be exactly as tall as its own content.
+ *     scrollY 0     Act 2's top edge at y = 860   (exactly one viewport below the fold)
+ *     scrollY 860   Act 2's top edge at y = 0     (exactly one viewport of travel)
  *
- * `flex: 1 0 auto` is kept because its OTHER half is load-bearing and unaffected: `flex-shrink: 0`
- * is what makes content taller than the budget overflow VISIBLY rather than being squeezed — the
- * `min-height`-never-`height` property §6.2 names. The grow half is inert on this page.
+ * Act 1 is `calc(100svh - var(--hm-above))` tall and sits under a `--hm-above`-tall row, so the two
+ * sum to exactly `100svh` and **one viewport of scrolling lands Act 2 flush at the top**. That is
+ * the requirement, and it is arithmetic rather than a snap: `scroll-snap-type` was measured in
+ * 05-16 to over-pull by 239px past halfway, and nothing here reintroduces it — the assertion in
+ * `home.node.test.ts` that no `scroll-snap-` declaration survives is kept.
  *
- * So the budget is an explicit `min-height`, and the chrome above state A is subtracted:
- *
- *   - `svh`, never `vh`, never `dvh`. `100vh` is the LARGE viewport, so at first paint on iOS
- *     Safari and Android Chrome the scroll prompt — the one element whose entire job is to be
- *     visible at first paint — is pushed below the fold. `dvh` changes DURING a scroll, moving
- *     a transition's own target distance mid-gesture.
- *   - `min-height`, never `height`. A visible overflow is a failure a screenshot catches; a clip
- *     is one it hides.
- *
- * ✅ `--hm-above` IS NOW `calc(var(--space-11) + var(--ds-appbar-h))` — THE DESIGN SYSTEM'S OWN
- * RECIPE, EXACT AT ALL FOURTEEN MEASURED CELLS — AND GETTING THERE TOOK TWO UPSTREAM FIXES AND
- * ONE DESIGN DECISION. THE HISTORY IS KEPT BECAUSE IT IS THE REASON TO TRUST THE PRESENT LINE.
- *
- *   1. 05-06 measured, in Chromium, that `--ds-appbar-h` was declared on `.ds-atom-appbar`, and
- *      custom properties inherit to DESCENDANTS, not siblings. A section under `<main>` read
- *      nothing, the `calc()` was invalid at computed-value time, and `min-height` silently fell
- *      back to `auto` — a plausible-looking page with no error anywhere. Filed as D-2.
- *   2. FIXED IN `2.0.0-beta.2`: the declaration moved to `:root`, and a sibling reads it.
- *   3. **But it was still wrong at two cells of twelve**, and the property's own docstring names
- *      exactly why: *"squeeze the row until it wraps and the bar will be taller than the property
- *      says."* At 344 and 390 on a FINE pointer the bar painted **67px against a declared 57**,
- *      because the row did not fit and the WORDMARK wrapped to two lines. So 05-11 and 05-15 used
- *      an over-estimate (`--hm-bar-allowance`, 72px) instead: right at every width, where the
- *      property was right at ten of twelve.
- *   4. 05-16 REMOVED THE WORDMARK ON HOME, on the design handoff's authority and for its own
- *      reasons (`PublicNav.tsx`). **That closed the exception.** RE-MEASURED on the built
- *      artefact, seven widths x both pointers, fourteen cells:
- *
- *          fine    344 390 673 768 841 1024 1440  ->  bar 57, --ds-appbar-h 57   14 of 14 agree
- *          coarse  344 390 673 768 841 1024 1440  ->  bar 69, --ds-appbar-h 69
- *
- *      and `.hm-a`'s document offset is `44 + 57 = 101` fine / `44 + 69 = 113` coarse at every
- *      one, which is `--space-11` plus the property, exactly.
- *
- * So the subtraction is now EXACT rather than conservative, and `.hm-a`'s bottom edge lands on the
- * fold rather than 15px above it. That is what makes `fills` (`aBottom >= vh`) an equality instead
- * of a near miss, and it is the composition the property was built for.
- *
- *   1. `--space-11` — `.pub-main`'s own `padding-top`, declared in `public-shell.css` §2. This
- *      page is entitled to that number: it is the shell's, not the design system's.
- *   2. `var(--ds-appbar-h)` — READ, never re-declared. `public-shell.css` forbids re-declaring it
- *      at `:root` by name and that prohibition stands: a local restatement is a stale copy of a
- *      number someone else maintains. Reading it is the opposite — it follows the next release.
- *
- * 🔴 THE ONE THING THAT WOULD BREAK THIS: putting anything taller than 32px back in an AppBar
- * slot, or letting the bar's row wrap again. The property is a FLOOR (`min-height`), not an
- * oracle. `test/audit/six-class.spec.ts` measures the painted bar against the property at every
- * class, so the day that happens it is a named failure rather than a page that is quietly 10px
- * too tall.
+ * The sticky reveal is gone because §4 needs the page to scroll normally: the `<h1>` docks itself
+ * with `position: sticky`, and a sticky element inside a sticky ancestor that never moves relative
+ * to the viewport can never trigger. One of the two had to go, and the one that was solving a
+ * problem the reader complained about is the one that stayed.
  */
 
-/* ══ 1. STATE A — the height budget, the centred column, and the identity block ═════════════ */
+/* ================================================================================================
+ * §1. THE TOP ROW — NO BAR, BECAUSE THE DESIGN HAS NO BAR
+ * ================================================================================================
+ *
+ * Every selector in this section is scoped to a class that ships on ONE document. `home.css` is
+ * imported by `src/pages/index.astro` alone, and `.pub-bar-plain` / `.pub-nav-plain` are set by
+ * `PublicLayout` only when `navVariant="plain"`, which only Home passes. The other 51 documents
+ * keep the `AppBar` they had, untouched.
+ *
+ * MEASURED against the prototype at 1280x860:
+ *
+ *     row       padding 26px 40px 0    height 70    no background, no border
+ *     links     x = 40   gap 24   13.5px / 500 / #8F8B82,  hover -> #EAE7E0,  NOT underlined
+ *     toggle    42 x 42  1px #33332F  border-radius 50%   right edge at x = 1240 (= 1280 - 40)
+ *
+ * The colour column is NOT reproduced and that is a decision with a source: the charcoal theme is
+ * near-monochrome by a measurement Phase 1 took on these same photographs (`themes/monochrome.css`
+ * — the ochre accent sat inside the second-largest colour band of the content it had to recede
+ * behind), so the prototype's warm neutrals map onto the theme's roles rather than its hexes:
+ * `#EAE7E0 -> --ink`, `#C9C5BC -> --ink-2`, `#8F8B82 -> --ink-3`, `#33332F -> --rule-strong`.
+ * That mapping is the whole of the colour work on this page; no rule below names a colour.
+ */
+
+/*
+ * `.pub-shell` gives every route `padding: 0 var(--pub-gutter)` and `.pub-bar` cancels it with a
+ * negative margin so the AppBar can bleed to both edges. The plain row must NOT bleed — the design
+ * puts it on the page gutter — so the cancellation is cancelled.
+ *
+ * Written as `.pub-bar.pub-bar-plain`, (0,2,0), NOT as `.pub-bar-plain` at (0,1,0). At equal
+ * specificity the winner is decided by which stylesheet the bundler emitted last, which is not a
+ * contract this repository owns; `monochrome.css`'s own header makes the same argument at length
+ * about its two blocks. One extra class is the difference between "wins" and "wins today".
+ */
+.pub-bar.pub-bar-plain {
+  margin-inline: 0;
+  padding-block-start: var(--space-6);
+}
+
+.pub-nav-plain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  width: 100%;
+}
+
+/* The prototype's link gap is 24px, which is `--space-6` exactly. */
+.pub-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+/*
+ * 13.5px / 500 in the design. `--text-base` is 13 and `--weight-medium` is 500 — the weight is
+ * exact and the size is half a pixel under, which is the nearest rung the type scale has (the
+ * neighbouring steps are `--text-sm` 12.5 and `--text-md` 15). RECORDED, not absorbed.
+ *
+ * The COLOUR and the UNDERLINE are not set here at all: `Link variant="quiet"` already declares
+ * `color: var(--ink-3); text-decoration: none` and a hover to `var(--ink)` + underline, which is
+ * the prototype's behaviour exactly. 05-16 shipped `variant="default"` — `--ink-2`, permanently
+ * underlined — which is the three underlined links in the rejected capture. The fix was a variant,
+ * not a stylesheet.
+ */
+.pub-nav-plain .pub-nav-link {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+  line-height: var(--lh-normal);
+}
+
+/*
+ * The bordered circle. `.ds-atom-iconbtn` already carries `border: 1px solid transparent` and
+ * `border-radius: var(--radius-md)`; both are re-pointed at tokens that already exist, which is
+ * (T) under QUAL-03 — a handover, not an origination. `IconButton`'s own docstring names this as
+ * the supported path: *"All styling lives in primitives.css under `.ds-atom-iconbtn`, so a
+ * composing component can restyle it through the cascade by passing its own className."*
+ *
+ * (0,2,0) against `.ds-atom-iconbtn`'s (0,1,0), for the reason given above `.pub-bar-plain`.
+ *
+ * The size is NOT set here — `size="lg"` is 40x40 from the design system's own `[data-size]` rule.
+ * The design asks for 42. Two pixels, on the rung the system provides. RECORDED.
+ */
+.pub-nav-plain .pub-toggle {
+  border-radius: var(--radius-full);
+  border-color: var(--rule-strong);
+}
+
+/*
+ * The shell's `.pub-main` adds `padding-top: var(--space-11)` for the gap under the AppBar. The
+ * plain row provides its own (`--space-6` above, and the row is the full height of the toggle), so
+ * on Home that padding is removed — otherwise `--hm-above` would be understating the height above
+ * Act 1 by 44px and Act 1 would push its own bottom edge that far below the fold.
+ *
+ * `.pub-main.pub-max-home` is (0,2,0) and `.pub-max-home` ships on this route only.
+ */
+.pub-main.pub-max-home {
+  padding-top: 0;
+}
+
+/* ================================================================================================
+ * §2. ACT 1 — THE COMPOSITION
+ * ================================================================================================
+ *
+ * MEASURED against the prototype at 1280x860. The left column is the design; the right is the rung
+ * this file takes and, where they differ, by how much.
+ *
+ *     name          60px / 700 / line-height 1     --text-5xl (60) exact, --lh-tight (0.94)
+ *     name -> sub   13px                           --space-3  (12)   -1
+ *     subtitle      20px italic, #8F8B82           size={20} exact, tone="muted", italic below
+ *     sub -> intro  19px                           --space-5  (20)   +1
+ *     intro         21px, #C9C5BC                  size={21} exact, tone="secondary"
+ *     intro -> grid 48px                           --space-12 (48)   exact
+ *     grid -> cue   40px                           --space-10 (40)   exact
+ *     cue -> bottom 8px                            --space-2  (8)    exact
+ *
+ * The three type sizes come from the CALL SITE, not from here: `Heading` takes
+ * `size?: number | HeadingSizeToken` and the numeric path inlines the exact pixel value. 05-16
+ * reported the token union stopping at `4xl` (44) as blocking the 60px name (D-7) — it is a real
+ * gap in the token path, and it was never a gap in the component: `size={60}` has always been
+ * legal. See `src/pages/index.astro`.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * EVERY GAP IS `padding-block-start`, NEVER `margin`, AND THAT IS FORCED
+ * ------------------------------------------------------------------------------------------------
+ *
+ * MEASURED, `dist/chunk-DQHLFJNO.js`: `Heading`'s composed style is
+ * `{ fontFamily, color, margin: 0, …, ...style }` — spread INLINE onto the element. An inline
+ * declaration beats a class rule at every specificity without `!important`, so
+ * `.hm-subtitle { margin-block-start: … }` computes to `0px` and the rule reads as correct while
+ * doing nothing. `padding` is not in that object, so padding is the axis the cascade leaves open.
+ *
+ * This is the same class of defect as D-4 and D-22 and it is not filed as a new one: the object
+ * is `margin: 0` on a heading, which is a reasonable reset rather than a design decision the
+ * component is taking on a consumer's behalf.
+ */
 
 .hm-a {
-  /* The shell's own `padding-top` plus the bar's own height, READ from the property the design
-     system declares on `:root` for exactly this purpose. Exact at 14 of 14 measured cells since
-     the Home wordmark stopped wrapping the bar's row — see this file's header for the four steps
-     it took to become exact, and for the one change that would break it again. */
-  --hm-above: calc(var(--space-11) + var(--ds-appbar-h));
+  /*
+   * The height above Act 1: the plain row's top padding plus the toggle that sets its height.
+   * `--space-10` is 40, which is `IconButton size="lg"`, and `--space-6` is the row's padding —
+   * so this is the row's height COMPOSED FROM THE SAME TOKENS THE ROW USES rather than measured
+   * off it with devtools. The AppBar recipe (`calc(var(--space-11) + var(--ds-appbar-h))`) does
+   * not apply here because there is no AppBar on this route to read a height from.
+   */
+  --hm-above: calc(var(--space-6) + var(--space-10));
 
   /*
-   * THE NAME'S SIZE, AS A CUSTOM PROPERTY, AND THAT IS NOT A STYLE PREFERENCE.
-   *
-   * `Heading`'s numeric `size` path inlines `font-size`, so no class rule and no media query can
-   * reach it — and the name MUST change size on a rung: the legacy design steps `.hd-name` from
-   * 3rem to 2.25rem at its narrow breakpoint, and it has to, because at 390 the content box is
-   * 342px and "Akhil Saxena" at 60px measures wider than that.
-   *
-   * `Heading` spreads `style` LAST (MEASURED, `chunk-DQHLFJNO.js`), so `index.astro` passes
-   * `style={{ fontSize: 'var(--hm-name)' }}` and this property is what a media query drives.
-   * Both values are design-system type-scale tokens; neither is a literal.
-   *
-   * `--text-4xl` (44px) below the rung rather than the legacy's exact 36px: the scale's rungs are
-   * 40 / 44 / 52 / 60 and 44 is the one that fits 344px of content box with the name on one line.
+   * The name steps down below the 673px rung. At 390 the content box is 342px and "Akhil Saxena"
+   * at 60px measures ~360 — a fixed 60 either wraps the name or overflows the viewport. The
+   * component's numeric `size` inlines `fontSize`, which no media query can reach, so the size is
+   * handed through `style={{ fontSize: 'var(--hm-name)' }}` at the call site (`style` spreads LAST
+   * in `Heading`, MEASURED) and driven from here. Both values are tokens.
    */
   --hm-name: var(--text-4xl);
 
-  /*
-   * THE GAP BETWEEN THE COMPOSITION'S FOUR BLOCKS, and it steps on HEIGHT rather than on width.
-   *
-   * The legacy value is 2.5rem (`--space-10`) at every width, on a page that was one act. This
-   * page has to fit the same composition ABOVE a second act, and the budget is denominated in
-   * height, so the query is on height.
-   *
-   * 🔴 IT STEPS AT 900 AND THE TILE ASPECT STEPS AT 800, AND THE TWO RUNGS ARE DELIBERATELY NOT
-   * THE SAME NUMBER — they pay for different costs, and one rung serving both was measured wrong.
-   *
-   * The tile rung pays for the GALLERY. The gap rung pays for the 44px TOUCH FLOORS inside state
-   * A, which only exist on a coarse pointer and which a `min-height` query cannot see. MEASURED
-   * on the built artefact at every class, coarse:
-   *
-   *     344 x 882   budget 769   stage 732   fits
-   *     390 x 844   budget 731   stage 762   OVER BY 31    <- the binding case
-   *     841 x 768   budget 655   stage 586   fits
-   *     768 x 1024  budget 911   stage 655   fits
-   *     1024 x 768  budget 655   stage 595   fits
-   *
-   * At 390 the CTAs stack (below the 673 rung) and each takes the 44px floor: 104px for a row that
-   * costs 21px on a fine pointer, and the peek block is three rows because there are two columns.
-   * Three gaps at 40px is 31px more than the budget has. At `--space-6` the stage is 714 and fits.
-   *
-   * 900 rather than 880 or 864: it is the shortest rung at which EVERY class that takes the roomy
-   * gap has slack for it (1440 x 900 has 152px spare; 768 x 1024 has 256), and the classes below it
-   * — 344, 390, and both 768-tall foldables — are the ones the floors are expensive on. Choosing
-   * the rung to sit just above the one failing measurement would have been tuning; this one has a
-   * reason on both sides of it.
-   */
-  --hm-stage-gap: var(--space-6);
-
-  /* The grow half is inert here and the shrink half is not — see this file's header. */
-  flex: 1 0 auto;
-
-  /*
-   * 🔴 `box-sizing` IS LOAD-BEARING AND ITS ABSENCE WAS A MEASURED DEFECT.
-   *
-   * The design system ships NO `*` reset — `primitives.css` has no `*`, `html` or `body` selector
-   * at all (MEASURED; `public-shell.css` §1b records the same finding for the page surface) — so
-   * the initial `content-box` applies here and `padding-block-end` ADDS to `min-height`.
-   *
-   * MEASURED in Chromium on the built artefact, before this line, at all six classes: state A's
-   * painted height was the budget plus exactly `--space-6` (24px) — 790 against a 766 budget at
-   * 344 × 882, 808 against 784 at 1440 × 900. The consequence is not cosmetic: Act 2's document
-   * offset was 24px lower than one viewport at EVERY class, so one viewport of scroll left a 19px
-   * strip of state A on screen. It happened to be state A's own bottom padding, where nothing is
-   * drawn, which is why it was invisible and why only a measurement found it.
-   *
-   * THAT `padding-block-end` IS NOW GONE TOO, and for a second reason found by a second
-   * measurement. State A is a CENTRING CONTAINER — `justify-content: center`, one child — so
-   * bottom padding buys no visual air; it only takes 24px off the budget. At 390 × 844 on a coarse
-   * pointer, where the 44px touch floors make Act 1 its tallest and the budget its tightest, those
-   * 24px were the difference between a stage of 738 in a 731 budget (a 7px overflow, and state A
-   * content-determined rather than budget-determined) and 714 in 731. Removing it makes `.hm-a`'s
-   * painted height EQUAL its budget at all six classes.
-   *
-   * `box-sizing` STAYS with no padding to absorb, and that is deliberate rather than vestigial:
-   * it is what makes `min-height` mean "this box is exactly one budget tall" for any padding or
-   * border added later. This plan measured that going wrong; the declaration is the guard against
-   * measuring it again.
-   */
   box-sizing: border-box;
   min-height: calc(100svh - var(--hm-above));
-
-  /*
-   * THE LEGACY `.home-d`, and the two centrings are the point of the whole rewrite.
-   * `justify-content: center` is the vertical one — state A's content sits in the MIDDLE of its
-   * viewport budget rather than at the top with a dead band under it. `align-items: center`
-   * centres the 800px column inside the page's own 1080px measure.
-   */
+  max-width: min(1000px, 100%);
+  width: 100%;
+  margin-inline: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  text-align: center;
+
+  /*
+   * The containment context §4's `50cqw` resolves against — which is to say: THE BOX THE DOCKED
+   * NAME LINES UP WITH. `inline-size` and not `size`, because block-size containment would
+   * collapse the `min-height` above.
+   *
+   * 🔴 IT IS THIS BOX AND NOT THE SHELL, AND THE CHOICE WAS MADE BY MEASURING BOTH.
+   * At 1280, with `--pub-gutter` at its 1024-rung value of 48:
+   *
+   *     .pub-shell content box   x =  48   <- where the nav links sit
+   *     .hm-a                    x = 140   <- where the photographs sit
+   *
+   * Docking to 48 was written first, on the reasoning that the corner a reader recognises is the
+   * nav's. Two measurements killed it:
+   *
+   *   1. IT PUTS THE NAME ON TOP OF A PHOTOGRAPH. Docked at 48, "Akhil Saxena" at `--text-lg`
+   *      spans x = 48..149 and the first tile's left edge is at x = 140 — a 9px overlap at rest,
+   *      growing to ~30px mid-travel, against photographs that are still at 0.7 opacity. The
+   *      site's name clipping a photograph is exactly the class of detail this rebuild exists to
+   *      remove.
+   *   2. NOBODY EVER SEES THE ALIGNMENT IT BUYS. The nav row is in normal flow and has left the
+   *      viewport by scrollY 64; the name does not reach the corner until scrollY 292. The two are
+   *      never on screen together in their docked/resting states, so aligning them is an
+   *      alignment with a memory. Aligning with the photo column is an alignment with something
+   *      the reader is looking at.
+   *
+   * It also deletes a moving part: the shell no longer needs a Home-only containment class, so
+   * `PublicLayout` is one prop simpler and 51 other documents are untouched by even a hook.
+   */
+  container-type: inline-size;
 }
 
-/* BREAKPOINTS[1] — 673, the same rung the peek grid steps its column count at. */
 @media (min-width: 673px) {
   .hm-a {
     --hm-name: var(--text-5xl);
   }
 }
 
-/* THE GAP RUNG — 900, and it is NOT the tile rung. See the block above for the measurement. */
-@media (min-height: 900px) {
-  .hm-a {
-    --hm-stage-gap: var(--space-10);
-  }
+/*
+ * `align-items: center` on the flex column already makes every child shrink-to-fit and centred,
+ * which is what §4's `translateX(calc(50% - 50cqw))` assumes: `50%` is half the NAME's own width,
+ * not half the column's. No `width: fit-content` and no `margin-inline: auto` is needed — and
+ * neither would have worked anyway, for the `margin: 0` reason above.
+ */
+.hm-name {
+  /*
+   * `position: relative` so the name paints above the shedding group in the fallback path too,
+   * where nothing is fading and the two could otherwise overlap at a narrow width.
+   */
+  position: relative;
 }
 
 /*
- * `.hm-stage` IS THE LEGACY 800px COLUMN, and the split from `.hm-a` is load-bearing.
- *
- * `.hm-a` owns the VIEWPORT BUDGET and inherits the page's own 1080px measure from
- * `.pub-max-home`; `.hm-stage` owns the COLUMN the composition is drawn in. Written as one
- * element, the box that carries the budget would be 800px wide — and Act 2, which is 1080, would
- * then be scrolling past a strip rather than past the act.
- *
- * `min(…, 100%)` rather than a bare `max-width`, for the same reason every `.pub-max-*` in
- * `public-shell.css` is written that way: the `100%` half keeps the box inside the shell's
- * content width at every viewport below the cap, in one declaration instead of a media query.
- *
- * The `800px` is `ACT_ONE_MAX` in `src/lib/layout-ladder.ts`, which states why it is NOT in
- * `PAGE_MAX` (it is below the widest rung, and `PAGE_MAX` carries an asserted invariant that its
- * members are above it). `test/public/home.node.test.ts` asserts this rule against the constant,
- * because two numbers that agree today are a duplication and not a contract.
+ * Act 1 minus the name — the group that sheds. It is a real element rather than a selector list
+ * for the reason given in §4, and it is `width: 100%` because `.hm-a` centres its children and the
+ * photo grid has to fill the column rather than hug its own contents.
  */
-.hm-stage {
-  max-width: min(800px, 100%);
-  width: 100%;
-  margin-inline: auto;
-
+.hm-shed {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--hm-stage-gap);
-  /* `.hd-hero { text-align: center }` — and it inherits to the CTAs and the prompt, which is what
-     the legacy page does too. */
-  text-align: center;
-}
-
-.hm-identity {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* `.hd-name { margin-bottom: 0.25rem }` — the name and the italic subtitle are one unit. */
-  gap: var(--space-1);
   width: 100%;
 }
 
 /*
- * The subtitle and the intro are both `Text`, and both take `font-family: var(--display)` through
- * the component's `style` prop rather than through a rule here — `Text` inlines
- * `fontFamily: "var(--font)"` in its base style and exposes no serif selector (its only family
- * lever is a `mono` BOOLEAN), so no class can win. Filed as D-22; see `index.astro`.
- *
- * What is left for this file is the MEASURE, which is layout: the legacy `.hd-intro` has none
- * because its page was 800px wide and so was the line. This one caps at the prose measure so the
- * intro does not run the full 800 at class 6.
+ * The two identity lines under the name — the ones Akhil described shedding first: *"without the
+ * interfaces and imagery text or the subtext underneath it"*. Grouped so §4 can fade them on their
+ * own, faster range; see the measurement there.
  */
+.hm-lede {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.hm-subtitle {
+  padding-block-start: var(--space-3);
+  /* `font-style` is FREE under gate:app-css: italic/normal has no token and no component API. */
+  font-style: italic;
+}
+
 .hm-intro {
+  padding-block-start: var(--space-5);
   max-width: min(56ch, 100%);
-  /* `.hd-tagline { margin-bottom: 1.25rem }` — the air between the italic line and the intro.
-     `padding` and not `margin`: `Text` inlines `margin: 0`, which no class rule can beat. */
-  padding-block-start: var(--space-4);
 }
 
-/* ══ 2. THE PEEK BLOCK — one flush rounded object, not six cards ════════════════════════════ */
-
-/*
- * Column count steps on WIDTH; tile aspect steps on HEIGHT. The naive instinct is backwards:
- * fewer columns means more rows means TALLER, so the column ladder cannot pay for the budget and
- * the aspect ladder can.
+/* ================================================================================================
+ * §3. THE PHOTOGRAPHS — SIX TILES, NOT ONE SLAB
+ * ================================================================================================
  *
- * MEASURED against the gutter ladder in `public-shell.css` and the 800px column above:
+ * MEASURED against the prototype at 1280x860:
  *
- *     class  viewport    gutter  column  cols  tile w   aspect  block h
- *     1      344 × 882     16      312     2     152      3:2       319
- *     2      390 × 844     24      342     2     167      3:2       349
- *     3      673 × 620     32      609     3     198     16:9       230
- *     4      768 × 1024    32      704     3     229      3:2       314
- *     5      1024 × 768    48      800*    3     261     16:9       302
- *     6      1440 × 900    48      800*    3     261      3:2       356   (* ACT_ONE_MAX caps)
+ *     grid    gap 14px   content width 1000   3 columns
+ *     tile    324 x 216   aspect-ratio 3 / 2   border-radius 8px   ON THE TILE
  *
- * **Tile aspect steps on a HEIGHT rung at 800px, and that is not an aspect-ratio branch** — it is
- * a query on the axis the budget is denominated in. Nothing in this file branches on aspect ratio:
- * an aspect-ratio branch flips mid-gesture on a foldable, which is the single most demanding
- * property in the responsive contract. `aspect-ratio` appears only on the tile, for its own
- * intrinsic box, and never as a media condition.
+ * 05-16 put the radius and the `overflow: hidden` on the CONTAINER with an 8px gap, so the six
+ * photographs read as one flush slab with hairlines through it. That was derived from the legacy
+ * `.hd-gallery` and it is the single largest reason the shipped page read as a contact sheet. The
+ * radius is on the tile now, one per photograph, and `PEEK_GAP` is 16 rather than 8 — see
+ * `src/lib/layout-ladder.ts`, which carries the 1.3px arithmetic and the reason 16 beats 12.
  *
- * **This is a grid at every class and NEVER a horizontal rail.** A rail fits any budget, which is
- * what makes it tempting, and it nests a horizontal scroller inside this page's vertical scroll
- * container — on iOS a horizontal rail readily steals the vertical gesture. `/photos` IS a rail at
- * classes 1–2 precisely because it has no such container. Same pattern, opposite verdict.
- *
- * All six render at every class. **Reflow, never hide:** dropping to four on a narrow screen means
- * two of the six photographs Akhil chose do not exist on that class, and there is no summary
- * edition of a portfolio to fall back to. Nothing below sets `display: none` on a tile.
+ * The container's `box-shadow` hairline went with the slab: a ring around six separated tiles
+ * outlines nothing.
  */
 
 .hm-peek {
+  padding-block-start: var(--space-12);
   width: 100%;
 }
 
 .hm-peek-grid {
-  /* A <ul>, because six photographs are a list and a screen reader should be told how many. */
   list-style: none;
   margin: 0;
   padding: 0;
-
   display: grid;
-  /* PEEK_GAP — 8px, and it is NOT `MASONRY_GAP`. The flush block only reads as one object at a
-     tight gap; at 16px the container radius stops describing anything. See `layout-ladder.ts`. */
-  gap: var(--space-2);
+  gap: var(--space-4);
   grid-template-columns: repeat(2, minmax(0, 1fr));
-
-  /*
-   * 🔴 THE RADIUS AND THE CLIP ARE HERE, ON THE CONTAINER, AND NOT ON THE TILE.
-   * `.hd-gallery { border-radius: 10px; overflow: hidden }`, verbatim from the legacy stylesheet.
-   * Four rounded outer corners, twenty square interior ones, one object. DEBT-RADIUS-10 records
-   * that 10px is an origination the design system has no rung for (4 / 8 / 12 / 16 / 999) and
-   * that it is filed upstream as D-20 rather than argued away.
-   */
-  border-radius: 10px;
-  overflow: hidden;
 }
 
-/* §4.4 rule 2 — photographs need an edge on dark that they did not need on ivory. It is drawn
-   ONCE, around the whole block, rather than once per tile: a per-tile ring would redraw the six
-   separate cards this section exists to stop drawing. Not `inset`, because the images paint over
-   the container's own box and an inset ring would be invisible behind them. */
-.dark .hm-peek-grid {
-  box-shadow: 0 0 0 1px var(--rule);
-}
-
-/* BREAKPOINTS[1] — 673. The 375 and 1024 rungs change the gutter but not the column count; the
-   measured arrangement steps from 2 to 3 here and nowhere else. */
 @media (min-width: 673px) {
   .hm-peek-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -384,21 +362,21 @@
 
 .hm-tile {
   display: block;
-  /* The badge's containing block. */
   position: relative;
-  /* The short-viewport tile. 16:9 is what fits class 3 (620 tall) and class 5 (768 tall). */
+  /*
+   * 3/2 is the design's crop. 16/9 is kept below the 800px height rung because Act 1 is a
+   * `100svh` budget and two rows of 3/2 do not fit under it on a short viewport — the tiles would
+   * push the scroll cue below the fold, which is the one thing this act cannot do. A height rung,
+   * not an aspect-ratio query: nothing on this page branches on the viewport's own ratio.
+   */
   aspect-ratio: 16 / 9;
-  /* NO `border-radius` — see `.hm-peek-grid`. `overflow` stays, because the hover scale in §5
-     needs a clip of its own and the grid's clip is one box further out. */
   overflow: hidden;
-  /* §7.3 — the LQIP is the tile's own background, sized cover; the <img> paints over it when its
-     bytes decode. `--cream-2`, never white: a white-backed placeholder flashes hard on `#0d0d0f`. */
+  border-radius: var(--radius-md);
   background-color: var(--cream-2);
   background-size: cover;
   background-position: center;
 }
 
-/* THE HEIGHT RUNG. Not a width, not an aspect ratio — the budget is denominated in height. */
 @media (min-height: 800px) {
   .hm-tile {
     aspect-ratio: 3 / 2;
@@ -409,28 +387,20 @@
   display: block;
   width: 100%;
   height: 100%;
-  /* `object-position` is per-photograph and comes from `home_config.peekPositions`, defaulting to
-     `DEFAULT_FOCAL_POINT` — applied as an inline style at the point of use in PeekGrid.astro,
-     because it is data, not design. */
   object-fit: cover;
 }
 
 /*
- * The handoff's `ALL 39 →` badge, on the last tile — and the FIGURE IS DERIVED from the manifest
- * (`PeekGrid.astro`), never typed. It is a real `<a href="/photos">`, not decoration: a badge with
- * an arrow that does not go anywhere is a lie, and the handoff's alternative — making the whole
- * grid one anchor — gives the link an accessible name built from six `alt` strings.
- *
- * `--scrim` is `rgba(0, 0, 0, 0.65)` in the design system, which is the handoff's own
- * `rgba(22,22,22,0.65)` to within the theme's black. `--text-2xs` is 9.5px against the handoff's
- * 10px — the nearest rung the scale has, and the mono caps role it exists for.
+ * `ALL n →`. The design puts it bottom-right of the last tile, 10px in, mono 10px, on a scrim.
+ * `--space-3` is 12 against the design's 10 (the neighbouring rung is 8); `--text-2xs` is 9.5
+ * against 10. Both RECORDED. `n` is derived from the manifest in `PeekGrid.astro` and is never a
+ * literal — the manifest holds 40 photographs and the prototype says 39.
  */
 .hm-peek-all {
   position: absolute;
   right: var(--space-3);
   bottom: var(--space-3);
   padding: var(--space-1) var(--space-2);
-
   font-family: var(--mono);
   font-size: var(--text-2xs);
   font-weight: var(--weight-medium);
@@ -442,8 +412,6 @@
   text-decoration: none;
 }
 
-/* §2.3 — the floor is reached by growing the ANCHOR BOX while the painted geometry stays put, and
-   it is gated on POINTER, never on width. */
 @media (pointer: coarse) {
   .hm-peek-all {
     display: inline-flex;
@@ -452,22 +420,234 @@
   }
 }
 
-/* ══ 3. THE CTAs AND THE SCROLL PROMPT ═════════════════════════════════════════════════════ */
+/* ================================================================================================
+ * §4. THE NAME DOCKS INTO THE CORNER — THE HEADLINE INTERACTION
+ * ================================================================================================
+ *
+ * Akhil, verbatim: *"When I try to scroll down, I should see a motion of the text that is centered
+ * move to the left corner at the top and disappear into just the name without the interfaces and
+ * imagery text or the subtext underneath it."*
+ *
+ * Two motions, driven by one scroll:
+ *
+ *   1. THE NAME travels from the centre of the composition to the top-left corner and shrinks
+ *      from `--hm-name` to `--hm-dock-size`.
+ *   2. EVERYTHING ELSE in Act 1 — subtitle, intro, photographs, CTAs, cue — sheds to `opacity: 0`,
+ *      which is the "without the interfaces and imagery text or the subtext underneath it" half.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * ZERO JAVASCRIPT, AND THE Y AXIS IS NOT ANIMATED AT ALL
+ * ------------------------------------------------------------------------------------------------
+ *
+ * `/` ships no framework JavaScript (PUB-14) and `gate:public-js` asserts it across 43 documents,
+ * so this is `animation-timeline: scroll()` — a scroll-progress timeline, no listener, no rAF, no
+ * island. But the interesting half is what the timeline does NOT do.
+ *
+ * A scroll-driven animation cannot move an element to a fixed corner by itself, because the corner
+ * is at an offset from the element's flow position that CSS cannot read: the name's distance from
+ * the top of the viewport depends on how tall the rest of Act 1 is, and no `calc()` can ask.
+ * Every version of this that starts from `position: fixed` needs a number measured in devtools and
+ * pasted in — which is exactly the defect `--ds-appbar-h`'s docstring was written to kill.
+ *
+ * So the Y axis is `position: sticky` and the browser does the measuring. The name pins itself at
+ * `--hm-dock-top` the moment its own flow position reaches that offset, whatever that position
+ * turns out to be, and unpins when `.hm-a`'s bottom edge arrives — which is `100svh`, which is
+ * exactly where Act 2 begins. The name is therefore never on screen at the same time as Act 2, and
+ * "disappear" is a fact about the layout rather than a fade that has to be timed.
+ *
+ * The X axis IS animated, and it needs no measurement either:
+ *
+ *     the name is centred in `.hm-a`, so its left edge is at (100cqw - w) / 2
+ *     to put that edge at 0:  dx = -(100cqw - w) / 2  =  w/2 - 50cqw  =  50% - 50cqw
+ *
+ * `50%` in a translate resolves against the element's OWN border box, which is `w`. So
+ * `translateX(calc(50% - 50cqw))` lands the name's left edge on the container's left edge for any
+ * viewport, any name length and any font size — including mid-animation, while `w` is still
+ * shrinking. `ACT_ONE_MAX` never appears as a number; the container IS the measure.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * WHY THE NAV ROW DOES NOT COLLIDE WITH THE DOCKED NAME
+ * ------------------------------------------------------------------------------------------------
+ *
+ * Both want the same corner. They never share it, because the row is in NORMAL FLOW — "fixed-flow,
+ * not sticky" is the handoff's own wording for it. MEASURED at 1280x860: the row's bottom edge is
+ * at y=64 and has left the viewport by scrollY 64; the name's transform does not begin until
+ * scrollY 0 and does not reach the corner until scrollY ≈ 230. The row is long gone.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * THE FALLBACK, AND `prefers-reduced-motion`
+ * ------------------------------------------------------------------------------------------------
+ *
+ * The whole section is inside `@supports (animation-timeline: scroll())` AND
+ * `@media (prefers-reduced-motion: no-preference)`. `position: sticky` is inside that guard too,
+ * deliberately: on its own it would pin the name over the photographs with nothing fading them
+ * out, which is worse than not docking at all. So a browser without scroll timelines, and a reader
+ * who has asked for less motion, both get the prototype's composition scrolling normally — no
+ * pinning, no transform, no fade, and NOTHING hidden. PUB-13's "inert under reduce" is the whole
+ * feature being absent rather than a fast version of it.
+ *
+ * `animation-timing-function` is `var(--ease-in-out)`, and BOTH halves of that were measured.
+ *
+ * It is not `linear`, because `linear` is a value in a dimension the design system names
+ * (`--ease-out`, `--ease-in-out`, `--ease-spring`) and choosing it would be an origination under
+ * QUAL-03 — a literal wearing a keyword's clothes.
+ *
+ * It is not `--ease-out`, which is what 05-17 wrote first. MEASURED on the built page: with
+ * `--ease-out` (`cubic-bezier(0.2, 0.8, 0.2, 1)`), 60px of scroll — one flick — took the name from
+ * 60px to 30.2px, half the whole journey in 7% of the range. On a CLOCK-driven animation that
+ * front-loading is what makes a control feel responsive; on a SCROLL-driven one it is the opposite,
+ * because the reader is holding the other end of it and feels the element run away from the
+ * gesture. `--ease-in-out` (`cubic-bezier(0.65, 0, 0.35, 1)`) is near-linear through the middle
+ * with soft ends, which is the closest thing the scale has to "attached to the scroll".
+ */
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .hm-a {
+      /*
+       * Where the docked name sits, and what size it lands at.
+       *
+       * `--hm-dock-top` centres a `--text-lg` line on the nav row's own centre: the row is
+       * `--space-6` of padding plus a 40px control, so its centre is at 44, and a 17px line whose
+       * box is 16 tall wants its top at 36. `--space-9` is 36.
+       *
+       * `--hm-dock-size` is `--text-lg` (17), the step the design gives the Brevo strip and the
+       * nearest one above the 13.5px nav. A wordmark that matched the nav exactly would read as a
+       * fourth nav item; one step up reads as the site's name.
+       */
+      --hm-dock-top: var(--space-9);
+      --hm-dock-size: var(--text-lg);
+
+      /*
+       * The scroll distances, in viewport fractions. Act 1 is one viewport, so these are
+       * percentages of the single gesture that carries the reader from Act 1 to Act 2:
+       *
+       *   the name reaches the corner at 34% of it — MEASURED at 860, scrollY 292, and
+       *     `position: sticky` pins its Y at scrollY ≈ 91, so the two resolve close enough
+       *     together to read as one motion rather than two;
+       *   the shed runs 10% -> 50% — MEASURED, scrollY 86 -> 430. The END is the number that
+       *     matters and it is not a taste: the photo grid's top edge is at y = 268.8, so at
+       *     scrollY 430 its first row spans y = -161 to +54 and therefore OVERLAPS the docked
+       *     name's band (36..53). The fade has to be complete by then or the site's name is
+       *     painted over a photograph. 05-17's first cut ended at 42% and dissolved the
+       *     photographs while they still filled the viewport, which read as a dissolve rather
+       *     than as a departure; 50% is the latest value that still clears the collision.
+       *
+       * These are lengths in a scroll range, not durations, which is why they are `svh` and not
+       * `--dur-*`: there is no clock in a scroll-progress timeline to point a duration token at.
+       */
+      --hm-dock-range: 34svh;
+      --hm-shed-start: 10svh;
+      --hm-shed-end: 50svh;
+      --hm-lede-end: 14svh;
+    }
+
+    .hm-name {
+      position: sticky;
+      top: var(--hm-dock-top);
+      /*
+       * Above the photographs while they are still fading. `.hm-a` opens no stacking context, so
+       * this is resolved against the root — and `.hm-b` is not positioned, so it cannot be
+       * overlapped by this even if the two ever shared a scroll position, which they do not.
+       */
+      z-index: 2;
+      animation-name: hm-dock;
+      animation-timeline: scroll(root block);
+      animation-range: 0 var(--hm-dock-range);
+      animation-fill-mode: both;
+      animation-timing-function: var(--ease-in-out);
+    }
+
+    /*
+     * ONE element sheds, not five, and that is forced rather than tidy. `.hm-cue` runs its own
+     * infinite nudge (§7) and `animation-name` is a single property — a second declaration would
+     * replace the first outright, so listing the cue here would silently delete its breath AND
+     * hand the replacement a `scroll()` timeline, turning an idle loop into a scroll-linked one.
+     * The multi-value form (`animation-name: hm-nudge, hm-shed`) avoids that and drags four more
+     * comma-lists behind it, three of which would have to originate a literal in the motion
+     * dimension (`auto`, `normal`, `1`) to keep the two in step.
+     *
+     * A wrapper is cheaper and reads better: `.hm-shed` is exactly "Act 1 minus the name", which
+     * is exactly what Akhil described shedding.
+     */
+    .hm-shed {
+      animation-name: hm-shed;
+      animation-timeline: scroll(root block);
+      animation-range: var(--hm-shed-start) var(--hm-shed-end);
+      animation-fill-mode: both;
+      animation-timing-function: var(--ease-in-out);
+    }
+
+    /*
+     * The lede goes FIRST, and the reason is a collision rather than a flourish.
+     *
+     * MEASURED on the built page at 1280x860: the name's flow position is y = 91.4 and it pins at
+     * `--hm-dock-top` (36), so it stops moving after 55px of scroll — while it is still 58px tall.
+     * The rest of Act 1 keeps scrolling underneath it. At scrollY 120 the subtitle's flow position
+     * has reached y = 27.8, which is ABOVE the pinned name's top edge: the two are interleaved,
+     * and on the slow shed they are both at ~0.99 opacity when it happens.
+     *
+     * So the lede finishes at 14% of the gesture (scrollY 120) — the frame the overlap begins —
+     * and the photographs keep their slower 10%..50%. Opacity multiplies down the tree, so the
+     * lede is inside `.hm-shed`'s fade as well as its own; that is intended, not a leak.
+     */
+    .hm-lede {
+      animation-name: hm-shed;
+      animation-timeline: scroll(root block);
+      animation-range: 0 var(--hm-lede-end);
+      animation-fill-mode: both;
+      animation-timing-function: var(--ease-in-out);
+    }
+
+    /*
+     * `font-size` in a keyframe beats `Heading`'s INLINE `fontSize`, and that is a cascade fact
+     * rather than a specificity trick: CSS animations are their own origin and outrank all normal
+     * author declarations, inline styles included. The static value is still handed through at the
+     * call site, so the un-animated page is unaffected.
+     *
+     * It animates `font-size` rather than `scale()`. A scale is cheaper — it stays on the
+     * compositor — but it renders a 60px glyph outline at 28% and the Playfair hairlines go to
+     * mush at the size the reader actually looks at. This is one element, one line, on a page with
+     * nothing else moving; the layout cost is a text measure per frame and it was worth paying.
+     */
+    @keyframes hm-dock {
+      from {
+        transform: translateX(0);
+        font-size: var(--hm-name);
+      }
+      to {
+        transform: translateX(calc(50% - 50cqw));
+        font-size: var(--hm-dock-size);
+      }
+    }
+
+    @keyframes hm-shed {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+  }
+}
+
+/* ================================================================================================
+ * §5. THE CTAs AND THE SCROLL CUE
+ * ================================================================================================ */
 
 /*
- * `.hd-ctas { display: flex; gap: 1rem }`, stacking to a 280px-capped column at the legacy's own
- * narrow rung. This page's nearest ladder rung is 673, which is where the peek grid and the name
- * size also step, so the three step together rather than at three different widths.
+ * The two CTAs are `data/home_config.json`'s `ctas`, READ and never written. The prototype's Act 1
+ * has no CTA row at all — its README says *"No résumé button on home hero; résumé linked from
+ * Act-2 strip"* — but the records are content Akhil edits through `/admin`, and a rebuild that
+ * silently stopped rendering a field the CMS owns is a worse divergence than a visible one.
  *
- * The CTAs themselves are design-system `Link`s and this file paints none of them. The legacy
- * treatment is a filled button and an outlined one, and the design system cannot express a
- * button-shaped ANCHOR — `Button` has no `as` prop and `Link`'s `action` variant inlines
- * `textDecorationColor: rgba(0, 0, 0, 0.25)`, invisible on dark. Both halves were already filed —
- * D-5/D-6 for the missing `as`, D-4 for the inline colour — so 05-16 cites rather than renumbers.
- * Re-implementing a filled button in this stylesheet is the workaround the Core Value forbids, so
- * it is not here.
+ * 🔴 THEY SHIP AS LINKS AND AKHIL ASKED FOR BUTTONS. THIS IS THE ONE REQUEST NOT SATISFIED.
+ * See the seam in `src/pages/index.astro`, which carries the measurement and the one-line change.
+ * No button CSS is written here — not a padding, not a border, not a radius.
  */
 .hm-ctas {
+  padding-block-start: var(--space-8);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -483,8 +663,6 @@
   }
 }
 
-/* The 44px coarse floor, and nothing else — the ink ramp, the underline and the family are all
-   the `Link` component's. */
 @media (pointer: coarse) {
   .hm-cta {
     display: inline-flex;
@@ -495,70 +673,57 @@
 }
 
 /*
- * `<a href="#work">`, not a chevron, not a `<div onclick>`, not a button calling `scrollIntoView`.
- * One Tab and one Enter, works with zero JavaScript, appears in the accessibility tree, and
- * functions as a skip link.
+ * The cue. Akhil: *"The scroll for work should not be this apparent. It should just be a small
+ * animation with an arrow showcasing that I need to scroll, not this."*
  *
- * CENTRED now rather than `align-self: start`, and in flow rather than pushed to the bottom with
- * `margin-block-start: auto` — the whole of state A is one centred column and the cue is the last
- * line of it, which is where the handoff puts `↓ THE WORK` too.
- *
- * The handoff's `@keyframes nudge` is deliberately NOT taken: it is a second page-generated
- * motion source on a page whose transition is already the thing PUB-13 has to suppress, and the
- * cue is already carried by the reserved accent, the underline and the arrow in its own copy.
- * Recorded as a handoff detail declined, not one missed.
+ * 05-16 shipped `SCROLL FOR THE WORK ↓` underlined in `--ochre-d`, which is the "this". The design
+ * is `↓ THE WORK`, mono 10.5px, tracked 0.2em, muted, no underline, breathing. MEASURED rungs:
+ * `--text-xs` is 11 against 10.5, and `--ls-wide` is 0.1em against 0.2em — the scale has no wider
+ * tracking step, so the cue is half as tracked as the design. RECORDED; it is the one value on
+ * this page that is visibly rather than negligibly off, and closing it needs a `--ls-wider` rung
+ * upstream, not a literal here.
  */
-.hm-prompt {
+.hm-cue {
+  padding-block-start: var(--space-10);
+  padding-block-end: var(--space-2);
   font-family: var(--mono);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   line-height: var(--lh-normal);
   letter-spacing: var(--ls-wide);
-  /* §4.3 item 4 — one of the six places the accent is allowed, and the only one on this page. */
-  color: var(--ochre-d);
-  text-decoration: underline;
-  text-underline-offset: 0.25em;
+  color: var(--ink-3);
+  text-decoration: none;
 }
 
 @media (pointer: coarse) {
-  .hm-prompt {
+  .hm-cue {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
   }
 }
 
-/* ══ 4. STATE B — the work band, the résumé band, and the two gaps ══════════════════════════ */
-
-/*
- * `.hm-b { min-height: 100svh }` IS REQUIRED AND IS NOT DECORATIVE.
+/* ================================================================================================
+ * §6. ACT 2
+ * ================================================================================================
  *
- * It failed at exactly one class and only a browser found it: at 768 × 1024, work + résumé +
- * crosslink + footer came to **1012px against a 1024px viewport**, so the document's maximum
- * scroll offset was 1012px and *a page that cannot scroll a full viewport cannot complete the
- * departure* — `scrollY=1012, photosBottom=12, NOT DEPARTED`. Tablet portrait is the only class
- * tall enough in absolute pixels to run out of document before it runs out of viewport.
+ * IN SCOPE ONLY FOR THE GEOMETRY THE TWO-ACT SCROLL DEPENDS ON. Its `min-height: 100svh` is what
+ * makes "one gesture lands in Act 2, fully" true, and the reveal machinery 05-16 gave it
+ * (`position: relative`, `z-index`, an opaque `background-color`) is removed with the sticky Act 1
+ * it existed to serve.
  *
- * `svh` here for the same reason as state A: `dvh` is forbidden on any scroll-transition
- * participant because it changes DURING the scroll, and `vh` is the large viewport.
- *
- * UNDER THE STICKY REVEAL (§5) IT IS REQUIRED TWICE OVER, and the second reason is stronger than
- * the first: Act 2 is the panel that COVERS the stuck Act 1, so a band shorter than the viewport
- * would leave the photographs showing under it at the end of the transition rather than merely
- * short of it. `.hm-b`'s second rule — `position`, `z-index` and the opaque surface — is in §5
- * with the measurement that put it there.
+ * Its CARD TREATMENT is deliberately NOT ported to the prototype's borderless icon rows, and the
+ * reason is a palette rather than an omission: those rows are identified by four coloured icon
+ * squares (`#EAE7E0`, `#B0722A`, `#3E5A48`, `#52585E`) and the charcoal theme has no ochre, no
+ * green and no blue to point them at — Phase 1 removed the accent hue on a measurement taken on
+ * these same photographs. Rendering them as four grey squares would be a worse page than the
+ * `Card` + `StatusPill` composition that ships. This is written up with a side-by-side capture for
+ * Akhil to rule on; it is not a decision an executor should take alone.
  */
-
 .hm-b {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  /* GAP 2 of 2 (§6.4) — the dead gap before "The résumé", closed to `--space-8`. Reviewing the
-     committed captures on 2026-08-23 found that at 841 × 768, the near-square foldable, "The
-     résumé" sat on the bottom edge with its content cut off, so "work and résumé occupy the view"
-     failed at exactly one class. Chosen over letting Act 2 scroll below 900px — which would make
-     the near-square class behave unlike every other — and over shrinking the résumé block there,
-     which would leave it saying almost nothing at that width. */
   gap: var(--space-8);
   padding-block: var(--space-8);
 }
@@ -570,7 +735,6 @@
   gap: var(--space-6);
 }
 
-/* The heading and its arrow link share a baseline row and wrap rather than overflow. */
 .hm-band-head {
   display: flex;
   flex-wrap: wrap;
@@ -580,9 +744,8 @@
 }
 
 /*
- * The two arrow links and the résumé CTA. Mono caps at `--text-xs`, per §3.1's eyebrow role.
- * They take the ink ramp, NOT the accent: §4.3's reserved list has six entries and a secondary CTA
- * is not one of them — the scroll prompt is item 4 and it is the only accent on this page.
+ * `ALL WORK →` and `RÉSUMÉ →`: mono 11px muted in the design, which is `--text-xs` exactly. The
+ * underline is dropped to match — the prototype's Act-2 links carry none.
  */
 .hm-more,
 .hm-resume-cta {
@@ -591,9 +754,13 @@
   font-weight: var(--weight-medium);
   line-height: var(--lh-normal);
   letter-spacing: var(--ls-wide);
-  color: var(--ink-2);
-  text-decoration: underline;
-  text-underline-offset: 0.25em;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.hm-more:hover,
+.hm-resume-cta:hover {
+  color: var(--ink);
 }
 
 .hm-resume-cta {
@@ -609,22 +776,10 @@
   }
 }
 
-/*
- * §6.4, verbatim. `min(300px, 100%)` IS THE GUARD, NOT A STYLE CHOICE. A bare `minmax(300px, 1fr)`
- * in a 312px content box overflows once the gap is counted, which presents as a horizontal scroll
- * — the R-6 violation `.ha-grid` already produced once at 344 (`doc=356/344`), proved pre-existing
- * rather than caused by the gutter ladder by overriding `--pub-gutter` at runtime. The guard makes
- * the failure unrepresentable rather than merely unlikely.
- *
- * `auto-fit` rather than a column count: the grid grows with the project count and needs no
- * redesign when a seventh project lands, which is the property that made every fixed arrangement
- * lose. Nothing here branches on aspect ratio.
- */
 .hm-grid {
   list-style: none;
   margin: 0;
   padding: 0;
-
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
   gap: var(--space-6);
@@ -647,8 +802,6 @@
   display: flex;
 }
 
-/* §10.3 — MEASURED: `Card` concatenates `className` and no longer inlines `display`, so a flex
-   column applies here where Phase 0's `class=` spelling silently dropped the rule. */
 .hm-card {
   display: flex;
   flex-direction: column;
@@ -664,22 +817,19 @@
   gap: var(--space-3);
 }
 
-/* §3.1's card-title row asks for `--ls-tight`, and `.ds-atom-heading[data-size="xl"]` sets
-   font-size and line-height but NOT letter-spacing — so a class wins here uncontested, and no
-   inline style is needed. Where the token rule does set the property (the two `3xl` section
-   headings' line-height), the correction goes through `Heading`'s own `style` prop instead. */
 .hm-card-title {
   letter-spacing: var(--ls-tight);
 }
 
 /*
- * GAP 1 of 2 (§6.4) — the dead gap between the project grid and the "By day —" line, closed to
- * `--space-8`. `margin-block-start` rather than a bigger `gap` on `.hm-work`, because the other
- * gaps in that band stay at `--space-6`.
+ * The Brevo strip. The design puts it under a hairline, italic serif at 17px — `--text-lg`
+ * exactly. The italic and the face come from `Heading as="p"` at the call site.
  */
 .hm-byday {
   margin: 0;
   margin-block-start: var(--space-8);
+  padding-block-start: var(--space-6);
+  border-block-start: 1px solid var(--rule);
   color: var(--ink-2);
 }
 
@@ -696,178 +846,16 @@
   margin: 0;
 }
 
-/* ══ 5. THE ACT-2 REVEAL (§6.5, PUB-13) — a sticky Act 1, and snap is GONE ═════════════════ */
-
-/*
- * ================================================================================================
- * 🔴 THE MECHANISM CHANGED IN 05-16, AND IT CHANGED ON A MEASUREMENT. SNAP WAS THE THING JUMPING.
+/* ================================================================================================
+ * §7. MOTION
  * ================================================================================================
  *
- * Akhil's requirement, verbatim: *"it should slide into view and occupy like the whole height,
- * basically like it should be 2 pages. one initial one, and when i scroll, whole first page goes
- * away to reveal second page in full."*
- *
- * Two candidates were built and MEASURED against the built artefact in Chromium, at all six
- * device classes, in BOTH motion settings — `scripts`-free, in a throwaway harness, and the run
- * is reproduced in this plan's report:
- *
- *   N. two 100svh sections with `scroll-snap-type: y proximity` on `html` and a snap point on
- *      `#work` — what 05-11 shipped.
- *   S. a STICKY Act 1 that Act 2 scrolls over — what this section is.
- *
- * THE MEASUREMENT THAT DECIDED IT is the CONTINUITY of the reveal. The page was scrolled to 0,
- * ¼, ½, ¾ and 1 viewport and the fraction of the viewport occupied by Act 2 recorded at each. A
- * continuous reveal steps 25 points per quarter. The worst single step, per candidate:
- *
- *                              cover at 0 / ¼ / ½ / ¾ / 1        worst step   classes
- *     N snap, no-preference     1%  26%  51% 100% 100%              49          6 of 6
- *     N snap, reduce            1%  26%  51%  76% 100%              25          6 of 6
- *     S sticky, no-preference   1%  26%  51%  76% 100%              25          6 of 6
- *     S sticky, reduce          1%  26%  51%  76% 100%              25          6 of 6
- *
- * **Snap skips the second half of the transition, and it does so ONLY in the motion setting where
- * the reader has not asked for less motion.** Past roughly the halfway point the browser pulled
- * the page a further 239px to the snap point — 27% of the viewport, involuntary. Snap lives inside
- * `prefers-reduced-motion: no-preference` (correctly — §12.2), so under `reduce` it is switched
- * off and the reveal is smooth. The default path was the one that jumped and the accessible path
- * was already the good one, which is exactly backwards.
- *
- * Sticky is linear at 6 of 6 classes in BOTH settings, and the two settings are now IDENTICAL —
- * a stronger property than "snap is an enhancement", because there is no longer a second
- * behaviour to reason about. `position: sticky` is layout, not animation: it makes LESS translate
- * during a user-initiated scroll, not more.
- *
- * Neither candidate self-scrolled: 0 of 96 loads at first paint, both candidates, both motion
- * settings, 8 loads per class. That property is 05-15's and it survives the change.
- *
- * ------------------------------------------------------------------------------------------------
- * WHAT THE CHANGE COSTS, STATED RATHER THAN GLOSSED: `departs` IS NOW AN OCCLUSION, NOT A GEOMETRY
- * ------------------------------------------------------------------------------------------------
- *
- * 05-15's audit proved "the photographs are gone" as `peekGrid.getBoundingClientRect().bottom <= 0`
- * — Act 1 had physically left the viewport. Under a sticky reveal Act 1 does not MOVE; it is
- * COVERED. `peekBottom` is ~+546 at one viewport of scroll and the requirement is still met,
- * because Act 2 is painted over it.
- *
- * So the audit's predicate was restated to the question the requirement actually asks — *is any
- * photograph VISIBLE?* — and answered by hit-testing rather than by pixels: a 5×5 lattice of
- * points inside the peek grid's rect, each passed to `document.elementFromPoint`. MEASURED at one
- * viewport of scroll: **0 of 25 points are answered by the gallery at all six classes in both
- * motion settings.** Every one is answered by Act 2. See `test/audit/six-class.spec.ts`.
- *
- * That is a WEAKER kind of proof than a geometric one and it is worth knowing which: it depends on
- * `.hm-b` being opaque. Which is why the background below is not decoration and is asserted.
- *
- * ------------------------------------------------------------------------------------------------
- * WHY THERE IS NO `scroll-snap-` DECLARATION LEFT ANYWHERE ON THIS PAGE
- * ------------------------------------------------------------------------------------------------
- *
- * Not "snap plus sticky". Snap on `#work` under `proximity` is the 239px pull measured above, and
- * adding it back on top of the sticky reveal would reintroduce exactly the discontinuity the
- * sticky reveal was chosen for. The two are alternatives, not layers.
- *
- * `--hm-sticky-nav` is gone with it — it was the snap outset for a nav that is `position: static`
- * at all six classes, and an outset with no snap point is a property nothing reads.
- *
- * **`--hm-above` STAYS.** It is the height budget's subtrahend (§1) and always was; what it lost,
- * in 05-15, was its second job as a snap outset. `test/public/home.node.test.ts` asserts both
- * halves, because deleting the property outright would break §1 silently.
- *
- * ------------------------------------------------------------------------------------------------
- * THE STATE-A SELF-SCROLL FINDING THAT PRODUCED ALL OF THIS, KEPT BECAUSE IT IS WHY SNAP IS SUSPECT
- * ------------------------------------------------------------------------------------------------
- *
- * `.hm-a` once carried `scroll-snap-align: start` with `scroll-margin-top: var(--hm-above)` as an
- * outset meant to clamp its snap position to offset 0. **The outset did not hold.** 05-15 loaded
- * the page 8 times per class per motion setting and measured the page scrolling ITSELF at first
- * paint: 15 of 48 loads under `no-preference`, 8–20px, five of six classes; 0 of 48 under
- * `reduce`. Snap was the only declaration the `reduce` query removed, so snap was the cause.
- * Akhil's decision then was to drop state A's snap point and keep `#work`'s. 05-16's measurement
- * above is the same instrument finding the same mechanism at fault one step further along, and
- * the resolution this time is to drop the other half too.
- *
- * ------------------------------------------------------------------------------------------------
- * THE ASTRO SCOPING TRAP, WHICH A GREP CANNOT SEE
- * ------------------------------------------------------------------------------------------------
- *
- * `#work` is `HomeActTwo.astro`'s root element and `.hm-b` is its class. A `<style>` block in
- * `index.astro` is scoped with that FILE's `data-astro-cid-*`, so a bare `.hm-b { }` written there
- * matches nothing: `getComputedStyle(work).position` reads `static` while the source says
- * `relative`. This defect has appeared twice in this project in two costumes and passed a grep
- * gate both times.
- *
- * It cannot occur here — this is a plain imported stylesheet and nothing in it is scoped — and
- * `:global()` is NOT the mechanism and must not be written (see this file's header). The check is
- * a computed-style read in a real browser, recorded in this plan's report, not a grep.
+ * Everything that moves for a reason other than the reader's scroll position lives here, behind
+ * `prefers-reduced-motion: no-preference`. §4's block is separate because it also needs the
+ * `@supports` guard.
  */
-
-/*
- * STATE A STAYS PUT AND ACT 2 RISES OVER IT.
- *
- * `top: 0` and not `top: var(--hm-above)`: the AppBar is `position: static` at all six classes, so
- * it scrolls away with the document, and state A only becomes stuck once its natural offset has
- * passed 0 — MEASURED, `aTop` is 111 at scroll 0 and 0 from scroll 111 on, by which point the
- * bar's own bottom edge (57–69px) is long gone. There is no moment at which the two overlap.
- *
- * The sticky containing block is `.pub-main`, so state A releases at the end of Act 2 rather than
- * riding over the footer.
- *
- * NO `scroll-` DECLARATION APPEARS IN THIS RULE and none may: `test/public/home.node.test.ts`
- * parses the stylesheet and asserts it of every rule whose SUBJECT is `.hm-a`.
- */
-.hm-a {
-  position: sticky;
-  top: 0;
-}
-
-/*
- * ACT 2 IS THE THING THAT MOVES, AND IT MUST BE OPAQUE.
- *
- * `z-index` needs `position` to take effect, and both are load-bearing rather than defensive:
- * without them Act 2 paints in normal document order UNDER the stuck Act 1, and the reveal shows
- * the photographs through the work band at every scroll offset.
- *
- * `background-color: var(--cream)` is the page surface's own token — the same one
- * `public-shell.css` §1b puts on `<body>` — so Act 2 is indistinguishable from the page while it
- * covers Act 1, in both themes and on the next theme release. It is a HANDOVER, not an
- * origination: there is no literal here. **It is the whole reason the occlusion proof holds**, so
- * it is asserted rather than assumed, in the stylesheet AND as a computed style.
- */
-.hm-b {
-  position: relative;
-  z-index: 1;
-  background-color: var(--cream);
-}
 
 @media (prefers-reduced-motion: no-preference) {
-  /*
-   * ----------------------------------------------------------------------------------------------
-   * THE PEEK TILE'S HOVER, AND IT LIVES IN THIS BLOCK RATHER THAN OUTSIDE IT
-   * ----------------------------------------------------------------------------------------------
-   *
-   * `.hd-gallery-item:hover img { transform: scale(1.05) }` over `0.4s ease` in the legacy
-   * stylesheet; `scale(1.04)` over `0.6s` in the handoff. LEGACY TAKEN — it is the behaviour on
-   * the site Akhil approved, and `--dur-4` (360ms) is the scale rung that lands on its 0.4s.
-   *
-   * 🔴 IT MUST BE DECLARED HERE AND NOT MERELY NEUTRALISED UNDER `reduce`. MEASURED in the
-   * installed package: the design system's system-wide reduced-motion guard
-   * (`primitives.css:7453`) is anchored to `[class^="ds-"]` / `[class*=" ds-"]`, deliberately, so
-   * that it cannot match a consumer class that merely contains the substring. `.hm-tile img` is a
-   * consumer selector and the guard does not reach it. Written outside this query, this scale
-   * would animate under `reduce` with every test still green.
-   *
-   * `transition-property` / `-duration` / `-timing-function` rather than the `transition`
-   * shorthand: the shorthand cannot be written without a literal, because its first term is a
-   * PROPERTY NAME and `gate:app-css` reads the whole value as a motion-dimension origination.
-   * Longhand, every value here is a token — `--dur-4` and `--ease-out` — and the property name is
-   * a name rather than a value. That is why `transition-property` was added to the gate's FREE
-   * list in the same commit, with its reason; DEBT-CARD-TRANSITION on `/work` is the same
-   * shorthand problem, still registered, still unfixed there.
-   *
-   * `scroll-behavior: smooth` is NOT restated here. `public-shell.css` §4 already declares it on
-   * `html` inside this same query, for every public route, which is what makes the scroll prompt's
-   * `href="#work"` glide rather than teleport. One copy of a rule; the only thing worse is two.
-   */
   .hm-tile img {
     transition-property: transform;
     transition-duration: var(--dur-4);
@@ -876,5 +864,40 @@
 
   .hm-tile:hover img {
     transform: scale(1.05);
+  }
+
+  /*
+   * The cue's breath. The design is `translateY 0 -> 6px -> 0` with `opacity 0.65 -> 1 -> 0.65`
+   * over 2.2s, ease-in-out, infinite — and 2.2s is the one value on this page that CANNOT be
+   * handed through, because the design system does not name it.
+   *
+   * MEASURED, `tokens.css`: `--dur-1..4` are 120, 180, 240 and 360ms. Those are INTERACTION
+   * durations — how long a control takes to answer — and the longest of them, used as an infinite
+   * loop, is a 360ms twitch rather than a breath. There is no `--dur-ambient`, no `--dur-loop`,
+   * and no easing/duration pair intended for an idle animation.
+   *
+   * So `animation-duration` here ORIGINATES a value in a dimension the design system names, which
+   * is a QUAL-03 violation. It is registered as `DEBT-AMBIENT-DURATION` in
+   * `scripts/assert-app-css-confined-to-layout.mjs`, printed on every PASS, and filed upstream as
+   * **D-24**. It is not argued away, and it is not hidden by dropping the animation: Akhil asked
+   * for exactly this — *"just a small animation with an arrow showcasing that I need to scroll"*.
+   */
+  .hm-cue {
+    animation-name: hm-nudge;
+    animation-duration: 2.2s;
+    animation-timing-function: var(--ease-in-out);
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes hm-nudge {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.65;
+    }
+    50% {
+      transform: translateY(var(--space-1));
+      opacity: 1;
+    }
   }
 }

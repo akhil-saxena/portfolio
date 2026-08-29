@@ -257,6 +257,30 @@ const HANDOVER_KEYWORDS = new Set([
  * carried by BOTH design sources — and found the gate refusing it by name. That is the allow-list
  * behaving as designed: an imagination gap produced a LOUD false alarm and one line of thought,
  * rather than a silent miss.
+ *
+ * 🔴 THE SCROLL-TIMELINE AND CONTAINER FAMILIES ARE HERE, AND THE PLACEMENT IS THE ARGUABLE ONE.
+ *
+ * 05-17 docks Home's `<h1>` into the corner with `animation-timeline: scroll(root block)` and
+ * measures the travel with `50cqw`. That needs six property families the allow-list had never
+ * seen, and every one of them came back `CSS-UNKNOWN` — the gate working, twice in one plan.
+ *
+ * They are LAYOUT and not TOKENISED, and the test is the definition's own: does the value
+ * ORIGINATE something in a dimension the design system already names?
+ *
+ *   `animation-timeline`  names WHICH scroll container and WHICH axis drives an animation's
+ *                         progress. `scroll(root block)` is a statement about how a box scrolls,
+ *                         of exactly the same kind as `scroll-snap-type` and `overscroll-behavior`
+ *                         three lines above. There is no clock in it to point a `--dur-*` at.
+ *   `animation-range`     delimits the scroll DISTANCE the timeline maps across. Its values are
+ *                         lengths and viewport fractions — `0 34svh` is the same arithmetic as
+ *                         `min-height: 60svh`, which this file's own ANTI_CANARIES already permit.
+ *   `container-type`      establishes a containment context so a descendant can size against this
+ *                         box. Choosing which box is the reference frame for a measurement is
+ *                         layout by definition.
+ *
+ * `animation-duration`, `animation-timing-function` and `animation-delay` stay TOKENISED, because
+ * those three ARE clocks and curves and the design system names both. That split is what makes
+ * DEBT-AMBIENT-DURATION below a real finding rather than a rule this file quietly relaxed.
  */
 const LAYOUT = new Set(
   (
@@ -280,6 +304,10 @@ const LAYOUT = new Set(
     'background-origin ' +
     'scroll-snap-type scroll-snap-align scroll-snap-stop scroll-behavior overscroll-behavior ' +
     'scroll-margin scroll-margin-top scroll-margin-bottom scroll-padding scroll-padding-top ' +
+    'animation-timeline animation-range animation-range-start animation-range-end ' +
+    'scroll-timeline scroll-timeline-name scroll-timeline-axis ' +
+    'view-timeline view-timeline-name view-timeline-axis view-timeline-inset timeline-scope ' +
+    'container container-type container-name ' +
     'transform transform-origin translate rotate scale perspective perspective-origin ' +
     'contain isolation float clear visibility resize touch-action pointer-events ' +
     'text-align text-align-last white-space word-break hyphens vertical-align writing-mode ' +
@@ -312,6 +340,27 @@ const TOKENISED = new Map(
     'border-left': 'colour',
     'border-block': 'colour',
     'border-inline': 'colour',
+    /*
+     * The LOGICAL longhands. `border-block` and `border-inline` were mapped and their four
+     * -start/-end siblings were not, so `border-block-start: 1px solid var(--rule)` came back
+     * CSS-UNKNOWN the first time a stylesheet in this repository wrote one (05-17, the hairline
+     * above Home's Brevo strip). An imagination gap in an allow-list, surfacing as a loud false
+     * alarm rather than as a hole — which is the failure mode this file was designed to have.
+     * Mapped as `colour` so the colour rule reaches inside the shorthand, exactly as it does for
+     * the physical `border-top` above.
+     */
+    'border-block-start': 'colour',
+    'border-block-end': 'colour',
+    'border-inline-start': 'colour',
+    'border-inline-end': 'colour',
+    'border-block-start-color': 'colour',
+    'border-block-end-color': 'colour',
+    'border-inline-start-color': 'colour',
+    'border-inline-end-color': 'colour',
+    'border-block-width': 'colour',
+    'border-inline-width': 'colour',
+    'border-block-style': 'colour',
+    'border-inline-style': 'colour',
     'border-width': 'colour',
     'border-style': 'colour',
     outline: 'colour',
@@ -371,6 +420,23 @@ const FREE = new Map(
       'exactly what DEBT-CARD-TRANSITION records on /work. Splitting the shorthand into ' +
       '`transition-property` + `-duration` + `-timing-function` is the ONLY spelling in which a ' +
       'consumer transition is fully tokenised, so refusing this property would mandate the debt.',
+    'animation-name':
+      'it names WHICH keyframe set runs. An identifier is not a value in any dimension the design ' +
+      'system tokenises, and there is no `--keyframes-*` to hand through — the same argument ' +
+      '`transition-property` carries above, and for the same reason: the `animation` SHORTHAND ' +
+      'cannot be written without it, so refusing this property would mandate the shorthand and ' +
+      'with it a literal duration in every animation on the site.',
+    'animation-fill-mode':
+      'whether the first or last keyframe persists outside the active range is a temporal scoping ' +
+      'rule, not an appearance value. No token names it and no component API exposes one.',
+    'animation-iteration-count':
+      'a repeat COUNT (or `infinite`), not a duration and not a curve. The design system names ' +
+      'durations and easings; it names no number of repetitions, so there is nothing to hand over.',
+    'animation-direction':
+      'whether a loop alternates or restarts is a playback rule with no token — the same class of ' +
+      'statement as animation-fill-mode, and neither describes how anything looks at rest.',
+    'animation-play-state':
+      'running vs paused is a playback state, not a design value; no token names one.',
     'font-style': 'italic/normal has no token; the system exposes no `--style-*`.',
     'font-variant-numeric': 'tabular figures are a rendering choice with no token.',
     'font-feature-settings': 'an OpenType feature is a rendering choice with no token.',
@@ -441,6 +507,27 @@ const DEBTS = [
       'than its own tokens, and this block exists only to neutralise that under `reduce`. ' +
       'Re-pointing at --dur-2 (180ms) would make the reset disagree with the transition it is ' +
       'resetting. When D-14 lands upstream this block is DELETED, not re-pointed.',
+  },
+  {
+    id: 'DEBT-AMBIENT-DURATION',
+    where: ['src/styles/home.css'],
+    property: 'animation-duration',
+    value: '2.2s',
+    why:
+      'A literal duration where --dur-1..4 exist. An origination in a tokenised dimension, and ' +
+      'the gate is right to flag it — `animation-duration` is a clock and the design system names ' +
+      'clocks.',
+    disposition:
+      'FILED UPSTREAM AS D-24, and it is a GAP rather than a laziness. MEASURED, tokens.css: ' +
+      '--dur-1..4 are 120, 180, 240 and 360ms. Every one of them is an INTERACTION duration — how ' +
+      'long a control takes to answer a reader — and the design system names no AMBIENT one. The ' +
+      "declaration this debt records is Home's scroll cue breathing on a 2.2s loop, which both the " +
+      'approved prototype (`@keyframes nudge … 2.2s ease-in-out infinite`) and the owner ask for ' +
+      'in as many words: "just a small animation with an arrow showcasing that I need to scroll". ' +
+      'Pointing it at --dur-4 would make it a 360ms twitch, which is not the same feature rendered ' +
+      'faster — it is a different and worse one. Resolve by upstreaming a --dur-ambient (or a ' +
+      '--dur-5/6 continuation of the ramp) and re-pointing this line; a consumer cannot invent the ' +
+      'rung, which is exactly why this is a finding and not a fix.',
   },
   {
     id: 'DEBT-ADMIN-DOORWAY',
@@ -795,6 +882,7 @@ const CANARIES = [
   ['an rgba()', 'background-color', 'rgba(0, 0, 0, 0.5)', 'CSS-COLOUR'],
   ['an oklch()', 'color', 'oklch(0.7 0.1 200)', 'CSS-COLOUR'],
   ['a colour smuggled into a shorthand', 'border-bottom', '1px solid #ddd', 'CSS-COLOUR'],
+  ['a colour in a LOGICAL border shorthand', 'border-block-start', '1px solid #ddd', 'CSS-COLOUR'],
   ['a colour smuggled into a shadow', 'box-shadow', 'inset 0 0 0 1px #000', 'CSS-COLOUR'],
   ['a colour smuggled into a LAYOUT property', 'background-position', 'center #fff', 'CSS-COLOUR'],
   ['a colour in a custom property', '--hm-tile-bg', '#101010', 'CSS-COLOUR'],
@@ -809,6 +897,20 @@ const CANARIES = [
   ['a literal radius', 'border-radius', '10px', 'CSS-ORIGINATES'],
   ['a literal duration', 'transition', 'border-color 0.25s ease', 'CSS-ORIGINATES'],
   ['a literal beside a token', 'font-size', 'var(--text-lg) 4px', 'CSS-ORIGINATES'],
+  ['a literal animation duration', 'animation-duration', '2.2s', 'CSS-ORIGINATES'],
+  [
+    'a literal easing on an animation',
+    'animation-timing-function',
+    'ease-in-out',
+    'CSS-ORIGINATES',
+  ],
+  [
+    'the animation shorthand, which always carries a literal',
+    'animation',
+    'nudge 2.2s ease',
+    'CSS-ORIGINATES',
+  ],
+  ['a colour smuggled into a scroll range', 'animation-range', '0 #fff', 'CSS-COLOUR'],
   ['an unclassified property', 'backdrop-filter', 'blur(4px)', 'CSS-UNKNOWN'],
   ['a vendor property nobody classified', '-webkit-text-stroke', '1px', 'CSS-UNKNOWN'],
 ];
@@ -818,6 +920,7 @@ const ANTI_CANARIES = [
   ['a handover', 'color', 'inherit'],
   ['currentColor', 'border-color', 'currentColor'],
   ['a hairline with a token colour', 'border-bottom', '1px solid var(--rule)'],
+  ['a logical hairline with a token colour', 'border-block-start', '1px solid var(--rule)'],
   ['a ring with a token colour', 'box-shadow', 'inset 0 0 0 1px var(--rule)'],
   ['a token font stack', 'font-family', 'var(--font-display)'],
   ['a token size', 'font-size', 'var(--text-xl)'],
@@ -833,6 +936,14 @@ const ANTI_CANARIES = [
   ['zero radius', 'border-radius', '0'],
   ['transition: none under reduce', 'transition', 'none'],
   ['a border reset', 'border-bottom', '0'],
+  ['a scroll-progress timeline', 'animation-timeline', 'scroll(root block)'],
+  ['a scroll range in viewport fractions', 'animation-range', '0 34svh'],
+  ['a scroll range handed through tokens', 'animation-range', 'var(--a) var(--b)'],
+  ['a containment context', 'container-type', 'inline-size'],
+  ['a keyframe set by name', 'animation-name', 'hm-dock'],
+  ['a fill mode', 'animation-fill-mode', 'both'],
+  ['an infinite loop', 'animation-iteration-count', 'infinite'],
+  ['a token easing on an animation', 'animation-timing-function', 'var(--ease-out)'],
 ];
 
 const selfTestFailures = [];

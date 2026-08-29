@@ -64,7 +64,11 @@
  *
  * A second copy of an assertion is a second thing to update, and the two disagree eventually.
  *
- *   `SCROLL FOR THE WORK ↓`          `test/public/home.node.test.ts`
+ *   `↓ THE WORK`                     `test/public/home.node.test.ts`  (05-17: was
+ *                                     `SCROLL FOR THE WORK ↓`. The pin and its subject moved in
+ *                                     the same commit — Akhil: "The scroll for work should not be
+ *                                     this apparent… not this." The design handoff's own wording
+ *                                     leads with the arrow.)
  *   `see the photographs →`          `test/public/work.node.test.ts`
  *   `← see the work`                 `test/public/photos-routes.node.test.ts`
  *   `← All photographs` · `← {Cat}`  `test/public/photo-detail.node.test.ts`
@@ -312,10 +316,26 @@ describe('the AppBar’s three nav labels — the most navigational strings on t
     ]);
   });
 
+  /**
+   * 05-17 — THIS READS `/work`, NOT `/`, AND THE CHANGE IS THE FINDING RATHER THAN A REPAIR.
+   *
+   * Home no longer has an AppBar. Akhil: *"the header is not required for such a page"*, and the
+   * approved prototype has none — the row there is two `Link`s and an `IconButton` composed
+   * directly on the page background (see `src/components/public/PublicNav.tsx`).
+   *
+   * `/work` is now the representative route for the BAR arrangement, and it is a better subject
+   * for this assertion than `/` ever was: the bar is site-wide furniture on 51 documents and Home
+   * was always the one route with an exception in it (the wordmark, suppressed by 05-16). Pinning
+   * navigational copy to the page that opts out of the navigation was a latent trap.
+   *
+   * The PLAIN arrangement's three labels are asserted from the same `NAV_CONTRACT` in
+   * `test/public/home.node.test.ts`, so neither arrangement can drift from the contract or from
+   * the other.
+   */
   it('pins the served bar: the same three labels, hrefs and order, in the shipped bytes', async () => {
-    const page = await load('/');
+    const page = await load('/work');
     const bar = page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/);
-    expect(bar, 'no .ds-atom-appbar in the served document').not.toBeNull();
+    expect(bar, 'no .ds-atom-appbar in the served /work document').not.toBeNull();
     navMarkup = (bar as RegExpMatchArray)[0];
 
     const anchors = [...navMarkup.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((m) => ({
@@ -401,21 +421,37 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
    * `/work` is the positive half, and it is what keeps this from being a test that passes because
    * the wordmark was deleted site-wide. `PublicNav.tsx` records the full reasoning.
    */
-  it('renders NO wordmark on Home — the <h1> is the wordmark there (05-16)', async () => {
+  /**
+   * 05-16 suppressed the WORDMARK on Home. 05-17 removed the BAR that carried it, so the absence
+   * this test guards is now structural rather than conditional — and it is asserted more strongly
+   * because of it, not less.
+   *
+   * The D-23 anti-vacuity half is kept and is still the half that matters. `AppBar` renders its own
+   * ink box captioned "DS" when `logo` is nullish (`logo ?? <DefaultLogo />`, MEASURED,
+   * `chunk-Q7KBVLX4.js:77`), so "no wordmark" and "someone else's placeholder" look identical to
+   * any assertion that only checks for `pub-logo`. If a future plan puts a bar back on Home, this
+   * catches the placeholder on the way in.
+   */
+  it('renders NO bar and NO wordmark on Home — the <h1> is the wordmark there (05-16, 05-17)', async () => {
     const page = await load('/');
-    const bar =
-      navMarkup || (page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/) ?? [''])[0];
-    expect(bar, 'no .ds-atom-appbar in the served document').toBeTruthy();
     expect(
-      (bar as string).match(/\bpub-logo\b/),
-      'Home ships a wordmark in the bar; the design handoff suppresses it on this route alone'
+      page.match(/ds-atom-appbar/),
+      'an AppBar is back on Home. The approved design has no bar on this route — see ' +
+        'src/components/public/PublicNav.tsx.'
     ).toBeNull();
+    expect(
+      page.match(/\bpub-logo\b/),
+      'Home ships a wordmark; the design handoff suppresses it on this route alone'
+    ).toBeNull();
+    expect(page.includes('>DS<'), 'the DefaultLogo placeholder shipped').toBe(false);
 
-    // ANTI-VACUITY, and it is the half that matters: an AppBar rendered with NO `logo` prop falls
-    // back to the design system's own ink box captioned "DS" (`logo ?? <DefaultLogo />`), which
-    // would satisfy the absence above while shipping someone else's placeholder on the site's
-    // primary route. See D-23.
-    expect((bar as string).includes('>DS<'), 'the DefaultLogo placeholder shipped').toBe(false);
+    // ANTI-VACUITY: the two absences above are claims about a page that really rendered, and the
+    // bar-bearing routes really do still have one — so this is not passing because `load` is broken.
+    expect(page, 'the served Home document has no <h1> at all').toMatch(/<h1[^>]*data-home-marker/);
+    expect(
+      await load('/work'),
+      '/work lost its AppBar too — this is not a Home-only change'
+    ).toMatch(/ds-atom-appbar/);
   });
 
   it('renders the site title in the AppBar logo on every other route, from the same record', async () => {

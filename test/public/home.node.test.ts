@@ -1,5 +1,21 @@
 /**
- * Home — the static half. Plan 05-11, Task 3.
+ * Home — the static half. Plans 05-11, 05-16 and 05-17.
+ *
+ * ================================================================================================
+ * 🔴 05-17 REWROTE MOST OF THIS FILE, AND THE REASON IS THAT IT WAS PINNING A REJECTED DESIGN
+ * ================================================================================================
+ *
+ * Every assertion 05-16 wrote here passed on the page Akhil called *"rudimentary… like something
+ * made by a ten year old"*. That is not a failure of the assertions — each was true, precisely, of
+ * the thing it described. It is what a suite looks like when it pins an implementation nobody
+ * checked against the design: the sticky reveal, the 800px column, the flush photo slab and the
+ * `SCROLL FOR THE WORK ↓` cue were all asserted, and all four were wrong.
+ *
+ * So the pins below are re-derived from `design_handoff_portfolio/Akhil Saxena - Home.dc.html`,
+ * MEASURED in Chromium at 1280x860, and the four that changed are marked `05-17` where they sit.
+ * The ones that did NOT change — zero framework JS, the three landmarks, the derived `ALL n →`
+ * count, the CMS-driven CTAs, no scroll-snap — are untouched, because they were about behaviour
+ * rather than about a composition.
  *
  * This is an `integration` file (`*.node.test.ts`), so it runs in plain Node against the built
  * site served by real `workerd` — `astro preview` under `@astrojs/cloudflare` runs the build output
@@ -70,14 +86,38 @@ describe('Home ships zero framework JavaScript (PUB-14, §5.1 route 1)', () => {
   });
 });
 
-describe('the scroll prompt is a real anchor with a real target (§6.1, §13.2)', () => {
-  it('is <a href="#work"> carrying the contract copy verbatim', () => {
-    expect(html).toMatch(/<a[^>]*href="#work"[^>]*>SCROLL FOR THE WORK ↓<\/a>/);
+describe('the scroll cue is a real anchor with a real target (§6.1, §13.2)', () => {
+  /**
+   * 05-17: the string changed, and the change is the point rather than a detail.
+   *
+   *     was  `SCROLL FOR THE WORK ↓`   05-16's, kept over the handoff's on the argument that it
+   *                                     "says what the control DOES rather than where it points"
+   *     now  `↓ THE WORK`               the handoff's own wording, verbatim
+   *
+   * Akhil on the result of the first choice: *"The scroll for work should not be this apparent. It
+   * should just be a small animation with an arrow showcasing that I need to scroll, not this."*
+   *
+   * The arrow LEADS. `THE WORK ↓` would be the same four characters in the wrong order — the
+   * design puts the arrow first so the eye meets the direction before the destination — so the
+   * assertion is an equality and not a `toContain`.
+   */
+  it('is <a href="#work"> carrying the design handoff copy verbatim', () => {
+    expect(html).toMatch(/<a[^>]*href="#work"[^>]*>↓ THE WORK<\/a>/);
+  });
+
+  it('no longer ships the shouted string 05-16 pinned', () => {
+    expect(html).not.toMatch(/SCROLL FOR THE WORK/);
+  });
+
+  it('is not underlined — the cue recedes, which is the whole complaint about the old one', () => {
+    const rule = /\.hm-cue\s*\{([^}]*)\}/.exec(cssCode);
+    expect(rule, 'no .hm-cue rule at all').not.toBeNull();
+    expect((rule as RegExpExecArray)[1]).toMatch(/text-decoration:\s*none/);
   });
 
   it('is not a button, a chevron or a div calling scrollIntoView', () => {
     expect(html).not.toMatch(/scrollIntoView/);
-    expect(html).not.toMatch(/<button[^>]*class="[^"]*hm-prompt/);
+    expect(html).not.toMatch(/<button[^>]*class="[^"]*hm-cue/);
   });
 
   it('the #work id exists on an element in the document', () => {
@@ -216,74 +256,117 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
    * The full run, and the occlusion measurement that replaces the geometric `departs`, are in
    * `test/audit/six-class.spec.ts` and in `src/styles/home.css` §5.
    */
-  it('state A is sticky at the top, so Act 2 scrolls OVER it rather than after it', () => {
+  /**
+   * 05-17 — THIS ASSERTION IS THE INVERSE OF THE ONE IT REPLACES, AND THAT IS DELIBERATE.
+   *
+   * 05-16 asserted `.hm-a` carried `position: sticky; top: 0` so that Act 2 scrolled OVER a pinned
+   * Act 1, and asserted `.hm-b` was opaque and `z-index`-stacked to make the reveal read. Both
+   * were true of the shipped page and both are now gone, for two reasons that are worth keeping:
+   *
+   *   1. THE READER ASKED FOR IT. *"I should be able to scroll in a single go from the first
+   *      section to the second section."* With the reveal, Act 1 is pinned and Act 2 slides over
+   *      it — one gesture moves the panel but never lands you anywhere.
+   *   2. IT IS INCOMPATIBLE WITH THE DOCK. §4 of `home.css` docks the `<h1>` with its own
+   *      `position: sticky`, and sticky resolves against the nearest SCROLLPORT — an element
+   *      inside a sticky ancestor that never moves relative to the viewport can never trigger.
+   *
+   * What replaces it is arithmetic, asserted two tests below: Act 1 is `100svh - --hm-above` under
+   * an `--hm-above`-tall row, so the two sum to exactly one viewport and one viewport of scroll
+   * lands Act 2 flush at the top.
+   */
+  it('state A is NOT sticky — the reveal is gone and the page scrolls normally', () => {
     const rules = [...cssCode.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
       selector: (m[1] as string).replace(/\s+/g, ' ').trim(),
       body: m[2] as string,
     }));
     expect(rules.length, 'the rule parser found no CSS rules at all').toBeGreaterThan(10);
-
-    /** Rules whose SUBJECT is `.hm-a` — the last compound selector, not a mention anywhere in it. */
     const targetsA = rules.filter((rule) =>
       rule.selector.split(',').some((part) => /(^|[\s>+~])\.hm-a$/.test(part.trim()))
     );
     expect(targetsA.length, 'no rule targets .hm-a at all').toBeGreaterThan(0);
-
     const sticky = targetsA.filter((r) => /position:\s*sticky/.test(r.body));
-    expect(sticky.length, '.hm-a carries no `position: sticky` — the reveal has no mechanism').toBe(
-      1
+    expect(
+      sticky.length,
+      '.hm-a is sticky again. Act 2 will scroll OVER Act 1 instead of after it, one gesture will ' +
+        'no longer land in Act 2, and the <h1> dock in home.css §4 will silently stop working — ' +
+        'a sticky child of a sticky parent that never moves relative to the viewport never pins.'
+    ).toBe(0);
+  });
+
+  /**
+   * 05-17 — the one element that IS sticky, and everything about how it is guarded.
+   *
+   * The dock is the page's headline interaction and it is also the thing most likely to be
+   * "tidied" into something that breaks a requirement, so each half is asserted separately:
+   * PUB-14 (no JavaScript), PUB-13 (inert under reduce) and the progressive-enhancement guard.
+   */
+  it('the <h1> docks with sticky + a scroll timeline, behind BOTH guards, with no JavaScript', () => {
+    const supports = /@supports\s*\(animation-timeline:\s*scroll\(\)\)\s*\{/.exec(cssCode);
+    expect(supports, 'the dock is not behind an @supports guard — no fallback path').not.toBeNull();
+
+    // Walk to the matching close brace so "inside" is the real block and not a prefix.
+    const start = (supports?.index ?? 0) + (supports?.[0]?.length ?? 0);
+    let depth = 1;
+    let i = start;
+    while (i < cssCode.length && depth > 0) {
+      if (cssCode[i] === '{') depth++;
+      else if (cssCode[i] === '}') depth--;
+      i++;
+    }
+    const inside = cssCode.slice(start, i - 1);
+    const outside = cssCode.slice(0, supports?.index ?? 0) + cssCode.slice(i);
+
+    expect(inside, 'the @supports block does not also gate on reduced motion').toMatch(
+      /@media\s*\(prefers-reduced-motion:\s*no-preference\)/
+    );
+    expect(inside).toMatch(/position:\s*sticky/);
+    expect(inside).toMatch(/animation-timeline:\s*scroll\(root block\)/);
+    expect(inside, 'the name never moves left, so it docks nowhere').toMatch(/50cqw/);
+
+    expect(
+      outside,
+      'a sticky/animation declaration escaped the @supports + reduced-motion guard. A reader who ' +
+        'asked for less motion would get the pinned name with nothing fading the photographs out ' +
+        'from under it, which is worse than no dock at all.'
+    ).not.toMatch(/position:\s*sticky|animation-timeline|animation-range/);
+
+    // PUB-14: the whole interaction is CSS. No island, no listener, no inline handler on the page.
+    expect(html).not.toMatch(/astro-island/);
+    expect(html, 'a scroll listener appeared on a route that ships zero framework JS').not.toMatch(
+      /addEventListener\(\s*['"]scroll/
+    );
+  });
+
+  /**
+   * 05-17 — "one gesture lands in Act 2, fully", asserted as the arithmetic that makes it true.
+   *
+   * MEASURED in Chromium at 1280x860 on the built artefact: `document.scrollHeight` 1833, Act 2's
+   * top edge at y=860 when scrollY is 0 and at y=0 when scrollY is 860. Exactly one viewport.
+   *
+   * The stylesheet cannot be asked for that number, so what is asserted here is the two facts it
+   * follows from — Act 1 is the viewport minus the row above it, and Act 2 is a full viewport — and
+   * `05-AUDIT.md` owns the browser measurement. Two facts that agree today are a duplication; these
+   * two are a derivation.
+   */
+  it('Act 1 + the row above it is exactly one viewport, and Act 2 is a full one', () => {
+    const a = /\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode);
+    expect(a, 'no .hm-a rule at all').not.toBeNull();
+    expect((a as RegExpExecArray)[1]).toMatch(
+      /min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/
     );
     expect(
-      (sticky[0] as { body: string }).body,
-      '`position: sticky` without an inset never sticks: the element resolves `top: auto` and ' +
-        'behaves exactly like `position: relative`, which is the silent version of this failure'
-    ).toMatch(/top:\s*0/);
+      (a as RegExpExecArray)[1],
+      '--hm-above must be composed from the tokens the nav row is built from, not measured off it'
+    ).toMatch(/--hm-above:\s*calc\(var\(--space-\d+\)\s*\+\s*var\(--space-\d+\)\)/);
+
+    const b = /\.hm-b\s*\{([^}]*)\}/.exec(cssCode);
+    expect(b, 'no .hm-b rule at all').not.toBeNull();
+    expect(
+      (b as RegExpExecArray)[1],
+      'Act 2 is shorter than a viewport, so one gesture cannot land in it fully'
+    ).toMatch(/min-height:\s*100svh/);
   });
 
-  /**
-   * The occlusion proof depends on Act 2 being OPAQUE and painted ABOVE the stuck Act 1. Without
-   * `position` there is no stacking context for `z-index` to act in, and without the background
-   * the photographs show through the work band at every scroll offset. All three are asserted,
-   * because "the transition looks right" is carried by them and by nothing else.
-   *
-   * The background is asserted as a TOKEN and not as a value: `var(--cream)` is the same page
-   * surface `public-shell.css` puts on `<body>`, so Act 2 stays indistinguishable from the page in
-   * both themes and after the next design-system release. A literal here would be an origination
-   * `gate:app-css` would refuse, and a DIFFERENT token would be a visible seam.
-   */
-  it('Act 2 is opaque and stacked above state A, which is what makes the reveal a reveal', () => {
-    const rules = [...cssCode.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-      .map((m) => ({
-        selector: (m[1] as string).replace(/\s+/g, ' ').trim(),
-        body: m[2] as string,
-      }))
-      .filter((rule) =>
-        rule.selector.split(',').some((part) => /(^|[\s>+~])\.hm-b$/.test(part.trim()))
-      );
-    expect(rules.length, 'no rule targets .hm-b at all').toBeGreaterThan(0);
-
-    const all = rules.map((r) => r.body).join('\n');
-    expect(all, 'Act 2 is not positioned, so its z-index does nothing').toMatch(
-      /position:\s*relative/
-    );
-    expect(all, 'Act 2 is not stacked above state A').toMatch(/z-index:\s*[1-9]/);
-    expect(all, 'Act 2 is transparent — the stuck state A would show through it').toMatch(
-      /background-color:\s*var\(--cream\)/
-    );
-    expect(all, 'Act 2 must still be a full viewport tall — it is the covering panel').toMatch(
-      /min-height:\s*100svh/
-    );
-  });
-
-  /**
-   * ASSERTED AS AN ABSENCE, ACROSS THE WHOLE STYLESHEET. Not "snap is configured differently" —
-   * snap is GONE, and re-adding a snap point on `#work` on top of the sticky reveal would
-   * reintroduce the 239px pull the sticky reveal was chosen to remove. The two are alternatives,
-   * not layers, so this is a flat refusal rather than a shape check.
-   *
-   * `--hm-sticky-nav` goes with it: it was the snap outset for a nav that is `position: static` at
-   * all six classes, and an outset with no snap point is a property nothing reads.
-   */
   it('no scroll-snap declaration survives anywhere on this page', () => {
     expect(cssCode).not.toMatch(/scroll-snap-/);
     expect(cssCode).not.toMatch(/--hm-sticky-nav/);
@@ -308,10 +391,21 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
    * and an animation added later that forgets the query is visible in review as a rule outside the
    * block — rather than the other way round, where the one that forgets to opt out ships.
    *
-   * The page's only motion is now the peek tile's hover scale. `position: sticky` is deliberately
-   * NOT in the block and must not be: it is layout, not animation, and it makes LESS translate
-   * during a user-initiated scroll. Suppressing it under `reduce` would give a reader who asked
-   * for less motion the variant in which MORE of the page moves.
+   * 🔴 05-17 REVERSED THE `position: sticky` HALF OF THIS TEST, AND THE REVERSAL IS ARGUED.
+   * 05-16 asserted that sticky was deliberately OUTSIDE the query, on the reasoning that it is
+   * layout rather than animation and makes LESS translate during a scroll. That was correct about
+   * the sticky it described — a whole act pinned so the next one could slide over it.
+   *
+   * It is not correct about this one. The `<h1>`'s sticky is one half of a two-part effect whose
+   * other half is a scroll-driven fade; pinned WITHOUT the fade, the name sits at the top-left with
+   * the photographs sliding underneath it and nothing removing them, which is a worse page than
+   * either the docked version or the plain one. The two halves are therefore guarded together, and
+   * the reduced-motion path is the prototype's composition scrolling normally — which is a real
+   * design, not a degraded one.
+   *
+   * So there are now TWO `no-preference` blocks: §4's (inside `@supports`, the dock) and §7's (the
+   * tile hover and the cue's breath). The count is asserted, because a THIRD one appearing is how
+   * a motion declaration gets added somewhere nobody is looking.
    *
    * 🔴 THE HOVER CANNOT BE LEFT TO THE DESIGN SYSTEM'S OWN GUARD. MEASURED in the installed
    * package: `primitives.css`'s system-wide `prefers-reduced-motion: reduce` block is anchored to
@@ -323,25 +417,55 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     const blocks = [
       ...cssCode.matchAll(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{/g),
     ];
-    expect(blocks.length).toBe(1);
-    const start = (blocks[0].index ?? 0) + blocks[0][0].length;
-    let depth = 1;
-    let i = start;
-    while (i < cssCode.length && depth > 0) {
-      if (cssCode[i] === '{') depth++;
-      else if (cssCode[i] === '}') depth--;
-      i++;
+    expect(
+      blocks.length,
+      'expected exactly two no-preference blocks — the dock (§4) and the hover + cue (§7)'
+    ).toBe(2);
+
+    /** Everything between a block's opening brace and its matching close. */
+    const bodyOf = (m: RegExpMatchArray): { inside: string; end: number } => {
+      const start = (m.index ?? 0) + m[0].length;
+      let depth = 1;
+      let i = start;
+      while (i < cssCode.length && depth > 0) {
+        if (cssCode[i] === '{') depth++;
+        else if (cssCode[i] === '}') depth--;
+        i++;
+      }
+      return { inside: cssCode.slice(start, i - 1), end: i };
+    };
+
+    const parts = blocks.map(bodyOf);
+    const inside = parts.map((p) => p.inside).join('\n');
+
+    // OUTSIDE = the sheet with both blocks cut out. Built back-to-front so the earlier block's
+    // indices are still valid when the later one is removed.
+    let outside = cssCode;
+    for (let k = blocks.length - 1; k >= 0; k--) {
+      outside = outside.slice(0, blocks[k].index ?? 0) + outside.slice(parts[k].end);
     }
-    const inside = cssCode.slice(start, i - 1);
-    const outside = cssCode.slice(0, blocks[0].index ?? 0) + cssCode.slice(i);
+    /*
+     * AT-RULE PRELUDES ARE REMOVED BEFORE THE MATCH, AND THIS CAUGHT ITSELF ON ITS FIRST RUN.
+     *
+     * The dock lives inside `@supports (animation-timeline: scroll())`. That prelude is a FEATURE
+     * TEST — it asks the browser a question and declares nothing — but it contains the substring
+     * `animation-`, so the rule below flagged the guard that exists to make the animation safe.
+     * A test that reds on correct code is as expensive as one that greens on broken code, and the
+     * fault was in the instrument rather than in the stylesheet: this assertion is about
+     * DECLARATIONS, so the preludes have to go before it looks.
+     */
+    outside = outside.replace(/@[a-z-]+[^{;]*/gi, '');
 
     expect(inside).toMatch(/transition-duration/);
     expect(inside).toMatch(/transform:\s*scale/);
-    expect(outside, 'a transform or transition escaped the motion query').not.toMatch(
-      /transform:|transition-/
-    );
-    // and the mechanism is NOT in the query — see this test's docstring
-    expect(outside).toMatch(/position:\s*sticky/);
+    expect(inside, 'the dock is not inside a motion query').toMatch(/position:\s*sticky/);
+    expect(inside, 'the cue does not breathe').toMatch(/animation-name:\s*hm-nudge/);
+
+    expect(
+      outside,
+      'a transform, transition, animation or sticky escaped the motion query — a reader who asked ' +
+        'for less motion would get it anyway, and every other test here would still be green'
+    ).not.toMatch(/transform:|transition-|animation-|position:\s*sticky/);
   });
 
   /**
@@ -361,8 +485,8 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
   /**
    * `:global()` is Astro `<style>` syntax. In a plain imported stylesheet it is an unknown
    * pseudo-class, which invalidates the whole selector and DROPS the rule — the exact defect §6.5
-   * warns about, arriving through the fix for it. The computed-style read that proves `.hm-b`
-   * really resolves `position: relative` from here is a browser measurement, in this plan's report.
+   * warns about, arriving through the fix for it. The computed-style reads that prove these rules
+   * really apply in a browser are in this plan's report.
    */
   it('does not write :global() into a plain stylesheet', () => {
     // Over the COMMENT-STRIPPED source, and this one bit on its first run: the header explains
@@ -383,10 +507,28 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
  * and `PEEK_GAP` are deliberately NOT in `PAGE_MAX`/`MASONRY_GAP` (each says why at its
  * declaration), so they have no gate and are asserted here instead.
  */
-describe('Act 1 is the legacy composition, and its measures come from the ladder', () => {
-  it('the stage is capped at ACT_ONE_MAX, written as min(cap, 100%)', () => {
-    const rule = /\.hm-stage\s*\{([^}]*)\}/.exec(cssCode);
-    expect(rule, 'no .hm-stage rule — Act 1 has no column').not.toBeNull();
+describe('Act 1 is the approved design, and its measures come from the ladder', () => {
+  /**
+   * 05-17 — `.hm-stage` is GONE and the cap moved onto `.hm-a`.
+   *
+   * 05-16 split the act in two: `.hm-a` owned the viewport budget and an inner `.hm-stage` owned
+   * an 800px centred column, taken from the legacy `.home-d`. The design has no such split —
+   * MEASURED, the prototype's identity block and photo grid share ONE 1000px column — and the
+   * split had a cost beyond the width: `position: sticky` on the `<h1>` resolves against its
+   * nearest block container, so inside `.hm-stage` the name would unpin the moment the stage's
+   * short box ran out, hundreds of pixels before Act 2 arrives.
+   *
+   * So one element carries the cap AND the budget, and `ACT_ONE_MAX` is 1000.
+   */
+  it('Act 1 is ONE column capped at ACT_ONE_MAX, written as min(cap, 100%)', () => {
+    expect(
+      cssCode,
+      '`.hm-stage` is back. Act 1 is one column in the approved design, and a nested one breaks ' +
+        "the <h1>'s sticky containing block — see home.css §4."
+    ).not.toMatch(/\.hm-stage/);
+
+    const rule = /\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode);
+    expect(rule, 'no .hm-a rule — Act 1 has no column').not.toBeNull();
     const body = (rule as RegExpExecArray)[1] as string;
     expect(body).toContain(`min(${ACT_ONE_MAX}px, 100%)`);
     // the `100%` half is what keeps the column inside the shell below the cap — §2.2's rule
@@ -397,8 +539,8 @@ describe('Act 1 is the legacy composition, and its measures come from the ladder
     expect(body).toMatch(/text-align:\s*center/);
   });
 
-  it('state A centres its column on BOTH axes, as .home-d did', () => {
-    const body = (/\.hm-a\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)[1] as string;
+  it('state A centres its column on BOTH axes', () => {
+    const body = (/\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode) as RegExpExecArray)[1] as string;
     expect(body, 'the vertical centring — the dead band above the fold is the complaint').toMatch(
       /justify-content:\s*center/
     );
@@ -406,32 +548,71 @@ describe('Act 1 is the legacy composition, and its measures come from the ladder
   });
 
   /**
-   * 🔴 THE DETAIL THAT CARRIES THE COMPOSITION. `.hd-gallery { border-radius: 10px; overflow:
-   * hidden }` puts the radius and the clip on the CONTAINER, so the block's four outer corners are
-   * rounded and its twenty interior ones are square — six photographs read as one object. Phase 5
-   * put the radius on the TILE and shipped six separately-rounded cards.
+   * 05-17 — the containment context the dock measures itself against.
    *
-   * Asserted in BOTH directions, because only the absence half can catch the regression: a tile
-   * that regains a radius re-draws the grid while the container still has one and every other
-   * assertion in this file stays green.
+   * `translateX(calc(50% - 50cqw))` is the whole X axis of the interaction, and `50cqw` silently
+   * resolves against the VIEWPORT if no ancestor is a container — which would send the name off
+   * the left edge of the screen instead of onto the photo column, with no error anywhere.
    */
-  it('the peek block rounds and clips on the CONTAINER, and the tile has no radius of its own', () => {
+  it('Act 1 is the container the dock resolves 50cqw against', () => {
+    const body = (/\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode) as RegExpExecArray)[1] as string;
+    expect(
+      body,
+      'no container-type on .hm-a — `50cqw` falls back to the viewport and the name docks off-screen'
+    ).toMatch(/container-type:\s*inline-size/);
+  });
+
+  /**
+   * 🔴 05-17 — THIS IS THE OTHER ASSERTION THAT IS NOW THE INVERSE OF WHAT IT WAS, AND IT IS THE
+   * SINGLE BIGGEST VISUAL CHANGE ON THE PAGE.
+   *
+   * 05-16 asserted the radius and the clip were on the CONTAINER with `PEEK_GAP` at 8px, so the six
+   * photographs read as one flush slab with hairlines through it. That was read off the legacy
+   * `.hd-gallery { border-radius: 10px; overflow: hidden }`.
+   *
+   * The approved design does the opposite, and it is measurable rather than arguable — MEASURED in
+   * Chromium at 1280x860 against `design_handoff_portfolio/Akhil Saxena - Home.dc.html`:
+   *
+   *     grid  gap: 14px            (05-16 shipped 8)
+   *     tile  border-radius: 8px   aspect-ratio: 3 / 2   324 x 216   -- ON THE TILE, six times
+   *
+   * Six separated, individually rounded photographs. The slab is what made the shipped page read as
+   * a contact sheet rather than as a portfolio.
+   *
+   * Asserted in BOTH directions, because only the absence half catches the regression: a container
+   * that regains a radius re-draws the grid as a slab while every other assertion here stays green.
+   */
+  it('every peek tile rounds and clips itself, and the container has no radius of its own', () => {
     const grid = (/\.hm-peek-grid\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)?.[1] as string;
     expect(grid, 'no .hm-peek-grid rule').toBeTruthy();
-    expect(grid).toMatch(/border-radius:/);
-    expect(grid).toMatch(/overflow:\s*hidden/);
-    expect(grid, 'PEEK_GAP, not MASONRY_GAP — the flush block needs the tight gap').toContain(
-      `var(${PEEK_GAP.token})`
+    expect(
+      grid,
+      'the container has a border-radius again — one flush slab, not six photographs'
+    ).not.toMatch(/border-radius:/);
+    expect(grid, 'the container clips again, which is the other half of the slab').not.toMatch(
+      /overflow:\s*hidden/
     );
+    expect(grid, 'the gap must be PEEK_GAP, from the ladder').toContain(`var(${PEEK_GAP.token})`);
 
     const tile = (/\.hm-tile\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)?.[1] as string;
     expect(tile, 'no .hm-tile rule').toBeTruthy();
-    expect(
-      tile,
-      'the tile has its own border-radius again — six rounded cards, not one flush block'
-    ).not.toMatch(/border-radius:/);
-    // the tile keeps its own clip, which the hover scale needs; that is not the same declaration
+    expect(tile, 'the tile lost its radius — the design gives every photograph its own').toMatch(
+      /border-radius:\s*var\(--radius-md\)/
+    );
+    // the tile keeps its own clip, which the hover scale needs
     expect(tile).toMatch(/overflow:\s*hidden/);
+  });
+
+  /**
+   * 05-17 — the hairline that used to ring the slab is gone with it.
+   *
+   * `.dark .hm-peek-grid { box-shadow: 0 0 0 1px var(--rule) }` outlined the flush block. Around six
+   * separated tiles it outlines a rectangle of page background, which is worse than nothing and is
+   * exactly the kind of leftover that survives a rewrite unnoticed.
+   */
+  it('no ring is drawn around the photo grid', () => {
+    expect(cssCode).not.toMatch(/\.hm-peek-grid\s*\{[^}]*box-shadow/);
+    expect(cssCode).not.toMatch(/\.dark\s+\.hm-peek-grid/);
   });
 
   it('the sizes attribute is composed from the SAME gap and cap the stylesheet uses', () => {
@@ -534,6 +715,21 @@ describe('Act 1 is the legacy composition, and its measures come from the ladder
    * the component's own `style` prop — asserted on the SERVED BYTES, because that is the only
    * place the inline style and the class can be seen to have resolved together.
    */
+  /**
+   * 05-17 — the assertion is unchanged and the MECHANISM behind it is completely different, which
+   * is why the docstring is rewritten rather than left alone.
+   *
+   * 05-16 rendered these two lines as `Text` and forced the serif through
+   * `style={{ fontFamily: 'var(--display)' }}`, filing `Text`'s missing family lever as D-22. That
+   * escape hatch is gone. MEASURED, `dist/components/Heading.d.ts`: `as?: ElementType`; and
+   * `chunk-DQHLFJNO.js` inlines `fontFamily: "var(--display)"` on every render. **`Heading as="p"`
+   * IS body text in the display face**, through the component's own API.
+   *
+   * So `font-family:var(--display)` still appears in the markup — put there by the design system
+   * this time, not by the page. The assertion is deliberately left reading the SHIPPED attribute
+   * rather than the source: it is a claim about what a reader gets, and it must stay true however
+   * the page obtains it.
+   */
   it('the subtitle and the intro ship in the display face, not the body face', () => {
     for (const cls of ['hm-subtitle', 'hm-intro']) {
       const el = new RegExp(`<p[^>]*class="[^"]*\\b${cls}\\b[^"]*"[^>]*>`).exec(html);
@@ -544,6 +740,96 @@ describe('Act 1 is the legacy composition, and its measures come from the ladder
       );
       expect(markup, `${cls} still ships the body face`).not.toContain('font-family:var(--font)');
     }
+  });
+
+  /**
+   * 05-17 — the page no longer needs `Text`'s escape hatch, and that is worth an assertion of its
+   * own so it cannot creep back. A `style={{ fontFamily: … }}` here would mean someone reached for
+   * `Text` again and re-opened D-22 on a page that no longer depends on it.
+   */
+  it('no page-level font-family escape hatch survives on the identity lines', () => {
+    const source = readFileSync('src/pages/index.astro', 'utf8');
+    expect(
+      source.replace(/\/\*[\s\S]*?\*\//g, ''),
+      'the fontFamily escape hatch is back — use `Heading as="p"`, which is serif by construction'
+    ).not.toMatch(/fontFamily:/);
+  });
+});
+
+/*
+ * ══ 05-17 — THE TOP ROW. THE DESIGN HAS NO BAR, AND THAT WAS THE FIRST THING AKHIL SAID ═════════
+ *
+ * *"I didn't agree with the header initially… the header is not required for such a page."*
+ *
+ * MEASURED against `design_handoff_portfolio/Akhil Saxena - Home.dc.html` in Chromium at 1280x860:
+ * the row is a flex row of two muted links and a 42px bordered circle, painted directly on the page
+ * background — no fill, no bottom edge. `AppBar` cannot render that: `.ds-atom-appbar` declares
+ * `background: var(--surf-2); backdrop-filter: blur(14px)` and none of its four variants removes
+ * either (MEASURED, `primitives.css` + `AppBar.d.ts`).
+ *
+ * These assertions read the SERVED DOCUMENT, not the source, because the claim is about what a
+ * reader receives — and they are scoped to `/` on purpose. The other 51 documents keep the AppBar.
+ */
+describe('Home ships no app bar (05-17)', () => {
+  it('emits no AppBar on this route', () => {
+    expect(
+      html,
+      'the design-system AppBar is back on Home. It paints a --surf-2 band with a hard bottom ' +
+        'edge, which is the "header" the owner rejected on sight.'
+    ).not.toMatch(/ds-atom-appbar/);
+  });
+
+  it('composes the row from Link + IconButton directly', () => {
+    expect(html, 'no plain nav row').toMatch(/<nav class="pub-nav-plain">/);
+    const links = [...html.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g)];
+    expect(links.length, 'the nav links are not design-system Links').toBeGreaterThan(0);
+    expect(html, 'no theme toggle in the row').toMatch(
+      /<button[^>]*class="ds-atom-iconbtn pub-toggle"/
+    );
+  });
+
+  /**
+   * `quiet`, not `default`, and this is the variant 05-16 got wrong. MEASURED, `primitives.css`:
+   *
+   *     [data-variant="default"]  color: var(--ink-2);  text-decoration: underline;
+   *     [data-variant="quiet"]    color: var(--ink-3);  text-decoration: none;
+   *
+   * The design's nav is muted and NOT underlined. Shipping `default` is why the rejected capture
+   * has three underlined links across the top. Both are stylesheet-only variants, so neither
+   * smuggles the `rgba(0, 0, 0, 0.25)` underline D-4 files against `inline`/`footer`/`action`.
+   */
+  it('the nav links are quiet — muted and not underlined', () => {
+    const links = [...html.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g)].map(
+      (m) => m[0] as string
+    );
+    expect(links.length).toBeGreaterThan(0);
+    for (const markup of links) {
+      expect(/data-variant="([^"]*)"/.exec(markup)?.[1], `nav link shipped ${markup}`).toBe(
+        'quiet'
+      );
+      expect(markup, 'a literal colour reached the nav through a Link variant').not.toMatch(
+        /rgba\(0, 0, 0/
+      );
+    }
+  });
+
+  /**
+   * The bordered circle, drawn by re-pointing two properties `.ds-atom-iconbtn` already declares
+   * (`border` and `border-radius`) at two tokens that already exist. Asserted against the SOURCE,
+   * because the claim is about HOW the shape was obtained — a hand-rolled `width`/`height`/`border`
+   * block would look identical in the artefact and would be the workaround QUAL-03 forbids.
+   */
+  it('the toggle is a re-pointed IconButton, not a hand-drawn circle', () => {
+    const rule = /\.pub-nav-plain \.pub-toggle\s*\{([^}]*)\}/.exec(cssCode);
+    expect(rule, 'no .pub-toggle rule').not.toBeNull();
+    const body = (rule as RegExpExecArray)[1] as string;
+    expect(body).toMatch(/border-radius:\s*var\(--radius-full\)/);
+    expect(body).toMatch(/border-color:\s*var\(--rule-strong\)/);
+    expect(
+      body,
+      "the toggle sets its own size — take the design system's `size` prop instead, which is " +
+        'what `[data-size="lg"]` is for'
+    ).not.toMatch(/width:|height:/);
   });
 });
 

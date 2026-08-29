@@ -127,63 +127,87 @@ export const MASONRY_GAP: { readonly token: string; readonly px: number } = {
 };
 
 /**
- * The gap between two peek tiles on Home's Act 1, and it is NOT `MASONRY_GAP`.
+ * The gap between two peek tiles on Home's Act 1.
  *
  * ================================================================================================
- * WHY THE PEEK GRID HAS ITS OWN GAP — IT IS THE MECHANISM OF THE COMPOSITION, NOT A PREFERENCE
+ * 16px, AND IT USED TO BE 8. THE FLUSH BLOCK WAS A READING OF THE LEGACY SITE, NOT OF THE DESIGN.
  * ================================================================================================
  *
- * MEASURED off the legacy implementation Akhil approved
- * (`git show legacy/nextjs-portfolio:src/styles/home.css`, `.hd-gallery`):
+ * Plan 05-16 set this to 8px and put the radius and the clip on the CONTAINER, so that six
+ * photographs read as ONE flush rounded block. That was derived from the legacy stylesheet
+ * (`git show legacy/nextjs-portfolio:src/styles/home.css`, `.hd-gallery`) and it is not what the
+ * approved design does.
  *
- *     gap: 0.5rem;  border-radius: 10px;  overflow: hidden;
+ * MEASURED in Chromium at 1280x860 against `design_handoff_portfolio/Akhil Saxena - Home.dc.html`,
+ * which is a WORKING prototype of the design Akhil approved and therefore outranks any reading of
+ * the site it replaces:
  *
- * The radius and the clip are on the **container**, not on the tile — so six photographs read as
- * ONE flush rounded block rather than as six separately-rounded cards. That reading only survives
- * a TIGHT gap: at `MASONRY_GAP` (16px) the block dissolves back into a grid with gutters and the
- * container radius stops describing anything, because the corner it rounds is 16px away from the
- * nearest photograph at five of the six tile corners.
+ *     grid   gap: 14px   max-width: 1080px   padding: 0 40px   ->  content 1000px, 3 x 324px
+ *     tile   aspect-ratio: 3 / 2   border-radius: 8px          ->  ON THE TILE, one per photograph
  *
- * So 8px is load-bearing on the same order as the radius itself, and it is declared here rather
- * than typed into `home.css` for the reason `MASONRY_GAP` is: `PeekGrid.astro` composes it into
- * every tile's `sizes` attribute, and a stylesheet that disagreed with that arithmetic would
- * download the wrong variant of all six photographs with no visual symptom and no error.
+ * Six separated tiles, each rounded. Not one block. The flush block is what made the shipped page
+ * read as a contact sheet rather than as a portfolio, and it is the single largest visual
+ * difference between the two captures in `.planning/phases/05-public-site/05-17-*`.
  *
- * The masonry keeps 16px. Two grids, two jobs: `/photos` is a gallery a reader scans, Home's is a
- * single composed object. Deriving one from the other would tie a future "the gallery needs more
- * air" edit to the one place air is the defect.
+ * 14px is not on the 4px spacing grid; `--space-3` is 12 and `--space-4` is 16. 16 is taken,
+ * because it is the rung that keeps the tile width closest to the prototype's measured 324px:
+ * with `ACT_ONE_MAX` at 1000, `(1000 - 2 x 16) / 3 = 322.7`, a 1.3px difference at three columns.
+ * `--space-3` would give 325.3 and a visibly tighter gutter. The two-pixel gap divergence is
+ * RECORDED rather than absorbed — see this plan's report.
+ *
+ * It is declared here rather than typed into `home.css` for the reason `MASONRY_GAP` is:
+ * `PeekGrid.astro` composes it into every tile's `sizes` attribute, and a stylesheet that
+ * disagreed with that arithmetic would download the wrong variant of all six photographs with no
+ * visual symptom and no error.
+ *
+ * The masonry keeps its own 16px. Two grids, two jobs, and they are free to diverge again.
  */
 export const PEEK_GAP: { readonly token: string; readonly px: number } = {
-  token: '--space-2',
-  px: 8,
+  token: '--space-4',
+  px: 16,
 };
 
 /**
  * Act 1's column cap, in px — and it is deliberately NOT in `PAGE_MAX`.
  *
  * ================================================================================================
- * 800, FROM THE LEGACY IMPLEMENTATION, AND WHY IT CANNOT JOIN `PAGE_MAX`
+ * 1000, MEASURED OFF THE PROTOTYPE. IT WAS 800, WHICH CAME FROM THE SITE THIS ONE REPLACES.
  * ================================================================================================
  *
- * `.home-d { max-width: 800px; margin: 0 auto }` is the legacy Home's whole-page measure, and it
- * is the single value that makes the approved composition read as composed: the identity block,
- * the six-tile block and the two CTAs share one narrow centred column, and the eye has one axis
- * to follow instead of 1080px of horizontal travel.
+ * 05-16 set this to 800 from `.home-d { max-width: 800px }` in the legacy stylesheet, on the
+ * argument that one narrow centred column is what makes the composition read as composed. The
+ * approved design disagrees, and it is a file that can be opened:
+ *
+ *     design_handoff_portfolio/Akhil Saxena - Home.dc.html
+ *     MEASURED in Chromium at 1280x860 --
+ *       photo grid   x = 100   width = 1080   padding 0 40px   ->  CONTENT 1000px
+ *       first tile   x = 140   width = 324
+ *
+ * So Act 1's column is 1000, not 800, and the 200px difference is the largest single reason the
+ * shipped page read as a smaller, meeker version of the design. This value is what the tiles are
+ * measured against, so getting it wrong shrinks every photograph on the site's primary route.
+ *
+ * The arithmetic that makes 1000 land exactly where the design puts it: `.pub-main` is
+ * `min(PAGE_MAX.home, 100%)` = 1080 inside `.pub-shell`'s `--pub-gutter` (48 at the 1024 rung), so
+ * at a 1280 viewport `.pub-main` starts at x = 48 + (1184 - 1080) / 2 = 100 -- the prototype's
+ * grid box exactly. A 1000px column centred in that lands its first tile at x = 140 -- the
+ * prototype's first tile exactly. Both edges agree with the design without a single literal from
+ * it being typed into a stylesheet.
  *
  * `PAGE_MAX` carries an invariant asserted in `test/public/layout-ladder.unit.test.ts` — *every
- * maximum is above the widest breakpoint, or a cap would fight the ladder* — and 800 is below the
+ * maximum is above the widest breakpoint, or a cap would fight the ladder* — and 1000 is below the
  * 1024px rung, so adding it there would either red that test or force it to be loosened. **The
  * invariant is right and the value is right; they are simply about different things.** A
  * `.pub-max-*` is a PAGE measure that the gutter ladder is still steering at every rung; this is
  * a column INSIDE a page whose measure is still `PAGE_MAX.home` (1080), which is what Act 2 uses
- * and what the handoff specifies. Home is 1080 wide and its first act is 800 of that.
+ * and what the handoff specifies. Home is 1080 wide and its first act is 1000 of that.
  *
  * The consequence of keeping it out of `PAGE_MAX` is that `scripts/assert-gutter-ladder.mjs` does
  * not cover it, so `test/public/home.node.test.ts` asserts this constant against the built
  * stylesheet directly. Two numbers that agree today are a duplication, not a contract — the same
  * reason `assert-gutter-ladder` exists one level up.
  */
-export const ACT_ONE_MAX = 800;
+export const ACT_ONE_MAX = 1000;
 
 /**
  * The layout maxima, in px. §2.2 — each is `min(cap, 100%)` in effect, so none needs a breakpoint.

@@ -79,16 +79,25 @@
 
 import { Footer } from '@akhil-saxena/design-system/components/Footer';
 import homeConfig from '../../data/home_config.json';
-import { PublicNav } from '../components/public/PublicNav';
+import { type PublicNavVariant, PublicNav } from '../components/public/PublicNav';
 import '../styles/design-system.css';
 import '../styles/public-shell.css';
 
 interface Props {
   /** Extra class(es) for `<main>` — normally one of the `.pub-max-*` page maxima (§2.2). */
   mainClass?: string;
+  /**
+   * How the top row is drawn. `bar` (the default, 51 documents) is the design system's `AppBar`;
+   * `plain` is Home's, which the approved design gives no bar at all — see `PublicNav.tsx`.
+   *
+   * It is a prop rather than a `pathname === '/'` test inside the layout because the shell must
+   * not know which route is special. A layout that hard-coded the exception would make the second
+   * page that wants a plain row an edit to a file shared by every page that does not.
+   */
+  navVariant?: PublicNavVariant;
 }
 
-const { mainClass } = Astro.props;
+const { mainClass, navVariant = 'bar' } = Astro.props;
 
 /**
  * The footer's links are `data/home_config.json`'s `socialLinks`, mapped to `Footer`'s shape.
@@ -177,8 +186,12 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
   </head>
   <body>
     <div class="pub-shell">
-      <div class="pub-bar">
-        <PublicNav siteTitle={homeConfig.title} pathname={Astro.url.pathname} />
+      <div class={navVariant === 'plain' ? 'pub-bar pub-bar-plain' : 'pub-bar'}>
+        <PublicNav
+          siteTitle={homeConfig.title}
+          pathname={Astro.url.pathname}
+          variant={navVariant}
+        />
       </div>
       <main class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
         <slot />

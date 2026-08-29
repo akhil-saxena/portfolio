@@ -65,14 +65,14 @@
  * imported by `/photos`, and it is the WRONG function for this grid: it is built for the masonry's
  * own column ladder (1 column at base, 2 at the first breakpoint, `columns` above) against
  * `PAGE_MAX.photos` (1280). The peek grid is 2 columns at base, 3 from 673, against
- * `ACT_ONE_MAX` (800). Calling it here would emit a `sizes` string that is silently wrong —
+ * `ACT_ONE_MAX` (1000). Calling it here would emit a `sizes` string that is silently wrong —
  * the browser would download a different variant of all six photographs with no visual symptom and
  * no error, which is the exact failure `sizesFor`'s own docstring refuses a bad column count over.
  *
  * So the arrangement differs and the SOURCE OF TRUTH does not: `peekSizes()` below is composed
  * from the same `GUTTER_RUNGS` that `sizesFor` composes, in the same descending, first-match-wins
- * clause order, against this grid's OWN gap and cap — `PEEK_GAP` (8px, the tight gap the flush
- * block needs) and `ACT_ONE_MAX` (800px, the legacy column). Both live in `src/lib/layout-ladder.ts`
+ * clause order, against this grid's OWN gap and cap — `PEEK_GAP` (16px) and `ACT_ONE_MAX`
+ * (1000px, the design's Act-1 column). Both live in `src/lib/layout-ladder.ts`
  * beside `MASONRY_GAP` and `PAGE_MAX`, each with the reason it is not the other. No breakpoint,
  * gutter, gap or cap is typed here.
  * `srcsetFor` IS imported unchanged — it is arrangement-independent.
@@ -182,8 +182,10 @@ const lastPeekId = peekPhotos[peekPhotos.length - 1]?.id;
 {/* §6.6.4 — one of the three named landmarks. `aria-label` names the region; state A itself is a
     plain <div>, so the page carries exactly three and not four. */}
 <section class="hm-peek" aria-label="Photographs">
-  {/* THE ROUNDING AND CLIPPING ELEMENT. See this file's header: the radius is on the CONTAINER so
-      the six tiles read as one flush block, which is the legacy composition Akhil approved. */}
+  {/* 05-17: the radius and the clip moved OFF this element and onto `.hm-tile`, one per
+      photograph. 05-16 put them here so the six read as a single flush slab — a reading taken from
+      the legacy `.hd-gallery` and not from the approved design, which MEASURES as six separated
+      tiles at `gap: 14px` with `border-radius: 8px` on each. See `src/styles/home.css` §3. */}
   <ul class="hm-peek-grid" data-peek-count={peekPhotos.length} data-peek-total={manifest.length}>
     {
       peekPhotos.map((photo) => (

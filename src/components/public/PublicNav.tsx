@@ -1,5 +1,6 @@
 /**
- * The public AppBar — logo, three nav links, and the theme toggle. Plan 05-06, Task 1.
+ * The public nav — logo, three nav links, and the theme toggle. Plan 05-06, Task 1; the second
+ * arrangement (`variant="plain"`, Home) is 05-17.
  *
  * ================================================================================================
  * WHY THIS IS A `.tsx` AT ALL, WHEN ASTRO NAMED SLOTS DEMONSTRABLY WORK
@@ -126,11 +127,55 @@ export const THEME_TOGGLE_ID = 'pub-theme-toggle';
  */
 const WORDMARK_SUPPRESSED_ON = '/';
 
+/**
+ * How the bar is drawn.
+ *
+ * ================================================================================================
+ * `plain` EXISTS BECAUSE `AppBar` IS THE WRONG COMPONENT FOR HOME, AND THAT IS A DESIGN DECISION
+ * ================================================================================================
+ *
+ * Akhil, verbatim: *"I didn't agree with the header initially… the header is not required for such
+ * a page."* The approved prototype agrees and is more specific than the sentence is —
+ * `design_handoff_portfolio/Akhil Saxena - Home.dc.html` has **no bar at all**. Its top row is a
+ * flex row of two muted links and a bordered circle, painted directly on the page background:
+ *
+ *     MEASURED in Chromium at 1280x860 against the prototype --
+ *       row          padding 26px 40px 0    height 70    NO background, NO bottom edge
+ *       nav link     x = 40    13.5px / 500 / #8F8B82,  hover -> #EAE7E0,  NOT underlined
+ *       toggle       42 x 42   border 1px #33332F   border-radius 50%   x = 1196 (right edge 1240)
+ *
+ * `AppBar` cannot express that, and the reason was MEASURED before it was asserted:
+ *
+ *     primitives.css `.ds-atom-appbar`   background: var(--surf-2);  backdrop-filter: blur(14px);
+ *     tokens.css     dark                --surf-2: rgba(255, 255, 255, 0.055)
+ *
+ * A frosted band lifted 5.5% off `#0d0d0f` — faint, but a hard horizontal edge across the full
+ * width of the viewport, and it is the "header" in the capture Akhil rejected. `AppBarVariant` is
+ * `minimal | withSearch | default | centered` (MEASURED, `dist/components/AppBar.d.ts`) and NONE of
+ * the four drops the fill: grepping `primitives.css` for `.ds-atom-appbar[data-variant=…]` returns
+ * three rules, all of them about the lead and actions groups, none about `background`. There is no
+ * `transparent` prop and no `bordered={false}`. So this is not a case of reaching past the right
+ * prop — it is a surface the component does not have.
+ *
+ * **AND IT DID NOT NEED TO BE A COMPONENT AT ALL.** The prototype's row is two `Link`s and one
+ * `IconButton` in a flex row. Both are design-system primitives, both compose freely, and arranging
+ * two of them in a row is precisely what QUAL-03 calls layout. Reaching for `AppBar` and then
+ * shipping its band was the error; composing the primitives is not a workaround around a missing
+ * component, it is the design system being used at the level the design actually asks for.
+ *
+ * So `bar` (every other route) and `plain` (Home) are two arrangements of the same three
+ * ingredients, and the `bar` arrangement is untouched by this plan — 51 documents keep the AppBar
+ * they already had.
+ */
+export type PublicNavVariant = 'bar' | 'plain';
+
 export interface PublicNavProps {
   /** The site name, from `data/home_config.json`. Never typed here — see the layout. */
   siteTitle: string;
   /** `Astro.url.pathname`, so the current section can be announced. */
   pathname: string;
+  /** `bar` everywhere; `plain` on Home, which the design gives no bar. @default 'bar' */
+  variant?: PublicNavVariant;
 }
 
 /**
@@ -145,8 +190,108 @@ function isCurrent(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function PublicNav({ siteTitle, pathname }: PublicNavProps) {
+/**
+ * The theme toggle, shared by both arrangements so the two cannot drift apart.
+ *
+ * `size` is the ONE difference between them and it is a measurement, not a preference. MEASURED,
+ * `primitives.css`: `.ds-atom-iconbtn[data-size="lg"]` is 40x40 and `[data-size="md"]` is 32x32.
+ * The prototype's toggle is 42x42, so `lg` is the rung that lands within 2px of the design; the bar
+ * keeps `md` (the default) because `--ds-appbar-h` is derived from a 32px control and a 40px one in
+ * the actions slot would make the bar taller than the property every full-viewport section on the
+ * site subtracts.
+ *
+ * The circle and its edge are NOT drawn here. `.ds-atom-iconbtn` already carries
+ * `border: 1px solid transparent` and `border-radius: var(--radius-md)`, and the component's own
+ * docstring names the handover: *"All styling lives in primitives.css under `.ds-atom-iconbtn`, so
+ * a composing component can restyle it through the cascade by passing its own className."* So
+ * `home.css` re-points two properties that already exist at two tokens that already exist —
+ * `--radius-full` and `--rule-strong` — which is (T) under QUAL-03, a handover, not an origination.
+ * Nothing about the control is re-implemented.
+ */
+function ThemeToggle({ size }: { size: 'md' | 'lg' }) {
+  return (
+    <IconButton
+      id={THEME_TOGGLE_ID}
+      className="pub-toggle"
+      size={size}
+      /* `label` IS the accessible name — IconButton maps it to `aria-label` and marks the
+         glyph `aria-hidden`. It is deliberately state-neutral: the button is static HTML and
+         the inline script only toggles a class, so a name saying "Switch to light" would be a
+         lie in one of the two states, on every page, with nothing to catch it. */
+      label="Switch between the dark and light theme"
+      /* BOTH glyphs are rendered and CSS shows one, keyed off `.dark` on <html>. That is what
+         keeps the toggle correct with ZERO JavaScript beyond the class flip: swapping the icon
+         in script would mean the first painted frame shows the wrong glyph for a returning
+         light-mode visitor — the same flash PUB-12 exists to prevent, moved into the icon.
+         The spans, rather than a className on the icon itself, so this does not depend on
+         whether the design system's `Icon` forwards `className` to its lucide child. */
+      icon={
+        <>
+          <span className="pub-theme-icon pub-theme-icon-sun">
+            <Sun size={16} />
+          </span>
+          <span className="pub-theme-icon pub-theme-icon-moon">
+            <Moon size={16} />
+          </span>
+        </>
+      }
+    />
+  );
+}
+
+export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavProps) {
   const showWordmark = pathname !== WORDMARK_SUPPRESSED_ON;
+
+  /*
+   * `quiet` on the plain row and `default` in the bar, and the difference is the design rather
+   * than a tidy-up. MEASURED, `primitives.css`:
+   *
+   *     [data-variant="default"]  color: var(--ink-2);  text-decoration: underline;
+   *     [data-variant="quiet"]    color: var(--ink-3);  text-decoration: none;
+   *          :hover               color: var(--ink);    text-decoration: underline;
+   *
+   * The prototype's nav is `#8F8B82` (the muted step), NOT underlined, and goes to `#EAE7E0` on
+   * hover. That is `quiet`, exactly, with no app CSS at all — and shipping `default` is why the
+   * rejected capture has three underlined links where the design has three quiet ones. Both are
+   * stylesheet-only variants, so neither smuggles the `rgba(0, 0, 0, 0.25)` underline that D-4
+   * files against `inline`, `footer` and `action`. Do not "improve" either to `inline`.
+   */
+  const navVariant = variant === 'plain' ? 'quiet' : 'default';
+
+  const navLinks = NAV_ITEMS.map((item) => (
+    <Link
+      key={item.href}
+      href={item.href}
+      variant={navVariant}
+      className="pub-nav-link"
+      aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
+    >
+      {item.label}
+    </Link>
+  ));
+
+  /*
+   * Home. Two design-system primitives in a flex row, painted on the page background.
+   *
+   * `<nav>` rather than a bare `<div>`, and it is NOT given an `aria-label`: §6.6.4 specifies
+   * three named landmarks on this page and `test/public/home.node.test.ts` counts them. An
+   * unlabelled `<nav>` is still a navigation landmark for a screen-reader user and is still the
+   * right element for a list of links; naming it would make a fourth.
+   *
+   * It is in normal flow and NOT sticky — "fixed-flow, not sticky" is the handoff's own wording,
+   * and on this page it is load-bearing rather than cosmetic. The `<h1>` docks into the top-left
+   * corner as the reader scrolls (see `home.css` §4); a sticky row would still be sitting in that
+   * corner when it arrived, and the two would collide. In flow, the row has scrolled out of the
+   * viewport 64px before the name starts moving, so the corner it docks into is empty.
+   */
+  if (variant === 'plain') {
+    return (
+      <nav className="pub-nav-plain">
+        <div className="pub-nav-links">{navLinks}</div>
+        <ThemeToggle size="lg" />
+      </nav>
+    );
+  }
 
   return (
     <AppBar
@@ -172,47 +317,8 @@ export function PublicNav({ siteTitle, pathname }: PublicNavProps) {
           false
         )
       }
-      nav={NAV_ITEMS.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          /* `default` and `quiet` are the only two stylesheet-only variants. §4.6a MEASURED that
-             `inline`, `footer` and `action` set `color` as an INLINE style, which beats any app
-             rule at (0,1,0) while every jsdom test still passes, because jsdom implements no CSS
-             specificity. Three consecutive Phase 1 plans hit this and 01-11 shipped a grey link
-             inside a red error box. Do not "improve" this to `inline`. */
-          variant="default"
-          aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
-        >
-          {item.label}
-        </Link>
-      ))}
-      actions={
-        <IconButton
-          id={THEME_TOGGLE_ID}
-          /* `label` IS the accessible name — IconButton maps it to `aria-label` and marks the
-             glyph `aria-hidden`. It is deliberately state-neutral: the button is static HTML and
-             the inline script only toggles a class, so a name saying "Switch to light" would be a
-             lie in one of the two states, on every page, with nothing to catch it. */
-          label="Switch between the dark and light theme"
-          /* BOTH glyphs are rendered and CSS shows one, keyed off `.dark` on <html>. That is what
-             keeps the toggle correct with ZERO JavaScript beyond the class flip: swapping the icon
-             in script would mean the first painted frame shows the wrong glyph for a returning
-             light-mode visitor — the same flash PUB-12 exists to prevent, moved into the icon.
-             The spans, rather than a className on the icon itself, so this does not depend on
-             whether the design system's `Icon` forwards `className` to its lucide child. */
-          icon={
-            <>
-              <span className="pub-theme-icon pub-theme-icon-sun">
-                <Sun size={16} />
-              </span>
-              <span className="pub-theme-icon pub-theme-icon-moon">
-                <Moon size={16} />
-              </span>
-            </>
-          }
-        />
-      }
+      nav={navLinks}
+      actions={<ThemeToggle size="md" />}
     />
   );
 }

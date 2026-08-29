@@ -413,6 +413,11 @@ function runJob(sandbox: Sandbox, overrides: Record<string, string> = {}): Run {
     GIT_AUTHOR_EMAIL: 'photo-pipeline@users.noreply.github.invalid',
     GIT_TERMINAL_PROMPT: '0',
     LC_ALL: 'C',
+    // This sandbox symlinks the real `node_modules`, so without its own cache every sandboxed
+    // Vite pre-bundles into the SAME `node_modules/.vite` and they race on
+    // `renameSync(deps_ssr_temp_<hash> -> deps_ssr)`. Spelled here rather than inherited,
+    // because this env is built key by key on purpose. See astro.config.mjs.
+    PORTFOLIO_VITE_CACHE_DIR: join(sandbox.work, '.vite'),
     ...overrides,
   };
 

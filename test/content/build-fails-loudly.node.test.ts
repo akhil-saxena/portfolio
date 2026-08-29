@@ -140,7 +140,15 @@ async function runBuild(): Promise<BuildResult> {
     const done = await execFileAsync(process.execPath, [ASTRO_BIN, 'build'], {
       cwd: sandbox,
       maxBuffer: 32 * 1024 * 1024,
-      env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' },
+      env: {
+        ...process.env,
+        FORCE_COLOR: '0',
+        NO_COLOR: '1',
+        // Each sandbox gets its OWN Vite cache. It symlinks the real `node_modules`, so
+        // without this every sandbox pre-bundles into the SAME `node_modules/.vite` and
+        // they race on `renameSync(deps_ssr_temp_<hash> -> deps_ssr)`. See astro.config.mjs.
+        PORTFOLIO_VITE_CACHE_DIR: path.join(sandbox, '.vite'),
+      },
     });
     output = `${done.stdout}${done.stderr}`;
   } catch (error) {

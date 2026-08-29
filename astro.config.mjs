@@ -204,6 +204,27 @@ export default defineConfig({
 
   integrations: [react(), contentGate, sitemap({ filter: isPublicSitemapUrl })],
 
+  vite: {
+    /*
+     * SANDBOXED BUILDS MUST NOT SHARE ONE VITE CACHE.
+     *
+     * Three fixtures — `test/pipeline/record-valid`, `test/pipeline/partial-failure` and
+     * `test/content/build-fails-loudly` — build in a temp directory and SYMLINK the real
+     * `node_modules` into it, so `node_modules/.vite` resolves to the same physical directory for
+     * every one of them. Vite pre-bundles into `deps_ssr_temp_<hash>` and then
+     * `renameSync`s it onto `deps_ssr`; two concurrent sandboxes race there, and the loser's build
+     * exits non-zero. MEASURED (plan 05-15): orphaned `deps_ssr_temp_*` directories of ~1,197
+     * entries each, carrying the timestamps of the failing runs, one named verbatim in the error.
+     *
+     * That is the "recorded intermittent" in `build-fails-loudly` — a real race, not flakiness.
+     *
+     * `undefined` keeps Vite's own default for every ordinary build, so this changes nothing
+     * outside the fixtures; each sandbox sets the variable to a path INSIDE itself, which its own
+     * cleanup already removes.
+     */
+    cacheDir: process.env.PORTFOLIO_VITE_CACHE_DIR || undefined,
+  },
+
   // No sessions. Astro would otherwise auto-provision a Cloudflare KV namespace for a
   // SESSION binding on deploy; nothing here stores server session state (auth is a
   // per-request Access JWT verification), so this keeps the Worker smaller and the

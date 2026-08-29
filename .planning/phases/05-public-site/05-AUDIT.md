@@ -645,14 +645,14 @@ matches unrelated prose in `scripts/lib/dispatch-input.mjs`, and `Photographs` m
 | row | shipped as | asserted? |
 |---|---|---|
 | Primary CTA — Home | `SCROLL FOR THE WORK ↓` | ✅ `test/public/home.node.test.ts` |
-| Secondary CTA — Home Act 2 | `ALL WORK →` · `RÉSUMÉ →` · `View résumé` | ❌ none of the three |
-| Primary CTA — Résumé | `Download the PDF` | ❌ |
+| Secondary CTA — Home Act 2 | `ALL WORK →` · `RÉSUMÉ →` · `View résumé` | ✅ **all three, 2026-08-29** — `test/public/copy-contract.node.test.ts`, character for character on the served bytes |
+| Primary CTA — Résumé | `Download the PDF` | ✅ **2026-08-29**, same file |
 | Cross-link — Work | *see the photographs →* | ✅ `test/public/work.node.test.ts`, character for character |
 | **Cross-link — Photos** | 🔴 **does not exist** | — |
 | Photo page — back | `← All photographs` · `← Product` | ✅ `test/public/photo-detail.node.test.ts` |
 | Filter — unfiltered | `All · 40` | ✅ derived and asserted; the spec's literal `ALL · 39` is stale by one |
 | Filter — category | `Architecture · 14` etc. | ✅ derived and asserted |
-| Empty — category with no photos | implemented in `PhotoEmpty.tsx` | ❌ (and unreachable today) |
+| Empty — category with no photos | implemented in `PhotoEmpty.tsx` | ✅ **2026-08-29** — `test/public/photo-empty.unit.test.ts`, by rendering the component, which is the test its own header said it was shaped for and which did not exist |
 | Error — 404 | `Not found.` / `There is nothing at this address.` / `Go to the home page` | ✅ `test/public/seo.node.test.ts` |
 | Destructive actions | none, by design | n/a |
 
@@ -687,10 +687,26 @@ changing his own subtitle must not red the build. **The `/work` and `/photos` st
 in `.astro` source**, and pinning those has the same cost and benefit as the `/work` cross-link,
 which §13.2 makes a contract entry and the suite asserts character for character.
 
-**Not pinned here, and the reason is a boundary rather than an omission:** §13.2 deliberately
-enumerates *which* strings are contract entries, and quietly extending that list from an audit
-would widen a reviewed contract without review. It is on the list for Akhil, with the exact cost:
-one assertion per string, in the file that already asserts the cross-link.
+> **ANSWERED 2026-08-29 — the structural strings only.** `test/public/copy-contract.node.test.ts`
+> pins the three Home Act-2 CTAs, both Act-2 band headings and `Download the PDF`;
+> `test/public/photo-empty.unit.test.ts` pins the empty-category copy; and the AppBar's three nav
+> labels are pinned in the same file, as a literal.
+>
+> **The prose stays free, deliberately and in writing.** `/work`'s `<h1>` and sub-paragraph,
+> `/photos`'s `<h1>` and its eyebrow wording, and both pages' section eyebrows are asserted
+> nowhere; the list and a reason for each is in the copy-contract file's own FREE section, held as
+> a comment rather than as data so nobody loops over it and pins it by accident.
+>
+> **Home's three CMS strings are DERIVED, not pinned** — the page must render what
+> `data/home_config.json` holds, so editing the record moves both sides and the string vanishing is
+> still red.
+>
+> **A finding fell out of building it.** The nav-label block was written first as a comparison
+> against `NAV_ITEMS`, imported from the component. Planted with `photographs` shortened to
+> `photos` — decision 2's own lever — it reported **10 passed**, because both sides of the
+> comparison came from the edited constant. A derivation check wearing a pin's description, inside
+> the fix for exactly that. The labels are a literal now, and the source constant and the served
+> bytes are asserted against it separately.
 
 ---
 
@@ -1007,7 +1023,7 @@ Separated from everything above, which is settled.
 | **1** | **Cut a `2.0.0-beta.2` before Phase 8, or let the twenty-one findings wait?** D-21 is the new one and the only one visible on the shipped site. | Cutting it fixes the 344px overflow, the 40px filter pill, the 32px lightbox controls, the invisible footer underline and the swipe-to-dismiss that PUB-06 is partial without — five user-visible things in one release. Waiting ships all five. |
 | **2** | **The 344px horizontal scroll (D-21) — ship it, or shorten the nav?** | Shipping it is 14px of scroll on every page at the folded cover. The only consumer-side lever is the nav labels: `photographs` is 94px of the 310px group, and `photos` would take the bar under 344. That is a copy change to a navigation label, which is yours. |
 | **3** | ~~**`← see the work` on `/photos` — build it, or drop the row from §13.2?**~~ **ANSWERED: build it.** | Built. One element, one rule, and `CROSSLINK_TYPE` lifted into `src/lib/crosslink.ts` so the two halves are ONE declaration rather than two that agree today — the served `/work` half is byte-identical across the move. Asserted on the served bytes in both directions: one row on `/photos`, zero on all seven category routes. |
-| **4** | **Pin the page copy, or leave it unguarded?** `/work`'s `<h1>` and sub-paragraph, `/photos`'s `<h1>`, the three Home Act-2 CTAs and `Download the PDF` are asserted nowhere; a copy edit ships silently. | Pinning is one assertion per string in files that already assert the cross-link, and it means a deliberate copy edit reds the build until you update the assertion. Leaving it means the human review is the only guard — which is what §13.2 chose for everything outside its table. |
+| **4** | ~~**Pin the page copy, or leave it unguarded?**~~ **ANSWERED: the structural strings only.** | Done. Pinned: `ALL WORK →`, `RÉSUMÉ →`, `View résumé`, `The work`, `The résumé`, `Download the PDF`, the empty-category copy, and the AppBar's three nav labels — all character for character on the served bytes. Left free: every `<h1>`, every sub-paragraph and every content eyebrow, with the list and a reason recorded in `test/public/copy-contract.node.test.ts`. Home's three CMS strings are asserted against `home_config.json` rather than against literals, so Akhil can still edit his own subtitle. **Note for decision 2:** shortening `photographs` to `photos` is now two lines instead of one — the component and the pin. |
 | **5** | ~~**The intermittent snap-on-load — accept, or drop `.hm-a`'s snap point?**~~ **ANSWERED: drop it.** | Taken. `.hm-a`'s snap point and its outset are gone, `#work` is the only snap point, and §2's table was re-run: **0 of 48** under `no-preference` against 15 of 48 before, with `fills` and `departs` still 6/6 in both motion settings. |
 | **6** | ~~**`/resume`'s metric band — I decided it stays (§13). Confirm or overrule.**~~ **ANSWERED: it stays**, and the doubled Brevo claim is fixed. | Confirmed. §11.1 now lists the band as item 5, `src/schemas/resume.ts`'s comment names both consumers instead of only `/work`, and `migrate-experience-metric.mjs`'s header was corrected with them. The Brevo bullet lost its `15%` — the band carries the figure — and the migration's `evidence` row was re-derived in the same commit, which its own provenance refusal demanded. |
 | **7** | **The three employment metrics as claims** — the plan asks you to read them out loud. `+15% CONVERSION` · `4K+ FRANCHISES` · `6× FASTER PIPELINES`. | Already on your deferred list as placeholders. Named here only because §12's copy walk-through puts them in front of you. |

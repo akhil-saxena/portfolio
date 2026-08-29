@@ -147,8 +147,122 @@
 
 /*
  * ================================================================================================
- * 3. THE PAGE HEAD AND THE FILTER RAIL (§8.3)
+ * 3. THE PAGE HEAD (§8.4's rail lives inside it)
  * ================================================================================================
  *
- * Filled in by Task 3.
+ * A column, and `align-items: flex-start` so the rail is CONTENT-WIDTH rather than stretched to the
+ * page. That matters: `.ds-atom-segmented` paints a pill-shaped border around the whole nav, and a
+ * stretched one draws a 1280px-wide capsule with eight buttons huddled at its left edge.
  */
+
+.ph-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin-bottom: var(--space-8);
+}
+
+/*
+ * ================================================================================================
+ * 4. THE FILTER RAIL (§8.3) — and three declarations §8.3 does not have
+ * ================================================================================================
+ *
+ * §8.3 measured the problem: eight anchors at 312px content, at a 44px hit height, wrap to as many
+ * as four rows — 176px of an ~800px viewport spent on a filter row. As a rail it is 52px.
+ *
+ * `max-width: 100%` IS UNCONDITIONAL AND IT IS THE R-6 GUARD. `.ph-filters` is a flex item under
+ * `align-items: flex-start`, so its width is its CONTENT width — which at 344px is far wider than
+ * the viewport. Without this the nav simply overhangs the page and reopens the horizontal scroll
+ * the ladder exists to close, at every width below the rail's own breakpoint AND above it.
+ *
+ * `white-space: nowrap` on the pill is also unconditional. A pill's label is `Architecture · 14`,
+ * two tokens with a space between them, and a squeezed row breaks it across two lines rather than
+ * overflowing — which is the wrapping §8.3 is trying to stop, relocated inside the pill.
+ *
+ * THE REACH INTO `.ds-atom-segmented-btn` IS A QUAL-03 JUDGEMENT, AND HERE IS ITS REASON.
+ * `FilterNav`'s `className` reaches the `<nav>` ONLY (MEASURED in `chunk-ZNX6U4ZE.js`: the anchors
+ * carry `ds-atom-segmented-btn ds-atom-filternav-link` and no consumer hook), and every declaration
+ * below is LAYOUT — flex behaviour, wrapping, snap alignment. None of them is paint, none restyles
+ * the component, and all are scoped under `.ph-filters` so they cannot reach a `SegmentedControl`
+ * elsewhere. QUAL-03 permits layout CSS; this is the second half of OQ-4 and it is filed with it.
+ */
+
+.ph-filters {
+  max-width: 100%;
+}
+
+.ph-filters .ds-atom-segmented-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 672px) {
+  .ph-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    /*
+     * LOAD-BEARING, AND ONLY IN ONE DIRECTION. A flex item's default `min-width: auto` refuses to
+     * shrink below min-content, which once the row is `nowrap` is the sum of all eight pills.
+     * MEASURED CAVEAT, RECORDED RATHER THAN REPEATED FROM §8.3: that automatic minimum applies on
+     * the flex container's MAIN axis, and `.ph-head` is a COLUMN — so today `min-height: auto` is
+     * what `.ph-filters` actually resolves and this declaration is inert. It stays because it costs
+     * nothing and because the day `.ph-head` becomes a row is the day the rail silently stops
+     * scrolling, with no other symptom than the page growing wider than the screen.
+     */
+    min-width: 0;
+    /*
+     * Chromium serialises `x proximity` as `x`, because `proximity` is the initial strictness. So a
+     * probe reading `scrollSnapType === "x"` is POSITIVE confirmation this is not `mandatory` — it
+     * is not a failed assertion. `mandatory` is wrong here: it would refuse to leave a pill
+     * part-scrolled, which on a rail of eight is how a user tells there are more.
+     */
+    scroll-snap-type: x proximity;
+  }
+
+  .ph-filters .ds-atom-segmented-btn {
+    /*
+     * `flex: 0 0 auto` IS NOT IN §8.3, AND WITHOUT IT THE RAIL DOES NOT SCROLL. A flex item's
+     * default is `0 1 auto` — it SHRINKS. With `overflow-x: auto` on a container whose items all
+     * shrink to fit, there is no overflow to scroll: the pills compress toward min-content instead,
+     * which is the squashed row `overflow-x` was added to replace. Recorded as an addition rather
+     * than folded in silently.
+     */
+    flex: 0 0 auto;
+    /*
+     * §8.3, and Phase 0 shipped the version without it: `scroll-snap-type` on the container with no
+     * `scroll-snap-align` on the children is a rail that DECLARES snapping and does not snap. Only
+     * a probe caught it — `getComputedStyle(pill).scrollSnapAlign === "none"` while the container
+     * read `x`.
+     */
+    scroll-snap-align: start;
+  }
+}
+
+/*
+ * The per-pill count (§8.2, §13.3). A HOOK THAT CARRIES NO PAINT, DELIBERATELY.
+ *
+ * The obvious treatment is a muted tone, and it is wrong here: the ACTIVE pill fills `--ink` with
+ * `--ink-inverse` text (§8.4), so a `--ink-3` count would sit on the filled pill at a contrast
+ * nobody reviewed. The reviewed capture shows the count in the pill's own colour. So this class
+ * exists for the one thing that IS layout — keeping `· 14` on the same line as its label — and any
+ * colour treatment is a design decision for a review, not for this file.
+ */
+.ph-count {
+  white-space: nowrap;
+}
+
+/*
+ * ================================================================================================
+ * 5. THE EMPTY CATEGORY (§13.2)
+ * ================================================================================================
+ *
+ * Unreachable today, and refused upstream by RI-2 — see `src/pages/photos/[category]/index.astro`.
+ * Three stacked elements; no width, because the copy is two short lines and a link.
+ */
+
+.ph-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}

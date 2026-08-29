@@ -55,6 +55,7 @@ import { getCollection } from 'astro:content';
 import homeConfig from '../../../../data/home_config.json';
 import siteConfig from '../../../../data/site_config.json';
 import { PhotoEmpty } from '../../../components/public/PhotoEmpty';
+import { PhotoFilters } from '../../../components/public/PhotoFilters';
 import PhotoGrid from '../../../components/public/PhotoGrid.astro';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
@@ -149,6 +150,14 @@ const noun = count === 1 ? 'photograph' : 'photographs';
 
   <header class="ph-head">
     <Heading level={1}>{category.label}</Heading>
+
+    {
+      /* `photos={all}` — EVERY photograph, not this category's. The rail's counts are a group-by
+        over the whole collection, and passing the filtered set would render `· 0` on every pill
+        but this one, on a page that otherwise looks completely correct. */
+    }
+    <PhotoFilters categories={siteConfig.categories} photos={all} pathname={Astro.url.pathname} />
+
     <Eyebrow size="md">{count} {noun}</Eyebrow>
   </header>
 

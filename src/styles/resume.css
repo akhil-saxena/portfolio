@@ -43,10 +43,16 @@
  * ================================================================================================
  *
  * `.rs-prose` is `max-width: min(68ch, 100%)` (§2.2) and it is NOT restated inside the print block.
- * `ch` is a typographic unit, so it follows the printed font size by construction: at `--text-md`
- * on A4 with the shell's 15mm margins the paper column is ~680px and 68ch is ~517px, so the same
- * single declaration is what §11.3 means by "the 68ch cap becomes the print column; no fixed px
- * width". A second, print-only measure would be a number that has to be kept in step with this one.
+ * `ch` is a typographic unit, so it follows the printed font size by construction, which is what
+ * §11.3 means by "the 68ch cap becomes the print column; no fixed px width". A second, print-only
+ * measure would be a number somebody has to keep in step with this one.
+ *
+ * MEASURED in Chromium rather than computed, because the arithmetic is counter-intuitive: DM Sans
+ * Variable's `0` advance at `--text-md` is 10.19px (0.679em), so 68ch is ~698px — WIDER than an A4
+ * column, which at the shell's 15mm margins is 680px. On paper the `100%` half of the `min()` is
+ * therefore the one that binds, by about 3%, and the two answers are within a rounding of each
+ * other. The declaration is still right and still the only one; the note is here so nobody
+ * "corrects" it after measuring 680 and expecting 698.
  *
  * `.pub-prose` in `public-shell.css` says the same thing and is deliberately NOT reused: it is the
  * shell's, every route may compose it differently, and reaching across for one declaration would
@@ -227,17 +233,31 @@
 }
 
 /*
- * The bullet list is `<Bullets>`'s own `<ul>` — the component emits no class, so it is reached as a
- * child element. §3.1 "Body — card description, résumé bullet": DM Sans `--text-md` 15 / relaxed.
+ * §3.1 "Body — card description, résumé bullet": DM Sans `--text-md` 15 / relaxed.
+ *
+ * 🔴 THE TYPE ROLE IS ON THE WRAPPER, NOT ON THE `<ul>`, AND THAT IS THE MEASURE'S DOING.
+ *
+ * The wrapper is also `.rs-prose`, whose `68ch` cap is the §2.2 measure. `ch` resolves against the
+ * font of the element the property is ON. With the size declared one level down on the `<ul>`, the
+ * cap was computed at the INHERITED 16px body size instead of at the bullet's own 15px — MEASURED
+ * in Chromium at 1440: the column came out 744px where the role gives 698px, 6.6% too wide, with
+ * nothing on the page looking broken. Declaring the role here makes the two agree by construction
+ * and the `<ul>` inherits it.
+ *
+ * The list itself is `<Bullets>`'s own `<ul>` — the component emits no class, so its box is reached
+ * as a child element.
  */
-.rs-bullets ul {
-  margin: var(--space-4) 0 0;
-  padding-left: var(--space-5);
+.rs-bullets {
   font-family: var(--font-body);
   font-size: var(--text-md);
   line-height: var(--lh-relaxed);
   letter-spacing: var(--ls-base);
   color: var(--ink-2);
+}
+
+.rs-bullets ul {
+  margin: var(--space-4) 0 0;
+  padding-left: var(--space-5);
 }
 
 .rs-bullets li {

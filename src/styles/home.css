@@ -417,3 +417,77 @@
 .hm-resume-skills {
   margin: 0;
 }
+
+/* ══ 5. SNAP (§6.5, PUB-13) — motion is the OPT-IN, and snap is never load-bearing ══════════ */
+
+/*
+ * **Snap lives INSIDE `prefers-reduced-motion: no-preference`, and that is the non-obvious part.**
+ * Snap converts a small user gesture into a large involuntary viewport translation — exactly the
+ * class of motion the preference exists to suppress. Written the other way round, as an opt-OUT
+ * inside a `reduce` query, the accessible path becomes the exception and the next transition that
+ * forgets to opt out ships; written this way, a rule outside the block is visible in review.
+ *
+ * **`proximity`, never `mandatory`.** State B is taller than the viewport at every class, and
+ * under `mandatory` the browser can snap back past content the reader is trying to reach.
+ *
+ * **Snap is never load-bearing.** Every state reachable with snap is reachable without it: the
+ * prompt is a real `<a href="#work">`, so the whole transition works under `reduce`, with
+ * JavaScript off, and from the keyboard.
+ *
+ * `scroll-behavior: smooth` is NOT restated here. `public-shell.css` §4 already declares it on
+ * `html` inside this same query, for every public route. A second declaration would be a duplicate
+ * that can drift, and the one thing worse than one copy of a rule is two.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * `scroll-margin-top` ON STATE A IS REQUIRED, OR THE PAGE SNAPS ON LOAD
+ * ------------------------------------------------------------------------------------------------
+ *
+ * A snap area starts at the element's own box, and `.hm-a`'s box begins `--hm-above` down the
+ * document — close enough to the initial offset for `proximity` to pull it, so the page would
+ * scroll itself and hide the nav at first paint. MEASURED, both directions, in Chromium; the
+ * numbers are in this plan's SUMMARY.
+ *
+ * **State A's snap position is the TOP OF THE DOCUMENT, and the outset is what says so.** The
+ * outset must be at least the distance from the document top to `.hm-a`'s box — the AppBar plus
+ * `.pub-main`'s padding — and an outset LARGER than that distance is free, because the snap
+ * position then clamps to scroll offset 0, which is where state A belongs. `--hm-above` is already
+ * that quantity, deliberately over-estimated (§1), so the height budget and the snap outset are
+ * one number rather than two that must agree.
+ *
+ * `#work`'s own outset is **0**, and that is a measurement rather than an omission: the public nav
+ * is `position: static` at all six classes. It ships as `--hm-sticky-nav` rather than being left
+ * out, because the value is a function of the shell — the moment the nav becomes sticky, that is
+ * the one line to change.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * THE ASTRO SCOPING TRAP, WHICH A GREP CANNOT SEE
+ * ------------------------------------------------------------------------------------------------
+ *
+ * `#work` is `HomeActTwo.astro`'s root element. A `<style>` block in `index.astro` is scoped with
+ * that FILE's `data-astro-cid-*`, so a bare `#work { }` written there matches nothing:
+ * `getComputedStyle(work).scrollSnapAlign` reads `none` while the source says `start`. This defect
+ * has appeared twice in this project in two costumes and passed a grep gate both times.
+ *
+ * It cannot occur here — this is a plain imported stylesheet and nothing in it is scoped — and
+ * `:global()` is NOT the mechanism and must not be written (see this file's header). The check is
+ * a computed-style read in a real browser, recorded in the SUMMARY, not a grep.
+ */
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.hm-a) {
+    scroll-snap-type: y proximity;
+    /* The public nav is static at all six classes, so #work needs no outset. Shipped as a named
+       property because the value is a function of the shell, not of this page. */
+    --hm-sticky-nav: 0px;
+  }
+
+  .hm-a {
+    scroll-snap-align: start;
+    scroll-margin-top: var(--hm-above);
+  }
+
+  html:has(.hm-a) #work {
+    scroll-snap-align: start;
+    scroll-margin-top: var(--hm-sticky-nav);
+  }
+}

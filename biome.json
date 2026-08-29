@@ -20,7 +20,9 @@
       "!data",
       "!design_handoff_portfolio",
       "!public",
-      "!.planning"
+      "!.planning",
+      "!test-results",
+      "!playwright-report"
     ]
   },
   "formatter": {

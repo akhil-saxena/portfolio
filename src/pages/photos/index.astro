@@ -1,0 +1,89 @@
+---
+/**
+ * `/photos` — every photograph, one masonry gallery, no pagination. Plan 05-07, Task 2.
+ * (PUB-03, PUB-05. §7.1, §8.1, §13.3.)
+ *
+ * ================================================================================================
+ * NO PAGINATION, AND IT IS MEASURED RATHER THAN ASSUMED
+ * ================================================================================================
+ *
+ * §7.1: all `small` variants total 0.86 MB (`medium` 2.96 MB, `large` 5.67 MB). Pagination here is
+ * not an optimisation being skipped — it is complexity with no justification. The Phase 0 handoff's
+ * "SHOWING 8 OF 39" implies a truncation that does not exist, and this route is what replaces it.
+ *
+ * ================================================================================================
+ * EVERY COUNT IS DERIVED. NO LITERAL APPEARS IN ANY COPY STRING. (§13.3)
+ * ================================================================================================
+ *
+ * The manifest is at 40 and the UI-SPEC says 39 in six places. `getCollection('photos').length` is
+ * the only source used here, so the day a 41st photograph lands this page is right without an edit
+ * — which is precisely what 03-01's hardcoded `--verify` count was not.
+ *
+ * ================================================================================================
+ * SORTED BY `order`. NEVER BY `date`, AND `date` IS NEVER RENDERED. (§9.4)
+ * ================================================================================================
+ *
+ * The records carry three distinct dates across a corpus of 40 — an ingest window, not a capture
+ * history. `REQUIREMENTS.md`'s Out of Scope settled it and plan 05-12 adds the standing gate.
+ *
+ * ================================================================================================
+ * NO `og:image` PROP
+ * ================================================================================================
+ *
+ * 05-06 made `SITE_OG_IMAGE` `<Seo>`'s DEFAULT precisely so no route file has to know about it and
+ * no later plan has to edit a route it does not own. Passing one here would be a second definition.
+ */
+
+import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { getCollection } from 'astro:content';
+
+import homeConfig from '../../../data/home_config.json';
+import siteConfig from '../../../data/site_config.json';
+import PhotoGrid from '../../components/public/PhotoGrid.astro';
+import Seo from '../../components/public/Seo.astro';
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import '../../styles/photos.css';
+
+const entries = await getCollection('photos');
+
+/*
+ * ANTI-VACUITY, AND IT IS NOT THEORETICAL. `src/content.config.ts`'s own header records that
+ * Astro's `file()` loader LOGS a missing or unparseable file and returns — it does not throw — so an
+ * emptied or renamed `data/portfolio_images.json` would leave this collection silently empty. This
+ * page would then render "0 PHOTOGRAPHS — ALL OF THEM" over a gallery with nothing in it, which is
+ * a true sentence about a broken build. `astro.config.mjs`'s content gate is the other half of this
+ * and refuses first; both stand, because neither can ratify the other.
+ */
+if (entries.length === 0) {
+  throw new Error(
+    "/photos: getCollection('photos') returned no entries. The manifest is committed content and " +
+      'the content gate refuses an empty one, so this means the collection loader could not read ' +
+      'data/portfolio_images.json — it logs and returns rather than throwing (see ' +
+      'src/content.config.ts). Rendering the gallery over zero records would ship a page that is ' +
+      'silently blank and a count that is honestly wrong.',
+  );
+}
+
+/** §7.1: `/photos` sorts by `order`. MEASURED: dense 1..n across the whole manifest. */
+const photos = entries.map((entry) => entry.data).sort((a, b) => a.order - b.order);
+
+const total = photos.length;
+const siteTitle = homeConfig.title;
+---
+
+<PublicLayout mainClass="pub-max-photos">
+  <Seo
+    slot="head"
+    title={`Photographs — ${siteTitle}`}
+    description={`Every photograph on the site in one gallery — all ${total} of them, no pagination.`}
+    canonical="/photos"
+  />
+
+  <header class="ph-head">
+    <Heading level={1}>Photographs</Heading>
+    <Eyebrow size="md">{total} photographs — all of them</Eyebrow>
+  </header>
+
+  <PhotoGrid photos={photos} columns={siteConfig.defaultColumns} />
+</PublicLayout>

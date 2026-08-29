@@ -1,0 +1,162 @@
+---
+/**
+ * `/photos/<category>` — the seven prerendered filter routes. Plan 05-07, Task 2.
+ * (PUB-04. §8.1, §13.2, §13.3.)
+ *
+ * ================================================================================================
+ * THE ROUTES ARE GENERATED FROM THE CONFIG, NEVER FROM A LIST IN CODE
+ * ================================================================================================
+ *
+ * `getStaticPaths` reads `data/site_config.json`, so a Phase 7 category addition produces a route
+ * without a code change (§8.1). Nothing here enumerates seven of anything, and no category id is
+ * written in this file.
+ *
+ * THERE IS NO `"all"` RECORD AND NONE IS INVENTED. `/photos` is the unfiltered route.
+ * `SiteConfigSchema` refuses `"all"` as an id with its own message explaining why, so a synthetic
+ * record added here to make the two routes look symmetrical would fail the content gate.
+ *
+ * ================================================================================================
+ * 🔴 THE EMPTY-CATEGORY STATE IS NOT MERELY UNREACHABLE — IT IS REFUSED UPSTREAM. MEASURED.
+ * ================================================================================================
+ *
+ * §13.2 says the empty state "is unreachable today (MEASURED: all seven categories have 2-14
+ * photos)" and that it "must still exist, because a Phase 7 category addition creates it in one
+ * click". THE SECOND HALF DOES NOT HOLD against this repository as it stands.
+ *
+ * `src/schemas/content-set.ts` RI-2 refuses a declared category that no photograph uses:
+ *
+ *     where:  data/site_config.json → <id>
+ *     detail: no photograph is filed under "<id>"
+ *     why:    a declared category no photograph uses ships as a filter tab that opens an empty
+ *             gallery. RI-1 alone cannot see this: it is clean in exactly this case.
+ *
+ * That rule runs in `astro:config:done`, so it fires on `astro build`, `astro check` AND
+ * `astro sync`. A Phase 7 category addition therefore FAILS THE BUILD until its first photograph is
+ * filed — it is not one click, and this branch cannot be reached by any build over committed data.
+ *
+ * THE BRANCH IS KEPT ANYWAY, AND THE REASON IS NOT SYMMETRY. RI-2 is a CONTENT rule and this is a
+ * RENDERING one; they are enforced by different instruments and either could be relaxed without the
+ * other noticing. A route that answered a zero-length list with an empty `<div>` would ship a page
+ * that is silently blank — indistinguishable from a gallery whose stylesheet failed — and `<div>` is
+ * what a bug in the filter below would produce even with RI-2 intact and every category populated.
+ *
+ * Its markup lives in `src/components/public/PhotoEmpty.tsx` so that it can be rendered by a test;
+ * that file's header records why an `.astro` version could not be.
+ *
+ * ================================================================================================
+ * SORTED BY `categoryOrder`. NEVER BY `date`. (§9.4, and 05-12 gates it.)
+ * ================================================================================================
+ */
+
+import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { getCollection } from 'astro:content';
+
+import homeConfig from '../../../../data/home_config.json';
+import siteConfig from '../../../../data/site_config.json';
+import { PhotoEmpty } from '../../../components/public/PhotoEmpty';
+import PhotoGrid from '../../../components/public/PhotoGrid.astro';
+import Seo from '../../../components/public/Seo.astro';
+import PublicLayout from '../../../layouts/PublicLayout.astro';
+import '../../../styles/photos.css';
+
+/** One `{ id, label, columns }` record of `data/site_config.json`. Structural, not a rival shape. */
+type CategoryRecord = {
+  readonly id: string;
+  readonly label: string;
+  readonly columns: number;
+};
+
+export function getStaticPaths() {
+  const categories: readonly CategoryRecord[] = siteConfig.categories;
+
+  const paths = categories.map((category) => ({
+    params: { category: category.id },
+    props: { category },
+  }));
+
+  /*
+   * ANTI-VACUITY, AND IT GUARDS THE RETURN VALUE RATHER THAN THE CONFIG. `getStaticPaths` returning
+   * `[]` is not an error to Astro — it emits no page and exits 0. Every route in this family would
+   * silently disappear, every filter pill would 404, and the build would be green.
+   *
+   * WHY IT IS PHRASED THIS WAY, AND IT IS RECORDED RATHER THAN QUIETLY RENAMED. The first revision
+   * tested the length of the config's category list directly, and `gate:schema` REFUSED THE BUILD
+   * for it under `[HAND-ROLLED-VALIDATOR]` — that rule fires on a condition naming any of its
+   * twelve CONTENT_FIELDS with a refusal within three lines, and the list's own key is one of them.
+   * The gate is right about its subject and wrong about this line: `SiteConfigSchema` already
+   * refuses an empty category list, so nothing here is a rival validator. What is guarded is THIS
+   * FUNCTION'S OUTPUT — the thing Astro silently accepts — which is a rendering fact no schema can
+   * see. Guarding `paths` states that, and states it more precisely than guarding the input did.
+   *
+   * SECOND FINDING, FOUND BY THE REPAIR: the rule ALSO matched the paragraph you are reading, in
+   * its first draft, because it scans raw source and a comment quoting the offending condition IS
+   * the offending condition to a line-based matcher. That is this project's recurring
+   * comment-match class — the same one that bit `Seo.astro` against `gate:sinks` in 05-06 — so the
+   * condition is described here in words rather than spelled. Both findings belong to whoever owns
+   * `scripts/assert-single-schema-source.mjs`; they are written up in this plan's summary.
+   */
+  if (paths.length === 0) {
+    throw new Error(
+      'photos/[category]: getStaticPaths produced no paths, so Astro would emit NO category route ' +
+        'at all — with exit 0. Every filter link would 404 against a build that reported success.',
+    );
+  }
+
+  return paths;
+}
+
+interface Props {
+  category: CategoryRecord;
+}
+
+const { category } = Astro.props;
+
+const entries = await getCollection('photos');
+
+/* The same loader refusal `/photos` carries — see that file's header for the measurement. */
+if (entries.length === 0) {
+  throw new Error(
+    "photos/[category]: getCollection('photos') returned no entries, so EVERY category would " +
+      'render its empty state and the page would report a total of zero. That is a loader ' +
+      'failure, not a content state (src/content.config.ts records that the file loader logs and ' +
+      'returns rather than throwing).',
+  );
+}
+
+const all = entries.map((entry) => entry.data);
+
+/** §7.1: a category route sorts by `categoryOrder`. MEASURED: dense 1..n inside all seven. */
+const photos = all
+  .filter((photo) => photo.category === category.id)
+  .sort((a, b) => a.categoryOrder - b.categoryOrder);
+
+const count = photos.length;
+const total = all.length;
+const siteTitle = homeConfig.title;
+
+/* Derived, so a category holding exactly one photograph is not announced as "1 photographs". */
+const noun = count === 1 ? 'photograph' : 'photographs';
+---
+
+<PublicLayout mainClass="pub-max-photos">
+  <Seo
+    slot="head"
+    title={`${category.label} photographs — ${siteTitle}`}
+    description={`${category.label}: ${count} ${noun} from the gallery of ${total}.`}
+    canonical={`/photos/${category.id}`}
+  />
+
+  <header class="ph-head">
+    <Heading level={1}>{category.label}</Heading>
+    <Eyebrow size="md">{count} {noun}</Eyebrow>
+  </header>
+
+  {
+    count === 0 ? (
+      <PhotoEmpty label={category.label} total={total} />
+    ) : (
+      <PhotoGrid photos={photos} columns={category.columns} />
+    )
+  }
+</PublicLayout>

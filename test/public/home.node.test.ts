@@ -190,10 +190,72 @@ describe('the height budget and the snap rules (§6.2, §6.5, PUB-13)', () => {
     expect(outside).not.toMatch(/scroll-snap-/);
   });
 
-  it('state A carries a scroll outset and #work carries the shell-owned zero', () => {
-    expect(cssCode).toMatch(/\.hm-a\s*\{[^}]*scroll-margin-top:\s*var\(--hm-above\)/);
+  /**
+   * 🔴 STATE A HAS NO SNAP POINT, AND THIS TEST ASSERTED THE OPPOSITE UNTIL IT DID.
+   *
+   * `.hm-a` carried `scroll-snap-align: start` with `scroll-margin-top: var(--hm-above)` — 116px of
+   * outset meant to clamp state A's snap position to scroll offset 0. MEASURED by 05-15's audit and
+   * re-measured on this machine 8 loads per class per motion setting: it did not hold. The page
+   * scrolled ITSELF 8–20px at first paint on 15 of 48 loads under `no-preference` and 0 of 48 under
+   * `reduce`, which is the setting that removes snap.
+   *
+   * Akhil's decision was to drop state A's snap point and keep `#work`'s — the one that makes Act 2
+   * land. After the change: 0 of 48 in BOTH motion settings, with `fills` and `departs` still 6/6.
+   *
+   * ASSERTED AS AN ABSENCE, WHICH NEEDS THE SELECTORS PARSED RATHER THAN GREPPED. A plain
+   * `not.toMatch(/scroll-snap-align/)` over the file would be FALSE — `#work` still carries one,
+   * and must. A plain search for `.hm-a` in a selector would be too WIDE — `html:has(.hm-a) #work`
+   * mentions state A and targets Act 2. So the rules are parsed and the ones that TARGET `.hm-a`
+   * are the ones checked.
+   */
+  it('state A has NO snap point, and #work carries the only one on the page', () => {
+    const rules = [...cssCode.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map((m) => ({
+      selector: (m[1] as string).replace(/\s+/g, ' ').trim(),
+      body: m[2] as string,
+    }));
+    // ANTI-VACUITY: a parser that matched nothing would make every loop below pass.
+    expect(rules.length, 'the rule parser found no CSS rules at all').toBeGreaterThan(10);
+
+    /** Rules whose SUBJECT is `.hm-a` — the last compound selector, not a mention anywhere in it. */
+    const targetsA = rules.filter((rule) =>
+      rule.selector.split(',').some((part) => /(^|[\s>+~])\.hm-a$/.test(part.trim()))
+    );
+    /*
+     * ANTI-VACUITY, AND IT IS A FLOOR RATHER THAN AN EQUALITY ON PURPOSE.
+     *
+     * The first draft asserted `=== 1` here, and the plant that put state A's snap point back made
+     * it fail with the message "no rule targets .hm-a at all" while TWO rules targeted it. A
+     * misreported failure is the same defect class as an unmeasured pass, so the two claims are now
+     * separate: this one says the loop below is not iterating an empty set, and the loop itself
+     * names the offending selector. A later layout rule on `.hm-a` is legitimate; a `scroll-`
+     * declaration on it is not, and that is the claim worth pinning.
+     */
+    expect(
+      targetsA.length,
+      'no rule targets .hm-a at all — the parser or the stylesheet changed, and the loop below ' +
+        'would then assert nothing'
+    ).toBeGreaterThan(0);
+    for (const rule of targetsA) {
+      expect(
+        rule.body,
+        `"${rule.selector}" still carries a scroll- declaration; state A must have no snap point`
+      ).not.toMatch(/scroll-/);
+    }
+
+    /** The snap point that STAYS, and the outset the shell owns rather than this page. */
+    const workRules = rules.filter((rule) => rule.selector.endsWith('#work'));
+    expect(workRules.length, 'exactly one rule targets #work').toBe(1);
+    expect((workRules[0] as { body: string }).body).toMatch(/scroll-snap-align:\s*start/);
+    expect((workRules[0] as { body: string }).body).toMatch(
+      /scroll-margin-top:\s*var\(--hm-sticky-nav\)/
+    );
     expect(cssCode).toMatch(/--hm-sticky-nav:\s*0px/);
-    expect(cssCode).toMatch(/#work\s*\{[^}]*scroll-margin-top:\s*var\(--hm-sticky-nav\)/);
+
+    // `--hm-above` keeps its FIRST job — the height budget's subtrahend (§6.2) — and loses only its
+    // second. Both halves are asserted, because deleting the property outright would break §6.2
+    // silently and a test that only checked the absence would have called that a pass.
+    expect(cssCode).toMatch(/min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/);
+    expect(cssCode).not.toMatch(/scroll-margin-top:\s*var\(--hm-above\)/);
   });
 
   /**

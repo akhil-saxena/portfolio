@@ -456,26 +456,39 @@ for (const c of CLASSES) {
       ).toBe(true);
 
       /*
-       * THE SELF-SCROLL AT FIRST PAINT (§6.5's named failure), MEASURED AS INTERMITTENT.
+       * THE SELF-SCROLL AT FIRST PAINT — FIXED, AND NOW ASSERTED AT ZERO IN BOTH RUNS.
        *
-       * `--hm-above` (116px) exceeds the 113px of chrome above `.hm-a`, so state A's snap position
-       * clamps to scroll offset 0 and `loadY` should be 0. It is 0 at 48 of 48 loads under
-       * `reduce`. Under `no-preference` it is intermittently 8–20px — 6 of 48 measured loads,
-       * across five of six classes. Snap is the cause: it is the one declaration the query
-       * removes.
+       * WHAT THIS ASSERTION USED TO BE, AND WHY IT WAS RIGHT AT THE TIME. `.hm-a` carried
+       * `scroll-snap-align: start` with a 116px outset that was supposed to clamp state A's snap
+       * position to scroll offset 0. It did not hold: 116px of outset against 113px of chrome left
+       * `proximity` close enough to pull the initial offset, and the page scrolled ITSELF 8–20px at
+       * first paint. Under `reduce` — the one setting that removes snap — it was 0 every time.
+       * This line therefore asserted only `loadY < barHeight` under `no-preference`, because an
+       * equality against a real intermittency is a flake, and a flaky assertion teaches a re-run.
        *
-       * The invariant that actually matters is that the AppBar is not scrolled out of view at
-       * first paint, so that is what is asserted, with the finding named. Equality to 0 would be
-       * a 12.5% flake and would teach a re-run.
+       * WHAT CHANGED. Akhil's decision after reading the audit was to drop state A's snap point and
+       * keep `#work`'s. Re-measured 8 loads per class per motion setting, over the built artefact,
+       * by this suite's own method:
+       *
+       *     before   `no-preference`  15 of 48 loads self-scrolled (8, 18, 20 px), 5 of 6 classes
+       *     before   `reduce`          0 of 48
+       *     after    `no-preference`   0 of 48
+       *     after    `reduce`          0 of 48
+       *
+       * `fills` and `departs` stayed 6/6 in both settings across the change, which is the half that
+       * says the mechanism did not pay for the fix.
+       *
+       * SO THE EQUALITY IS NOW THE HONEST ASSERTION, and it is the same one in both runs: with no
+       * snap area within a viewport of the document top there is nothing left to pull. If this ever
+       * goes red under `no-preference` it is a FINDING — the mechanism returned — and not a reason
+       * to re-run. One load per class cannot see a 12.5% intermittency, which is exactly how 05-11
+       * measured `loadY = 0` at 7 of 7 and missed this; the 48-load re-measurement is recorded in
+       * `05-AUDIT.md` §2 and is what this line stands on.
        */
-      if (ti.project.name === 'reduce') {
-        expect(at.scrollY, 'under `reduce` the page must not scroll itself at all').toBe(0);
-      } else {
-        expect(
-          at.scrollY,
-          `self-scroll at first paint must stay inside the AppBar's ${at.barHeight}px (finding: intermittent snap-on-load)`
-        ).toBeLessThan(at.barHeight);
-      }
+      expect(
+        at.scrollY,
+        `the page must not scroll itself at first paint (AppBar ${at.barHeight}px; state A has no snap point)`
+      ).toBe(0);
     });
 
     test('CONTROL — `60svh` breaks `fills` and cannot break `departs`', async ({ page }, ti) => {
@@ -664,7 +677,17 @@ for (const c of CLASSES) {
        * that sees it is this line.
        */
       expect(snap.workAlign, "#work's scroll-snap-align, read in a browser").toBe('start');
-      expect(snap.aAlign, "state A's scroll-snap-align").toBe('start');
+
+      /*
+       * 🔴 STATE A HAS NO SNAP POINT, AND THIS LINE ASSERTED `start` UNTIL IT DID.
+       *
+       * `.hm-a { scroll-snap-align: start }` with a 116px outset was what pulled the page 8–20px
+       * at first paint — 15 of 48 loads under `no-preference` when this suite's own method was
+       * re-run, 0 of 48 under `reduce`. Akhil's decision after reading the audit was to drop state
+       * A's snap point and keep `#work`'s, which is the one that makes Act 2 land. Asserted at
+       * `none` rather than deleted, so the day the rule comes back this line says so.
+       */
+      expect(snap.aAlign, 'state A must carry NO snap alignment — see loadY below').toBe('none');
 
       /*
        * Chromium serialises `y proximity` as `y`, because `proximity` is the INITIAL strictness
@@ -673,9 +696,14 @@ for (const c of CLASSES) {
        * short string is never misread as a partial declaration.
        */
       expect(snap.htmlType, 'the html snap type').toBe('y');
-      expect(snap.aMargin, "state A's snap outset — 116px, or the page snaps on load").toBe(
-        '116px'
-      );
+      /*
+       * 0px, and it used to be 116px. The outset existed ONLY to clamp state A's snap position to
+       * scroll offset 0, and it did not hold — 116px of outset against 113px of chrome left
+       * `proximity` close enough to pull. With the snap point gone the outset has nothing to
+       * offset, so it went with it. `--hm-above` itself stays: it is the height budget's own
+       * subtrahend and is load-bearing there.
+       */
+      expect(snap.aMargin, "state A's scroll outset went with its snap point").toBe('0px');
       expect(snap.workMargin, "#work's outset is 0 because the public nav is static").toBe('0px');
     });
 

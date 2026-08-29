@@ -439,20 +439,33 @@
  * that can drift, and the one thing worse than one copy of a rule is two.
  *
  * ------------------------------------------------------------------------------------------------
- * `scroll-margin-top` ON STATE A IS REQUIRED, OR THE PAGE SNAPS ON LOAD
+ * 🔴 STATE A HAS NO SNAP POINT, AND THAT IS THE FIX FOR A MEASURED DEFECT — NOT AN OMISSION
  * ------------------------------------------------------------------------------------------------
  *
- * A snap area starts at the element's own box, and `.hm-a`'s box begins `--hm-above` down the
- * document — close enough to the initial offset for `proximity` to pull it, so the page would
- * scroll itself and hide the nav at first paint. MEASURED, both directions, in Chromium; the
- * numbers are in this plan's SUMMARY.
+ * `.hm-a` carried `scroll-snap-align: start` with `scroll-margin-top: var(--hm-above)` as the
+ * outset that was supposed to clamp its snap position to scroll offset 0. **The outset does not
+ * hold.** 05-15's six-class audit loaded the page 8 times per class per motion setting and measured
+ * the page scrolling ITSELF at first paint:
  *
- * **State A's snap position is the TOP OF THE DOCUMENT, and the outset is what says so.** The
- * outset must be at least the distance from the document top to `.hm-a`'s box — the AppBar plus
- * `.pub-main`'s padding — and an outset LARGER than that distance is free, because the snap
- * position then clamps to scroll offset 0, which is where state A belongs. `--hm-above` is already
- * that quantity, deliberately over-estimated (§1), so the height budget and the snap outset are
- * one number rather than two that must agree.
+ *     before, `no-preference`   15 of 48 loads, 8–20px, five of six classes
+ *     before, `reduce`           0 of 48 loads
+ *
+ * Snap is the only declaration the `reduce` query removes, so snap was the cause; and 116px of
+ * outset against 113px of chrome was not enough margin for `proximity` to leave the initial offset
+ * alone. 05-11 had measured `loadY = 0` at 7 of 7 — one load per class, which cannot see an
+ * intermittency of this size.
+ *
+ * **Akhil's decision, after reading the audit: drop state A's snap point and keep `#work`'s.**
+ * `#work` is the one that makes Act 2 land; state A's was pulling the page on load and buying
+ * nothing the document top does not already give for free. Re-measured the same way after the
+ * change:
+ *
+ *     after, `no-preference`     0 of 48 loads
+ *     after, `reduce`            0 of 48 loads
+ *     `fills` 6/6 and `departs` 6/6 in BOTH motion settings, unchanged
+ *
+ * **`--hm-above` is NOT removed** — it is the height budget's own subtrahend (§1) and is still
+ * load-bearing there. What is gone is its second job as a snap outset.
  *
  * `#work`'s own outset is **0**, and that is a measurement rather than an omission: the public nav
  * is `position: static` at all six classes. It ships as `--hm-sticky-nav` rather than being left
@@ -481,10 +494,11 @@
     --hm-sticky-nav: 0px;
   }
 
-  .hm-a {
-    scroll-snap-align: start;
-    scroll-margin-top: var(--hm-above);
-  }
+  /*
+   * THERE IS DELIBERATELY NO `.hm-a` RULE HERE. See the section header: state A's snap point is
+   * what pulled the page 8–20px on 15 of 48 loads, and it is gone rather than re-tuned. `#work` is
+   * the only snap point on this page.
+   */
 
   html:has(.hm-a) #work {
     scroll-snap-align: start;

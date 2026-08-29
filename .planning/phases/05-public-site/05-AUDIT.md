@@ -40,11 +40,19 @@ document is written from that file.
 | 8 | `aria-current="page"` exactly once | **1 in the rail, 2 in the document**, on all eight gallery routes — §16's sentence is wrong about the document and right about the rail, exactly as 05-07 recorded. |
 
 **Plus one finding no §16 item asked for:** under `prefers-reduced-motion: no-preference` the Home
-page **intermittently scrolls itself 8–20px at first paint** — 6 of 48 measured loads, across five
-of six classes. Under `reduce` it is 0 at 48 of 48. Snap is the cause.
+page **intermittently scrolled itself 8–20px at first paint** — 6 of 48 measured loads, across five
+of six classes. Under `reduce` it was 0 at 48 of 48. Snap was the cause.
 
-**And one copy row that never shipped:** §13.2's *Cross-link — Photos · ← see the work* does not
+> **RESOLVED, 2026-08-29.** Akhil's decision was to drop state A's snap point and keep `#work`'s.
+> Re-measured the same way on the same machine: **15 of 48 before, 0 of 48 after**, under
+> `no-preference`; 0 of 48 under `reduce` in both. `fills` and `departs` stayed **6/6 in both
+> motion settings**. See §2's amended sub-section.
+
+**And one copy row that never shipped:** §13.2's *Cross-link — Photos · ← see the work* did not
 exist anywhere in the repository.
+
+> **RESOLVED, 2026-08-29.** Built on Akhil's decision, matching `/work`'s treatment through one
+> shared `CROSSLINK_TYPE`, and asserted on the served bytes character for character. See §12.
 
 ---
 
@@ -157,7 +165,7 @@ not the mechanism.
 pulls it on to the nearest snap point — at class 1 it settles at 903, which is `#work`'s top. Both
 depart; only one of them is a plain scroll.
 
-### 🔴 The page scrolls itself at first paint, intermittently
+### 🔴 The page scrolled itself at first paint, intermittently — FIXED
 
 `--hm-above` is 116px against 113px of chrome above `.hm-a`, so state A's snap position clamps to
 offset 0 and `loadY` should be 0. Measured over 8 loads per class per motion setting:
@@ -176,9 +184,39 @@ The audit asserts `loadY < barHeight` under `no-preference` (with the finding na
 `loadY === 0` under `reduce`. An equality under `no-preference` would be a 12.5% flake, and a
 flaky assertion teaches a re-run.
 
-**It is recorded, not fixed.** The candidate fix — dropping `scroll-snap-align` from `.hm-a` and
-leaving `#work` as the only snap point — changes a reviewed mechanism, so it is on the list for
-Akhil rather than taken here.
+### ✅ FIXED, 2026-08-29 — state A's snap point is gone and `#work` keeps its own
+
+Akhil took the candidate fix. `.hm-a`'s `scroll-snap-align: start` and the
+`scroll-margin-top: var(--hm-above)` outset that was supposed to clamp it are removed;
+`html:has(.hm-a) #work` is now the only snap point on the page, and `--hm-above` keeps its first
+job as the height budget's subtrahend.
+
+**Re-measured by the same method** — 8 loads per class per motion setting, fresh context each load,
+over the built artefact behind `test/audit/serve-dist.mjs`, `document.fonts.ready` then 120 ms.
+The before-run is this machine's, not the one tabulated above, so the two halves are comparable:
+
+| | class 1 | class 2 | class 3 | class 4 | class 5 | class 6 | total |
+|---|---|---|---|---|---|---|---|
+| before, `no-preference` | 1/8 | 4/8 | 0/8 | 2/8 | 3/8 | 5/8 | **15 of 48** |
+| before, `reduce` | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | **0 of 48** |
+| **after, `no-preference`** | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | **0 of 48** |
+| **after, `reduce`** | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | **0 of 48** |
+
+Values seen before the fix: 8, 18 and 20px. This machine measured the intermittency at **31%**
+where the run tabulated above measured 12.5% — the same defect, seen more often, which is what a
+fresh context per load rather than a reused one buys.
+
+**And the mechanism did not pay for it.** `fills` **6/6** and `departs` **6/6** in BOTH motion
+settings, before and after. Under `no-preference` one viewport of scroll still lands on `#work`'s
+snap point at every class — 903, 865, 789, 1045, 789, 909 — exactly as it did before, which is the
+measurement that says Act 2 still lands.
+
+**The assertion moved with the fix.** `loadY` is now asserted `=== 0` in BOTH projects rather than
+`< barHeight` under `no-preference`. That equality is now honest: with no snap area within a
+viewport of the document top there is nothing left to pull. **It was proven able to fail** — with
+`.hm-a`'s rule planted back and the artefact rebuilt, the audit reported 7 failures: the six
+computed-style reads (`state A must carry NO snap alignment`) and, at class 4, the equality itself
+catching the self-scroll live in a single-load-per-class run.
 
 ---
 
@@ -830,7 +868,7 @@ must leave alone, so a control that collapses into another one reds the suite.
 | # | finding | severity |
 |---|---|---|
 | 1 | **D-21 — the AppBar overflows by 14px at 344px, on every route.** Upstream, inline gaps, no consumer fix. | 🔴 visible R-6 violation at the narrowest approved class |
-| 2 | **Home scrolls itself 8–20px at first paint, 6 loads in 48, under `no-preference` only.** Snap is the cause. | 🟡 intermittent, partial, never hides the whole bar |
+| 2 | **Home scrolled itself 8–20px at first paint, 6 loads in 48 here and 15 in 48 on a re-run, under `no-preference` only.** Snap was the cause. **FIXED 2026-08-29** — state A's snap point dropped, 0 of 48 after, `fills`/`departs` still 6/6. | ✅ closed |
 | 3 | **§13.2's *Cross-link — Photos · ← see the work* was never built.** One grep hit in the whole repo, and it is the spec row. | 🟡 a reviewed copy row missing from the site |
 | 4 | **§9.2's four Lighthouse numbers were never measured, never recorded as skipped, and were cited in shipped source as existing.** | 🔴 a citation to evidence that does not exist |
 | 5 | **The first gap §6.4 closed renders at 56px, not the declared 32px** — a flex `gap` and a `margin` composing. | 🟢 not a defect; §6.4's sentence is about a declaration |
@@ -957,9 +995,9 @@ Separated from everything above, which is settled.
 |---|---|---|
 | **1** | **Cut a `2.0.0-beta.2` before Phase 8, or let the twenty-one findings wait?** D-21 is the new one and the only one visible on the shipped site. | Cutting it fixes the 344px overflow, the 40px filter pill, the 32px lightbox controls, the invisible footer underline and the swipe-to-dismiss that PUB-06 is partial without — five user-visible things in one release. Waiting ships all five. |
 | **2** | **The 344px horizontal scroll (D-21) — ship it, or shorten the nav?** | Shipping it is 14px of scroll on every page at the folded cover. The only consumer-side lever is the nav labels: `photographs` is 94px of the 310px group, and `photos` would take the bar under 344. That is a copy change to a navigation label, which is yours. |
-| **3** | **`← see the work` on `/photos` — build it, or drop the row from §13.2?** | Building it is one element and two rules, copied from `/work`'s `.wk-crosslink-row`. Dropping it makes `/work`'s cross-link one-directional, which may be what you want. |
+| **3** | ~~**`← see the work` on `/photos` — build it, or drop the row from §13.2?**~~ **ANSWERED: build it.** | Built. One element, one rule, and `CROSSLINK_TYPE` lifted into `src/lib/crosslink.ts` so the two halves are ONE declaration rather than two that agree today — the served `/work` half is byte-identical across the move. Asserted on the served bytes in both directions: one row on `/photos`, zero on all seven category routes. |
 | **4** | **Pin the page copy, or leave it unguarded?** `/work`'s `<h1>` and sub-paragraph, `/photos`'s `<h1>`, the three Home Act-2 CTAs and `Download the PDF` are asserted nowhere; a copy edit ships silently. | Pinning is one assertion per string in files that already assert the cross-link, and it means a deliberate copy edit reds the build until you update the assertion. Leaving it means the human review is the only guard — which is what §13.2 chose for everything outside its table. |
-| **5** | **The intermittent snap-on-load — accept, or drop `.hm-a`'s snap point?** | Accepting ships an 8–20px self-scroll on roughly one load in eight, with the AppBar always still partly visible, and never under `reduce`. The candidate fix removes `scroll-snap-align` from `.hm-a` and leaves `#work` as the only snap point — that changes a reviewed mechanism and needs a re-run of §2's table. |
+| **5** | ~~**The intermittent snap-on-load — accept, or drop `.hm-a`'s snap point?**~~ **ANSWERED: drop it.** | Taken. `.hm-a`'s snap point and its outset are gone, `#work` is the only snap point, and §2's table was re-run: **0 of 48** under `no-preference` against 15 of 48 before, with `fills` and `departs` still 6/6 in both motion settings. |
 | **6** | **`/resume`'s metric band — I decided it stays (§13). Confirm or overrule.** And separately: the Brevo metric and the Brevo first bullet make the same claim twice. | Removal is one block plus two rules. Either way, `src/schemas/resume.ts`'s comment and §11.1 need to agree with the answer. |
 | **7** | **The three employment metrics as claims** — the plan asks you to read them out loud. `+15% CONVERSION` · `4K+ FRANCHISES` · `6× FASTER PIPELINES`. | Already on your deferred list as placeholders. Named here only because §12's copy walk-through puts them in front of you. |
 | **8** | **The `node_modules/.vite` race — fix the three fixtures, or keep re-running?** It is the only red in `npm test` and it is now diagnosed. | The fix is a `cacheDir` per sandbox: one line in each of three fixtures, no behaviour change, and it retires a blocker that has cost two plans a re-run each. Leaving it means `npm test` fails roughly one full run in two on this machine, always in the same file, always for a reason that is not the code under test. |

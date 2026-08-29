@@ -213,6 +213,30 @@ const PIPELINE_MARKERS = [
   { id: 'PIPELINE-CRYPTO', pattern: /node:crypto|createHash/ },
 ];
 
+/**
+ * A6 IS A CLAIM ABOUT THE PRODUCTION ARTEFACT, so the gate has to know which one it is holding.
+ *
+ * MEASURED 2026-08-29. Vitest sets `NODE_ENV=test`, and Vite resolves React through the
+ * `development` export condition for anything that is not `production`. Until plan 05-14 fixed
+ * `test/setup/preview-server.ts`, the artefact `npm test` left behind was React's DEVELOPMENT
+ * bundle — minified, but development — and CI's "Re-assert the gates" step ran against it:
+ *
+ *     npm run build   PhotoLightbox 17,451  client 180,630  react-dom 11,087  =  209,168 B
+ *     npm test        PhotoLightbox 28,141  client 353,843  react-dom 29,426  =  411,410 B
+ *
+ * Comparing that against a production ceiling produces "over the ceiling by 171,410 B", which
+ * names the symptom and hides the cause. So the ceilings are SKIPPED and a finding is raised that
+ * says what actually happened. It is still a refusal — a development React bundle under
+ * `dist/client` is a defect in its own right, because Cloudflare would serve it — but it is a
+ * refusal a reader can act on.
+ *
+ * Both marker sets were read out of real chunks, not invented. The dev markers are absent from
+ * the production build and the prod marker is absent from the development one; React ships full
+ * message text in development and an error-code URL in production.
+ */
+const DEV_BUILD_MARKERS = [/Invalid hook call/, /Each child in a list/, /unique "key"/];
+const PROD_BUILD_MARKER = /Minified React error/;
+
 /* The island the one hydrating route pattern is permitted to carry. */
 const ISLAND_EXPORT = 'PhotoLightbox';
 const ISLAND_URL = /^\/_astro\/PhotoLightbox\.[A-Za-z0-9_-]+\.js$/;
@@ -333,6 +357,13 @@ const CANARIES = [
     run: (s) => FAMILY_MINIFIED_IDENTIFIERS.test(s),
     canary: 'var q=Symbol("dndKit");function Z(e){return DndContext(e)}',
     antiCanary: 'var myDndKitLike=1;const dndkit=2;const sortableContext=3;',
+  },
+  {
+    id: 'A6-DEV-BUILD',
+    run: (s) => DEV_BUILD_MARKERS.some((m) => m.test(s)),
+    canary:
+      'throw Error("Invalid hook call. Hooks can only be called inside of the body of a function component.")',
+    antiCanary: 'throw Error("Minified React error #321; visit https://react.dev/errors/321")',
   },
   {
     id: 'A5-PIPELINE-PATH',
@@ -788,7 +819,25 @@ if (buckets.app.bytes + buckets.vendor.bytes !== buckets.total.bytes) {
   );
 }
 
+const devChunks = [...textOf.entries()]
+  .filter(([, t]) => DEV_BUILD_MARKERS.some((m) => m.test(t)))
+  .map(([p]) => p);
+
+if (devChunks.length > 0) {
+  add(
+    'A6-DEV-BUILD',
+    rel(distRoot),
+    `${devChunks.length} chunk(s) carry React's DEVELOPMENT bundle — ${devChunks.join(', ')}. The ` +
+      `three byte ceilings are claims about the PRODUCTION artefact and were NOT compared, because ` +
+      `"over the ceiling by N bytes" would name the symptom and hide the cause. Total here is ` +
+      `${buckets.total.bytes.toLocaleString('en-US')} B. CAUSE: something built this with ` +
+      `NODE_ENV != "production" — vitest sets it to "test", which is why ` +
+      `test/setup/preview-server.ts forces it. See the note beside DEV_BUILD_MARKERS.`
+  );
+}
+
 for (const [name, c] of Object.entries(CEILINGS)) {
+  if (devChunks.length > 0) break;
   const b = buckets[name];
   if (b.bytes > c.limit) {
     const largest = b.paths.map((p) => ({ p, n: sizeOf.get(p) ?? 0 })).sort((x, y) => y.n - x.n)[0];
@@ -842,6 +891,9 @@ for (const [t, files] of nonTheme)
   out(`    ${String(Buffer.byteLength(t)).padStart(6)} B on ${files.size} doc(s)`);
 out(
   `  chunks: ${jsFiles.length}; forbidden-family sweep read ${sweptBytes.toLocaleString('en-US')} B across ${scannedSources.length} source(s)`
+);
+out(
+  `  build mode: PRODUCTION — ${[...textOf.values()].filter((t) => PROD_BUILD_MARKER.test(t)).length} chunk(s) carry React's production error-code form, 0 carry a development message`
 );
 out('  client JavaScript, RAW BYTES ON DISK:');
 for (const [name, c] of Object.entries(CEILINGS)) {

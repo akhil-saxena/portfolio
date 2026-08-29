@@ -92,12 +92,32 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Ends in `npm run gate:content`, which chains every gate this project has:
-      # gate:schema (one definition of each content shape), gate:sinks (no raw-HTML
-      # sink), gate:origin (no legacy r2.dev URL in a shipped artefact) and gate:routes
-      # (the AUTH-03 prerender gate). Chained inside the script rather than added here as
-      # four steps, so a developer building locally gets exactly what CI gets — and so the
-      # whole gate set is one reviewable line instead of five plans' worth of additions.
+      # Ends in `npm run gate:content`, which chains every gate this project has.
+      # ELEVEN of them as of plan 05-14, in two groups and in this order:
+      #
+      #   source-scoped, cheap, first — gate:schema (one definition of each content
+      #     shape), gate:sinks (no raw-HTML sink), gate:ds (no design-system barrel
+      #     import), gate:photo-date (§9.4's standing refusal), gate:exif
+      #   dist-scoped, after them — gate:origin (no legacy r2.dev URL in a shipped
+      #     artefact), gate:routes (the AUTH-03 prerender gate), gate:public-js (PUB-14
+      #     and DS-09: four route patterns ship zero framework JavaScript, and a total
+      #     client-JS byte ceiling), gate:fonts (§1.2), gate:placeholders (OQ-1b),
+      #     gate:ladder (§2.1/§2.2)
+      #
+      # NO NEW STEP IS NEEDED HERE FOR ANY OF THEM, and that was MEASURED rather than
+      # assumed (05-14). The four dist-scoped additions need a built `dist/client`; the
+      # Build step above produces one and `npm run build` ends with `gate:content`, so
+      # they run against the artefact that build just made. The "Re-assert the gates"
+      # step below then runs the same eleven against the artefact `npm test` rebuilt.
+      # Both invocations were run in that exact sequence and both exit 0.
+      #
+      # A failing gate is NAMED, not anonymous — also measured, with two plants: npm
+      # prints `> akhilsaxena-portfolio@0.0.0 gate:public-js` (or `gate:ds`) as the last
+      # banner before it stops, and the chain short-circuits there.
+      #
+      # Chained inside the script rather than added here as eleven steps, so a developer
+      # building locally gets exactly what CI gets — and so the whole gate set is one
+      # reviewable line instead of six plans' worth of additions.
       #
       # The content gate itself is not in that chain and does not need to be: it is an
       # astro:config:done integration hook inside the build, so `astro build`, `astro check`
@@ -126,6 +146,9 @@ jobs:
         run: npm test
 
       # NOT redundant with the Build step, and this was confirmed rather than assumed.
+      # As of 05-14 this step is where FOUR dist-scoped gates land rather than two, so
+      # deleting it now loses more than it did: gate:origin, gate:routes, gate:public-js,
+      # gate:fonts, gate:placeholders and gate:ladder all read `dist/`.
       # `test/setup/preview-server.ts` line 248 runs `astro build` DIRECTLY — deliberately
       # not the `build` npm script, because that script has a gate appended to it and the
       # harness must not depend on one. So by the time `npm test` finishes, `dist/` is a

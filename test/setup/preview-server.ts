@@ -72,6 +72,30 @@ const astroBin = resolve(
  */
 const forcedForegroundEnv = { ...process.env, ASTRO_PREVIEW_BACKGROUND: '1' };
 
+/**
+ * MEASURED (5), plan 05-14. Vitest sets `NODE_ENV=test`, and Vite resolves React through the
+ * `development` export condition for anything that is not `production`. So the artefact this
+ * harness left behind was React's DEVELOPMENT bundle — minified, but development:
+ *
+ *     built by `npm run build`   PhotoLightbox 17,451  client 180,630  react-dom 11,087  = 209,168 B
+ *     built by this harness      PhotoLightbox 28,141  client 353,843  react-dom 29,426  = 411,410 B
+ *
+ * and the larger `client` chunk contains `"Invalid hook call"`, `"Each child in a list"` and
+ * `"Warning:"`, none of which exist in the production build.
+ *
+ * That is 197 KB of React devtools plumbing in the artefact CI re-asserts its gates against, and
+ * it made `gate:public-js`'s byte ceiling — which is a claim about what SHIPS — compare against
+ * something that never ships. The gates that ran here before 05-14 (`origin`, `routes`,
+ * `placeholders`, `ladder`) are all mode-independent, so nothing was wrong before; it is the
+ * arrival of a size assertion that makes the mode matter.
+ *
+ * Forcing `production` for the BUILD makes the two artefacts the same kind of thing, which is what
+ * the CI step "Re-assert the gates against the artefact the test run rebuilt" always claimed to be
+ * doing. Only the build gets it: the preview server merely serves `dist/`, and `astro preview`'s
+ * own Vite instance has no React to resolve.
+ */
+const productionBuildEnv = { ...forcedForegroundEnv, NODE_ENV: 'production' };
+
 const BANNER_URL_PATTERN = /(https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\]):\d+)/;
 
 /** ESC. Built with fromCharCode so no control character appears in a regex literal. */
@@ -91,11 +115,15 @@ function stripAnsi(value: string): string {
 }
 
 /** Runs a command to completion, rejecting with its captured output on a non-zero exit. */
-function runToCompletion(label: string, args: string[]): Promise<string> {
+function runToCompletion(
+  label: string,
+  args: string[],
+  env: NodeJS.ProcessEnv = forcedForegroundEnv
+): Promise<string> {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(process.execPath, args, {
       cwd: repoRoot,
-      env: forcedForegroundEnv,
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let output = '';
@@ -245,7 +273,7 @@ export default async function setup(project: TestProject) {
     resolve(repoRoot, 'scripts/bootstrap-local-env.mjs'),
   ]);
 
-  await runToCompletion('astro build', [astroBin, 'build']);
+  await runToCompletion('astro build', [astroBin, 'build'], productionBuildEnv);
 
   // A live preview server from a crashed earlier run is FATAL to the foreground path:
   // `astro preview` calls `checkExistingServer()` and throws rather than replacing it, and

@@ -1,5 +1,9 @@
 # Phase 5 — every design-system finding, in one place
 
+> **05-16 added D-22 and D-23** while rebuilding Home from the design sources, and closed D-2's
+> last residual by a consumer-side decision rather than a release. Both new findings are in their
+> own section below; D-2's row is unchanged as measured and its closure is recorded beneath them.
+
 **`@akhil-saxena/design-system@2.0.0-beta.2` IS NOW INSTALLED AND CONSUMED** (commit `2015b4d`).
 The twenty-one findings below were measured against **`2.0.0-beta.1`**, which is what Phase 5 was
 built on; **five of them are fixed in beta.2** and are marked ✅ **RESOLVED IN beta.2** in place,
@@ -95,6 +99,40 @@ receipt.
 
 ## What beta.2 changed about that, and what it did not
 
+---
+
+## The two 05-16 added, rebuilding Home from the design sources
+
+Both were found the same way: a value BOTH design sources specify, which the component's API has no
+way to express. Neither blocked the rebuild; both are handled through the component's own documented
+`style` escape hatch, so there is still no `!important`, no fork and no re-implemented component.
+
+| # | Finding | Where measured | Consequence | Proposed fix |
+|---|---|---|---|---|
+| **D-22** | **`Text` inlines `fontFamily: var(--font)` and offers no way to select the DISPLAY face.** Its only family lever is `mono`, a BOOLEAN that swaps to `var(--mono)`. There is no `family`/`serif`/`display` prop and no `data-family` attribute. | `dist/chunk-FNB2IYRN.js:6-9` — `var baseStyle = { fontFamily: "var(--font)", margin: 0 }`, spread into every render. `dist/components/Text.d.ts` — the prop list is `variant`, `as`, `color`, `maxWidth`, `size`, `weight`, `tone`, `mono`, `leading`; no family selector among them. | **On a site whose voice IS the serif, body text in the brand face cannot be expressed through the component at all.** The design system ships `--display`, `--font-display` and a whole Playfair face and then makes `Text` unable to reach any of them, while giving the mono face a dedicated boolean. An inline style beats every consumer class at every specificity, so there is no cascade path either — the same shape as D-4, D-10 and D-19, on a fourth component. Home's subtitle and intro are Playfair in the legacy implementation AND in the handoff; Phase 5 shipped them sans, which was the single most visible drift a reader saw. | Either a `family?: "body" \| "display" \| "mono"` token prop (which would subsume `mono` and make the three faces symmetric), or move the family to `:where(.ds-atom-text)` at (0,0,0) so a consumer class can hand it over — the pattern `primitives.css` already states for colour: *"passing `tone` means the component owns the colour; omitting it hands the colour to the cascade."* |
+| **D-23** | **`AppBar` cannot be told "this surface has no wordmark".** Omitting `logo` does not mean *no logo*; it means *render the design system's own placeholder*. | `dist/chunk-Q7KBVLX4.js:77` — `const logoNode = logo ?? /* @__PURE__ */ jsx(DefaultLogo, {})`. Nullish coalescing, so `undefined` AND `null` both fall through to `DefaultLogo`, which renders an ink box captioned **"DS"**. Confirmed in the built artefact: with `logo={undefined}`, `/` shipped `>DS<` in the bar. | A consumer whose design deliberately omits the wordmark on one route — which is what `design_handoff_portfolio/Akhil Saxena - Home.dc.html` does, since Home's `<h1>` IS the wordmark at 60px — has no first-class way to say so, and the failure mode is **shipping another product's placeholder on the primary route**. The one spelling inside the declared contract is `logo={false}`: `boolean` is a member of `ReactNode`, is not nullish, and React renders nothing for it. That works and it reads like a mistake. | A `logo={null}` path that means *no logo* (the conventional React reading), or an explicit `hideLogo`/`logo="none"`. The `DefaultLogo` fallback is reasonable for a first-run demo and wrong as the only alternative to a value. |
+
+### And one residual closed, by a consumer-side design decision rather than a release
+
+**D-2's last two cells are now clean, and `home.css`'s over-estimate is gone with them.** beta.2 left
+a residual: at **344 and 390 on a fine pointer the bar painted 67px against a declared 57**, because
+the row did not fit and the logo label wrapped to two lines — the case the property's own docstring
+says it cannot promise. 05-16 removed the wordmark on Home (on the design handoff's authority; see
+`src/components/public/PublicNav.tsx`), and **RE-MEASURED on the built artefact at seven widths ×
+both pointers, fourteen cells: the painted bar equals `--ds-appbar-h` in all fourteen** — 57 fine,
+69 coarse, at 344, 390, 673, 768, 841, 1024 and 1440.
+
+So `home.css` no longer carries `--hm-bar-allowance`. `--hm-above` is now
+`calc(var(--space-11) + var(--ds-appbar-h))` — **the recipe the property's docstring prescribes,
+used as prescribed** — and state A's painted height equals its budget at all six device classes.
+
+Two things worth being honest about. **This did not fix the residual upstream**; it removed the
+consumer content that triggered it, on this route only. Any other consumer that puts a wrappable
+label in the lead slot still gets the same 10px. And **the property is a floor, not an oracle**:
+`test/audit/six-class.spec.ts` measures the painted bar against it at every class, so if anything
+taller than 32px goes back into a slot the result is a named failure rather than a page that is
+quietly 10px short.
+
 **Five of the twenty-one closed, and none of them closed by anything this repository did.** Each was
 fixed in `../design-system`, published to the registry, and consumed here by version number — the
 mechanism the Core Value predicts. The receipt above is unchanged: still no `!important`, still no
@@ -104,9 +142,12 @@ fork, still no re-implemented component, still no local copy of a design-system 
 still declines to restate `--ds-appbar-h`, and it still should — but the reason has changed from
 *"the property is unreadable from a sibling"* to *"the property is now readable from a sibling and a
 consumer restating it would be a stale copy of a number that is correct at source"*. `home.css`'s
-`--hm-bar-allowance` stays for the second reason too: at 344 and 390 on a fine pointer the bar still
-paints 67 against a declared 57 (see D-2), so an over-estimate is still the right kind of wrong, and
-the 72px allowance still clears every painted value measured. **Both comments were rewritten in the
+`home.css`'s `--hm-bar-allowance` **is gone as of 05-16**, and the sentence that used to stand here
+— *"at 344 and 390 on a fine pointer the bar still paints 67 against a declared 57, so an
+over-estimate is still the right kind of wrong"* — is no longer true. Removing the Home wordmark
+removed the wrap that caused it; the bar now paints exactly `--ds-appbar-h` in all fourteen measured
+cells, and `--hm-above` reads the property instead of over-estimating it. See "one residual closed"
+above, including the two limits of that claim. **Both comments were rewritten in the
 same commit as this file** — a source comment asserting a fixed defect is exactly the kind of
 citation this phase has spent itself hunting.
 

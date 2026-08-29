@@ -250,3 +250,71 @@ you do not own, it is a wave-mate mid-edit, not your regression — say so rathe
   string. One line, and it makes the assertion say what it means — "the pipeline changed nothing",
   not "nothing in `data/` was ever uncommitted". The overlay itself must not be narrowed: copying
   working-tree modifications in is the property the sandbox exists for.
+
+---
+
+## D-05-16-1 — Home's built stylesheet is 35 bytes from flipping between a `<link>` and a `<style>`
+
+**Found by a plant, on an assertion that had nothing to do with it.** While proving that
+`test/public/home.node.test.ts` could fail, a plant that replaced the tokenised `transition-*`
+longhands with `transition: transform 0.4s ease` reddened a THIRD, unrelated assertion — the one
+counting the `ALL 40 →` badge. Chasing that produced the measurement below.
+
+- **Astro's `build.inlineStylesheets` default is `'auto'`, which inlines a stylesheet under 4,096
+  bytes** into a `<style>` block in every document that uses it.
+- **MEASURED**, on the artefact `npm run build` produced on 2026-08-30:
+
+  ```
+  dist/client/_astro/index.Dn5SowfN.css          4,131 bytes   <- Home. THIRTY-FIVE over the line.
+  dist/client/_astro/PublicLayout.pgvz42sB.css 127,873 bytes   <- the shell, never at risk
+  ```
+
+- **So any edit that shortens Home's BUILT css by 35 bytes moves the whole sheet into the
+  document**, and every `.hm-*` rule becomes part of `index.html`. Comments do not count — they are
+  stripped — so the margin is invisible in the 780-line source file and cannot be estimated by
+  reading it. The plant that found this shortened the built output by roughly sixty bytes.
+
+**What it breaks, and what it does not.**
+
+- **Safe:** `gate:ladder` already collects both deliveries by design (its own PASS line reads
+  `1 linked + 7 distinct inline <style> from 52 document(s)`). `gate:app-css` scans SOURCE, not
+  artefacts. `gate:public-js` counts scripts, not styles.
+- **At risk:** any artefact-side grep on `/` that matches a bare class name. One existed and was
+  fixed in the same commit — the badge count now matches `<a class="hm-peek-all"` rather than
+  `hm-peek-all`, and says why at the assertion. **The lesson generalises: on this route, assert
+  against a tag, never against a class name alone.**
+
+**Not decided here, deliberately.** Pinning `build: { inlineStylesheets: 'never' }` (or `'always'`)
+would make the delivery deterministic in one line — but it is a PERFORMANCE decision affecting all
+52 documents and the Lighthouse budget PUB-15 owns, and inlining a 4 kB critical sheet is normally
+the faster choice. That is Akhil's call with a Lighthouse run beside it, not an executor's while
+rebuilding a page. **Recorded with the number so the next person is choosing rather than
+discovering.**
+
+---
+
+## D-05-16-2 — `npm run check` is red on `main`, in three files, and nothing runs it
+
+**Not caused by 05-16 and not fixed by it** — recorded because it was found while verifying that
+05-16's own files were clean, and because "the formatter is red and nobody noticed" is the kind of
+thing that stays true for a phase.
+
+`npm run check` (`biome check . && prettier --check "**/*.astro"`) reports **4 errors** in three
+files, all byte-identical to `HEAD` and none touched by this plan:
+
+```
+scripts/lib/r2.mjs:469                 lint/style/useTemplate            FIXABLE
+scripts/assert-ds-import-contract.mjs:566  lint/correctness/noUnusedVariables  FIXABLE
+test/pipeline/workflow-contract.unit.test.ts:672,673  lint/suspicious/noTemplateCurlyInString
+```
+
+**Why it went unnoticed: `check` is in no path that runs.** `npm run build` is `astro check` +
+`astro build` + `gate:content`; `npm test` is vitest; `npm run deploy` is `gate:deps` → `build` →
+`test` → `gate:content` → `gate:liveness` → `gate:og-live` → `wrangler deploy`. **`check` appears in
+none of them**, and `.github/workflows/ci.yml` should be read before assuming CI covers it.
+
+The two `noTemplateCurlyInString` hits are almost certainly a **deliberate** false positive —
+`${{ … }}` is GitHub Actions expression syntax inside a single-quoted string, which is exactly right
+— so the fix there is a scoped `biome-ignore` with the reason, not a rewrite. The other two are
+genuinely `FIXABLE`. **Whoever owns QUAL-01 should decide whether `check` joins the build**, because
+a lint script nothing invokes is a lint script that is always about to be red.

@@ -13,12 +13,26 @@ npm run audit:public
 ```
 
 **The run this document records.** `2026-08-29`, darwin/arm64, Chromium via `@playwright/test`
-1.62.1, against `dist/client` built at commit `b6b2928`'s parent tree.
+1.62.1, against `dist/client` built at commit `b6b2928`'s parent tree — on
+`@akhil-saxena/design-system@2.0.0-beta.1`.
 
 ```
 156 passed · 6 skipped (the reduce run's captures) · 0 failed · 2.7 min
 42 screenshots written
 ```
+
+**Re-run 2026-08-29 against `2.0.0-beta.2`**, same machine, same harness, after the upstream release
+was consumed at commit `2015b4d`:
+
+```
+156 passed · 6 skipped · 0 failed · 2.6 min
+42 screenshots re-written — 3 differ, all three /work, by 1–9 bytes of PNG encoding noise
+```
+
+**The committed capture set is therefore beta.2's**, one coherent run, and the assertions that used
+to encode the two shortfalls (`+14` of overflow at 344, a 40px filter pill) now assert `0` and `44`.
+Every claim in this document that beta.2 changed is marked in place and in the past tense rather
+than overwritten — searching for `beta.2` finds all of them.
 
 **Every number below was read out of the run's own JSONL record**, not typed from a screen. The
 harness appends one line per measurement to `$AUDIT_OUT/measurements.jsonl` as it goes, and this
@@ -30,13 +44,13 @@ document is written from that file.
 
 | # | §16's owed measurement | Verdict |
 |---|---|---|
-| 1 | `doc == viewport` at all six classes on all six routes | **30 of 36 pass. 6 fail** — every route at 344px is 14px too wide. New finding **D-21**, upstream, ships. |
+| 1 | `doc == viewport` at all six classes on all six routes | **30 of 36 passed. 6 failed** — every route at 344px was 14px too wide. New finding **D-21**, upstream. ✅ **Now 36 of 36** — fixed in `2.0.0-beta.2` and re-measured 2026-08-29. |
 | 2 | State A fills, and one viewport departs | **PASS 6/6 in both runs.** Three controls, one of them constructed here because the two the plan handed over cannot fail on geometry. |
 | 3 | Act 2 fits at 841 × 768 | **PASS.** The résumé heading's bottom is 696 against a 768 viewport — 72px of clearance where the reviewed capture had it cut off. |
 | 4 | The Astro scoping trap — `#work`'s `scroll-snap-align` | **`start` at 6/6.** The trap does not occur. |
 | 5 | The `Link` colours, read in a browser | Nav **correct**. Footer underline **wrong and shipping** — §4.6b's prediction confirmed, D-4. |
 | 6 | Exactly three font families, and Playfair is not Georgia | **PASS.** Three families, four files, and a 176px width gap against Georgia. |
-| 7 | The 44px hit floor | Nav **44**, footer **44**, filter pill **40** (OQ-4, upstream). Lightbox controls **32** (D-17). |
+| 7 | The 44px hit floor | Nav **44**, footer **44**, filter pill **40** (OQ-4, upstream), lightbox controls **32** (D-17). ✅ **Both shortfalls fixed in `2.0.0-beta.2`** — pill **44** coarse, lightbox **44 × 44** coarse / **40 × 40** fine, re-measured 2026-08-29. |
 | 8 | `aria-current="page"` exactly once | **1 in the rail, 2 in the document**, on all eight gallery routes — §16's sentence is wrong about the document and right about the rail, exactly as 05-07 recorded. |
 
 **Plus one finding no §16 item asked for:** under `prefers-reduced-motion: no-preference` the Home
@@ -53,6 +67,21 @@ exist anywhere in the repository.
 
 > **RESOLVED, 2026-08-29.** Built on Akhil's decision, matching `/work`'s treatment through one
 > shared `CROSSLINK_TYPE`, and asserted on the served bytes character for character. See §12.
+
+**Two things happened after this run, and are folded in below rather than left to rot.**
+
+> **`2.0.0-beta.2` was published and consumed** (commit `2015b4d`), fixing five of the twenty-one
+> design-system findings — **D-2, D-3, D-16, D-17 and D-21**. Every number in this document that
+> beta.2 changed has been **re-measured on the installed package and on the built artefact**, and is
+> marked in place, in the past tense, rather than overwritten: §1, §8, the new §8a, §11, §18 rows 1
+> and 9, and §19 decisions 1 and 2. The register of what moved is the table at the head of
+> `05-DS-FINDINGS.md`.
+
+> **The Lighthouse run happened** — §19 decision 9, which Akhil answered *now* rather than *Phase
+> 8*. It closes §7.2 and §9.2, the last two open UNVERIFIEDs in §11, and it is the whole of the new
+> **§20**. Headline: **every route scores 100 on accessibility, best-practices and SEO at both form
+> factors**; performance is **99–100 on desktop** and **87–99 on mobile**, with three mobile routes
+> under 95 — all three the photo routes, all three LCP, and one cause between them.
 
 ---
 
@@ -76,6 +105,8 @@ reporting failure T-05-15-01 names.
 
 `doc − viewport`, in px. Identical in the normal and the reduced-motion run.
 
+**As measured against `2.0.0-beta.1`** — the version this audit's run was taken on:
+
 | route | 344 | 390 | 841 | 768 | 1024 | 1440 |
 |---|---:|---:|---:|---:|---:|---:|
 | `/` | **+14** | 0 | 0 | 0 | 0 | 0 |
@@ -85,11 +116,28 @@ reporting failure T-05-15-01 names.
 | `/photos/abstract/intothemist` | **+14** | 0 | 0 | 0 | 0 | 0 |
 | `/resume` | **+14** | 0 | 0 | 0 | 0 | 0 |
 
+> ### ✅ FIXED IN `2.0.0-beta.2` — the 344 column is now zero
+>
+> D-21 was fixed upstream and consumed at commit `2015b4d`. **Re-measured 2026-08-29** against the
+> installed beta.2, on the built artefact, at both pointers: **`scrollWidth === innerWidth` in all
+> 36 cells**, so the whole table is zeros and the `+14` column above is history rather than state.
+> The mechanism is in `05-DS-FINDINGS.md` D-21; the short version is that the two `gap`s moved out
+> of the inline style into `.ds-atom-appbar-lead` and `.ds-atom-appbar-nav`, and a
+> `@media (max-width: 380px)` rule compresses them to 12px and 10px at the folded cover.
+>
+> **The assertion caught it, which is the whole reason it was written at 14.**
+> `test/audit/six-class.spec.ts` asserted `+14` rather than tolerating it, and on contact with
+> beta.2 that line redded on 2 cells while the filter pill redded on 10 — 12 failures, every one of
+> them the good news. The special case is now deleted rather than flipped to zero, because a branch
+> asserting the same thing as its `else` is a branch that can only rot.
+
 The category and the photograph are **derived**, not named: first by `order` in
 `data/portfolio_images.json`, and the URL is composed by `photoHref()` from
 `src/lib/photo-srcset.ts` rather than by a `split('-')`, which is the failure 05-08 recorded.
 
-### 🔴 D-21 — the AppBar overflows at 344px, on every page
+### ~~🔴~~ ✅ D-21 — the AppBar overflowed at 344px, on every page. Fixed in `2.0.0-beta.2`.
+
+**Kept in the past tense rather than deleted**: the mechanism below is what made the finding filable upstream, and a register that erases its own evidence the moment it is acted on cannot be audited. Everything in this sub-section was true of `2.0.0-beta.1` and is false of `beta.2`.
 
 ```
 344 × 882, coarse, every route:   documentElement.scrollWidth = 358   innerWidth = 344
@@ -115,9 +163,19 @@ stylesheet can beat them without `!important`, which is the workaround the Core 
 which this phase has declined twenty times. Clipping the bar would hide the theme toggle, which
 PUB-12 needs. Filed as **D-21** in `05-DS-FINDINGS.md`.
 
-**It is asserted at 14, not tolerated.** The day the upstream fix lands, the audit fails and says so.
+**It was asserted at 14, not tolerated. The day the upstream fix landed, the audit failed and said
+so** — which is exactly what happened on 2026-08-29 when beta.2 was installed.
 
-It is visible in `05-X-home-state-a-dark-344.png`: the sun icon at the top right is cut in half.
+**It WAS visible in `05-X-home-state-a-dark-344.png` — the sun icon at the top right was cut in
+half — and it is not any more.** The committed capture set was re-taken against beta.2 (all 42, one
+run, `npm run audit:public`), and the theme toggle is now whole and inside the frame. **Checked by
+opening the image, not inferred from the fix**, because a sentence pointing at a picture is exactly
+the kind of claim that rots silently: the fix landed, the file was regenerated, and the prose would
+have gone on describing a defect the reader cannot see.
+
+**What the 344px capture DOES still show** is the logo label wrapping to two lines — *"Akhil"* over
+*"Saxena"* — which is not a defect and is the same wrap that makes the bar paint 67px against a
+declared `--ds-appbar-h` of 57 at 344 and 390 on a fine pointer (D-2's residual).
 
 ---
 
@@ -474,6 +532,8 @@ proves it can still see a fallback: an absent family must measure Georgia **exac
 
 Bounding-box heights, measured on `/photos`.
 
+**As measured against `2.0.0-beta.1`**, which is the version this audit's run was taken on:
+
 | class | pointer | AppBar link | Footer link | Filter pill | Lightbox close / prev / next |
 |---|---|---:|---:|---:|---:|
 | 1 · 344 × 882 | coarse | **44** ✅ | **44** ✅ | 🔴 **40** | 🔴 **32** |
@@ -483,22 +543,41 @@ Bounding-box heights, measured on `/photos`.
 | 5 · 1024 × 768 | coarse | **44** ✅ | **44** ✅ | 🔴 **40** | 🔴 **32** |
 | 6 · 1440 × 900 | fine | 21 | 16 | 40 | 32 |
 
+### ✅ RE-MEASURED against `2.0.0-beta.2`, 2026-08-29 — both shortfalls are closed
+
+Same predicate, same routes, same artefact, installed beta.2. The lightbox row is measured with the
+overlay actually open, by clicking the first tile and waiting for `.ds-atom-lightbox-backdrop`.
+
+| class | pointer | AppBar link | Footer link | Filter pill | Lightbox close / prev / next |
+|---|---|---:|---:|---:|---:|
+| 1 · 344 × 882 | coarse | **44** ✅ | **44** ✅ | **44** ✅ | **44 × 44** ✅ |
+| 2 · 390 × 844 | coarse | **44** ✅ | **44** ✅ | **44** ✅ | **44 × 44** ✅ |
+| 3 · 841 × 768 | coarse | **44** ✅ | **44** ✅ | **44** ✅ | — |
+| 4 · 768 × 1024 | coarse | **44** ✅ | **44** ✅ | **44** ✅ | — |
+| 5 · 1024 × 768 | coarse | **44** ✅ | **44** ✅ | **44** ✅ | — |
+| 6 · 1440 × 900 | fine | 21 | 16 | 40 | **40 × 40** |
+
 **Five of six classes are coarse**, so the floor is the common case and not the exception
 (`00-RESPONSIVE-CONTRACT.md` §2). Class 6 is fine-pointer and the floor does not bind; its numbers
 are recorded rather than asserted.
 
-- **The filter pill is 40px — OQ-4 / D-3.** `.ds-atom-segmented[data-size="lg"]
-  .ds-atom-segmented-btn { height: 40px }` and `primitives.css` carries no `pointer: coarse` rule
-  touching it. `FilterNav`'s `className` reaches the `<nav>` only. It is asserted **at 40**, not at
-  `>= 40` and not at `>= 44`, so the day the upstream `min-height: 44px` lands the audit fails and
-  tells you the good news.
-- **The lightbox controls are 32px — D-17, and this is the worse one.** `.ds-atom-lightbox-close`
-  declares 40px at (0,1,0); `.ds-atom-iconbtn[data-size="md"]` declares 32px at (0,2,0) and wins.
-  Measured at **32 × 32 on a coarse pointer and on a fine one** — 12px under the floor, on the only
-  affordances for closing and navigating a photograph on a phone.
-- **`.ds-atom-lightbox-backdrop` computes `touch-action: pan-y`** — D-16's second half, confirmed
-  in the browser. That declaration is why a consumer cannot add swipe-to-dismiss: the vertical axis
-  is handed to the browser. **PUB-06 is partial because of it**, and that is not a Phase 5 defect.
+- **The filter pill met the floor — D-3 is fixed.** beta.2 adds
+  `@media (pointer: coarse) { .ds-atom-segmented-btn { box-sizing: border-box; min-height: 44px } }`
+  at `primitives.css:3742`, which wins by `max(min-height, height)` over the `height: 40px` at
+  `:3702` rather than by entering a specificity contest. The assertion was written **at 40**, not
+  at `>= 40` and not at `>= 44`, precisely so the fix would red it — it did, on all ten coarse
+  cells, and now asserts `44`.
+  **The one thing upstream deliberately did not floor is the WIDTH**, noting a short `md` label
+  measures 42.98px. **That residual does not reach this site:** every pill here is **77.09px** wide
+  at every class, because each label carries its `· n` count.
+- **The lightbox controls met the floor — D-17 is fixed, and it was the worse one.** In beta.1
+  `.ds-atom-lightbox-close` declared 40px at (0,1,0) and `.ds-atom-iconbtn[data-size="md"]` declared
+  32px at (0,2,0) and won, at **both** pointers. beta.2 re-scopes the three controls under the
+  backdrop — `(0,3,0)` — so 40px applies on its own specificity rather than on source order, and
+  adds a coarse `min-width`/`min-height: 44px` on both axes. Measured with the overlay open:
+  **44 × 44 coarse, 40 × 40 fine.**
+- **`.ds-atom-lightbox-backdrop` now computes `touch-action: pinch-zoom`**, not `pan-y` — D-16's
+  second half. Measured at 344, 390 and 1440. **PUB-06 is no longer partial**; see §8a.
 
 **Class 5's pointer is `ambiguous` in the contract** and is walked as coarse here, because coarse is
 the case that has a floor to miss. The fine half of class 5 is class 6's geometry at a shorter
@@ -512,6 +591,37 @@ but installs a mobile layout viewport, and the same page measured `aBottom` **84
 865 without** — an 18px difference in the exact quantity the height budget is judged on. The
 emulation must not move the measurement. Every class asserts its own pointer and its own viewport
 before reading any geometry.
+
+---
+
+## 8a. PUB-06's third dismissal, measured with real pointer input
+
+`2.0.0-beta.2` closed D-16, so the requirement PUB-06 states in full — *"a lightbox with keyboard,
+backdrop and swipe dismissal"* — can be measured rather than argued about. Driven at **390 × 844
+with a coarse pointer**, on the built artefact, by pressing on the backdrop and moving in twelve
+steps before releasing, so the component sees a real pointer track rather than a synthetic event.
+
+| gesture | before | after | verdict |
+|---|---|---|---|
+| **down 350px** | overlay open | overlay **absent** | ✅ dismisses |
+| **left 180px** | overlay open, `intothemist-lg.webp` | overlay **still open**, `lightscameraart-lg.webp` | ✅ navigates, and did not dismiss |
+
+**Both branches, not just the new one.** A dismiss branch that also swallowed horizontal swipes
+would trade one half of PUB-06 for the other, so the navigation case is asserted in the same run.
+They are mutually exclusive by construction — beta.2's branch requires
+`dy > |dx| × SWIPE_HORIZONTAL_DOMINANCE`, the navigation branch requires the converse — and the
+measurement agrees with the construction.
+
+**The CSS half is what made this consumer-unfixable.** Upstream measured that the JavaScript branch
+alone does nothing: with the branch present and `touch-action: pan-y` still declared, a 350px
+downward swipe left the overlay open, because the browser consumed the drag as a scroll before
+`pointerup` reached the component. `pan-y → pinch-zoom` is the half no application stylesheet could
+have supplied, and it is why `PhotoLightbox.tsx` was right to file the finding instead of building
+a local gesture layer.
+
+**PUB-06 is met in full.** Keyboard (Escape, and Arrow keys for navigation) was closed by §9.1
+against the shipped chunk; backdrop tap was measured by 05-12; swipe is measured here. The
+`partial` disposition that D-16 carried is retired.
 
 ---
 
@@ -586,8 +696,8 @@ duplicate files.
 | **§12.2** | Does the departure survive `prefers-reduced-motion: reduce`? | **CLOSED** — §2 above. 6/6 in both runs, and the suppression is confirmed by computed style, not by a grep. |
 | **§16.7** | Does the bundle gate bite — plant a `client:load`, watch it red, remove it, confirm the file is SHA-256-identical? | **CLOSED BY 05-14**, which ran nine controls including that one. Not re-run here. |
 | **§16.8** | Does `node:crypto` reach a client chunk via the `VARIANTS` import? | **CLOSED BY 05-05** (`grep -rl 'node:crypto\|createHash' dist/client/` → exit 1, 11 files) and re-asserted continuously by 05-14's `A5-PIPELINE-CRYPTO` assertion. Not re-run here. |
-| **§7.2** | Does Lighthouse's `unsized-images` audit accept a CSS `aspect-ratio` on a `width`-constrained image? | 🔴 **STILL OPEN. DEFERRED TO PHASE 8 under QUAL-01.** No Lighthouse run was done in this phase. Running one needs `lighthouse` installed, and a package install is not something this plan may do on its own authority. The fix if it flags is already written out in §7.2 and needs no design decision. |
-| **§9.2** | Does `client:idle` measurably improve the Lighthouse score over `client:load` on `/photos`? | 🔴 **STILL OPEN — and it was recorded as answered when it was not.** See below. |
+| **§7.2** | Does Lighthouse's `unsized-images` audit accept a CSS `aspect-ratio` on a `width`-constrained image? | ✅ **CLOSED — §20. The answer is NO, and it does not matter.** `unsized-images` scores **0.5** and flags **all 40 tiles** on `/photos`, 14 on the category route and 1 on the detail page: the audit reads the `width`/`height` ATTRIBUTES and the ratio is in CSS, so it flags. But it carries **`weight: 0`** in the performance category — it is a `diagnostics`-group item, not a scored one — and **CLS is 0.000 on `/photos` and on the category route** at both form factors. The reservation works; only the heuristic that looks for it does not see it. §7.2's contingent fix is therefore **not taken**, and §7.2 now says so. |
+| **§9.2** | Does `client:idle` measurably improve the Lighthouse score over `client:load` on `/photos`? | ✅ **CLOSED — §20. The answer is NO, and the directive is kept anyway.** Measured: **TBT is 0 ms on every route at both form factors**, so there is no main-thread cost for a later hydration to remove, and no score for the directive to buy. The reason is the one 05-15 already measured and §9.2 mis-cited — `client:idle` defers HYDRATION, not download. `client:load` was **not** built and scored, and §20 says why that is a narrowing rather than a closure of the comparison. |
 
 ### 🔴 §9.2 — a measurement that was owed, never taken, never reported, and then cited
 
@@ -623,8 +733,26 @@ origin:
 
 **`client:idle` defers hydration, not download.** All three chunks go out *before*
 `domContentLoaded` and ~500 ms before the `load` event. The directive is not buying a later fetch
-here. Whether it buys a better score than `client:load` is the thing still unmeasured, and it needs
-a Lighthouse run against both builds.
+here.
+
+> ### ✅ CLOSED 2026-08-29 — the Lighthouse run was done. See §20.
+>
+> **`client:idle` buys no score here, and the reason is that there was none available.** Measured
+> across all six route families at both form factors: **`total-blocking-time` is 0 ms everywhere**,
+> and TBT is the 30%-weighted metric that a hydration cost would show up in. A directive that defers
+> work worth 0 ms cannot improve a score by deferring it.
+>
+> **`client:load` was not built and scored, and that is a narrowing rather than a full closure.**
+> The comparison §9.2 asked for needs two artefacts; what was measured is that the metric the
+> comparison would move is already at its floor on the shipped one, which bounds the possible
+> difference at zero-to-negative and makes the second build a formality. Stated as a bound, not as
+> a run that happened.
+>
+> **The directive is kept, on a reason that is not a score.** `client:idle` and `client:load`
+> produce identical bytes and identical fetch timing here; the difference is only *when* React
+> attaches. Keeping `idle` costs nothing measurable and is the correct expression of intent for an
+> island whose entire job begins at a click. Changing it to `load` to match a measurement that
+> found no difference would be churn.
 
 ---
 
@@ -894,7 +1022,7 @@ must leave alone, so a control that collapses into another one reds the suite.
 
 | # | finding | severity |
 |---|---|---|
-| 1 | **D-21 — the AppBar overflows by 14px at 344px, on every route.** Upstream, inline gaps, no consumer fix. | 🔴 visible R-6 violation at the narrowest approved class |
+| 1 | **D-21 — the AppBar overflowed by 14px at 344px, on every route.** Upstream, inline gaps, no consumer fix. **FIXED IN `2.0.0-beta.2`** — the gaps got classes and a `max-width: 380px` query; re-measured 2026-08-29 at **0px on all six routes at both pointers**, and the audit's `expect(overflow).toBe(0)` now holds without a special case. | ✅ closed |
 | 2 | **Home scrolled itself 8–20px at first paint, 6 loads in 48 here and 15 in 48 on a re-run, under `no-preference` only.** Snap was the cause. **FIXED 2026-08-29** — state A's snap point dropped, 0 of 48 after, `fills`/`departs` still 6/6. | ✅ closed |
 | 3 | **§13.2's *Cross-link — Photos · ← see the work* was never built.** One grep hit in the whole repo, and it is the spec row. | 🟡 a reviewed copy row missing from the site |
 | 4 | **§9.2's four Lighthouse numbers were never measured, never recorded as skipped, and were cited in shipped source as existing.** | 🔴 a citation to evidence that does not exist |
@@ -902,9 +1030,11 @@ must leave alone, so a control that collapses into another one reds the suite.
 | 6 | **`.hm-b { min-height: 100svh }` is 24px from being load-bearing at class 6** and is load-bearing nowhere today. | 🟢 recorded so nobody deletes it for being inert |
 | 7 | **`product-peppers`'s previous and next links are both "Gadgets"** — the two-photograph category wrapping correctly, and reading like a bug. | 🟡 for the human review |
 | 8 | **All five `StatusPill`s render `data-step="1"`**, so the non-colour signal distinguishes nothing — D-13, confirmed in the browser. | 🟡 upstream, already filed |
-| 9 | **The lightbox controls are 32 × 32 on a fine pointer too**, not only coarse — D-17 is not a touch-only finding. | 🟡 upstream, already filed |
+| 9 | **The lightbox controls were 32 × 32 on a fine pointer too**, not only coarse — which is what made D-17 a specificity defeat rather than a missing touch rule, and it is why correcting the VALUE alone would not have taken. **FIXED IN `2.0.0-beta.2`**, and the fix has two parts because the finding did: re-scoping the three controls under `.ds-atom-lightbox-backdrop` makes them (0,3,0) so the author's 40px finally applies at BOTH pointers, and a separate coarse `min-width`/`min-height: 44px` supplies the touch floor on top. **Re-measured 2026-08-29 with the overlay open: 44 × 44 at 390 × 844 and 344 × 882 coarse, 40 × 40 at 1440 × 900 fine.** So the finding's own sentence is now superseded in both halves — they are neither 32 nor the same at both pointers. | ✅ closed |
 | 10 | **`npm run check` still carries the three pre-existing findings 05-05 logged** (7 diagnostics), none of them in this plan's files. | 🟢 pre-existing, in `deferred-items.md` |
 | 11 | 🔴 **`npm test`'s "recorded intermittent" is not a flake. It is a race on the repository's own `node_modules/.vite`, and it now has a mechanism.** See below. | 🔴 a shared-mutable-state race in the test fixtures |
+| 12 | 🔴 **§7.5's "eager-load the first four tiles" is a DOM-order rule and the masonry is a COLUMN-order layout.** At 412 × 823 the grid renders 2 columns filled DOM 0–19 / 20–39, so the four eager tiles are the top four of the LEFT column and nothing in the right one is eager. Nine tiles are in the first screen, five lazy, and the largest — dom#23, 174 × 261 against its neighbours' 174 × 116 — is Lighthouse's LCP element. **This is the whole of `/photos`'s 87 on mobile.** Found by the Lighthouse run, §20. | 🔴 a spec clause that is correct at 1440 and wrong at every phone width |
+| 13 | 🟡 **The site has 40 photographs, and several documents still say 39.** `data/portfolio_images.json` holds **40** records — the 40th arrived with Phase 4's live run. The SHIPPED PAGE is correct (`All · 40`, `40 photographs — all of them`, `See all {n}`) because §13.3 requires every count to be derived; **only hand-written prose rotted.** `05-UI-SPEC.md` §13.2 and §13.3 are corrected. Still stale and NOT edited here: the roadmap's Phase 5 success criterion 2 (*"Photos shows all 39 images"*) and `CLAUDE.md`'s *"the 39-photo gallery"*. §13.3 predicted this exact failure — *"stops working the day a 40th lands"* — and was right. | 🟡 prose behind the data; the derivation mechanism held |
 
 ### 🔴 The `build-fails-loudly` intermittent, diagnosed
 
@@ -1016,16 +1146,240 @@ résumé or as a screenshot of a website. That is step 5's actual question and n
 
 ## 19. What needs Akhil's decision
 
-Separated from everything above, which is settled.
+Separated from everything above, which is settled. **Six of the nine are now answered**; the
+strikethroughs are the record of which way, kept rather than deleted. §20 follows this section
+because it is the result of decision 9.
 
 | # | decision | cost of each way |
 |---|---|---|
-| **1** | **Cut a `2.0.0-beta.2` before Phase 8, or let the twenty-one findings wait?** D-21 is the new one and the only one visible on the shipped site. | Cutting it fixes the 344px overflow, the 40px filter pill, the 32px lightbox controls, the invisible footer underline and the swipe-to-dismiss that PUB-06 is partial without — five user-visible things in one release. Waiting ships all five. |
-| **2** | **The 344px horizontal scroll (D-21) — ship it, or shorten the nav?** | Shipping it is 14px of scroll on every page at the folded cover. The only consumer-side lever is the nav labels: `photographs` is 94px of the 310px group, and `photos` would take the bar under 344. That is a copy change to a navigation label, which is yours. |
+| **1** | ~~**Cut a `2.0.0-beta.2` before Phase 8, or let the twenty-one findings wait?**~~ **ANSWERED: cut it.** | Cut, published and consumed at commit `2015b4d`. It landed **four** of the five this row predicted — the 344px overflow (D-21), the 40px filter pill (D-3), the 32px lightbox controls (D-17) and the swipe-to-dismiss PUB-06 was partial without (D-16) — plus one this row did not list, `--ds-appbar-h` (D-2). **The fifth, the invisible footer underline (D-4), was NOT in scope and still ships**; `Link` still inline-sets `textDecorationColor: rgba(0,0,0,0.25)`, confirmed in the installed beta.2. Fifteen findings stand. |
+| **2** | ~~**The 344px horizontal scroll (D-21) — ship it, or shorten the nav?**~~ **MOOT — fixed upstream instead, which was the third option.** | Neither. beta.2 gave the AppBar's gaps a class and a narrow-viewport query, so the overflow is 0 at 344 without touching the copy. **`photographs` stays**, and decision 4's note that shortening it is now a two-line change (the component and the pinned string) is moot with it. This is the Core Value's argument in one row: the copy change would have bought a clean screenshot and left the defect in the library for the next consumer. |
 | **3** | ~~**`← see the work` on `/photos` — build it, or drop the row from §13.2?**~~ **ANSWERED: build it.** | Built. One element, one rule, and `CROSSLINK_TYPE` lifted into `src/lib/crosslink.ts` so the two halves are ONE declaration rather than two that agree today — the served `/work` half is byte-identical across the move. Asserted on the served bytes in both directions: one row on `/photos`, zero on all seven category routes. |
 | **4** | ~~**Pin the page copy, or leave it unguarded?**~~ **ANSWERED: the structural strings only.** | Done. Pinned: `ALL WORK →`, `RÉSUMÉ →`, `View résumé`, `The work`, `The résumé`, `Download the PDF`, the empty-category copy, and the AppBar's three nav labels — all character for character on the served bytes. Left free: every `<h1>`, every sub-paragraph and every content eyebrow, with the list and a reason recorded in `test/public/copy-contract.node.test.ts`. Home's three CMS strings are asserted against `home_config.json` rather than against literals, so Akhil can still edit his own subtitle. **Note for decision 2:** shortening `photographs` to `photos` is now two lines instead of one — the component and the pin. |
 | **5** | ~~**The intermittent snap-on-load — accept, or drop `.hm-a`'s snap point?**~~ **ANSWERED: drop it.** | Taken. `.hm-a`'s snap point and its outset are gone, `#work` is the only snap point, and §2's table was re-run: **0 of 48** under `no-preference` against 15 of 48 before, with `fills` and `departs` still 6/6 in both motion settings. |
 | **6** | ~~**`/resume`'s metric band — I decided it stays (§13). Confirm or overrule.**~~ **ANSWERED: it stays**, and the doubled Brevo claim is fixed. | Confirmed. §11.1 now lists the band as item 5, `src/schemas/resume.ts`'s comment names both consumers instead of only `/work`, and `migrate-experience-metric.mjs`'s header was corrected with them. The Brevo bullet lost its `15%` — the band carries the figure — and the migration's `evidence` row was re-derived in the same commit, which its own provenance refusal demanded. |
 | **7** | **The three employment metrics as claims** — the plan asks you to read them out loud. `+15% CONVERSION` · `4K+ FRANCHISES` · `6× FASTER PIPELINES`. | Already on your deferred list as placeholders. Named here only because §12's copy walk-through puts them in front of you. |
 | **8** | **The `node_modules/.vite` race — fix the three fixtures, or keep re-running?** It is the only red in `npm test` and it is now diagnosed. | The fix is a `cacheDir` per sandbox: one line in each of three fixtures, no behaviour change, and it retires a blocker that has cost two plans a re-run each. Leaving it means `npm test` fails roughly one full run in two on this machine, always in the same file, always for a reason that is not the code under test. |
-| **9** | **Lighthouse before or during Phase 8?** Two UNVERIFIEDs (§7.2, §9.2) are waiting on one run, and it needs a package installed. | Doing it in Phase 8 against the deployed origin is the better measurement. Doing it now would need `lighthouse` installed on this machine, which no plan in this phase may authorise on its own. |
+| **9** | ~~**Lighthouse before or during Phase 8?**~~ **ANSWERED: now.** | Done. `lighthouse` `13.4.1` is a devDependency, `npm run audit:lighthouse` is the runner, and **§20** is the result: six route families × two form factors × four categories, median of three runs each. **§7.2 and §9.2 both close** — §11's last two open rows. Three mobile routes score under 95 on performance and the cause is a single one, stated in §20 with what it would take; **nothing was changed to improve a score.** Phase 8 still owns the measurement against the DEPLOYED origin under QUAL-01 — this is the artefact, over a local origin that gzips and replicates `_headers`, which is a floor rather than a substitute. |
+
+---
+
+## 20. Lighthouse — six route families, two form factors, four categories
+
+**Akhil authorised the package install** (§19 decision 9). `lighthouse@13.4.1` is a devDependency;
+the runner is `scripts/lighthouse-run.mjs`, wired as `npm run audit:lighthouse` and — like
+`audit:public` — **deliberately not chained into `npm test` or `npm run build`**, for the same
+reason: a Lighthouse score is deterministic per machine, not per platform.
+
+```bash
+npx playwright install chromium     # once per machine, same prerequisite as audit:public
+npm run build
+npm run audit:lighthouse
+```
+
+**The run this section records.** `2026-08-29`, darwin/arm64, Lighthouse `13.4.1`, HeadlessChrome
+`151.0.0.0` — Playwright's pinned *Chrome for Testing*, the same binary `audit:public` drives.
+**Median of three runs per route per form factor**, spread printed so a wide one is visible rather
+than averaged away.
+
+### Which bundle was measured — stated, not assumed
+
+```
+PhotoLightbox.BPMC2y2H.js     17,489 B
+client.CHz_MA6t.js           180,630 B
+react-dom.CAGmFW3z.js         11,087 B
+                       total 209,206 B   ·   React dev-only strings: 0
+```
+
+**This is the production bundle.** 05-14 measured that a build run under `NODE_ENV=test` resolves
+React through the `development` export condition and leaves **411,410 B** in `dist/` — 197 KB of
+devtools plumbing that never ships. The artefact here was built by `npm run build` from a shell with
+`NODE_ENV` unset, and the runner **refuses to score** an artefact containing `Invalid hook call` or
+`Each child in a list`, so the check is a gate rather than a note. It found **0**.
+
+### The origin, and the two ways it is not production
+
+Served from `dist/client` by the runner's own static origin, which **gzips** text and replicates
+`dist/client/_headers`' `Cache-Control: public, max-age=31536000, immutable` for `/_astro/*`.
+`test/audit/serve-dist.mjs` was **not** reused: it answers `no-store` and sends every byte
+uncompressed, which is right for a geometry audit and wrong here — Cloudflare compresses, and
+simulated throttling turns transfer bytes straight into FCP and LCP milliseconds, so an
+uncompressed origin would have measured this server rather than the site.
+
+**The 40 photographs are fetched from the real CDN**, `https://images.akhilsaxena.com`, exactly as a
+visitor fetches them. That is the point: the gallery's weight is the thing under measurement.
+
+**Two honest gaps.** (1) It is not the deployed origin — no Cloudflare edge, no brotli, no real TLS
+handshake, no geographic RTT. **Phase 8 still owns the deployed measurement under QUAL-01**; this is
+a floor, not a substitute. (2) Lighthouse's mobile preset applies *simulated* throttling
+(150 ms RTT, 1,638 kbps, 4× CPU) over local-loopback observations, which is the standard method and
+is not a field measurement.
+
+### Mobile — Lighthouse's default preset, 412 × 823, slow-4G + 4× CPU
+
+| route | family | perf | a11y | best-pr. | SEO | FCP | LCP | TBT | CLS | SI | perf spread |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `/` | Home | **98** | **100** | **100** | **100** | 1.8 s | 1.9 s | 0 ms | 0.048 | 1.8 s | 98–98 |
+| `/photos` | Photos — the gallery | 🔴 **87** | **100** | **100** | **100** | 1.8 s | 4.0 s | 0 ms | 0.000 | 1.8 s | 86–89 |
+| `/photos/architecture` | Photos · category | 🔴 **93** | **100** | **100** | **100** | 1.7 s | 3.2 s | 0 ms | 0.000 | 1.7 s | 92–93 |
+| `/photos/architecture/hawamahaldaytime` | Photo detail | 🔴 **94** | **100** | **100** | **100** | 1.7 s | 2.9 s | 0 ms | 0.003 | 1.7 s | 94–94 |
+| `/work` | Work | **98** | **100** | **100** | **100** | 1.8 s | 1.8 s | 0 ms | 0.006 | 1.8 s | 98–98 |
+| `/resume` | Résumé | **99** | **100** | **100** | **100** | 1.7 s | 1.7 s | 0 ms | 0.034 | 1.7 s | 99–99 |
+
+### Desktop — Lighthouse's `desktop` preset, 1350 × 940
+
+| route | family | perf | a11y | best-pr. | SEO | FCP | LCP | TBT | CLS | SI | perf spread |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| `/` | Home | **100** | **100** | **100** | **100** | 0.4 s | 0.6 s | 0 ms | 0.000 | 0.4 s | 100–100 |
+| `/photos` | Photos — the gallery | **99** | **100** | **100** | **100** | 0.4 s | 0.8 s | 0 ms | 0.000 | 0.4 s | 99–99 |
+| `/photos/architecture` | Photos · category | **100** | **100** | **100** | **100** | 0.4 s | 0.8 s | 0 ms | 0.000 | 0.4 s | 100–100 |
+| `/photos/architecture/hawamahaldaytime` | Photo detail | **100** | **100** | **100** | **100** | 0.4 s | 0.8 s | 0 ms | 0.002 | 0.4 s | 99–100 |
+| `/work` | Work | **100** | **100** | **100** | **100** | 0.4 s | 0.4 s | 0 ms | 0.004 | 0.4 s | 100–100 |
+| `/resume` | Résumé | **100** | **100** | **100** | **100** | 0.4 s | 0.4 s | 0 ms | 0.037 | 0.4 s | 100–100 |
+
+**Accessibility, best-practices and SEO are 100 on every route at both form factors** — 48 of 48
+cells. Not one binary audit fails anywhere in the run. **Desktop performance meets the 95+
+constraint on all six.** Mobile meets it on three.
+
+### 🔴 The three under 95, and the one cause between them
+
+**All three are the photo routes, and all three are LCP alone.** Nothing else moves. Here is the
+whole of `/photos` mobile, by the weights Lighthouse actually applies:
+
+| metric | weight | value | score | contribution |
+|---|---:|---:|---:|---:|
+| Total Blocking Time | 30 | **0 ms** | 1.00 | 30.0 |
+| Cumulative Layout Shift | 25 | **0.000** | 1.00 | 25.0 |
+| **Largest Contentful Paint** | **25** | **4.2 s** | **0.45** | **11.3** |
+| First Contentful Paint | 10 | 1.7 s | 0.93 | 9.3 |
+| Speed Index | 10 | 1.7 s | 1.00 | 10.0 |
+| | | | | **≈ 87** |
+
+**The deficit is 13.7 points and 13.7 of them are LCP.** TBT, CLS and Speed Index are perfect.
+
+**The LCP element, and the cause, named by Lighthouse rather than inferred.**
+`lcp-discovery-insight` returns the node `main.pub-main > div#ph-grid > a.ph-tile > img` at DOM path
+`…,DIV,23,A,0,IMG` — **the 24th tile**, `portraitpatrikagate1-sm.webp`, at `top: 662` in an 823px
+viewport — with this checklist:
+
+```
+requestDiscoverable   ✅ true    the URL is in the initial document
+priorityHinted        ❌ false   no fetchpriority="high"
+eagerlyLoaded         ❌ false   the LCP image uses loading="lazy"
+```
+
+### 🔴 §7.5's "first four" is a DOM-order rule, and the masonry is a COLUMN-order layout
+
+**§7.5 is implemented exactly as written, and that is the problem.** The built `/photos` document
+carries **4 `loading="eager" fetchpriority="high"` and 36 `loading="lazy"`**, precisely as the clause
+specifies. The clause is what is wrong, and it is wrong in a way only a browser at a phone width
+shows.
+
+**MEASURED 2026-08-29 at Lighthouse's own mobile viewport — 412 × 823, DPR 1.75:**
+
+```
+#ph-grid computed column-count: 2      (data-cols says 3; the CSS drops to 2 at this width)
+40 tiles · 9 of them intersect the first screen · 5 of those 9 are loading="lazy"
+
+the four EAGER tiles          dom# 0  top 266   174×116
+                              dom# 1  top 398   174×116
+                              dom# 2  top 530   174×116
+                              dom# 3  top 662   174×116
+
+in-fold tiles by VISIBLE area, which is how the LCP candidate is chosen:
+  dom#23  lazy    top 662   174×261   visible 28,014   ← Lighthouse's LCP element
+  dom# 0  eager   top 266   174×116   visible 20,184
+  dom# 1  eager   top 398   174×116   visible 20,184
+  dom# 2  eager   top 530   174×116   visible 20,184
+  dom# 3  eager   top 662   174×116   visible 20,184
+  dom#20  lazy    top 266   174×116   visible 20,184
+  dom#21  lazy    top 398   174×116   visible 20,184
+  dom#22  lazy    top 530   174×116   visible 20,184
+```
+
+**Read the `top` column twice.** Tiles 0–3 and tiles 20–23 occupy *the same four vertical slots*.
+The grid is CSS multi-column, so it fills **column 1 top-to-bottom with DOM 0–19, then column 2 with
+DOM 20–39**. "The first four in the DOM" is therefore "the top four of the LEFT column, and nothing
+at all in the right one". **The rule under-covers by a factor of the column count**, and it does so
+silently, because at 1440 the columns are wide enough that the eager four still dominate the fold.
+
+**And the tile it misses is the biggest one.** `portraitpatrikagate1` is a portrait crop, 174 × 261
+where its neighbours are 174 × 116 — **28,014 visible px² against 20,184**. LCP is the largest
+contentful paint, so the one tile in the fold that is both lazy *and* tallest is exactly the one
+that becomes LCP. Nothing about this is bad luck; a column layout plus a DOM-order eager rule will
+find this case at some width on any gallery.
+
+It explains the ordering across the three routes cleanly: `/photos` 4.0 s (40 tiles, 2 columns),
+`/photos/architecture` 3.2 s (14 tiles), the detail page 2.9 s (1 image, and that one is `eager` —
+the residual there is the CDN round trip, not a priority miss).
+
+**What it would take — Akhil decides, and nothing was changed here.**
+
+| option | change | expected | cost |
+|---|---|---|---|
+| **A** | Make the eager count **a function of the column count**, not of DOM position — eager the first `4 × cols` tiles, or the first 4 of each column | Flips both failing checks for every column in the fold. The most likely to actually move LCP, because it is the only option that addresses the mechanism | The rendered column count is a **media-query** result, and `data-cols` (3) does not equal what is painted at 412px (2). So it must be over-provisioned from the maximum (12 eager tiles at `cols: 3`), which eagerly loads tiles that are below the fold at 1440. A real §7.5 amendment |
+| **B** | Keep four, but pick them by **expected visual position** rather than DOM index — i.e. eager the first tile of each column plus the tallest in the fold | Targets the actual LCP element | Requires knowing the layout at build time, which a CSS multi-column grid does not offer. Fragile |
+| **C** | `<link rel="preload" as="image" imagesrcset=…>` in `<head>` for the likely LCP tile | Fixes discovery without touching any tile | A second place the `srcset` is written, which §7.4 exists specifically to prevent. Would need `photo-srcset.ts` to emit both from one derivation |
+| **D** | Do nothing | Desktop is 99–100 on all six. Mobile is 87 / 93 / 94 on the three photo routes and 98–99 on the other three | The 95+ constraint is **not met on mobile for the photo routes**. Every other category is 100 everywhere |
+
+**Option A is the one this run would recommend, and it is deliberately NOT taken.** It amends a
+reviewed spec clause on the strength of a score, it trades desktop bytes for mobile latency, and the
+over-provisioning it needs is a judgement about which viewport to favour. That is Akhil's call.
+
+**What is NOT the cause, stated so the obvious suspects are eliminated rather than assumed:** not
+the JavaScript (TBT 0 ms, and the three chunks are 209,206 B fetched before `domContentLoaded`); not
+layout shift (CLS 0.000); not the document (Speed Index 1.7 s, score 1.00); not the stylesheet
+(render-blocking is 151 ms of a 4,000 ms LCP).
+
+### Three diagnostics worth reading, none of which is a Phase 5 defect
+
+- **`image-delivery-insight` — est. 696 KiB.** The `-sm` variant is 400px wide and is painted into a
+  174px box; the biggest, `officegreens-sm.webp`, is 74,636 B of which Lighthouse attributes 27,236 B
+  to the encode quality alone. This is the **pipeline's** variant ladder and encoder settings, not
+  the page's markup. Phase 4 owns it.
+- **`cache-insight` — est. 612 KiB.** Every item is an image from `images.akhilsaxena.com` with
+  `cacheLifetimeMs: 14400000` — a **4-hour TTL on immutable, content-addressed image objects.**
+  Nothing in this repository sets it; it is the bucket's cache rule. Raising it is a one-line
+  Cloudflare change and it is free.
+- **`render-blocking-insight` — est. 870 ms, one item.** `PublicLayout.pgvz42sB.css`, 20,706 B
+  gzipped from 127,873 B raw, 151 ms. One stylesheet for all 52 pages is the design system's whole
+  surface plus the app's layout, and `unused-css-rules` puts 18 KiB of it unused on `/photos`. A
+  per-route split is a build-level change with a real cost in cache hit rate; recorded, not
+  proposed.
+
+### §7.2 — answered: `unsized-images` does NOT accept a CSS `aspect-ratio`
+
+```
+unsized-images   score 0.5   scoreDisplayMode "metricSavings"   items 40
+auditRef         { id: "unsized-images", weight: 0, group: "diagnostics" }
+```
+
+It flags **all 40 tiles** on `/photos`, 14 on the category route and 1 on the detail page: it reads
+the `width`/`height` **attributes**, and the ratio lives in a `style="aspect-ratio:…"`.
+
+**And it does not matter, which is the part worth writing down.** The audit carries **weight 0** — it
+is a diagnostic, not a scored metric — and **CLS is 0.000** on `/photos` and on the category route at
+both form factors, 0.002–0.003 on the detail page. The reservation §7.2 built *works*; the heuristic
+that goes looking for it does not see it. **§7.2's contingent fix — emitting the served variant's
+pixel size — is therefore NOT taken**, because it would trade a correct ratio for a satisfied
+heuristic and buy zero score. §7.2 has been rewritten to say so.
+
+### §9.2 — answered: `client:idle` buys nothing here, and stays
+
+**TBT is 0 ms on every route at both form factors.** TBT is the 30%-weighted metric a hydration cost
+appears in, and it is already at the floor, so there is no cost for `client:idle` to defer and no
+score for it to buy over `client:load`. Combined with 05-15's measurement that all three chunks are
+requested at 25–27 ms — before `domContentLoaded` — the directive changes *when React attaches* and
+nothing else on this page.
+
+**`client:load` was not built and separately scored.** What is measured is that the metric the
+comparison would move is pinned at 0, which bounds the difference at zero. That is a **bound, not a
+run**, and it is stated as one. The directive is kept because it is the correct expression of intent
+for an island whose work begins at a click — not because a measurement preferred it.
+
+### What this section does not claim
+
+- **Not a field measurement.** Simulated throttling over a loopback origin, on one machine.
+- **Not the deployed origin.** Phase 8's QUAL-01 owns that, and the numbers there will differ.
+- **Not a gate.** Nothing in `npm test` or `npm run build` runs Lighthouse, and this section is not
+  evidence that anything will keep scoring this way.

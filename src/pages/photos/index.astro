@@ -117,18 +117,46 @@ const lightboxItems = lightboxRecordsFor(photos);
   {
     /* 🔴 THE ONE ISLAND ON THIS SITE, AND THE ONLY `client:*` DIRECTIVE OUTSIDE `/photos`. (§5.1.)
 
-      🔴 `client:idle`, NOT `client:load` — and the comment that stood here was WRONG. It said
-      "the four Lighthouse numbers behind that choice are in `05-12-SUMMARY.md`". MEASURED by
-      05-15: that file contains the word "Lighthouse" ZERO times, and so does every other summary
-      in this phase. 05-12's plan made the four numbers a done criterion; they were never taken
-      and the omission was never recorded. §9.2's UNVERIFIED is therefore STILL OPEN and belongs
-      to Phase 8 under QUAL-01.
+      ✅ `client:idle`, NOT `client:load` — measured at last, and the history matters more than
+      the answer. The comment that first stood here said "the four Lighthouse numbers behind that
+      choice are in `05-12-SUMMARY.md`". MEASURED by 05-15: that file contains the word
+      "Lighthouse" ZERO times, and so does every other summary in this phase. 05-12's plan made
+      the four numbers a done criterion; they were never taken and the omission was never
+      recorded. A claim citing evidence that does not exist is the failure class this phase spent
+      itself hunting, and it had a citation pointing at it, which is what made it findable.
 
-      What 05-15 could measure without installing anything, on the built artefact over a local
-      origin: `client:idle` defers HYDRATION, not download. All three chunks (209,168 B) are
-      requested at 25-27 ms — before `domContentLoaded` (24 ms at 1440, 54 ms at 390) and ~500 ms
-      before the `load` event. So the directive is not buying a later fetch here; whether it buys
-      a better score than `client:load` is the thing still unmeasured.
+      THE RUN HAPPENED, 2026-08-29. `lighthouse@13.4.1`, `npm run audit:lighthouse`, six route
+      families x two form factors x four categories, median of three. Full table in
+      `05-AUDIT.md` §20. §9.2 is CLOSED.
+
+      THE ANSWER IS THAT `client:idle` BUYS NO SCORE HERE, BECAUSE THERE WAS NONE TO BUY.
+      `total-blocking-time` is 0 ms on every route at both form factors, and TBT is the
+      30%-weighted metric a hydration cost would appear in. A directive that defers work worth
+      0 ms cannot improve a score by deferring it. This agrees with what 05-15 measured without
+      installing anything: `client:idle` defers HYDRATION, not download — all three chunks
+      (209,206 B) are requested at 25-27 ms, before `domContentLoaded` (24 ms at 1440, 54 ms at
+      390) and ~500 ms before the `load` event.
+
+      `client:load` WAS NOT BUILT AND SEPARATELY SCORED, and that is a BOUND rather than a full
+      closure. What is measured is that the metric the comparison would move is pinned at its
+      floor here, which bounds the difference at zero. Stated as a bound, not as a run.
+
+      SO THE DIRECTIVE STAYS, ON A REASON THAT IS NOT A SCORE: it is the correct expression of
+      intent for an island whose entire job begins at a click, and it costs nothing measurable.
+      DO NOT "optimise" it to `client:load` — the two are indistinguishable here and the change
+      would be churn against a reviewed decision.
+
+      WHAT DOES COST THIS PAGE A SCORE IS NOT THIS DIRECTIVE. `/photos` scores 87 on mobile and
+      99 on desktop, and the ENTIRE mobile deficit is LCP (4.0 s at weight 25; TBT, CLS and Speed
+      Index all score 1.00). The cause is in the GRID, not here: §7.5 eagerly loads the first four
+      tiles BY DOM ORDER, and the masonry is CSS multi-column, which fills column 1 with DOM 0-19
+      and column 2 with DOM 20-39. So at 412x823 the four eager tiles are the top four of the LEFT
+      column and nothing in the right one is eager — 9 tiles are in the first screen, 5 of them
+      lazy, and the largest (dom#23, 174x261 against its neighbours' 174x116) is the LCP element.
+      Measured in `05-AUDIT.md` §20, with four options and their costs.
+
+      NOTHING WAS CHANGED ANYWHERE TO IMPROVE A SCORE. The fix amends a reviewed spec clause and
+      trades desktop bytes for mobile latency; that is Akhil's call, not the executor's.
 
       THE GRID IS NOT HYDRATED. There is no `client:*` on `PhotoGrid` or on `PhotoTile`, and there
       must never be: the island takes a SELECTOR and attaches one delegated listener to static

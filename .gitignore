@@ -47,3 +47,10 @@ yarn-error.log*
 # does not survive between them. They are run scratch, not deliverables.
 .live-run-before-sha
 .live-run-photo-id
+
+# the six-class audit's Playwright scratch (plan 05-15)
+# `npm run audit:public` writes a trace/error-context directory here on any failure. The audit's
+# deliverables are `05-AUDIT.md` and the 42 committed captures in the phase directory; this is the
+# runner's own scratch and belongs to whoever last ran it.
+test-results/
+playwright-report/

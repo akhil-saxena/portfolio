@@ -33,7 +33,9 @@
     "bootstrap:local": "node scripts/bootstrap-local-env.mjs",
     "test": "vitest run",
     "test:workers": "vitest run --project workers",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "//audit:public": "JSON has no comment syntax, so the reason lives in this sibling key. `audit:public` is NOT chained into `npm test` or `npm run build`, and that is a decision: it needs a ~130 MB Chromium binary that no gate can install for you, and a browser measurement is deterministic PER MACHINE, not per platform - libvips, font rasterisation and sub-pixel layout all diverge on darwin/arm64 against ubuntu/x64, so a cross-platform pixel assertion is a flake generator. Phase 8 owns whether any of it becomes a CI gate under QUAL-01 and QUAL-04. Run `npx playwright install chromium` once, then `npm run build && npm run audit:public`.",
+    "audit:public": "playwright test -c test/audit/playwright.config.ts"
   },
   "dependencies": {
     "@akhil-saxena/design-system": "^2.0.0-beta.1",

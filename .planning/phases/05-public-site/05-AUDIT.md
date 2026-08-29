@@ -906,6 +906,49 @@ invokes writes to.*
 
 ---
 
+## 18a. Two of the human walk-through's steps, taken automatically
+
+Task 3's checklist has seven steps. Two of them are measurements rather than judgements, so they
+were taken here to shorten the walk.
+
+### Step 6 — the theme toggle, and no flash of the wrong theme (PUB-12)
+
+```
+first visit, OS prefers dark        documentElement.className = "dark"
+click #pub-theme-toggle             className = ""        localStorage.theme = "light"
+reload, earliest sample at 12.4ms   className = ""        ← never "dark"
+                                    body background rgb(250, 250, 251) = --cream, light
+click the toggle again              className = "dark"
+```
+
+**PASS.** The sample is taken on the first `readystatechange` from a script injected before any page
+script, so it is the earliest observation available from inside the page. The stored preference wins
+from the first frame; there is no dark flash to catch. `05-DS-FINDINGS.md` D-1 is why this is a
+1,452 B inline block in the layout rather than a design-system import.
+
+### Step 5 — ⌘P on `/resume`, and whether it prints dark (PUB-11 / OQ-5)
+
+The theme has no `@media print` block (D-8), so CSS alone cannot un-`.dark` the page; the layout
+listens for `beforeprint`. Instrumented from a listener registered before the layout's own:
+
+```
+page.pdf()                     beforeprint fires   →   className "dark" → removed
+                               afterprint  fires   →   className ""     → restored
+emulateMedia({ media:'print' })  no event          →   className "dark", body rgb(13, 13, 15)
+```
+
+**05-10's narrowing is confirmed:** headless Chromium's `page.pdf()` **does** fire `beforeprint`, so
+the accepted OQ-5 risk is smaller than it was recorded. **And the residual is now measured rather
+than described:** a print path that switches the media type *without* firing `beforeprint` — which
+`emulateMedia` does, and which some headless pipelines do — renders the résumé on `#0d0d0f`. A human
+pressing ⌘P fires `beforeprint` and gets a light page. The 195 KB PDF this produced is scratch and
+is not committed.
+
+**What is still a judgement, and still yours:** whether the light page that comes out reads as a
+résumé or as a screenshot of a website. That is step 5's actual question and no probe answers it.
+
+---
+
 ## 19. What needs Akhil's decision
 
 Separated from everything above, which is settled.

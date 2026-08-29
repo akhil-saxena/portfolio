@@ -36,6 +36,7 @@
 
 import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Link } from '@akhil-saxena/design-system/components/Link';
 import { getCollection } from 'astro:content';
 
 import homeConfig from '../../../data/home_config.json';
@@ -45,8 +46,12 @@ import PhotoGrid from '../../components/public/PhotoGrid.astro';
 import { PhotoLightbox } from '../../components/public/PhotoLightbox';
 import Seo from '../../components/public/Seo.astro';
 import PublicLayout from '../../layouts/PublicLayout.astro';
+import { CROSSLINK_TYPE } from '../../lib/crosslink';
 import { lightboxRecordsFor } from '../../lib/photo-lightbox';
 import '../../styles/photos.css';
+
+/** The cross-link's destination — the work index, and the other half of §13.2's pair. */
+const WORK_PATH = '/work';
 
 const entries = await getCollection('photos');
 
@@ -135,4 +140,34 @@ const lightboxItems = lightboxRecordsFor(photos);
       be built here. The caption is composed inside the island from `exifRows`. */
   }
   <PhotoLightbox client:idle items={lightboxItems} gridSelector="#ph-grid" />
+
+  {
+    /* §13.2 — THE RETURNING HALF OF THE CROSS-LINK PAIR, AND IT WAS NEVER BUILT UNTIL NOW.
+
+      `/work` has shipped *see the photographs →* since 05-09, asserted character for character.
+      §13.2's next row is *← see the work* on `/photos`, and 05-15's audit found that
+      `grep -rn "see the work"` over the whole repository returned exactly ONE line — the spec row
+      itself. No gate caught it because §13.2 is prose. Akhil decided to build it rather than drop
+      the row.
+
+      THE TREATMENT IS `/work`'s, NOT A SECOND ONE. `CROSSLINK_TYPE` is the same object that page
+      imports (`src/lib/crosslink.ts`), so the two halves cannot drift into two italic serifs; the
+      only thing this file declares is the row's own layout, in `photos.css`.
+
+      IT IS INTERNAL, so it carries no `target` and no `rel` — the new-tab announcement and the
+      tabnabbing guard belong to outbound anchors and to nothing else. That is the same reasoning
+      `work.astro` states at its half.
+
+      ON `/photos` ONLY, and that is the pair §13.2 names: `/work` ↔ `/photos`. The seven
+      `/photos/<category>` routes are filtered views of this gallery and get the return path from
+      the AppBar, exactly as `/work` does — a cross-link on each of them would be seven copies of
+      one editorial gesture. `test/public/photos-routes.node.test.ts` asserts BOTH halves of that:
+      exactly one row here, and zero on every category route, so the decision is a red test if it
+      is ever changed by accident rather than on purpose. */
+  }
+  <p class="ph-crosslink-row">
+    <Link className="ph-crosslink" href={WORK_PATH} variant="quiet" style={CROSSLINK_TYPE}>
+      ← see the work
+    </Link>
+  </p>
 </PublicLayout>

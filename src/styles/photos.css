@@ -284,6 +284,32 @@
 
 /*
  * ================================================================================================
+ * 5b. THE CROSS-LINK ROW (§13.2) — the returning half of the pair
+ * ================================================================================================
+ *
+ * LAYOUT ONLY, and it is the mirror of `.wk-crosslink-row` in `src/styles/work.css`. The type role
+ * — italic Playfair at `--text-lg` in `--ochre-d` — is NOT here and must not be: `Link` inline-sets
+ * `font-family` on every variant, so a serif link is unreachable from a stylesheet without
+ * `!important`. It travels with the element as `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, which is
+ * the ONE declaration both `/work` and `/photos` import.
+ *
+ * ONE DECLARATION, AND THE ALIGNMENT IS DELIBERATELY ABSENT. `/work`'s row declares
+ * `text-align: right` because the arrow points forward and sits at the right edge; this one's arrow
+ * points BACK, so it belongs at the start edge — which is the initial value. `text-align: left`
+ * here would be an inert declaration restating the default, and this file has already deleted one
+ * declaration (`flex: 0 0 auto`) for buying nothing measurable. The mirror is recorded in this
+ * comment instead, where it cannot be mistaken for a rule doing work.
+ *
+ * `--space-12` is `.wk-crosslink-row`'s own top margin, so the gap above the link reads the same on
+ * both pages. `.ph-crosslink` is a named hook with no rule, exactly as `.wk-crosslink` is.
+ */
+
+.ph-crosslink-row {
+  margin: var(--space-12) 0 0;
+}
+
+/*
+ * ================================================================================================
  * 6. THE LIGHTBOX CAPTION (§9.1, §9.3) — plan 05-12
  * ================================================================================================
  *

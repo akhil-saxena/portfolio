@@ -47,6 +47,7 @@ import EmploymentBand from '../components/public/EmploymentBand.astro';
 import ProjectCard from '../components/public/ProjectCard.astro';
 import Seo from '../components/public/Seo.astro';
 import { resume } from '../lib/content';
+import { CROSSLINK_TYPE } from '../lib/crosslink';
 import { resolveDsTokens } from '../lib/ds-component-count';
 import '../styles/work.css';
 
@@ -56,31 +57,18 @@ const WORK_PATH = '/work';
 /** The cross-link's destination — the gallery index, a real route rather than a photograph. */
 const PHOTOS_PATH = '/photos';
 
-/**
- * §4.3 item 3 / §3.1 "Italic serif cross-link" / J2 — declared here as an INLINE style object, and
- * that is forced rather than chosen.
+/*
+ * §4.3 item 3 / §3.1 "Italic serif cross-link" / J2 — the type role was DECLARED HERE until the
+ * returning half of §13.2's pair was built on `/photos`. It now lives in `src/lib/crosslink.ts`,
+ * imported above, and the reasoning that used to sit at this line moved with it: why it must be an
+ * inline style object at all (`Link` inline-sets `font-family` on every variant, so a serif link is
+ * unreachable from `work.css` without `!important`), and why the values are J2's verdict rather
+ * than a default.
  *
- * MEASURED: `Link` emits `style="font-family:var(--font);cursor:pointer"` on every variant, so a
- * serif link is not expressible from `work.css` at any specificity without `!important`. The
- * component DOES merge a consumer `style` over its own, so this goes through its API instead. The
- * rest of the role travels with it rather than being split across two files, because a role half in
- * CSS and half inline is the arrangement nobody can reason about later.
- *
- * J2 was OVERRIDDEN and NOT by the offered fallback: the verdict was *"too big and heavy, can keep
- * smaller font too"*, so both the 22px size and the `--ochre-d-strong` weight were rejected. It is
- * `--text-lg` 17 in `--ochre-d`, which makes it the smallest serif on the site — and at weight 400
- * on a dark field that clears §3.3's floor only because 17 is above the 15px it sets for a Playfair
- * body role.
+ * ONE object, TWO importers. The bytes this page ships are unchanged by the move — the same object
+ * reaches the same prop — and that was proven by comparing the served `<p class="wk-crosslink-row">`
+ * before and after, character for character.
  */
-const CROSSLINK_TYPE = {
-  fontFamily: 'var(--font-display)',
-  fontStyle: 'italic',
-  fontSize: 'var(--text-lg)',
-  fontWeight: 'var(--weight-regular)',
-  lineHeight: 'var(--lh-snug)',
-  letterSpacing: 'var(--ls-tight)',
-  color: 'var(--ochre-d)',
-} as const;
 
 /*
  * The projects come through the `projects` CONTENT COLLECTION rather than a raw JSON import, so the

@@ -522,3 +522,96 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
     }
   });
 });
+
+/* ══ §13.2 — THE CROSS-LINK PAIR'S RETURNING HALF ═══════════════════════════════════════════════
+ *
+ * `/work` has shipped *see the photographs →* since 05-09 and `test/public/work.node.test.ts`
+ * asserts it character for character. §13.2's next row is *← see the work* on `/photos`, and
+ * 05-15's audit MEASURED that it did not exist: `grep -rn "see the work"` over the whole repository
+ * returned one line, the spec row itself. No gate caught it, because §13.2 is prose.
+ *
+ * So the copy is asserted here the way the other half is — against the SERVED BYTES, character for
+ * character, after one pass of entity decoding. This is a §13.2 contract entry and not page prose:
+ * it is the navigation between two of the four public views, and the whole reason it is asserted is
+ * that a missing navigational string looks exactly like a page that is simply finished.
+ *
+ * BOTH DIRECTIONS ARE ASSERTED. Exactly one row on `/photos`, and ZERO on all seven category
+ * routes — a floor alone ("at least one somewhere") passes on a page that grew a second copy and on
+ * one that put it on the wrong route, and this suite has already been bitten once by a count
+ * predicate that was a floor.
+ */
+describe('/photos carries §13.2’s returning cross-link, and only /photos does', () => {
+  /** The reviewed copy, character for character. `←` is LEFTWARDS ARROW U+2190. */
+  const CROSSLINK_COPY = '← see the work';
+  const WORK_PATH = '/work';
+
+  /** Every `<p class="ph-crosslink-row">…</p>` in a document, in order. */
+  const rows = (html: string): string[] =>
+    [...html.matchAll(/<p class="ph-crosslink-row">([\s\S]*?)<\/p>/g)].map((m) => m[1] as string);
+
+  it('renders exactly one cross-link row on /photos, pointing at /work', () => {
+    const html = bodies.get('/photos') as string;
+    expect(html, 'no /photos body was fetched').toBeTruthy();
+
+    const found = rows(html);
+    expect(found, `/photos carries ${found.length} cross-link row(s)`).toHaveLength(1);
+
+    const anchors = [...(found[0] as string).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
+    expect(anchors, 'the row holds no anchor').toHaveLength(1);
+
+    const attrs = (anchors[0] as RegExpMatchArray)[1] as string;
+    const inner = (anchors[0] as RegExpMatchArray)[2] as string;
+
+    expect(/href="([^"]*)"/.exec(attrs)?.[1]).toBe(WORK_PATH);
+
+    // CHARACTER FOR CHARACTER. Astro drops the space between two ADJACENT EXPRESSIONS in a
+    // component's children — `{count} {noun}` shipped as `14photographs` past 59 green assertions
+    // on this very route family — so an exact string is the only assertion worth making about copy.
+    const rendered = decode((inner as string).replace(/<[^>]*>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(rendered).toBe(CROSSLINK_COPY);
+
+    // The type role is `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, the SAME object `/work` imports.
+    // `Link` inline-sets `font-family` on every variant, so the served `style` attribute is the
+    // only place this can be checked at all — and asserting it on both halves is what makes "one
+    // declaration, two importers" a measured fact rather than a comment.
+    const style = /style="([^"]*)"/.exec(attrs)?.[1] ?? '';
+    expect(style).toContain('var(--font-display)');
+    expect(style).toContain('italic');
+    expect(style).toContain('var(--text-lg)');
+    expect(style).toContain('var(--ochre-d)');
+    // §4.3 reserves `--ochre-d-strong` for the metric; J2 explicitly rejected it here.
+    expect(style).not.toContain('var(--ochre-d-strong)');
+
+    // INTERNAL: no new tab, so no announcement and no `rel` are owed.
+    expect(/target="([^"]*)"/.exec(attrs)?.[1]).toBeUndefined();
+
+    report(`cross-link: ${JSON.stringify(rendered)} → ${WORK_PATH}, italic serif in --ochre-d`);
+  });
+
+  it('puts it on /photos and on NO category route — the pair is /work ↔ /photos', () => {
+    const categories = ROUTES.filter((route) => route.name !== '/photos');
+    // ANTI-VACUITY: an empty category list would make the loop below assert nothing at all.
+    expect(categories.length).toBeGreaterThan(0);
+
+    for (const route of categories) {
+      const html = bodies.get(route.name) as string;
+      expect(html, `no body was fetched for ${route.name}`).toBeTruthy();
+      expect(rows(html), `${route.name} must not carry a cross-link row`).toHaveLength(0);
+    }
+
+    /*
+     * DERIVED, NEVER TYPED. The first draft of this line read "1 on /photos, 0 on each of 7" as a
+     * LITERAL, and the plant that deleted the cross-link row printed it verbatim while the other
+     * test failed at zero — a report claiming a number it had not measured, in the middle of a
+     * suite whose subject is exactly that failure. It now counts what it says.
+     */
+    const onPhotos = rows(bodies.get('/photos') as string).length;
+    const perCategory = categories.map((route) => rows(bodies.get(route.name) as string).length);
+    report(
+      `cross-link rows: ${onPhotos} on /photos, [${perCategory.join(', ')}] on the ` +
+        `${categories.length} category route(s)`
+    );
+  });
+});

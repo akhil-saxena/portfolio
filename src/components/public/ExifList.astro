@@ -1,0 +1,114 @@
+---
+/**
+ * The EXIF a reader sees. PUB-07 and PUB-08, at the point of display. Plan 05-08, Task 2.
+ * (§9.3 for the layout and the two type roles, §9.5 for the human names.)
+ *
+ * ================================================================================================
+ * THIS COMPONENT CONTAINS NO NULL CHECK OF ITS OWN, AND THAT IS THE REQUIREMENT
+ * ================================================================================================
+ *
+ * `exifRows` in `src/lib/exif-display.ts` is the ONLY implementation of PUB-07's omit rule. It
+ * returns the rows to render, in order, with every absent field already gone; an empty array is a
+ * complete answer and means "render nothing at all".
+ *
+ * So this file asks one question — are there rows — and nothing below it looks at a field. A second
+ * copy of the rule here is how it grows an em dash: someone decides a gap looks unbalanced on one
+ * page, adds a `?? '—'` at the point of display, and PUB-07 is now false in a file no gate reads as
+ * a validator. MEASURED on the committed manifest: `lens` is null on 11 of 40 records, so
+ * `Lens: —` eleven times over is the precise defect the requirement exists to prevent.
+ *
+ * WHEN THERE ARE NO ROWS THERE IS NO HEADING, NO RULE AND NO PANEL. `product-peppers` has all six
+ * fields null and is a real committed record. A "Details" heading over nothing is the placeholder
+ * PUB-07 forbids wearing a different hat, and a `<hr>` above nothing is the same thing again — so
+ * the whole `<section>`, including its divider, is inside the branch.
+ *
+ * ================================================================================================
+ * WHY AN UNKNOWN CAMERA STOPS THE BUILD, AND WHY THAT IS NOT DEFENSIVE
+ * ================================================================================================
+ *
+ * `exifRows` calls `displayCamera` / `displayLens`, which THROW on a string that is not in the
+ * lookup table. That call happens in this frontmatter, which runs during the prerender — so an
+ * unrecognised value fails `astro build` rather than rendering.
+ *
+ * §9.5's ruling, in one line: rendering the raw code ships `SM-N970F` to a reader, rendering a
+ * guess ships a false claim about the equipment, and refusing the build does neither. The repair is
+ * a two-line edit to `CAMERA_DISPLAY_NAMES`, and `scripts/assert-exif-display-coverage.mjs` catches
+ * it earlier still, naming the photograph as well as the value.
+ *
+ * ================================================================================================
+ * THE TWO TYPE ROLES COME FROM COMPONENTS, NOT FROM `photo-detail.css`
+ * ================================================================================================
+ *
+ * §9.3 fixes the label as IBM Plex Mono `--text-xs` 11px `--ls-wide` at `--ink-3`, and the value as
+ * DM Sans `--text-sm` 12.5px at `--ink-2`. Both are design-system roles, so both are design-system
+ * components (the Core Value: a component exists, so the component is used):
+ *
+ *   `Eyebrow size="md" tone="muted"`    — MEASURED against `2.0.0-beta.1`: `md` maps to
+ *                                         `var(--text-xs)`, and the component's own base style is
+ *                                         `var(--mono)` + `var(--ls-wide)`. `tone="muted"` resolves
+ *                                         to `--ink-3` through `primitives.css`. That is §9.3's
+ *                                         label, exactly, with no token restated in app CSS.
+ *   `Text size="sm" tone="secondary"`   — `--text-sm` and `--ink-2`, from the same stylesheet.
+ *
+ * 🔴 ONE MEASURED GAP, CARRIED RATHER THAN PATCHED. `Eyebrow` hard-codes
+ * `fontWeight: var(--weight-bold)` in its inline base style and exposes no weight prop, while §3.1
+ * gives this role weight 500. An inline style cannot be reached by a consumer stylesheet without
+ * `!important` reaching past a component into its internals, which is the workaround the Core Value
+ * forbids and which Phase 0 declined for the same class of defect (D-16-1). Filed upstream for
+ * `2.0.0-beta.2`: `Eyebrow` should accept a `weight` token like `Text` and `Heading` do.
+ *
+ * NOTHING HERE RENDERS `--amber-vivid` AS TEXT. §4.2 measured it at 3.11 / 3.19 / 2.96 against the
+ * three light surfaces, so it fails AA as text on every one of them, and it is the same literal in
+ * both modes. It is a marker step, not a text colour — which is why neither role above takes
+ * `tone="accent"`.
+ */
+
+import { Divider } from '@akhil-saxena/design-system/components/Divider';
+import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
+import { Text } from '@akhil-saxena/design-system/components/Text';
+
+import { exifRows } from '../../lib/exif-display';
+import type { PhotoExif } from '../../schemas/photo';
+
+interface Props {
+  /** The record's stored exif object, whole. This component never receives a field. */
+  exif: PhotoExif;
+}
+
+const { exif } = Astro.props;
+
+/**
+ * The only decision this file makes. `rows.length === 0` and not a check of each field — see the
+ * header; the caller of the rule is not allowed to re-implement it.
+ */
+const rows = exifRows(exif);
+---
+
+{
+  rows.length > 0 && (
+    <section class="pd-exif" aria-labelledby="pd-exif-heading">
+      <Divider />
+      <h2 id="pd-exif-heading">
+        <Eyebrow size="md" tone="muted">
+          Details
+        </Eyebrow>
+      </h2>
+      <dl class="pd-exif-list">
+        {rows.map((row) => (
+          <Fragment>
+            <dt>
+              <Eyebrow size="md" tone="muted">
+                {row.label}
+              </Eyebrow>
+            </dt>
+            <dd>
+              <Text as="span" size="sm" tone="secondary">
+                {row.value}
+              </Text>
+            </dd>
+          </Fragment>
+        ))}
+      </dl>
+    </section>
+  )
+}

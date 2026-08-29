@@ -53,6 +53,7 @@ import { Link } from '@akhil-saxena/design-system/components/Link';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import { type CollectionEntry, getCollection } from 'astro:content';
 
+import ExifList from '../../../components/public/ExifList.astro';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
 import { home, site } from '../../../lib/content';
@@ -375,6 +376,17 @@ const pageTitle = `${photo.title} — ${home.title}`;
       )
     }
   </div>
+
+  {
+    /*
+     * PUB-07 LIVES ENTIRELY INSIDE THIS COMPONENT, AND SO DOES ITS ABSENCE. `ExifList` renders
+     * NOTHING — no section, no divider, no heading, no empty panel — when `exifRows` returns no
+     * rows. `product-peppers` has all six fields null and is a real committed record, so the branch
+     * is exercised by the corpus rather than reasoned about. The page therefore does not test the
+     * exif object here: a second decision at this level is a second implementation of the rule.
+     */
+  }
+  <ExifList exif={photo.exif} />
 
   {
     /*

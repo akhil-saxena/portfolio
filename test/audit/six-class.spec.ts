@@ -48,6 +48,35 @@
  * are carried here: `fills` is two-sided, and each control asserts what it breaks AND what it must
  * NOT break.
  *
+ * ================================================================================================
+ * 🔴 05-16 — `departs` IS NOW AN OCCLUSION, BECAUSE THE MECHANISM CHANGED AND THE REQUIREMENT DID
+ * NOT
+ * ================================================================================================
+ *
+ * Home's Act-2 transition was `scroll-snap-type: y proximity` and is now a STICKY Act 1 that Act 2
+ * scrolls over. The change was made on a measurement — snap skipped the second half of the reveal
+ * (worst coverage step 49 points against sticky's 25, 6 of 6 classes) and did so only under
+ * `no-preference`, so the default path jumped and the accessible path was already smooth. The run
+ * is in `src/styles/home.css` §5 and is reproduced by `the Act-2 reveal is continuous` below.
+ *
+ * The consequence for this file is that `departs` could no longer be a GEOMETRY. Akhil's
+ * requirement is *"whole first page goes away to reveal second page in full"*; 05-15 proved it as
+ * `peekGrid.getBoundingClientRect().bottom <= 0`, i.e. Act 1 physically left the viewport. Under a
+ * sticky reveal Act 1 does not move — it is COVERED — so `peekBottom` reads +546 at one viewport of
+ * scroll while the requirement is fully met.
+ *
+ * The predicate is therefore restated to the question the requirement actually asks — **is any
+ * photograph VISIBLE?** — and answered by HIT-TESTING rather than by pixels: a 5x5 lattice of
+ * points inside the peek grid's own rect, each passed to `document.elementFromPoint`, and the
+ * count of points still answered by an element inside `.hm-peek`. MEASURED at one viewport of
+ * scroll: 0 of 25 at all six classes in both motion settings.
+ *
+ * **This is a WEAKER kind of proof than a geometric one and the difference is worth naming: it
+ * depends on Act 2 being opaque.** A transparent `.hm-b` would show the photographs through the
+ * work band at every offset and `peekBottom` would not notice. That is why `.hm-b`'s
+ * `background-color`, `position` and `z-index` are asserted — here as computed styles, and in
+ * `test/public/home.node.test.ts` as declarations.
+ *
  * The mutation is injected at RUNTIME (`page.addStyleTag`) rather than planted in
  * `src/styles/home.css` and rebuilt. That is a narrower claim, stated so nobody reads it as a
  * wider one: it proves the PREDICATE is two-sided and would catch a wrong height. It does not
@@ -64,6 +93,7 @@ import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
+import sharp from 'sharp';
 // The import attribute is REQUIRED here and is not decoration: Playwright's ESM loader refuses a
 // JSON module without it ("needs an import attribute of \"type: json\""), where Astro's Vite
 // pipeline does not — so the same specifier that works in `index.astro` fails in this file.
@@ -203,6 +233,10 @@ type HomeAtLoad = {
 type HomeAfterScroll = {
   scrollY: number;
   peekBottom: number;
+  /** 05-16 — the occlusion lattice. See this file's header for why geometry no longer answers it. */
+  gallerySampled: number;
+  galleryVisible: number;
+  actTwoCover: number;
   workHeadTop: number;
   resumeHeadBottom: number;
   resumeBlockBottom: number;
@@ -267,12 +301,49 @@ async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
     const peek = need('.hm-peek-grid').getBoundingClientRect();
     const band = need('.hm-b');
     const work = need('.hm-work').getBoundingClientRect();
+
+    /*
+     * THE OCCLUSION LATTICE. 25 points on a 5x5 grid inside the peek block's own rect, each asked
+     * `document.elementFromPoint`. A point answered by anything inside `.hm-peek` is a photograph
+     * (or its frame) the reader can still see; a point answered by anything else is covered.
+     *
+     * Points outside the viewport are SKIPPED rather than counted as covered, and `sampled` is
+     * reported alongside `visible` so the two cases stay distinguishable: under a mechanism that
+     * moves Act 1 out of view entirely, `sampled` is 0 and the geometric `peekBottom` is the
+     * proof; under the sticky reveal `sampled` is 25 and `visible` must be 0. A predicate that
+     * silently returned "0 visible" for both would call an off-screen gallery and a covered one
+     * the same measurement, and only one of them depends on Act 2 being opaque.
+     */
+    const peekRegion = need('.hm-peek');
+    let gallerySampled = 0;
+    let galleryVisible = 0;
+    for (let i = 0; i <= 4; i++) {
+      for (let j = 0; j <= 4; j++) {
+        const x = peek.left + (peek.width * (i + 0.5)) / 5;
+        const y = peek.top + (peek.height * (j + 0.5)) / 5;
+        if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) continue;
+        gallerySampled++;
+        const hit = document.elementFromPoint(x, y);
+        if (hit !== null && peekRegion.contains(hit)) galleryVisible++;
+      }
+    }
+
+    /** The fraction of the viewport Act 2 occupies, in points. The reveal's own quantity. */
+    const bandRect = band.getBoundingClientRect();
+    const actTwoCover = Math.round(
+      (Math.max(0, Math.min(window.innerHeight, bandRect.bottom) - Math.max(0, bandRect.top)) /
+        window.innerHeight) *
+        100
+    );
     const resume = need('.hm-resume').getBoundingClientRect();
     const byday = need('.hm-byday');
     const grid = need('.hm-grid').getBoundingClientRect();
     return {
       scrollY: Math.round(window.scrollY),
       peekBottom: Math.round(peek.bottom),
+      gallerySampled,
+      galleryVisible,
+      actTwoCover,
       workHeadTop: Math.round(need('#hm-work-h').getBoundingClientRect().top),
       resumeHeadBottom: Math.round(need('#hm-resume-h').getBoundingClientRect().bottom),
       resumeBlockBottom: Math.round(resume.bottom),
@@ -288,8 +359,103 @@ async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
 /** `fills` — TWO-SIDED, per 05-11. One-sided, it cannot fail; see this file's header. */
 const fillsOf = (m: HomeAtLoad): boolean => m.promptBottom <= m.vh && m.aBottom >= m.vh;
 
-/** `departs` — one viewport of scroll leaves no photograph on screen. */
-const departsOf = (m: HomeAfterScroll): boolean => m.peekBottom <= 0;
+/**
+ * `departs` — one viewport of scroll leaves no photograph ON SCREEN.
+ *
+ * 05-16: an OCCLUSION, not a geometry. See this file's header. Both terms are kept because they
+ * answer different halves and the mechanism decides which one carries the proof:
+ *
+ *   - `galleryVisible === 0` is the claim itself, and it is the one that survives a mechanism in
+ *     which Act 1 stays put and is covered.
+ *   - `peekBottom <= 0` is the stronger, geometric form, and it is still TRUE under any mechanism
+ *     that moves Act 1 out of view. It is recorded rather than required, so that a change back to
+ *     such a mechanism is visible in the JSONL rather than silently equivalent.
+ */
+const departsOf = (m: HomeAfterScroll): boolean => m.galleryVisible === 0;
+
+/**
+ * ================================================================================================
+ * THE VISIBILITY PROOF — A DIFFERENTIAL RENDER, AND IT NEEDS NO THRESHOLD
+ * ================================================================================================
+ *
+ * 🔴 THE OCCLUSION LATTICE ABOVE MEASURES HIT-TESTING, NOT SIGHT, AND THE DIFFERENCE IS A REAL
+ * HOLE. `document.elementFromPoint` returns the topmost element whether or not it is opaque, so a
+ * fully TRANSPARENT Act 2 answers all 25 points and `galleryVisible` reads 0 while every
+ * photograph is plainly visible through it. That was found by trying to write the control for it:
+ * the control could not fail, which is the same defect this whole file exists to prevent, one
+ * level up.
+ *
+ * So the claim "no photograph is visible" is proved by asking the renderer instead:
+ *
+ *   1. screenshot the peek block's rect, clipped to the viewport;
+ *   2. `visibility: hidden` the gallery — which removes its PAINT and keeps its LAYOUT, so nothing
+ *      else on the page can move;
+ *   3. screenshot the identical rect again;
+ *   4. compare the two raw buffers byte for byte.
+ *
+ * **If hiding the photographs changes not one byte of what the browser painted, then not one pixel
+ * of them was visible.** There is no threshold, no tolerance and no reference image to go stale —
+ * the comparison is against the same page one declaration apart, on the same machine, in the same
+ * frame. MEASURED:
+ *
+ *     unmutated                       0 differing bytes    6 of 6 classes
+ *     `.hm-b` background transparent  269,766 – 799,969    max delta 241
+ *     `.hm-b` z-index/position unset  269,766 – 804,386    max delta 242
+ *
+ * A stdev-threshold version was written first and rejected: the region is not flat when the
+ * requirement is MET either — Act 2's own cards and headings are painted there — so it separated
+ * 24–33 from 81–91 and needed a magic number in between. This needs none.
+ *
+ * 🔴 THIS MUTATES THE PAGE AND MUST BE THE LAST THING DONE TO IT. The injected `visibility` rule is
+ * not removed, because a Playwright context is discarded per test and re-showing it would be a
+ * second state nobody measures.
+ */
+type GalleryPaint = {
+  /** `null` when the peek block's rect is entirely outside the viewport — a GEOMETRIC departure. */
+  clip: { x: number; y: number; width: number; height: number } | null;
+  differingBytes: number;
+  maxDelta: number;
+};
+
+async function measureGalleryPaint(page: Page): Promise<GalleryPaint> {
+  const clip = await page.evaluate(() => {
+    const el = document.querySelector('.hm-peek-grid');
+    if (el === null) throw new Error('six-class audit: .hm-peek-grid is not in the document.');
+    const r = el.getBoundingClientRect();
+    const x = Math.max(0, Math.round(r.left));
+    const y = Math.max(0, Math.round(r.top));
+    const width = Math.min(window.innerWidth - x, Math.round(r.width));
+    const height = Math.min(window.innerHeight - y, Math.round(r.height));
+    return width > 0 && height > 0 ? { x, y, width, height } : null;
+  });
+  if (clip === null) return { clip: null, differingBytes: 0, maxDelta: 0 };
+
+  const rawOf = async (png: Buffer): Promise<Buffer> => await sharp(png).raw().toBuffer();
+  const painted = await rawOf(await page.screenshot({ clip }));
+  await page.addStyleTag({ content: '.hm-peek { visibility: hidden }' });
+  await page.waitForTimeout(200);
+  const hidden = await rawOf(await page.screenshot({ clip }));
+
+  let differingBytes = 0;
+  let maxDelta = 0;
+  const n = Math.min(painted.length, hidden.length);
+  for (let i = 0; i < n; i++) {
+    const d = Math.abs((painted[i] as number) - (hidden[i] as number));
+    if (d !== 0) {
+      differingBytes++;
+      if (d > maxDelta) maxDelta = d;
+    }
+  }
+  // A length mismatch would make the loop compare a prefix and report 0 on two different images.
+  if (painted.length !== hidden.length) {
+    throw new Error(
+      `six-class audit: the two clipped renders differ in SIZE (${painted.length} vs ` +
+        `${hidden.length}). \`visibility: hidden\` must preserve layout; if it did not, this ` +
+        'comparison is between two different rectangles and means nothing.'
+    );
+  }
+  return { clip, differingBytes, maxDelta };
+}
 
 /** Load Home and let the webfonts settle; every geometry here is font-dependent. */
 async function openHome(page: Page): Promise<void> {
@@ -443,8 +609,48 @@ for (const c of CLASSES) {
       ).toBe(true);
       expect(
         departs,
-        `departs at class ${c.n}: peek bottom ${after.peekBottom} after ${after.scrollY}px`
+        `departs at class ${c.n}: ${after.galleryVisible} of ${after.gallerySampled} lattice ` +
+          `points still answered by the gallery after ${after.scrollY}px; Act 2 covers ` +
+          `${after.actTwoCover}% of the viewport (peek bottom ${after.peekBottom})`
       ).toBe(true);
+
+      /*
+       * ANTI-VACUITY FOR THE PREDICATE ITSELF, and it is not decoration: `galleryVisible === 0` is
+       * trivially satisfied by a lattice that sampled nothing. Under the sticky reveal the peek
+       * block is still WHERE IT WAS — stuck at the top of the viewport, underneath Act 2 — so
+       * every one of the 25 points is inside the viewport and every one must be answered by Act 2.
+       * If `gallerySampled` ever drops to 0 the mechanism has changed back to one that MOVES Act 1,
+       * and this line says so rather than reporting a pass.
+       */
+      expect(
+        after.gallerySampled,
+        `the occlusion lattice sampled ${after.gallerySampled} points at class ${c.n} — with a ` +
+          'sticky Act 1 the peek block stays in the viewport and all 25 must be testable'
+      ).toBe(25);
+      expect(
+        after.actTwoCover,
+        `Act 2 covers only ${after.actTwoCover}% of the viewport at class ${c.n}`
+      ).toBeGreaterThanOrEqual(99);
+
+      /*
+       * THE VISIBILITY PROOF, and it is the one that actually answers Akhil's requirement. The
+       * lattice above proves the gallery is not HIT-TESTABLE; this proves it is not VISIBLE, which
+       * a transparent Act 2 would break while the lattice went on reading zero. See
+       * `measureGalleryPaint`. It mutates the page, so it is the last thing this test does.
+       */
+      const paint = await measureGalleryPaint(page);
+      record('gallery-paint', { project: ti.project.name, class: c.n, ...paint });
+      expect(
+        paint.clip,
+        'the peek block left the viewport entirely — the mechanism moves Act 1 again, and this ' +
+          'proof is about a mechanism that covers it'
+      ).not.toBeNull();
+      expect(
+        paint.differingBytes,
+        `${paint.differingBytes} bytes of the gallery's rect at class ${c.n} change when the ` +
+          'photographs are hidden — so that many pixels of them are still visible through Act 2 ' +
+          `(max delta ${paint.maxDelta})`
+      ).toBe(0);
 
       /*
        * THE SELF-SCROLL AT FIRST PAINT — FIXED, AND NOW ASSERTED AT ZERO IN BOTH RUNS.
@@ -478,7 +684,8 @@ for (const c of CLASSES) {
        */
       expect(
         at.scrollY,
-        `the page must not scroll itself at first paint (AppBar ${at.barHeight}px; state A has no snap point)`
+        `the page must not scroll itself at first paint (AppBar ${at.barHeight}px; there is no ` +
+          'snap point anywhere on this page — 05-16 removed the mechanism entirely)'
       ).toBe(0);
     });
 
@@ -517,86 +724,113 @@ for (const c of CLASSES) {
       expect(fills, `160svh must break fills at class ${c.n} (from above)`).toBe(false);
 
       /*
-       * 🔴 THE PLAN'S SECOND CONTROL IS STILL MIS-STATED, AND THIS IS THE THIRD CORRECTION IT HAS
-       * TAKEN. §16.2 says "a `160svh` mutation must break **departs**". Phase 0 wrote it, 05-11
-       * measured that it breaks departs at only 5 of its 7 classes, and this run measured WHY:
+       * ✅ §16.2's SECOND CONTROL NOW WORKS AS ORIGINALLY SPECIFIED, AFTER THREE CORRECTIONS AND A
+       * MECHANISM CHANGE. THE HISTORY IS KEPT BECAUSE IT IS THE REASON TO TRUST THE PRESENT LINE.
        *
-       *     under `reduce`, `160svh` breaks `departs` at 0 of 6 classes.
+       * §16.2 says "a `160svh` mutation must break **departs**". Phase 0 wrote it; 05-11 measured
+       * that it broke departs at only 5 of 7 classes; 05-15 measured WHY — under `reduce` it broke
+       * departs at 0 of 6, and the failures under `no-preference` were `scroll-snap-type: y
+       * proximity` pulling the programmatic scroll back short of a full viewport (class 6:
+       * `scrollTo(0, 900)` settled at 665). A control that fires through the mechanism it is not
+       * testing is not a control, so it was demoted to a `fills`-from-above control and a separate
+       * short-document control was constructed for `departs`.
        *
-       * The peek grid sits near the TOP of state A and the scroll prompt is pinned to its bottom
-       * by `margin-block-start: auto`, so making state A taller moves the PROMPT down and leaves
-       * the photographs where they were. One viewport of scroll still clears them. What actually
-       * happened under `no-preference` is that `scroll-snap-type: y proximity` pulled the
-       * programmatic scroll back to a snap point short of a full viewport — MEASURED, class 6:
-       * `scrollTo(0, 900)` settled at 665. So the "departure failure" this control produces is a
-       * SNAP artefact, not a geometry one, and a control that fires through the mechanism it is
-       * not testing is not a control.
+       * 05-16 removed snap and made `departs` an occlusion, and BOTH halves of that change make
+       * this control real. A 160svh state A pushes Act 2's document offset to `111 + 1.6vh`, so one
+       * viewport of scroll leaves Act 2's top at `111 + 0.6vh` — well below the fold — while the
+       * stuck Act 1 keeps the photographs at the top of the viewport, visible. The mutation now
+       * breaks the requirement for the reason the requirement is about, in BOTH motion settings,
+       * with no snap artefact anywhere in the causal chain.
        *
-       * It is kept as the `fills`-from-above control, which it genuinely is, and the real
-       * `departs` control is the next test.
+       * Asserted in both projects rather than under `reduce` alone: the two settings are now
+       * identical by construction, and asserting only one of them would leave the claim that they
+       * are identical resting on nothing.
        */
-      if (ti.project.name === 'reduce') {
-        expect(
-          departs,
-          `with snap suppressed, 160svh leaves departs TRUE at class ${c.n}: peek bottom ${after.peekBottom}`
-        ).toBe(true);
-      }
+      expect(
+        departs,
+        `160svh must break departs at class ${c.n}: ${after.galleryVisible} of ` +
+          `${after.gallerySampled} lattice points still show the gallery, Act 2 covers ` +
+          `${after.actTwoCover}%`
+      ).toBe(false);
     });
 
-    test('CONTROL — a document too short to scroll a viewport breaks `departs` alone', async ({
+    test('CONTROL — a transparent Act 2 breaks the visibility proof and nothing else', async ({
       page,
     }, ti) => {
       /*
-       * THE `departs` CONTROL THIS PLAN OWED AND HAD TO CONSTRUCT, because neither of the two it
-       * was handed can fail on geometry.
+       * ================================================================================================
+       * THE CONTROL FOR THE EXACT DEPENDENCY THE MECHANISM RESTS ON, AND IT REPLACES ONE THAT WENT
+       * INERT
+       * ================================================================================================
        *
-       * `departs` is `peekBottom(load) <= min(vh, scrollMax)`. The prompt sits BELOW the peek grid,
-       * so any mutation that pushes the photographs past the fold pushes the prompt past it too
-       * and breaks `fills` in the same breath — MEASURED with `.hm-tile { aspect-ratio: 1/2 }`,
-       * which breaks both at 6 of 6. The ONLY way to break `departs` while `fills` stays true is
-       * the second term: the document running out of scroll before it runs out of viewport.
+       * WHAT WAS HERE BEFORE, AND WHY IT IS GONE. 05-15 constructed a `.hm-b { min-height: 0;
+       * padding-block: 0 }` control, because under the SNAP mechanism `departs` had a second term
+       * — the document running out of scroll before it ran out of viewport — and that was §6.2's
+       * documented failure at 768 × 1024. 05-16 replaced snap with a sticky Act 1 and `departs`
+       * with an occlusion, and the old control stopped being able to fail: MEASURED, with Act 2
+       * shortened, `departs` stayed TRUE at class 6 (`scrollMax 718, peek bottom 594`) because Act
+       * 2's own content still covers the viewport. Under a covering mechanism a short document is
+       * simply not the failure mode any more. A control that cannot fail is the thing this file
+       * exists to prevent, so it was replaced rather than retuned.
        *
-       * That is exactly §6.2's documented failure — "at 768 × 1024, work + résumé + crosslink +
-       * footer came to 1012px against a 1024px viewport … `scrollY=1012, photosBottom=12, NOT
-       * DEPARTED`" — and it is what `.hm-b { min-height: 100svh }` exists to prevent.
+       * WHAT THE NEW MECHANISM ACTUALLY RESTS ON is stated in `src/styles/home.css` §5 as its own
+       * weakness: **the occlusion proof holds only because `.hm-b` is opaque.** That is one
+       * declaration — `background-color: var(--cream)` — and it is invisible to every other
+       * assertion in this suite, because a transparent Act 2 changes no geometry, no scroll
+       * position and no hit-test. So this control removes exactly that declaration and requires the
+       * proof to fail.
        *
-       * 🔴 AND THE GUARD IS NO LONGER LOAD-BEARING ON ITS OWN. MEASURED: with `.hm-b`'s
-       * `min-height` removed and nothing else, `departs` stays TRUE at 6 of 6 — Act 2's real
-       * content is now taller than a viewport by itself at five classes, and at class 6 it clears
-       * by 24px (`scrollMax` 791 against a peek bottom of 767). Removing the padding as well takes
-       * `scrollMax` to 727 and the departure fails. So the mutation is two declarations, and the
-       * 24px is the honest measure of how much margin §6.2's guard has left.
+       * MEASURED, unmutated 0 differing bytes at 6 of 6; transparent 269,766 – 799,969 differing
+       * bytes with a max channel delta of 241. The separation is not a threshold, it is zero
+       * against hundreds of thousands.
+       *
+       * The half that makes it a CONTROL rather than a second copy of the main test: it must break
+       * NOTHING ELSE. `fills` stays true, the lattice still reads zero (which is the hit-test hole
+       * this control exists to cover), and Act 2 still covers the viewport geometrically.
        */
       await openHome(page);
-      await page.addStyleTag({ content: '.hm-b { min-height: 0; padding-block: 0 }' });
+      await page.addStyleTag({ content: '.hm-b { background-color: transparent }' });
       await page.waitForTimeout(150);
       const at = await measureAtLoad(page);
       const after = await measureAfterOneViewport(page);
       const fills = fillsOf(at);
       const departs = departsOf(after);
-      record('control-short-document', {
+      const paint = await measureGalleryPaint(page);
+      record('control-transparent-act-2', {
         project: ti.project.name,
         class: c.n,
-        at,
-        after,
         fills,
         departs,
+        differingBytes: paint.differingBytes,
+        maxDelta: paint.maxDelta,
+        actTwoCover: after.actTwoCover,
       });
 
-      // The half that makes it a control and not a second `fills` mutation.
-      expect(fills, `the short-document control must NOT break fills at class ${c.n}`).toBe(true);
+      expect(fills, `the transparency control must NOT break fills at class ${c.n}`).toBe(true);
+      expect(
+        after.actTwoCover,
+        `the transparency control must NOT change Act 2's geometry at class ${c.n}`
+      ).toBeGreaterThanOrEqual(99);
 
-      if (c.n === 6) {
-        expect(
-          departs,
-          `the short-document control must break departs at class 6: scrollMax ${at.scrollMax}, peek bottom ${after.peekBottom}`
-        ).toBe(false);
-      } else {
-        // Recorded, not asserted as a failure: the other five classes have more Act-2 content per
-        // viewport and survive the same mutation. Naming which class fires is the difference
-        // between a control and a coincidence.
-        expect(departs, `class ${c.n} survives the short-document control`).toBe(true);
-      }
+      /*
+       * 🔴 THE HIT-TEST HOLE, ASSERTED AS A KNOWN LIMITATION RATHER THAN LEFT AS A SURPRISE.
+       * `elementFromPoint` returns the topmost element whether or not it is opaque, so the lattice
+       * reads "0 visible" through a fully transparent Act 2. This line pins that, so nobody later
+       * mistakes the lattice for a visibility proof — and so that if a future Playwright or
+       * Chromium changes the behaviour, the change is announced here rather than silently
+       * strengthening a claim this file makes carefully.
+       */
+      expect(
+        departs,
+        'the lattice is a HIT-TEST and cannot see transparency — if this ever goes false, ' +
+          'elementFromPoint has changed and the visibility proof below is no longer the only one'
+      ).toBe(true);
+
+      expect(
+        paint.differingBytes,
+        `a transparent Act 2 must reveal the photographs at class ${c.n}, and the differential ` +
+          `render found ${paint.differingBytes} differing bytes`
+      ).toBeGreaterThan(0);
     });
 
     test('Act 2 after the departure, and the two gaps §6.4 closed', async ({ page }, ti) => {
@@ -625,77 +859,179 @@ for (const c of CLASSES) {
       }
     });
 
-    test('the snap declarations reach `#work`, and reduced motion removes them', async ({
+    test('the reveal reaches `.hm-b` and `.hm-a`, read in a browser rather than in a stylesheet', async ({
       page,
     }, ti) => {
       await openHome(page);
-      const snap = await page.evaluate(() => {
+      const reveal = await page.evaluate(() => {
         const work = document.querySelector('#work');
         const a = document.querySelector('.hm-a');
         if (work === null || a === null) {
           throw new Error('six-class audit: #work or .hm-a is not in the document.');
         }
+        const w = getComputedStyle(work);
+        const s = getComputedStyle(a);
         return {
-          workAlign: getComputedStyle(work).scrollSnapAlign,
-          workMargin: getComputedStyle(work).scrollMarginTop,
-          aAlign: getComputedStyle(a).scrollSnapAlign,
-          aMargin: getComputedStyle(a).scrollMarginTop,
+          aPosition: s.position,
+          aTop: s.top,
+          workPosition: w.position,
+          workZIndex: w.zIndex,
+          workBackground: w.backgroundColor,
+          bodyBackground: getComputedStyle(document.body).backgroundColor,
+          aSnapAlign: s.scrollSnapAlign,
+          workSnapAlign: w.scrollSnapAlign,
           htmlType: getComputedStyle(document.documentElement).scrollSnapType,
           htmlBehavior: getComputedStyle(document.documentElement).scrollBehavior,
         };
       });
-      record('snap', { project: ti.project.name, class: c.n, ...snap });
-
-      if (ti.project.name === 'reduce') {
-        // §12.2. The suppression must be REAL, not merely declared inside a query that never
-        // applies — which is what a source grep would have confirmed either way.
-        expect(snap.htmlType, 'snap must be gone under `reduce`').toBe('none');
-        expect(snap.htmlBehavior, 'smooth scrolling must be gone under `reduce`').not.toBe(
-          'smooth'
-        );
-        expect(snap.aAlign, 'state A carries no snap alignment under `reduce`').toBe('none');
-        expect(snap.workAlign, '#work carries no snap alignment under `reduce`').toBe('none');
-        return;
-      }
+      record('reveal', { project: ti.project.name, class: c.n, ...reveal });
 
       /*
        * THE ASTRO SCOPING TRAP, WHICH A GREP CANNOT SEE (§6.5).
        *
-       * `#work` is `HomeActTwo.astro`'s root. A bare `#work { }` written in `index.astro`'s
-       * `<style>` block is scoped with THAT file's `data-astro-cid-*` and matches nothing, so the
-       * computed value reads `none` while the source reads `start`. This defect has appeared twice
-       * in this project in two costumes and passed a grep gate both times. The only instrument
-       * that sees it is this line.
-       */
-      expect(snap.workAlign, "#work's scroll-snap-align, read in a browser").toBe('start');
-
-      /*
-       * 🔴 STATE A HAS NO SNAP POINT, AND THIS LINE ASSERTED `start` UNTIL IT DID.
+       * `#work` is `HomeActTwo.astro`'s root and `.hm-b` is its class. A bare `.hm-b { }` written
+       * in `index.astro`'s `<style>` block is scoped with THAT file's `data-astro-cid-*` and
+       * matches nothing, so the computed value reads `static` while the source reads `relative`.
+       * This defect has appeared twice in this project in two costumes and passed a grep gate both
+       * times. The only instrument that sees it is a computed-style read in a real browser, and
+       * these four lines are it.
        *
-       * `.hm-a { scroll-snap-align: start }` with a 116px outset was what pulled the page 8–20px
-       * at first paint — 15 of 48 loads under `no-preference` when this suite's own method was
-       * re-run, 0 of 48 under `reduce`. Akhil's decision after reading the audit was to drop state
-       * A's snap point and keep `#work`'s, which is the one that makes Act 2 land. Asserted at
-       * `none` rather than deleted, so the day the rule comes back this line says so.
+       * All four are load-bearing and none is defensive. Without `position` the `z-index` does
+       * nothing; without `z-index` Act 2 paints under the stuck Act 1; without an OPAQUE background
+       * the photographs show through the work band at every offset — and the occlusion proof that
+       * replaced the geometric `departs` rests entirely on that opacity.
        */
-      expect(snap.aAlign, 'state A must carry NO snap alignment — see loadY below').toBe('none');
+      expect(reveal.aPosition, "state A's position, read in a browser").toBe('sticky');
+      expect(
+        reveal.aTop,
+        '`position: sticky` with `top: auto` never sticks — it behaves exactly like `relative`, ' +
+          'which is the silent version of this failure'
+      ).toBe('0px');
+      expect(reveal.workPosition, "Act 2's position, read in a browser").toBe('relative');
+      expect(Number(reveal.workZIndex), "Act 2's stacking order").toBeGreaterThanOrEqual(1);
 
       /*
-       * Chromium serialises `y proximity` as `y`, because `proximity` is the INITIAL strictness
-       * and is therefore dropped from the serialisation. Reading `y` is POSITIVE confirmation the
-       * snap is not `mandatory` — under `mandatory` this reads `y mandatory`. Recorded so the
-       * short string is never misread as a partial declaration.
+       * ASSERTED AGAINST `<body>`'s OWN COMPUTED BACKGROUND, never against a literal `rgb(...)`.
+       * `.hm-b` takes `var(--cream)`, which is the same token `public-shell.css` §1b puts on the
+       * page surface, so the two must resolve to the same colour in BOTH themes and after the next
+       * design-system release. A hard-coded `rgb(13, 13, 15)` here would go stale on a theme change
+       * and would also pass for a DIFFERENT opaque colour, which is a visible seam.
        */
-      expect(snap.htmlType, 'the html snap type').toBe('y');
+      expect(
+        reveal.workBackground,
+        'Act 2 is transparent — the stuck Act 1 shows through'
+      ).not.toBe('rgba(0, 0, 0, 0)');
+      expect(
+        reveal.workBackground,
+        "Act 2's surface must be the page's own token, not a second opaque colour"
+      ).toBe(reveal.bodyBackground);
+
       /*
-       * 0px, and it used to be 116px. The outset existed ONLY to clamp state A's snap position to
-       * scroll offset 0, and it did not hold — 116px of outset against 113px of chrome left
-       * `proximity` close enough to pull. With the snap point gone the outset has nothing to
-       * offset, so it went with it. `--hm-above` itself stays: it is the height budget's own
-       * subtrahend and is load-bearing there.
+       * SNAP IS GONE, IN BOTH MOTION SETTINGS, AND THAT IS ASSERTED AS AN ABSENCE ON THE COMPUTED
+       * VALUES. 05-16 measured it as the thing that skipped the second half of the reveal — a
+       * 239px involuntary pull, 27% of the viewport, at 6 of 6 classes under `no-preference` only.
+       * Re-adding a snap point on `#work` "as well" would reintroduce exactly that, which is why
+       * this is a flat refusal in both projects rather than a shape check in one.
        */
-      expect(snap.aMargin, "state A's scroll outset went with its snap point").toBe('0px');
-      expect(snap.workMargin, "#work's outset is 0 because the public nav is static").toBe('0px');
+      expect(reveal.htmlType, 'no snap type survives anywhere').toBe('none');
+      expect(reveal.aSnapAlign, 'state A carries no snap alignment').toBe('none');
+      expect(reveal.workSnapAlign, '#work carries no snap alignment').toBe('none');
+
+      if (ti.project.name === 'reduce') {
+        // §12.2, and this is the only motion-conditional left on the page's transition. Smooth
+        // scrolling is `public-shell.css` §4's and must be REAL, not merely declared inside a
+        // query — which is what a source grep would have confirmed either way.
+        expect(reveal.htmlBehavior, 'smooth scrolling must be gone under `reduce`').not.toBe(
+          'smooth'
+        );
+        return;
+      }
+      expect(reveal.htmlBehavior, 'smooth scrolling under no-preference').toBe('smooth');
+    });
+
+    test('the Act-2 reveal is CONTINUOUS — the measurement that chose the mechanism', async ({
+      page,
+    }, ti) => {
+      /*
+       * ================================================================================================
+       * THIS IS THE MEASUREMENT 05-16 DECIDED THE MECHANISM ON, KEPT AS A STANDING TEST
+       * ================================================================================================
+       *
+       * Akhil asked for *"2 pages … when i scroll, whole first page goes away to reveal second page
+       * in full"*. Two candidates were built and measured here, at all six classes, in both motion
+       * settings: two `100svh` sections with `scroll-snap-type: y proximity`, and a sticky Act 1
+       * that Act 2 scrolls over.
+       *
+       * The quantity is CONTINUITY: the page is scrolled to 0, ¼, ½, ¾ and one viewport and the
+       * fraction of the viewport occupied by Act 2 recorded at each. A continuous reveal steps 25
+       * points per quarter.
+       *
+       *     snap,   no-preference    1%  26%  51% 100% 100%    worst step 49   6 of 6 classes
+       *     snap,   reduce           1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
+       *     sticky, no-preference    1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
+       *     sticky, reduce           1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
+       *
+       * Snap skipped the second half of the transition and did so ONLY under `no-preference` —
+       * because snap correctly lives inside that query — so the DEFAULT path was the one that
+       * jumped and the accessible path was already smooth. That is backwards, and it is why the
+       * mechanism changed rather than being tuned.
+       *
+       * THE BOUND IS 30 AND NOT 25. The four samples land on quarters of the viewport and the
+       * arithmetic gives 25 exactly, but `actTwoCover` is rounded to whole points and Act 2's
+       * document offset is `--hm-above` short of a whole number of viewports, so a step of 26 or 27
+       * is the correct answer at some classes (see the 51 -> 77 row). 30 admits that rounding and
+       * still fails a snap-shaped 49 by nineteen points. An equality here would be a flake; a bound
+       * at 45 would pass the very mutation this exists to catch.
+       *
+       * `behavior: 'instant'`, so this measures the LAYOUT of the reveal and not the duration of
+       * `scroll-behavior: smooth` — which is a different property, is the shell's, and is asserted
+       * as a computed value in the test above.
+       */
+      await openHome(page);
+      const covers: number[] = [];
+      for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
+        await page.evaluate((f: number) => {
+          window.scrollTo({ top: window.innerHeight * f, behavior: 'instant' });
+        }, fraction);
+        await page.waitForTimeout(250);
+        covers.push(
+          await page.evaluate(() => {
+            const band = document.querySelector('.hm-b');
+            if (band === null) throw new Error('six-class audit: .hm-b is not in the document.');
+            const r = band.getBoundingClientRect();
+            return Math.round(
+              (Math.max(0, Math.min(window.innerHeight, r.bottom) - Math.max(0, r.top)) /
+                window.innerHeight) *
+                100
+            );
+          })
+        );
+      }
+      const steps = covers.slice(1).map((v, i) => v - (covers[i] as number));
+      const worst = Math.max(...steps);
+      record('reveal-continuity', {
+        project: ti.project.name,
+        class: c.n,
+        covers,
+        steps,
+        worst,
+      });
+
+      // ANTI-VACUITY: a reveal that never happened would have every step at 0 and a worst of 0,
+      // which would pass a bound-only assertion while proving nothing.
+      expect(covers[0], `Act 2 must be off-stage at scroll 0 (class ${c.n})`).toBeLessThanOrEqual(
+        5
+      );
+      expect(
+        covers[4],
+        `Act 2 must fill the view after one viewport (class ${c.n}): ${covers.join(' → ')}`
+      ).toBeGreaterThanOrEqual(99);
+
+      expect(
+        worst,
+        `the reveal jumps at class ${c.n}: coverage went ${covers.join(' → ')} (worst step ` +
+          `${worst}). A snap point anywhere on this page reproduces exactly this.`
+      ).toBeLessThanOrEqual(30);
     });
 
     test('the `Link` colours, read in a browser rather than in jsdom', async ({ page }, ti) => {

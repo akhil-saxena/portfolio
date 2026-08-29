@@ -166,8 +166,16 @@ const NO_ITEMS: readonly LightboxItem[] = Object.freeze([]);
  *
  * `exifRows` is the ONLY source of the rows. The omit-null rule has one implementation and this is
  * not a second one: no field is read here, and no value is formatted here.
+ *
+ * EXPORTED FOR A TEST, and the reason is the same one `PhotoEmpty.tsx` records: the branch that
+ * matters is the one that renders NOTHING, and it cannot be reached through the component. While
+ * `open` is false `Lightbox` returns `null`, so a server render of `<PhotoLightbox>` produces an
+ * empty document whatever the items are — an assertion over it would pass on any implementation,
+ * including one that built a caption for `product-peppers`. `test/public/lightbox.node.test.ts`
+ * calls this directly and renders the result with `renderToStaticMarkup`, which is the same server
+ * path the page takes.
  */
-function captionFor(record: PhotoLightboxRecord): LightboxItem['caption'] {
+export function captionFor(record: PhotoLightboxRecord): LightboxItem['caption'] {
   const rows = exifRows(record.exif);
   const place = record.place;
   if (rows.length === 0 && !place) {

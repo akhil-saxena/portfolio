@@ -109,6 +109,7 @@
  * scroll()` plus `position: sticky`, with no listener and no island. See `home.css` §4.
  */
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Button } from '@akhil-saxena/design-system/components/Button';
 import { Link } from '@akhil-saxena/design-system/components/Link';
 import homeConfig from '../../data/home_config.json';
 import HomeActTwo from '../components/public/HomeActTwo.astro';
@@ -163,25 +164,21 @@ const { title, subtitle, intro, ctas } = homeConfig;
  * On `#0d0d0f` that underline is invisible. Do not "improve" these to `action`; see D-4.
  *
  * ------------------------------------------------------------------------------------------------
- * 🟠 THE SEAM. WHEN `2.0.0-beta.3` LANDS, THIS MAP AND THE ELEMENT BELOW ARE THE WHOLE CHANGE.
- * ------------------------------------------------------------------------------------------------
+ * The CTAs are `Button as="a"` — a control that looks like a button and navigates like a link.
  *
- * beta.3 adds `as` to `Button`. On the day it is installed:
+ * That was not expressible until `2.0.0-beta.3`. `Button` had no `as`, and its shape could not be
+ * borrowed either: `baseStyle`, `sizeStyles` and `variantStyles` are inline objects, so padding,
+ * radius, type and fill live in JavaScript and `className="ds-atom-btn"` on a `Link` inherits a
+ * transition and nothing else. `as` was the only fix, not one of several — which is why these
+ * shipped as text links for two iterations and Akhil rejected both.
  *
- *     -  const CTA_VARIANT: Record<string, 'default' | 'quiet'> = { primary: 'default', secondary: 'quiet' };
- *     +  const CTA_VARIANT: Record<string, 'primary' | 'secondary'> = { primary: 'primary', secondary: 'secondary' };
- *
- *     -  <Link href={cta.link} variant={cta.variant} className="hm-cta">
- *     +  <Button as="a" href={cta.link} variant={cta.variant} size="lg" className="hm-cta">
- *
- * Two lines and an import. Nothing in `home.css` moves, because `.hm-cta` carries no shape — the
- * `@media (pointer: coarse)` block that gives it a 44px touch target is the only rule it has, and
- * `Button size="lg"` is 44px tall already, so even that becomes deletable. Delete this seam
- * comment with it.
+ * beta.3 translates `disabled` rather than forwarding it (an anchor gets `aria-disabled`, loses its
+ * `href` and its tab stop) and never emits `type` on a non-button. `.hm-cta` still carries no
+ * padding, border or radius — the shape is the design system's, not ours.
  */
-const CTA_VARIANT: Record<string, 'default' | 'quiet'> = {
-  primary: 'default',
-  secondary: 'quiet',
+const CTA_VARIANT: Record<string, 'primary' | 'secondary'> = {
+  primary: 'primary',
+  secondary: 'secondary',
 };
 
 const homeCtas = ctas.map((cta) => {
@@ -284,9 +281,9 @@ const homeCtas = ctas.map((cta) => {
       <div class="hm-ctas">
         {
           homeCtas.map((cta) => (
-            <Link href={cta.link} variant={cta.variant} className="hm-cta">
+            <Button as="a" href={cta.link} variant={cta.variant} size="lg" className="hm-cta">
               {cta.text}
-            </Link>
+            </Button>
           ))
         }
       </div>

@@ -668,13 +668,13 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * The CTAs are `home_config.ctas` and nothing else. Asserted against the RECORD, never against a
    * literal — they are CMS content Akhil edits, so editing the record must move both sides.
    */
-  it('renders every CTA in data/home_config.json, in order, as a design-system Link', () => {
+  it('renders every CTA in data/home_config.json, in order, as a design-system Button', () => {
     const home = JSON.parse(
       readFileSync(new URL('../../data/home_config.json', import.meta.url), 'utf8')
     ) as { ctas: ReadonlyArray<{ text: string; link: string }> };
     expect(home.ctas.length, 'home_config.json declares no CTAs').toBeGreaterThan(0);
 
-    const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-link hm-cta"[^>]*>([\s\S]*?)<\/a>/g)];
+    const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-btn hm-cta"[^>]*>([\s\S]*?)<\/a>/g)];
     expect(rendered.length, 'the CTA row is not rendered from the record').toBe(home.ctas.length);
     for (const [i, cta] of home.ctas.entries()) {
       const markup = (rendered[i] as RegExpMatchArray)[0] as string;
@@ -690,14 +690,14 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * app rule can beat at any specificity while every jsdom test still passes, because jsdom
    * implements no CSS specificity. Three consecutive Phase 1 plans hit this.
    */
-  it('the CTAs use only the two stylesheet-only Link variants', () => {
-    const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-link hm-cta"[^>]*>/g)].map(
+  it('the CTAs use only Button variants, and ship no literal colour', () => {
+    const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-btn hm-cta"[^>]*>/g)].map(
       (m) => m[0] as string
     );
     expect(rendered.length).toBeGreaterThan(0);
     for (const markup of rendered) {
       const variant = /data-variant="([^"]*)"/.exec(markup)?.[1];
-      expect(['default', 'quiet'], `hm-cta shipped variant="${variant}"`).toContain(variant);
+      expect(['primary', 'secondary'], `hm-cta shipped variant="${variant}"`).toContain(variant);
     }
     // Scoped to the ANCHOR's own tag, for the same reason the badge count is — a rule in an
     // inlined `<style>` block must not be able to satisfy or falsify a claim about markup.

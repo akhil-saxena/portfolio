@@ -427,3 +427,16 @@
 .wk-badge {
   white-space: nowrap;
 }
+
+/* ── 7. The cross-link (§10 item 7) ─────────────────────────────────────────────────────────── */
+
+/*
+ * Layout only. The type role travels with the element as an inline style object declared in
+ * `work.astro` — see the comment there: `Link` inline-sets `font-family` on every variant, so a
+ * serif link cannot be expressed from this file at all, and splitting one role across two files
+ * would leave half of it invisible to whoever reads the other half.
+ */
+.wk-crosslink-row {
+  margin: var(--space-12) 0 0;
+  text-align: right;
+}

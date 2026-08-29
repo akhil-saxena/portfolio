@@ -441,13 +441,28 @@ describe('the content collections enforce on their own, and cannot do the gate�
   );
 
   it(
-    'with the gate removed, the typo’d category ships — which is why the gate exists',
+    'with the gate removed, the typo’d category is caught by a THIRD instrument — not the collection',
     async () => {
-      // This pins a MEASURED BLIND SPOT rather than a desirable behaviour. `PhotoSchema.category`
-      // is `z.string()` by design (03-06: an enum here would be the second source of truth about
-      // what a category is), so the collection cannot see this and the build goes green. If a
-      // future change makes this case red, that is an improvement and this test is what will say
-      // so — update it, do not delete it.
+      /*
+       * UPDATED BY PLAN 05-07, ON THIS TEST'S OWN INSTRUCTION. It used to assert that the build
+       * went GREEN here, and it said why: "This pins a MEASURED BLIND SPOT rather than a desirable
+       * behaviour. `PhotoSchema.category` is `z.string()` by design (03-06: an enum here would be
+       * the second source of truth about what a category is), so the collection cannot see this and
+       * the build goes green. If a future change makes this case red, that is an improvement and
+       * this test is what will say so — update it, do not delete it."
+       *
+       * THE FUTURE CHANGE ARRIVED. 05-07 built `/photos` and `/photos/[category]`, the first routes
+       * to read `getCollection('photos')`, and every tile's href comes from `photoHref` →
+       * `photoSlug`, which REFUSES an id that does not begin with `category + "-"` rather than
+       * slicing blindly (BL-8, `src/lib/photo-srcset.ts`). `architecture-singapore` filed under
+       * `archtecture` is exactly that shape, so the prerender throws and no `dist/` is emitted.
+       *
+       * THE ORIGINAL POINT OF THIS DESCRIBE BLOCK IS UNCHANGED AND IS STILL ASSERTED: the
+       * COLLECTION cannot do the gate's job. It is neither the gate speaking (no `BUILD REFUSED`)
+       * nor the collection (no `InvalidContentEntryDataError`) — it is a third, narrower instrument
+       * that happens to exist because a route now renders these records, and it would go quiet
+       * again the moment the typo is in a category with no id prefix to disagree with.
+       */
       const result = await buildAfter(() => {
         disableContentGate();
         const photos = readJson('portfolio_images.json') as { id: string; category: string }[];
@@ -456,9 +471,21 @@ describe('the content collections enforce on their own, and cannot do the gate�
         writeJson('portfolio_images.json', photos);
       });
 
+      /*
+       * NOT `expectRejection`, AND THE DIFFERENCE IS THE FINDING. That helper also requires
+       * `distEmitted === false`, which is true of the gate (it throws in `astro:config:done`,
+       * before anything is written) and of the collection (content sync precedes the build).
+       * MEASURED here: `dist/` IS partially emitted, because the client bundle completes and the
+       * throw happens later, during the prerender. So this third instrument refuses LATER and
+       * leaves an artefact behind — which is precisely the stale-`dist/` hazard 05-06 lost an hour
+       * to, and the reason it is a poorer net than the gate rather than a replacement for it.
+       */
       expect(result.output.length).toBeGreaterThan(0);
-      expect(result.exitCode).toBe(0);
-      expect(result.distEmitted).toBe(true);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.output).toContain('photoSlug');
+      expect(result.output).toContain('architecture-singapore');
+      expect(result.output).not.toContain('BUILD REFUSED');
+      expect(result.output).not.toContain('InvalidContentEntryDataError');
     },
     BUILD_TIMEOUT
   );

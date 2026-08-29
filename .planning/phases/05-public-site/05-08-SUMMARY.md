@@ -700,3 +700,27 @@ None. The route introduces no network endpoint, no auth path, no file access and
   pass down.
 - **Upstream, for `2.0.0-beta.2`:** `Eyebrow` should accept a `weight` token; the `Heading`
   token-size path should carry its role's letter-spacing.
+
+---
+
+## Self-Check: PASSED
+
+All four files this plan claims to have created exist on disk and are tracked; all six commit
+hashes quoted above resolve in `git log`; the four source files are byte-identical to their
+committed state after every planted control; no scratch file was left in the repository.
+
+```
+FOUND: src/pages/photos/[category]/[slug].astro
+FOUND: src/components/public/ExifList.astro
+FOUND: src/styles/photo-detail.css
+FOUND: test/public/photo-detail.node.test.ts
+FOUND: .planning/phases/05-public-site/05-08-SUMMARY.md
+FOUND: 11c81b7  feat(05-08): the photograph's own page — the path is the imported href, not a second derivation
+FOUND: 6d83e20  feat(05-08): the EXIF list that omits rather than placeholds — one rule, one implementation
+FOUND: 82f5667  test(05-08): the 40 photo pages over HTTP — and the join no single plan could assert
+FOUND: 4dec444  fix(05-08): the join fetched a slash the tile does not carry
+FOUND: 5b0751c  fix(05-08): the suite typechecked green under vitest and red under astro check
+FOUND: 7dc200d  docs(05-08): the photo detail route — the join asserted against 05-07's artefact, and four findings
+git ls-files --error-unmatch <all five>  -> all five tracked
+git status --short <my four source files> -> empty
+```

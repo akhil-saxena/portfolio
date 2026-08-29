@@ -138,6 +138,21 @@ const siteTitle = homeConfig.title;
 
 /* Derived, so a category holding exactly one photograph is not announced as "1 photographs". */
 const noun = count === 1 ? 'photograph' : 'photographs';
+
+/**
+ * 🔴 COMPOSED HERE RATHER THAN IN THE TEMPLATE, AND IT IS A FIX FOR A MEASURED DEFECT.
+ *
+ * Written as `{count} {noun}` inside a framework component's children, THE SPACE BETWEEN THE TWO
+ * EXPRESSIONS IS DROPPED. Measured in the built HTML on every category route: `0photographs`,
+ * `14photographs`. Astro serialises a component's default slot as a template and the whitespace
+ * between two adjacent expressions does not survive the crossing — `{total} photographs — all of
+ * them` on `/photos` is unaffected, because there the space belongs to a literal text node.
+ *
+ * It renders as a page that looks almost right, on all seven routes, with a green build and a green
+ * suite. It was found by the empty-category control, not by an assertion — recorded so the next
+ * person writing two adjacent expressions into a `.tsx` component's children from `.astro` knows.
+ */
+const countLine = `${count} ${noun}`;
 ---
 
 <PublicLayout mainClass="pub-max-photos">
@@ -158,7 +173,7 @@ const noun = count === 1 ? 'photograph' : 'photographs';
     }
     <PhotoFilters categories={siteConfig.categories} photos={all} pathname={Astro.url.pathname} />
 
-    <Eyebrow size="md">{count} {noun}</Eyebrow>
+    <Eyebrow size="md">{countLine}</Eyebrow>
   </header>
 
   {

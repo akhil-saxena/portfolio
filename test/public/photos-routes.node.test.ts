@@ -68,6 +68,17 @@ type Route = {
   /** The photographs this route must show, filtered from the manifest at check time. */
   readonly expected: ReadonlyArray<(typeof manifest)[number]>;
   readonly name: string;
+  /**
+   * The `<Eyebrow>` line under the heading, composed here from the manifest.
+   *
+   * IT IS ASSERTED CHARACTER FOR CHARACTER BECAUSE OF A DEFECT THIS SUITE DID NOT CATCH. Written
+   * in the route as two adjacent expressions inside a framework component's children — `{count}
+   * {noun}` — the space between them is DROPPED by Astro's slot serialisation, and every category
+   * route shipped `14photographs`. Nothing else on the page was wrong, the build was green and all
+   * 59 assertions here were green; it was found by the empty-category control. So the exact string
+   * is now a standing assertion rather than an appearance.
+   */
+  readonly countLine: string;
 };
 
 /*
@@ -89,6 +100,7 @@ const ROUTES: readonly Route[] = [
     activeHref: '/photos',
     columns: siteConfig.defaultColumns,
     expected: manifest,
+    countLine: `${manifest.length} photographs — all of them`,
   },
   ...siteConfig.categories.map((category) => ({
     name: `/photos/${category.id}`,
@@ -96,6 +108,10 @@ const ROUTES: readonly Route[] = [
     activeHref: `/photos/${category.id}`,
     columns: category.columns,
     expected: manifest.filter((record) => record.category === category.id),
+    countLine: (() => {
+      const n = manifest.filter((record) => record.category === category.id).length;
+      return `${n} ${n === 1 ? 'photograph' : 'photographs'}`;
+    })(),
   })),
 ];
 
@@ -188,6 +204,18 @@ describe('the gallery routes exist and hold every photograph, derived at check t
       report(`${route.name}: ${tiles} tiles, manifest says ${route.expected.length}`);
       expect(route.expected.length).toBeGreaterThan(0);
       expect(tiles).toBe(route.expected.length);
+    }
+  );
+
+  it.each(ROUTES.map((route) => [route.name, route] as const))(
+    '%s prints its derived count line with its spaces intact',
+    (_name, route) => {
+      const html = bodies.get(route.name) as string;
+      const eyebrow = /class="ds-atom-eyebrow"[^>]*>([^<]*)</.exec(html);
+      if (!eyebrow) throw new Error(`${route.name}: no .ds-atom-eyebrow in the response.`);
+      const text = decode(eyebrow[1]);
+      report(`${route.name}: count line ${JSON.stringify(text)}`);
+      expect(text).toBe(route.countLine);
     }
   );
 

@@ -648,7 +648,7 @@ matches unrelated prose in `scripts/lib/dispatch-input.mjs`, and `Photographs` m
 | Secondary CTA — Home Act 2 | `ALL WORK →` · `RÉSUMÉ →` · `View résumé` | ✅ **all three, 2026-08-29** — `test/public/copy-contract.node.test.ts`, character for character on the served bytes |
 | Primary CTA — Résumé | `Download the PDF` | ✅ **2026-08-29**, same file |
 | Cross-link — Work | *see the photographs →* | ✅ `test/public/work.node.test.ts`, character for character |
-| **Cross-link — Photos** | 🔴 **does not exist** | — |
+| **Cross-link — Photos** | *← see the work* — **built 2026-08-29** | ✅ `test/public/photos-routes.node.test.ts`, character for character, and asserted absent on all seven category routes |
 | Photo page — back | `← All photographs` · `← Product` | ✅ `test/public/photo-detail.node.test.ts` |
 | Filter — unfiltered | `All · 40` | ✅ derived and asserted; the spec's literal `ALL · 39` is stale by one |
 | Filter — category | `Architecture · 14` etc. | ✅ derived and asserted |

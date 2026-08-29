@@ -6,10 +6,16 @@
  * ================================================================================================
  *
  * 05-09 and 05-10 both recorded, in passing, that rewriting `/work`'s `<h1>` leaves the entire suite
- * green. 05-15 went looking and MEASURED the whole of it: of §13.2's eleven contract rows, five had
- * no assertion anywhere in `test/` or `scripts/`, and the three Home Act-2 CTAs, `Download the PDF`
- * and the empty-category copy were among them. **1,488 tests passed over a site whose navigation
- * could be rewritten silently.**
+ * green. 05-15 went looking and MEASURED the whole of it. §13.2's contract table has ten rows, one
+ * of them `n/a`. **Three of them carried no assertion anywhere in `test/` or `scripts/`** — the
+ * Home Act-2 secondary CTAs, `Download the PDF` and the empty-category state, five strings between
+ * them — **and a fourth had never been built at all**, which is the `/photos` cross-link. 1,488
+ * tests passed over a site whose navigation could be rewritten silently.
+ *
+ * (That sentence read "of §13.2's eleven contract rows, five had no assertion" in this file's first
+ * commit. Ten rows, three of them unasserted, five strings. A string count wearing a row count's
+ * units is a small error and it is exactly the kind this file exists to make expensive, so it is
+ * corrected here rather than quietly.)
  *
  * Akhil's decision was to pin **the structural strings only**. This file is that decision, in one
  * place, because the finding was not "a string was wrong" — it was "nobody could tell which strings

@@ -548,14 +548,14 @@ the precise class of accident this phase has already had once. The correction li
 | `npm run build` | **0** |
 | `npm test` | **1402/1402 across 40 files** (1379/1379 at handoff; +23 are this plan's) |
 | `npm run typecheck` | **0** — 0 errors, 0 warnings |
-| `npm run check` | **0** |
+| `npm run check` | **0** at the time of each of this plan's three commits. It reads **1** as of the final pass, in `scripts/assert-photo-date-unrendered.mjs` — 05-12's file, created untracked minutes after my last commit (`noControlCharactersInRegex`). Zero occurrences of any file this plan touches. |
 | `assert-ds-import-contract` | **0** — PASS |
 | `assert-no-raw-html-sinks` | **0** — PASS |
 | `assert-gutter-ladder` | **0** — PASS, and it covers the new 404 because that route carries the shell |
 | `assert-exif-display-coverage` | **0** — PASS |
 | `assert-no-unresolved-placeholders dist` | **0** |
 | `npm run gate:content` | **0** |
-| `assert-photo-date-unrendered` | **does not exist** — 05-12 owns it |
+| `assert-photo-date-unrendered` | **0 — PASS.** It did not exist for most of this plan; 05-12 landed it before the final pass, and it was then run: `scanned 9 file(s), 86563 bytes`. |
 
 All three plan `<verify>` blocks were also run **verbatim** and exit 0.
 

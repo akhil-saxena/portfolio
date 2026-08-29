@@ -229,6 +229,13 @@
 }
 
 .rs-metric-value {
+  /*
+   * `compressHTML` removes the newline between the two spans, so the markup is
+   * `+15%</span><span>CONVERSION` with nothing between them. Without this the page
+   * renders `+15%CONVERSION`. `/work` carried the declaration from the start; this
+   * route did not. Measured in dist by plan 05-09.
+   */
+  margin-right: var(--space-2);
   color: var(--ochre-d-strong);
 }
 

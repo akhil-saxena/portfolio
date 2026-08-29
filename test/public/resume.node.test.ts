@@ -395,4 +395,29 @@ describe('/resume — PUB-11, the print stylesheet, read from the served stylesh
       `print css: ${css.length} bytes served; print block, breaks, 68ch measure and href^=http present`
     );
   });
+
+  /**
+   * The metric value and its label are two adjacent spans, and `compressHTML` removes the newline
+   * between them — so the markup is `+15%</span><span>CONVERSION` with no character in between and
+   * the separation is CSS's job alone. Without it the page renders `+15%CONVERSION`. `/work`
+   * carried `margin-right` from the start; this route shipped without it until plan 05-09 measured
+   * the built page. Asserted against the SERVED CSS, because the source having the rule proves
+   * nothing about what reached the reader.
+   */
+  it('separates the metric value from its label in the served CSS', async () => {
+    const css = await servedCss();
+
+    expect(css.length, 'no CSS was served with the page at all').toBeGreaterThan(0);
+    // Anti-vacuity: the selector must be present before its declaration can mean anything.
+    expect(css, 'the .rs-metric-value selector is absent from the served CSS').toMatch(
+      /\.rs-metric-value/
+    );
+    const rule = css.match(/\.rs-metric-value\s*\{([^}]*)\}/);
+    expect(rule, 'no .rs-metric-value rule body in the served CSS').not.toBeNull();
+    expect(rule?.[1], 'the value would render flush against its label — `+15%CONVERSION`').toMatch(
+      /margin-right/
+    );
+
+    say(`metric separator: .rs-metric-value declares ${rule?.[1].trim()}`);
+  });
 });

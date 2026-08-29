@@ -1,0 +1,198 @@
+/*
+ * The photograph's own page — layout only, per QUAL-03. Plan 05-08.
+ * (§9.6 for the structure, §4.4 rule 2 for the frame's edge, §9.3 for the EXIF panel,
+ * §3.1 for the two type roles this file carries.)
+ *
+ * ================================================================================================
+ * WHAT IS NOT ALLOWED IN THIS FILE
+ * ================================================================================================
+ *
+ * A colour literal, a raw type size, a font-family string, a spacing number. Every one of those is
+ * owned by `@akhil-saxena/design-system` and reached through a token — `var(--space-6)`, never
+ * `24px`. There is no breakpoint in this file at all: the frame is one column at every class, so
+ * the gutter ladder in `public-shell.css` is the whole of its responsive behaviour.
+ *
+ * ================================================================================================
+ * THE TYPE ROLES ARE THE DESIGN SYSTEM'S, NOT THIS FILE'S — WITH ONE EXCEPTION, RECORDED
+ * ================================================================================================
+ *
+ * The `<h1>` is `Heading level={1} size="xl" weight="bold"`, which resolves §3.1's
+ * "Project / card / photo title" role — Playfair, `--text-xl` 22, 700 — out of `primitives.css`.
+ * The EXIF label is `Eyebrow size="md" tone="muted"` (IBM Plex Mono, `--text-xs` 11, `--ls-wide`,
+ * `--ink-3`) and the value is `Text size="sm" tone="secondary"` (DM Sans, `--text-sm` 12.5,
+ * `--ink-2`). §9.3 and §3.1 are therefore satisfied by component props, and this file restates
+ * none of those tokens.
+ *
+ * THE EXCEPTION IS `letter-spacing` ON THE TITLE. MEASURED against the installed
+ * `2.0.0-beta.1`: `primitives.css` gives `.ds-atom-heading[data-size="xl"]` a `font-size` and a
+ * `line-height` and NO `letter-spacing` — only the two display rungs (`3xl`, `4xl`) carry
+ * `--ls-tighter`. §3.1 assigns this role `--ls-tight`, so without the rule below the title ships at
+ * the browser's `normal` tracking. It is written as a token, so no number enters this file, and it
+ * is filed upstream rather than treated as a preference: the token-size path should carry the
+ * role's tracking the way the legacy numeric path does (that one derives it from the px size).
+ */
+
+/*
+ * ================================================================================================
+ * 1. THE PAGE — a single column, because everything on it is full-measure
+ * ================================================================================================
+ *
+ * `<main>` already carries `.pub-max-band` (1080px, `PAGE_MAX.band`), which is the maximum the
+ * `sizes` attribute on the frame is derived from. The two must stay the same number and they are
+ * the same number because both come from `layout-ladder.ts` — `assert-gutter-ladder.mjs` checks the
+ * CSS half against the module, and the page composes the `sizes` half from `PAGE_MAX.band`
+ * directly. A frame capped at one width while its `sizes` advertises another downloads the wrong
+ * variant with no visual symptom at all, which is the §7.4 failure mode this arrangement removes.
+ */
+
+.pd-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/*
+ * ================================================================================================
+ * 2. THE BACK LINKS (§13.2) AND THE NEIGHBOUR ROW (§9.6)
+ * ================================================================================================
+ *
+ * Both are rows of real anchors that wrap rather than scroll. They hold at most three items at any
+ * width, so none of the rail machinery `.ph-filters` needs applies here.
+ *
+ * `justify-content: space-between` on the neighbour row is what puts "next" at the right edge; the
+ * row is only ever two items, and when a category holds a single photograph the page renders no
+ * neighbour row at all (see the route's frontmatter for that decision).
+ */
+
+.pd-back {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.pd-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/*
+ * ================================================================================================
+ * 3. THE FRAME (§9.6, §7.2, §7.3, §4.4 rule 2)
+ * ================================================================================================
+ *
+ * The box is reserved before the bytes arrive, by exactly the mechanism the tile uses: an inline
+ * `aspect-ratio` from the record's own `dimensions` plus `width: 100%` here. NO `width`/`height`
+ * ATTRIBUTE IS EMITTED — §7.2's ruling, restated at the interpolation site in the route.
+ *
+ * The LQIP is the frame's own `background-image`, sized `cover`; the `<img>` paints over it when
+ * its bytes decode, so there is no `load` event to listen for and nothing to hydrate.
+ * `background-color: var(--cream-2)` and not white, for the same reason `.ph-tile` gives: the
+ * surface under a placeholder must be a page colour or it flashes hard on the dark field.
+ *
+ * THE INSET HAIRLINE IS DARK-ONLY (§4.4 rule 2), and `--rule` rather than `--wire`: a photograph is
+ * not an interactive control, so the 3:1 non-text-contrast floor that governs a filter pill's
+ * border does not apply to it. This is the same declaration `.ph-tile` carries, on the same
+ * photographs, so a tile and its own page draw the same edge.
+ *
+ * `border-radius: 10px` is §7.3's reviewed value and it is a LITERAL, recorded rather than hidden:
+ * MEASURED, `tokens.css` has no 10px rung (`--radius-sm` 4, `--radius-md` 8, `--radius-lg` 12,
+ * `--radius-xl` 16, `--radius-pill` 999). `.ph-tile` carries the same literal for the same reason;
+ * substituting 8 or 12 here alone would make a photograph change shape when it is opened.
+ */
+
+.pd-frame {
+  display: block;
+  width: 100%;
+  margin: 0;
+  background-color: var(--cream-2);
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+  /* §7.3's reviewed radius; there is no token between 8px and 12px. See the note above. */
+  border-radius: 10px;
+}
+
+.dark .pd-frame {
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.pd-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * ================================================================================================
+ * 4. THE IDENTITY BLOCK — title, then `place` if there is one
+ * ================================================================================================
+ *
+ * `gap` and nothing else. `place` is absent on more than half the corpus and §9.3's rule for it is
+ * the same as PUB-07's: "an empty description renders nothing at all: no em dash, no gap." A
+ * `margin-bottom` on the title would leave that gap behind when the paragraph is absent, which is
+ * why the spacing lives on the flex container instead of on either child.
+ */
+
+.pd-identity {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The one declaration this file makes about type. See the exception recorded in the header. */
+.pd-title {
+  letter-spacing: var(--ls-tight);
+}
+
+/*
+ * ================================================================================================
+ * 5. THE EXIF PANEL (§9.3)
+ * ================================================================================================
+ *
+ * A two-column grid of label/value pairs. `grid-template-columns: auto 1fr` rather than a fixed
+ * label column: the labels are six known words and their longest is "Focal length", so a hand-set
+ * column width would be a number derived from content that `exif-display.ts` owns.
+ *
+ * `column-gap` is wider than `row-gap` because the pairs read across, not down.
+ *
+ * NOTHING HERE PAINTS `--amber-vivid`. §4.2 measured it at 3.11 / 3.19 / 2.96 against the three
+ * light surfaces, so it fails AA as text on every one of them, and it is the same literal in both
+ * modes. It is a marker step, not a text colour.
+ *
+ * There is no rule for an EMPTY panel, because an empty panel cannot be rendered: `ExifList.astro`
+ * emits nothing at all when `exifRows` returns no rows. A `:empty` rule here would be a second
+ * implementation of PUB-07 in a language that cannot throw.
+ */
+
+.pd-exif {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/*
+ * The panel's heading is an `<h2>` wrapping an `Eyebrow` — the element carries the document
+ * outline, the component carries the type role (§9.3). Only the user-agent margin is removed here:
+ * the spacing is the flex `gap` above, so a margin would add a second, invisible source of it.
+ */
+.pd-exif h2 {
+  margin: 0;
+}
+
+.pd-exif-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: var(--space-6);
+  row-gap: var(--space-3);
+  margin: 0;
+}
+
+.pd-exif-list dt {
+  margin: 0;
+}
+
+.pd-exif-list dd {
+  margin: 0;
+}

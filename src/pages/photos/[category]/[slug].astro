@@ -1,0 +1,404 @@
+---
+/**
+ * `/photos/<category>/<slug>` — one prerendered page per photograph. Plan 05-08.
+ * (PUB-07, PUB-08, PUB-09, SEO-01. §9.3, §9.4, §9.5, §9.6, §13.2, §4.4 rule 2, §7.2, §7.4.)
+ *
+ * ================================================================================================
+ * THE PATH IS THE IMPORTED HREF. IT IS NEVER RE-DERIVED HERE. (BL-8)
+ * ================================================================================================
+ *
+ * `photoSlug` and `photoHref` in `src/lib/photo-srcset.ts` are the SINGLE definition of
+ * `/photos/<category>/<slug>`. `PhotoTile.astro` (plan 05-07) builds every gallery tile's `href`
+ * from `photoHref`; the params below come from `photoSlug`, and the two are tied together at build
+ * time by the equality a few lines down.
+ *
+ * The failure this prevents has no symptom. 05-07 and this plan are both wave 4, so neither could
+ * read the other's output, and no gate in the phase compares an emitted tile href against an
+ * emitted page. Two independent derivations that disagree produce EVERY TILE 404ing against a page
+ * that exists under a different slug — with a green build, a green suite and a green gate, first
+ * detected by a human clicking a tile in wave 7.
+ *
+ * So there is no `slice`, no `split`, no template literal composing a URL from an id in this file.
+ * `test/public/photo-detail.node.test.ts` closes the loop from the other end: it reads every
+ * `.ph-tile` href out of the eight BUILT gallery pages and asserts each one answers 200 from a page
+ * this route generated. That is the check neither plan could write alone.
+ *
+ * MEASURED, all 40 records: the slug is the id with its `<category>-` prefix removed, and it
+ * round-trips. `wildlife-gentlegiants` is the record that makes the point — its published object
+ * keys carry a content hash (`gentlegiants-1de8c65e.webp`, and a DIFFERENT hash per variant) while
+ * its id does not. A slug recovered from a URL would have produced `gentlegiants-1de8c65e`; the id
+ * is the only field that can produce `gentlegiants`, and it is what `photoSlug` reads.
+ *
+ * ================================================================================================
+ * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 4)
+ * ================================================================================================
+ *
+ * No `client:*` directive, no island. The design-system components below are rendered to static
+ * markup during the prerender and ship no runtime. This route is the no-JS destination of every
+ * gallery tile, so the whole crawlability and Back-button guarantee of PUB-04 and PUB-06 rests on
+ * it staying static.
+ *
+ * ================================================================================================
+ * `date` IS NOT REACHABLE FROM THIS FILE
+ * ================================================================================================
+ *
+ * §9.4: the corpus carries three distinct dates across 40 records — an ingest window, not a capture
+ * history — and `REQUIREMENTS.md` Out of Scope settled that it is neither displayed nor sorted by.
+ * Plan 05-12 adds `scripts/assert-photo-date-unrendered.mjs` over exactly this directory. Nothing
+ * below reads the field, and the EXIF component cannot: `exifRows` takes the exif object only.
+ */
+
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import { Text } from '@akhil-saxena/design-system/components/Text';
+import { type CollectionEntry, getCollection } from 'astro:content';
+
+import Seo from '../../../components/public/Seo.astro';
+import PublicLayout from '../../../layouts/PublicLayout.astro';
+import { home, site } from '../../../lib/content';
+import { PAGE_MAX } from '../../../lib/layout-ladder';
+import { photoHref, photoSlug, srcsetFor } from '../../../lib/photo-srcset';
+import '../../../styles/photo-detail.css';
+
+/** One validated record, as the collection hands it over. Not a rival shape — it IS the schema's. */
+type DetailRecord = CollectionEntry<'photos'>['data'];
+
+/** A neighbour, reduced to what the anchor needs. */
+type Neighbour = { readonly href: string; readonly title: string };
+
+/**
+ * 🔴 EVERY PATH ON THIS PAGE IS COMPOSED INSIDE `getStaticPaths` AND ARRIVES AS A PROP.
+ *
+ * MEASURED, and it cost a build: **`getStaticPaths` cannot see this file's frontmatter.** Astro
+ * hoists the function out of the component module and evaluates it on its own, so a `const`
+ * declared here is simply not in scope inside it. The first revision of this route put the route's
+ * own first segment in a module constant and read it in both places; `astro check` passed, and the
+ * BUILD died in the prerender with
+ *
+ *     Failed to get static paths from the Cloudflare prerender server (500)
+ *     ReferenceError: ROUTE_ROOT is not defined
+ *
+ * That is 05-01's finding in a new costume — the prerender runs inside `workerd`, a green
+ * typecheck is not evidence about it, and only `npm run build` asks the question. The repair is not
+ * a second copy of the constant: `getStaticPaths` composes `href`, `categoryHref` and `galleryHref`
+ * once and hands them down, so the segment is written in exactly one place in this file and the
+ * component body never composes a URL at all.
+ */
+export async function getStaticPaths() {
+  /**
+   * The route's own first segment. It is the name of the directory this file sits in, and it is the
+   * only part of the emitted URL that `photoHref` cannot supply — which is precisely why the
+   * equality below is worth asserting rather than assuming: it is the seam between the file
+   * system's opinion about the path and the library's.
+   */
+  const ROUTE_ROOT = 'photos';
+
+  const entries = await getCollection('photos');
+
+  /*
+   * ANTI-VACUITY. `getStaticPaths` returning an empty array is not an error to Astro — it emits no
+   * page and exits 0. Every photograph's page would silently disappear, every gallery tile would
+   * 404, and the build would report success. `src/content.config.ts` records that the file loader
+   * LOGS and returns rather than throwing when the manifest cannot be read, so this is a reachable
+   * state and not a hypothetical one.
+   */
+  if (entries.length === 0) {
+    throw new Error(
+      "photos/[category]/[slug]: getCollection('photos') returned no entries, so this route would " +
+        'emit NO page at all — with exit 0 — and every gallery tile would 404 against a build ' +
+        'that reported success.',
+    );
+  }
+
+  const all: DetailRecord[] = entries.map((entry) => entry.data);
+
+  /*
+   * The sequence within each category, derived from the data. §7.1 and §9.6 order a category by
+   * `categoryOrder`, and so does the gallery route (05-07), so the neighbour a reader gets here is
+   * the tile that sat beside the one they clicked.
+   *
+   * THE NEIGHBOUR IS TAKEN FROM POSITION IN THIS SORTED LIST, never from arithmetic on the stored
+   * number. MEASURED today: the values are dense 1..n inside all seven categories — but a Phase 7
+   * reorder is one drag away, and `order + 1` would silently point at nothing the moment a gap
+   * appeared. Position cannot.
+   *
+   * WHAT IS REFUSED IS A DUPLICATE, AND THAT IS A DELIBERATE NARROWING OF THE PLAN'S WORDING.
+   * The plan asks for a density assertion. Density is NOT load-bearing once the walk is positional
+   * — a sequence of 1, 2, 4 produces a perfectly good cycle — so refusing it would fail the build
+   * on a legitimate reorder for no reader-visible reason. A DUPLICATE is load-bearing: two records
+   * sharing a value leaves their relative order to the sort's stability, which decides silently and
+   * can decide differently between builds, so prev/next would swap with no edit to any file. The
+   * suite reports the density it measures rather than enforcing it; this refuses the case that has
+   * a symptom nobody could see.
+   */
+  const sequences = new Map<string, DetailRecord[]>();
+  for (const record of all) {
+    const bucket = sequences.get(record.category);
+    if (bucket) bucket.push(record);
+    else sequences.set(record.category, [record]);
+  }
+
+  for (const [name, bucket] of sequences) {
+    bucket.sort((a, b) => a.categoryOrder - b.categoryOrder);
+    const seen = new Set<number>();
+    const repeated = bucket.map((r) => r.categoryOrder).filter((n) => !seen.add(n));
+    if (repeated.length > 0) {
+      throw new Error(
+        `photos/[category]/[slug]: category ${JSON.stringify(name)} has more than one photograph ` +
+          `at position ${repeated.join(', ')}. Their order relative to each other is then decided ` +
+          'by the sort alone, so previous/next can swap between builds with no edit to any file.',
+      );
+    }
+  }
+
+  return all.map((photo) => {
+    const bucket = sequences.get(photo.category) ?? [];
+    const index = bucket.findIndex((candidate) => candidate.id === photo.id);
+    const size = bucket.length;
+
+    /*
+     * PREVIOUS AND NEXT WRAP, at both ends (§9.6). `(index - 1 + size) % size` rather than
+     * `index === 0 ? size - 1 : index - 1`: the modular form is the one that cannot be written
+     * with an off-by-one, and JavaScript's `%` keeps the sign of its left operand, which is why the
+     * `+ size` is there rather than decorative.
+     *
+     * THE ONE-PHOTOGRAPH CATEGORY, DECIDED HERE RATHER THAN DISCOVERED LATER. When a category
+     * holds a single photograph both neighbours are the page itself, and a "previous" link that
+     * reloads the page you are on is a control that does nothing — worse for a keyboard or screen
+     * reader user than an absent one, because it announces a way out that is not one. So the row is
+     * NOT RENDERED at all below that size. MEASURED today: the smallest categories hold two, so
+     * this branch is unreachable against the committed manifest — which is exactly why it had to be
+     * decided now. The suite asserts the row's presence against the DERIVED category size, so the
+     * rule is checked rather than assumed.
+     */
+    const previous: Neighbour | null =
+      size > 1
+        ? {
+            href: photoHref(bucket[(index - 1 + size) % size]),
+            title: bucket[(index - 1 + size) % size].title,
+          }
+        : null;
+    const next: Neighbour | null =
+      size > 1
+        ? { href: photoHref(bucket[(index + 1) % size]), title: bucket[(index + 1) % size].title }
+        : null;
+
+    const params = { category: photo.category, slug: photoSlug(photo) };
+    const href = photoHref(photo);
+
+    /*
+     * THE JOIN, ASSERTED AT BUILD TIME. `params` is what Astro turns into a path; `href` is what
+     * every gallery tile carries. Both come from `photo-srcset.ts`, and this states the one thing
+     * that is NOT guaranteed by that: that the URL this file's location produces —
+     * `/<ROUTE_ROOT>/<category>/<slug>` — is character-for-character the href the library emits.
+     * Move this file, or change the shape `photoHref` returns, and the build stops here instead of
+     * shipping forty pages nothing links to.
+     */
+    const emitted = `/${ROUTE_ROOT}/${params.category}/${params.slug}`;
+    if (emitted !== href) {
+      throw new Error(
+        `photos/[category]/[slug]: this route would emit ${JSON.stringify(emitted)} for ` +
+          `${JSON.stringify(photo.id)}, but photoHref (src/lib/photo-srcset.ts) — which every ` +
+          `gallery tile uses — gives ${JSON.stringify(href)}. Every tile would 404 against a page ` +
+          'that exists under a different address, with a green build and a green suite.',
+      );
+    }
+
+    return {
+      params,
+      props: {
+        photo,
+        previous,
+        next,
+        /* The page's own address — the canonical, and the value the join above just proved. */
+        href,
+        /* §13.2's two back links, composed from the one segment. See the note above the function. */
+        categoryHref: `/${ROUTE_ROOT}/${params.category}`,
+        galleryHref: `/${ROUTE_ROOT}`,
+      },
+    };
+  });
+}
+
+interface Props {
+  photo: DetailRecord;
+  previous: Neighbour | null;
+  next: Neighbour | null;
+  href: string;
+  categoryHref: string;
+  galleryHref: string;
+}
+
+const { photo, previous, next, href, categoryHref, galleryHref } = Astro.props;
+
+/**
+ * THE LQIP GUARD — the same one `PhotoTile.astro` carries, at the second interpolation site.
+ *
+ * `thumb` is the one manifest value that lands inside a CSS `url()` rather than in an ordinary
+ * attribute. Astro escapes the ATTRIBUTE, which stops a value breaking out of `style="…"` — but a
+ * bare apostrophe inside the value would still terminate the `url('…')` token and let everything
+ * after it be read as further declarations, inside an attribute the escaper considers clean.
+ *
+ * IT IS A SECOND COPY AND THAT IS SAID OUT LOUD. Extracting it would mean editing 05-07's file
+ * while 05-07 is still running, which is the change this wave cannot make safely. Each guard
+ * protects its own interpolation site and neither ratifies the other; consolidating them into one
+ * exported helper is a one-line change for 05-14, and it is filed there rather than left implicit.
+ */
+const THUMB_URI = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
+const thumb = photo.urls.thumb;
+if (typeof thumb !== 'string' || !THUMB_URI.test(thumb)) {
+  throw new Error(
+    `photos/[category]/[slug]: urls.thumb on ${JSON.stringify(photo.id)} is not a plain base64 ` +
+      'WebP data URI. It is interpolated into a CSS `url()` inside the `style` attribute, where a ' +
+      'quote or a parenthesis closes the token and everything after it is read as further ' +
+      `declarations. Received ${JSON.stringify(String(thumb).slice(0, 48))}…`,
+  );
+}
+
+/**
+ * The category's own label, from `data/site_config.json` through the validated export.
+ *
+ * REFUSED rather than defaulted. The back link reads `← {Category}` (§13.2) and a missing record
+ * would render `← undefined` on every page of that category — visible, wrong, and shipped. RI-2 in
+ * `src/schemas/content-set.ts` refuses a declared category with no photographs; this is the other
+ * direction, which no schema covers.
+ */
+const label = site.categories.find((entry) => entry.id === photo.category)?.label;
+if (!label) {
+  throw new Error(
+    `photos/[category]/[slug]: ${JSON.stringify(photo.id)} is filed under ` +
+      `${JSON.stringify(photo.category)}, which data/site_config.json does not declare. The back ` +
+      'link would read "← undefined" on every page of that category.',
+  );
+}
+
+/**
+ * §9.6's `sizes`, with the number DERIVED. `PAGE_MAX.band` is 1080 and it is the same constant
+ * `.pub-max-band` is gated against by `scripts/assert-gutter-ladder.mjs`, so the width the browser
+ * is told about and the width the column is capped at cannot drift apart.
+ *
+ * RECORDED, because it is a deliberate simplification and not an oversight: this ignores the
+ * gutters, so between the cap and the gutter the string over-states the frame by at most
+ * `2 × gutter`. §9.6 specifies exactly this expression and it is reviewed; the error is in the safe
+ * direction (a slightly larger candidate, never a blurrier one), and the alternative is a fifth
+ * bespoke `sizes` form on a page that has one image. `sizesFor` is not used here because it answers
+ * a different question — the width of one cell of a masonry column ladder, which this page has not
+ * got.
+ */
+const sizes = `min(100vw, ${PAGE_MAX.band}px)`;
+
+/*
+ * COMPOSED IN THE FRONTMATTER, EVERY ONE OF THEM. MEASURED by 05-07 on the category routes: two
+ * adjacent expressions inside a framework component's children lose the whitespace between them —
+ * `{count} {noun}` shipped as `14photographs` on all seven pages, with a green build and a green
+ * suite. Every string below reaches its component as ONE expression for that reason.
+ */
+const backToGallery = '← All photographs';
+const backToCategory = `← ${label}`;
+const previousLabel = previous ? `← ${previous.title}` : '';
+const nextLabel = next ? `${next.title} →` : '';
+const pageTitle = `${photo.title} — ${home.title}`;
+---
+
+<PublicLayout mainClass="pub-max-band pd-page">
+  {
+    /*
+     * SEO-01, §9.6. `og:image` is `urls.large` — MEASURED at 1200w, the Open Graph recommended
+     * width — and `og:image:alt` is the photograph's own `alt`, which is the only description a
+     * reader of the card gets. `og:type` is `article`; `twitter:card` is `summary_large_image`,
+     * which `<Seo>` emits for every page. The canonical is this page's own path, made absolute by
+     * `<Seo>` from `Astro.site`, which throws on anything it cannot resolve.
+     *
+     * The description is the photograph's `alt`. It is reviewed prose describing this exact image
+     * (the shortest in the corpus measures 83 characters), so it is the one field on the record
+     * that answers "what is this page about" without a sentence being invented for it. `alt` is
+     * also, by `PhotoSchema`'s own rule, NOT equal to the title — so the card's title and its
+     * description cannot degenerate into the same string.
+     */
+  }
+  <Seo
+    slot="head"
+    title={pageTitle}
+    description={photo.alt}
+    canonical={href}
+    ogType="article"
+    image={photo.urls.large}
+    imageAlt={photo.alt}
+  />
+
+  <nav class="pd-back" aria-label="Back">
+    <Link href={galleryHref} variant="quiet">{backToGallery}</Link>
+    <Link href={categoryHref} variant="quiet">{backToCategory}</Link>
+  </nav>
+
+  {
+    /*
+     * THE FRAME (§9.6). `loading="eager"` and `fetchpriority="high"`, because this image IS the
+     * page and deferring it defers the LCP. `aspect-ratio` and the LQIP are inline because both are
+     * per-photograph values; everything else is in `photo-detail.css`.
+     *
+     * NO `width` AND NO `height` ATTRIBUTE — §7.2's ruling. `dimensions` is the intrinsic size of
+     * the SOURCE photograph, not of the file in `src`, so `width={…}` would state 3361 for a
+     * 1200px image: harmless for layout, wrong for anything reasoning about bytes. `aspect-ratio`
+     * plus `width: 100%` reserves the box.
+     */
+  }
+  <div
+    class="pd-frame"
+    style={`aspect-ratio: ${photo.dimensions.width} / ${photo.dimensions.height}; background-image: url('${thumb}')`}
+  >
+    <img
+      src={photo.urls.large}
+      srcset={srcsetFor(photo)}
+      sizes={sizes}
+      alt={photo.alt}
+      loading="eager"
+      fetchpriority="high"
+    />
+  </div>
+
+  <div class="pd-identity">
+    <Heading level={1} size="xl" weight="bold" className="pd-title">{photo.title}</Heading>
+    {
+      /*
+       * §9.3: `place` is present on 17 of 40 and DELIBERATELY empty on the rest — "an empty
+       * description renders nothing at all: no em dash, no gap." So there is no fallback, no
+       * separator and no wrapper: the element is absent, and the gap it would have left is absent
+       * with it because the spacing lives on the flex container.
+       */
+    }
+    {
+      photo.place && (
+        <Text as="p" size="sm" tone="muted">
+          {photo.place}
+        </Text>
+      )
+    }
+  </div>
+
+  {
+    /*
+     * The neighbour row. Real anchors, ordered by `categoryOrder` within the category and wrapping
+     * at both ends — see `getStaticPaths` for the wrap and for why a single-photograph category
+     * renders no row at all. `rel="prev"`/`rel="next"` state the relationship for a crawler; the
+     * visible text is the neighbouring photograph's own title, so the link says where it goes.
+     */
+  }
+  {
+    previous && next && (
+      <nav class="pd-nav" aria-label="Photograph">
+        <Link
+          href={previous.href}
+          rel="prev"
+          variant="quiet"
+          aria-label={`Previous: ${previous.title}`}
+        >
+          {previousLabel}
+        </Link>
+        <Link href={next.href} rel="next" variant="quiet" aria-label={`Next: ${next.title}`}>
+          {nextLabel}
+        </Link>
+      </nav>
+    )
+  }
+</PublicLayout>

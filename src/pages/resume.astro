@@ -1,0 +1,283 @@
+---
+/**
+ * `/resume` — PUB-10, PUB-11, SEO-02, SEO-01. Plan 05-10.
+ *
+ * ================================================================================================
+ * WHY THIS PAGE EXISTS WHEN A PDF ALREADY DOES
+ * ================================================================================================
+ *
+ * Two reasons the roadmap amendment gives. Home's Act 2 holds work AND résumé in one viewport, so
+ * removing the page empties half that mechanism; and an HTML résumé is crawlable and linkable
+ * where a PDF is neither. The PDF is still offered, on this page rather than in the nav, "for the
+ * recruiter who wants the file".
+ *
+ * ================================================================================================
+ * THE WHOLE RECORD, AND NOT ONE FIGURE ABOUT IT
+ * ================================================================================================
+ *
+ * `resume.json` is `{ experience, skills, education }` and nothing else — MEASURED; THERE IS NO
+ * PROSE SUMMARY FIELD. So the page states the shape of the record rather than paraphrasing it.
+ * Inventing a summary sentence would put copy on the page that exists in no fixture and that
+ * nobody owns.
+ *
+ * EVERY COUNT IS DERIVED. There is no "three roles" and no "13 bullets" in this file, in
+ * `ResumeEntry.astro`, in `resume.css` or in `test/public/resume.node.test.ts`. A hardcoded record
+ * count turned `main` red in Phase 4 the moment content changed, and `data/resume.json` is
+ * reviewed content Akhil edits — the count of anything on this page is a fact about the file at
+ * build time, never a literal.
+ *
+ * ================================================================================================
+ * WHY THE CONTENT COMES THROUGH `src/lib/content.ts`
+ * ================================================================================================
+ *
+ * That module parses `data/resume.json` against `ResumeSchema` at module scope. Plan 03-08 MEASURED
+ * that the parse was NOT an enforcement point, for one reason only: nothing imported it, and Astro
+ * evaluates the modules a page imports. This is the page its header was waiting for. From this
+ * commit a bad `resume.json` breaks the build of the page that renders it, with a message naming
+ * the file, the record and the field, rather than shipping a broken one.
+ *
+ * ================================================================================================
+ * SEO-02 IS MICRODATA, AND THAT IS A DECISION, NOT A STYLE
+ * ================================================================================================
+ *
+ * OQ-2, resolved by Akhil 2026-08-28. §12.3 MEASURED with the installed `@astrojs/compiler` that
+ * ASTRO DOES NOT INTERPOLATE AN EXPRESSION INSIDE A `<script>` BODY: a plain `{j}` in a
+ * `ld+json` block ships to the page as the literal two characters, `is:inline` changes nothing,
+ * and `define:vars` wraps the body in an IIFE, which is not valid JSON. The one construct that
+ * does interpolate is Astro's raw-HTML directive, and `scripts/assert-no-raw-html-sinks.mjs`
+ * refuses it in USE form — its own documentation states that an allowlisted occurrence is still
+ * refused if it is a use, so the exemption path can never forgive an actual sink.
+ *
+ * So the `Person` data is `itemscope` / `itemtype` / `itemprop` ATTRIBUTES on markup that is
+ * already on the page. Zero script bytes on a zero-JS route, every value escaped by Astro because
+ * every value lands in an attribute or a text node, and the gate that closed a real historical
+ * stored-XSS class stays exactly as strict as Phase 3 left it.
+ *
+ * TWO OPTIONS WERE REJECTED AND ARE RECORDED SO THEY ARE NOT RE-PROPOSED:
+ *   - A fourth rule in the sinks gate permitting the raw-HTML directive on a `ld+json` script.
+ *     Narrow, and still a hole in the gate that closed the XSS class.
+ *   - A static JSON-LD file in `public/` referenced by URL. `application/ld+json` is not fetched
+ *     by reference; it does not work at all.
+ *
+ * The suite asserts the NEGATIVE half — zero `ld+json` on this page — because that is what stops
+ * someone "improving" this into the mechanism that measurably does not work.
+ *
+ * ================================================================================================
+ * THE DOWNLOAD CONTROL — A DESIGN-SYSTEM FINDING, TAKEN RATHER THAN WORKED AROUND
+ * ================================================================================================
+ *
+ * §11.1 prescribes a `Button` rendered as an anchor. THAT IS NOT IMPLEMENTABLE: MEASURED against
+ * the installed 2.0.0-beta.1, `ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>` with
+ * `variant`, `size`, `loading` and `icon` — there is no `as` prop. `Link` has one.
+ *
+ * Three options, in the order the Core Value ranks them:
+ *   (a) `Link` with `href` and `download` — a design-system component doing what it supports.
+ *   (b) `Link` rendered `as` a button — the wrong element; a download is not an action, it is a
+ *       navigation to a file, and a `<button>` there loses middle-click, copy-link and the href.
+ *   (c) An anchor with hand-rolled button CSS — FORBIDDEN. That is the bespoke-over-design-system
+ *       trade the Core Value settles, and a gap the design system exposes is a FINDING.
+ *
+ * (a) is taken. The visual consequence is recorded honestly in `05-10-SUMMARY.md` so the human
+ * review in 05-15 can judge it: the primary call to action on this page reads as a link, not as a
+ * filled button. `variant="action"` was considered — it is the design system's bold call-to-action
+ * link — and NOT taken, because it appends a trailing arrow whose meaning is "you will navigate",
+ * and this control hands over a file.
+ *
+ * FILED UPSTREAM for `2.0.0-beta.2`: `Button` should accept `as`, mirroring `Link`. A download is
+ * the commonest case where the visual contract is "button" and the semantic is "anchor", and every
+ * consumer that meets it today either drops to a link or hand-rolls the CSS.
+ */
+
+import { Chip } from '@akhil-saxena/design-system/components/Chip';
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import { Bullets } from '../components/Bullets';
+import ResumeEntry from '../components/public/ResumeEntry.astro';
+import Seo from '../components/public/Seo.astro';
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { home, resume } from '../lib/content';
+import { formatPeriod } from '../lib/period';
+import '../styles/resume.css';
+
+/** The route's own path, in one place: the canonical, the microdata `url` and the PDF sit beside it. */
+const RESUME_PATH = '/resume';
+
+/**
+ * The maintained PDF. It is a committed asset in `public/`, so the build copies it to
+ * `dist/client/resume.pdf` and it is served from the same origin as this page — there is no
+ * runtime filesystem and nothing to generate. The suite asserts it is actually served, because a
+ * download control pointing at a 404 looks identical to one that works until it is clicked.
+ */
+const RESUME_PDF_PATH = '/resume.pdf';
+
+/*
+ * `Astro.site` is `URL | undefined` and `astro.config.mjs` sets it, so this is unreachable today.
+ * It is here because the consequence of it becoming reachable is silent: `new URL(path, undefined)`
+ * throws a TypeError naming neither this page nor the property, and the Person's `url` — the one
+ * property that tells a consumer WHICH person this is — would be the thing that vanished.
+ */
+if (!Astro.site) {
+  throw new Error(
+    'resume.astro: `Astro.site` is not set, so the Person microdata has no absolute `url` and the ' +
+      'canonical cannot be made absolute. Set `site` in astro.config.mjs.',
+  );
+}
+const canonicalUrl = new URL(RESUME_PATH, Astro.site).href;
+
+/*
+ * THE CURRENT ROLE, DERIVED FROM `isPresent` AND NEVER FROM ARRAY POSITION. The records happen to
+ * be newest-first today; that is a convention of the file, not a guarantee of the schema, and a
+ * page that reads `experience[0]` announces a stale job title the day someone appends a record.
+ *
+ * `null` when no role is open, and then the line and its `jobTitle` / `worksFor` properties are
+ * simply absent. The alternative — falling back to the most recently ended role — would state on
+ * the page, and in machine-readable data, that Akhil works somewhere he does not.
+ */
+const current = resume.experience.find((entry) => entry.isPresent) ?? null;
+
+/*
+ * 🔴 THE PERSON'S CONTACT PROPERTIES ARE PLAIN-HTML ELEMENTS, NOT ATTRIBUTES ON THE ANCHORS, AND
+ * THAT IS A MEASURED REACT FINDING RATHER THAN A PREFERENCE.
+ *
+ * The first implementation put `itemProp` on the design system's `Link`, which is React. MEASURED
+ * against the installed react-dom 19.2.8, through `renderToStaticMarkup`, both for a bare element
+ * and through `Link`:
+ *
+ *     h('a', { href: '/x', itemProp: 'sameAs' })          ->  <a href="/x" itemProp="sameAs">
+ *     h('a', { href: '/x', itemScope: true, itemType: T }) ->  <a itemScope="" itemType="...">
+ *     h(Link, { href: '/x', itemProp: 'sameAs' })          ->  <a class="ds-atom-link" … itemProp="sameAs">
+ *
+ * REACT 19 EMITS THESE THREE VERBATIM — it does not lower-case them, and the design system is not
+ * involved. An HTML parser lower-cases attribute names, so a browser and Google's parser do see
+ * `itemprop`; but the bytes on disk say `itemProp`, every case-sensitive reader of the artefact
+ * misses it, and the gate written against the canonical spelling passed the page while reporting
+ * zero `sameAs`. That is the shape of defect this project keeps paying for: correct-looking output,
+ * a green check, and a claim that was never actually made.
+ *
+ * So the two URL-valued properties are emitted as PLAIN elements, which Astro renders itself and
+ * which therefore cannot be re-cased by a framework attribute table. The visible row keeps the
+ * design system's `Link` and carries no microdata at all. The suite asserts the canonical lower-case
+ * spelling AND asserts that no camel-cased `itemProp`/`itemScope`/`itemType` survives anywhere on
+ * the page, which is the regression guard for exactly this.
+ *
+ * FILED UPSTREAM — for React, not for the design system: `itemProp`/`itemScope`/`itemType` are in
+ * React's own `HTMLAttributes` type, so the types promise a mapping the renderer does not perform.
+ *
+ * WHY THE SPLIT BY SCHEME. `sameAs` is "a reference Web PAGE that unambiguously indicates the
+ * item's identity"; a `mailto:` is not a page. So the mail entry becomes `email` — as a `<meta>`,
+ * because schema.org's `email` is Text and the scheme is not part of the address — and the profile
+ * entries become `sameAs`. The split is computed from the href, so a fourth social link needs no
+ * edit here, and the suite derives both counts the same way and asserts their sum is the number of
+ * links on disk, so a link that lost its microdata cannot hide inside a count that still adds up.
+ */
+const MAILTO = 'mailto:';
+const sameAsUrls = home.socialLinks
+  .filter((link) => !link.url.startsWith(MAILTO))
+  .map((link) => link.url);
+const emailAddresses = home.socialLinks
+  .filter((link) => link.url.startsWith(MAILTO))
+  .map((link) => link.url.slice(MAILTO.length));
+
+const description = current
+  ? `${home.title}'s résumé — ${current.role} at ${current.company}. Experience, skills and education, with the PDF.`
+  : `${home.title}'s résumé — experience, skills and education, with the PDF.`;
+---
+
+<PublicLayout mainClass="pub-max-band rs-page">
+  <Seo
+    slot="head"
+    title={`Résumé — ${home.title}`}
+    description={description}
+    canonical={RESUME_PATH}
+  />
+
+  <header class="rs-header" itemscope itemtype="https://schema.org/Person">
+    <h1 class="rs-name" itemprop="name">{home.title}</h1>
+
+    {
+      current && (
+        <p class="rs-lede">
+          <span itemprop="jobTitle">{current.role}</span>
+          {' · '}
+          <span itemprop="worksFor" itemscope itemtype="https://schema.org/Organization">
+            <span itemprop="name">{current.company}</span>
+          </span>
+          {' · '}
+          <span>{formatPeriod(current)}</span>
+        </p>
+      )
+    }
+
+    <link itemprop="url" href={canonicalUrl} />
+    {sameAsUrls.map((url) => <link itemprop="sameAs" href={url} />)}
+    {emailAddresses.map((address) => <meta itemprop="email" content={address} />)}
+
+    <div class="rs-actions">
+      <Link href={RESUME_PDF_PATH} download variant="default">Download the PDF</Link>
+
+      <ul class="rs-contact">
+        {
+          home.socialLinks.map((link) => (
+            <li>
+              <Link href={link.url} variant="quiet" rel="noopener noreferrer">
+                {link.label}
+              </Link>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </header>
+
+  <section class="rs-section">
+    <h2 class="rs-eyebrow">Experience</h2>
+    {resume.experience.map((entry) => <ResumeEntry entry={entry} />)}
+  </section>
+
+  <section class="rs-section">
+    <h2 class="rs-eyebrow">Skills</h2>
+    {
+      resume.skills.map((group) => (
+        <div class="rs-skill-group">
+          <p class="rs-skill-name">{group.category}</p>
+          <div class="rs-chips">
+            {group.items.map((item) => (
+              <Chip>{item}</Chip>
+            ))}
+          </div>
+        </div>
+      ))
+    }
+  </section>
+
+  <section class="rs-section">
+    <h2 class="rs-eyebrow">Education</h2>
+    {
+      resume.education.map((entry) => (
+        <div class="rs-education">
+          <div class="rs-entry-head">
+            <div>
+              <h3 class="rs-entry-org">
+                {entry.url ? (
+                  <Link href={entry.url} variant="quiet" rel="noopener noreferrer">
+                    {entry.school}
+                  </Link>
+                ) : (
+                  entry.school
+                )}
+              </h3>
+              <p class="rs-education-meta">
+                {entry.degree} · CGPA {entry.cgpa}
+              </p>
+            </div>
+            <div class="rs-entry-aside">
+              <p class="rs-entry-period">{formatPeriod(entry)}</p>
+            </div>
+          </div>
+          <div class="rs-bullets rs-prose">
+            <Bullets items={entry.leadership} />
+          </div>
+        </div>
+      ))
+    }
+  </section>
+</PublicLayout>

@@ -1,0 +1,94 @@
+---
+/**
+ * One employment record on `/resume`. Plan 05-10, task 1.
+ *
+ * ================================================================================================
+ * WHAT THIS COMPONENT IS, AND THE THREE THINGS IT DELIBERATELY DOES NOT DO
+ * ================================================================================================
+ *
+ * It is a layout for one `ExperienceEntry` and nothing else: the identity on the left, the period
+ * and the metric on the right, the bullets underneath. The arrangement mirrors §10's employment
+ * band on `/work` on purpose — the two pages show the same three records, and a reader who has
+ * seen one should not have to re-learn the other.
+ *
+ * 1. IT DOES NOT FORMAT A DATE. `formatPeriod()` in `src/lib/period.ts` is the ONE definition of
+ *    that invariant — it is what `ResumeSchema`'s refinement asks, and §10 says in as many words
+ *    "do not format dates in a page". A second formatter here would be a second answer to
+ *    "has this role ended?", which is exactly the drift the structured date fields removed.
+ *
+ * 2. IT DOES NOT RENDER A BULLET ITSELF. `<Bullets>` is the only renderer (§11.2). It emits bold
+ *    runs as `<strong>` ELEMENTS and plain runs as text CHILDREN, and React escapes text children
+ *    by construction — that mechanism is the entire security property, and it is why there is no
+ *    escaper here and must never be one. `data/resume.json` carries one literal `&`
+ *    (`upsell & cross-sell`); a second encoder would emit it twice and render visibly wrong.
+ *    The raw-HTML sinks are banned under `src/` by `scripts/assert-no-raw-html-sinks.mjs` in all
+ *    three spellings, so the unsafe alternative FAILS the build rather than merely not being
+ *    chosen.
+ *
+ * 3. IT WRITES NO FIGURE OF ITS OWN. `entry.metric` is read whole from `data/resume.json`. Its
+ *    three values on disk are PLACEHOLDERS Akhil intends to revise (OQ-1b), so neither the value
+ *    nor the label may be treated as fixed copy: nothing in this file, the stylesheet or the suite
+ *    asserts on their wording, and revising them changes only rendered text. The one thing that
+ *    WILL fire is `scripts/assert-no-unresolved-placeholders.mjs` if a `{{…}}` token is stored and
+ *    reaches `dist/` — which is the designed behaviour, not a break.
+ *
+ * ================================================================================================
+ * THE COMPANY LINK
+ * ================================================================================================
+ *
+ * `entry.url` is `z.url().nullable()` and exactly one of the three records carries one today. It
+ * is rendered through the design system's `Link` when present and as plain text when null — an
+ * anchor with no destination is not a smaller version of a link, it is a different element. On
+ * paper the stylesheet's print block appends the href after the text, so the URL is recoverable
+ * there too.
+ */
+
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import type { ExperienceEntry } from '../../schemas';
+import { formatPeriod } from '../../lib/period';
+import { Bullets } from '../Bullets';
+
+interface Props {
+  entry: ExperienceEntry;
+}
+
+const { entry } = Astro.props;
+
+/*
+ * Computed here rather than inline in the template so the throw, if the record is incoherent, has
+ * a frame in this file. `formatPeriod` refuses a range that is both open and closed; the schema
+ * refuses the same shape earlier, so reaching this line with a bad record means the schema was
+ * bypassed and the page should not render at all.
+ */
+const period = formatPeriod(entry);
+---
+
+<article class="rs-entry">
+  <header class="rs-entry-head">
+    <div>
+      <h3 class="rs-entry-org">
+        {
+          entry.url ? (
+            <Link href={entry.url} variant="quiet" rel="noopener noreferrer">
+              {entry.company}
+            </Link>
+          ) : (
+            entry.company
+          )
+        }
+      </h3>
+      <p class="rs-entry-role">{entry.role} · {entry.location}</p>
+    </div>
+    <div class="rs-entry-aside">
+      <p class="rs-entry-period">{period}</p>
+      <p class="rs-metric">
+        <span class="rs-metric-value">{entry.metric.value}</span>
+        <span class="rs-metric-label">{entry.metric.label}</span>
+      </p>
+    </div>
+  </header>
+
+  <div class="rs-bullets rs-prose">
+    <Bullets items={entry.bullets} />
+  </div>
+</article>

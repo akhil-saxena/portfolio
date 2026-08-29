@@ -255,3 +255,165 @@
     min-height: 44px;
   }
 }
+
+/* ══ 4. STATE B — the work band, the résumé band, and the two gaps ══════════════════════════ */
+
+/*
+ * `.hm-b { min-height: 100svh }` IS REQUIRED AND IS NOT DECORATIVE.
+ *
+ * It failed at exactly one class and only a browser found it: at 768 × 1024, work + résumé +
+ * crosslink + footer came to **1012px against a 1024px viewport**, so the document's maximum
+ * scroll offset was 1012px and *a page that cannot scroll a full viewport cannot complete the
+ * departure* — `scrollY=1012, photosBottom=12, NOT DEPARTED`. Tablet portrait is the only class
+ * tall enough in absolute pixels to run out of document before it runs out of viewport.
+ *
+ * `svh` here for the same reason as state A: `dvh` is forbidden on any scroll-transition
+ * participant because it changes DURING the scroll, and `vh` is the large viewport.
+ */
+
+.hm-b {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  /* GAP 2 of 2 (§6.4) — the dead gap before "The résumé", closed to `--space-8`. Reviewing the
+     committed captures on 2026-08-23 found that at 841 × 768, the near-square foldable, "The
+     résumé" sat on the bottom edge with its content cut off, so "work and résumé occupy the view"
+     failed at exactly one class. Chosen over letting Act 2 scroll below 900px — which would make
+     the near-square class behave unlike every other — and over shrinking the résumé block there,
+     which would leave it saying almost nothing at that width. */
+  gap: var(--space-8);
+  padding-block: var(--space-8);
+}
+
+.hm-work,
+.hm-resume {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* The heading and its arrow link share a baseline row and wrap rather than overflow. */
+.hm-band-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+/*
+ * The two arrow links and the résumé CTA. Mono caps at `--text-xs`, per §3.1's eyebrow role.
+ * They take the ink ramp, NOT the accent: §4.3's reserved list has six entries and a secondary CTA
+ * is not one of them — the scroll prompt is item 4 and it is the only accent on this page.
+ */
+.hm-more,
+.hm-resume-cta {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--lh-normal);
+  letter-spacing: var(--ls-wide);
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+.hm-resume-cta {
+  align-self: start;
+}
+
+@media (pointer: coarse) {
+  .hm-more,
+  .hm-resume-cta {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+/*
+ * §6.4, verbatim. `min(300px, 100%)` IS THE GUARD, NOT A STYLE CHOICE. A bare `minmax(300px, 1fr)`
+ * in a 312px content box overflows once the gap is counted, which presents as a horizontal scroll
+ * — the R-6 violation `.ha-grid` already produced once at 344 (`doc=356/344`), proved pre-existing
+ * rather than caused by the gutter ladder by overriding `--pub-gutter` at runtime. The guard makes
+ * the failure unrepresentable rather than merely unlikely.
+ *
+ * `auto-fit` rather than a column count: the grid grows with the project count and needs no
+ * redesign when a seventh project lands, which is the property that made every fixed arrangement
+ * lose. Nothing here branches on aspect ratio.
+ */
+.hm-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: var(--space-6);
+}
+
+@media (min-width: 673px) {
+  .hm-grid {
+    gap: var(--space-8);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hm-grid {
+    row-gap: var(--space-10);
+    column-gap: var(--space-14);
+  }
+}
+
+.hm-grid-item {
+  display: flex;
+}
+
+/* §10.3 — MEASURED: `Card` concatenates `className` and no longer inlines `display`, so a flex
+   column applies here where Phase 0's `class=` spelling silently dropped the rule. */
+.hm-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.hm-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* §3.1's card-title row asks for `--ls-tight`, and `.ds-atom-heading[data-size="xl"]` sets
+   font-size and line-height but NOT letter-spacing — so a class wins here uncontested, and no
+   inline style is needed. Where the token rule does set the property (the two `3xl` section
+   headings' line-height), the correction goes through `Heading`'s own `style` prop instead. */
+.hm-card-title {
+  letter-spacing: var(--ls-tight);
+}
+
+/*
+ * GAP 1 of 2 (§6.4) — the dead gap between the project grid and the "By day —" line, closed to
+ * `--space-8`. `margin-block-start` rather than a bigger `gap` on `.hm-work`, because the other
+ * gaps in that band stay at `--space-6`.
+ */
+.hm-byday {
+  margin: 0;
+  margin-block-start: var(--space-8);
+  color: var(--ink-2);
+}
+
+.hm-byday-lead {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: var(--ls-wide);
+  color: var(--ink-3);
+}
+
+.hm-resume-line,
+.hm-resume-skills {
+  margin: 0;
+}

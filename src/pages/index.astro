@@ -66,6 +66,7 @@
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import homeConfig from '../../data/home_config.json';
+import HomeActTwo from '../components/public/HomeActTwo.astro';
 import PeekGrid from '../components/public/PeekGrid.astro';
 import Seo from '../components/public/Seo.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
@@ -88,14 +89,10 @@ const { title, subtitle, intro } = homeConfig;
 ---
 
 <PublicLayout mainClass="pub-max-home">
-  <Seo
-    slot="head"
-    title={`${title} — ${subtitle}`}
-    description={intro}
-    canonical="/"
-  />
+  <Seo slot="head" title={`${title} — ${subtitle}`} description={intro} canonical="/" />
 
-  {/*
+  {
+    /*
     State A is a plain <div>, not a <section>: an unnamed <section> is not exposed as a region, and
     a named one here would make FOUR landmarks where §6.6.4 specifies three. The gallery inside it
     carries `aria-label="Photographs"`.
@@ -104,7 +101,8 @@ const { title, subtitle, intro } = homeConfig;
     SCROLL POSITION — `display: none`, `visibility: hidden`, `aria-hidden` and `inert` are all
     forbidden on both states, and a screen-reader user reads photographs → work → résumé linearly
     and never encounters the two-state framing at all.
-  */}
+  */
+  }
   <div class="hm-a">
     <div class="hm-identity">
       <Heading
@@ -124,4 +122,6 @@ const { title, subtitle, intro } = homeConfig;
 
     <a class="hm-prompt" href="#work">{SCROLL_PROMPT}</a>
   </div>
+
+  <HomeActTwo />
 </PublicLayout>

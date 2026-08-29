@@ -1,0 +1,201 @@
+---
+/**
+ * State B — the work band and the résumé band. Plan 05-11, Task 2.
+ *
+ * ================================================================================================
+ * STATE B FOLLOWS STATE A IN DOM ORDER, AND `#work` IS ITS ANCHOR TARGET
+ * ================================================================================================
+ *
+ * There is no `order`, no `position: fixed` on a focusable element and no positive `tabindex`
+ * anywhere in this file or in `home.css`. DOM order is reading order is tab order: photographs,
+ * then work, then résumé. §6.6.2 — if a composition cannot be built inside that constraint, the
+ * composition is wrong, not the requirement.
+ *
+ * **Nothing here is hidden from assistive technology.** `display: none`, `visibility: hidden`,
+ * `aria-hidden` and `inert` are all forbidden on either state, and this is the trap the two-state
+ * framing invites: hiding the inactive state would delete the photo gallery from every
+ * screen-reader user. A screen-reader user reads photographs → work → résumé linearly and never
+ * encounters the two-state framing at all, which is the correct outcome rather than a degraded one.
+ *
+ * `#work` is a plain `<div>` wrapper carrying `.hm-b`, not a `<section>`. It holds TWO named
+ * regions — the work band and the résumé band — and making the wrapper a third named landmark
+ * would nest "The résumé" inside a region called "The work", which is both wrong and a fourth
+ * landmark where §6.6.4 specifies three.
+ *
+ * ================================================================================================
+ * THE ACT-2 GRID — EQUAL WEIGHT, AND THE CAP IS A DESIGN DECISION
+ * ================================================================================================
+ *
+ * The featured-first arrangement in the committed screenshots is SUPERSEDED. Akhil rejected it: he
+ * intends to add more projects and wants every project to carry equal weight, which rules out a
+ * featured slot and any fixed arrangement that has to be redesigned when the count changes.
+ *
+ * `projects.slice(0, ACT_TWO_CAP)` in file order, with an "ALL WORK →" link to `/work`. `/work` is
+ * the complete two-band list, so Home is a teaser by design and a seventh project needs no change
+ * here. **The rendered count is DERIVED**, never a literal — `data-project-count` on the grid
+ * reports what actually shipped, and `data-projects-elided` reports how many the cap withheld, so
+ * the SUMMARY's claim about elision is read off the artefact rather than asserted.
+ *
+ * Each card carries the project's `oneLiner`, not its `description`. Two different strings for two
+ * different columns — 60–110 characters at 13px here, 120–200 at 15px on `/work` — which is why
+ * 05-02 added the field rather than reusing one string in both places.
+ *
+ * `resolveDsTokens` resolves `{{ds.componentCount}}` in the design-system project's one-liner from
+ * the installed package's own README at build time. It must run here: `ProjectSchema` bans the
+ * literal FIGURE, not the token, so an unresolved token passes every content gate and renders
+ * `{{ds.componentCount}}` on the page a hiring manager reads first.
+ * `scripts/assert-no-unresolved-placeholders.mjs dist` is the artefact-side half of that.
+ *
+ * The cards are deliberately NOT links. `/work` is where a project card links straight out (§10.1);
+ * Home's grid is a teaser, and five card links here would put five tab stops between the reader and
+ * the two CTAs that actually lead somewhere new.
+ */
+import { Card } from '@akhil-saxena/design-system/components/Card';
+import { Divider } from '@akhil-saxena/design-system/components/Divider';
+import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { StatusPill } from '@akhil-saxena/design-system/components/StatusPill';
+import { Text } from '@akhil-saxena/design-system/components/Text';
+import projects from '../../../data/projects.json';
+import resume from '../../../data/resume.json';
+import { resolveDsTokens } from '../../lib/ds-component-count';
+
+/** §6.4. Six, and there are five records today, so nothing is elided — asserted, not assumed. */
+const ACT_TWO_CAP = 6;
+
+/**
+ * §10.2 — `StatusPill`'s generic path, which the design system built for exactly this surface: a
+ * status read out of content is not a control, so it renders a `<span>` with a marker whose SHAPE
+ * carries the three-way split, and the distinction survives greyscale. The map IS the allowed set;
+ * an unmapped status throws rather than rendering an unlabelled pill.
+ */
+const STATUS_TONE: Record<string, 'success' | 'muted' | 'secondary'> = {
+  live: 'success',
+  maintained: 'muted',
+  archived: 'secondary',
+};
+
+const shown = projects.slice(0, ACT_TWO_CAP).map((project) => {
+  const tone = STATUS_TONE[project.status];
+  if (!tone) {
+    throw new Error(
+      `HomeActTwo: project "${project.id}" has status "${project.status}", which has no tone in ` +
+        `STATUS_TONE (${Object.keys(STATUS_TONE).join(', ')}). Rendering an untoned pill would ` +
+        'put a status on the page that reads as a fourth, unnamed state.'
+    );
+  }
+  return {
+    ...project,
+    tone,
+    // The label IS the status, title-cased — there is no second list of display strings to drift.
+    statusLabel: project.status.charAt(0).toUpperCase() + project.status.slice(1),
+    resolvedOneLiner: resolveDsTokens(project.oneLiner),
+  };
+});
+const elided = projects.length - shown.length;
+
+/**
+ * The résumé band states the SHAPE of the record rather than paraphrasing it. `resume.json` has no
+ * prose summary field — it is experience, skills and education and nothing else — and inventing a
+ * summary sentence would put copy on Home that exists in no fixture and that nobody owns.
+ *
+ * Every figure below is derived at build time. §13.3: the two copy facts that must not be
+ * hand-typed are the component count and the photograph count, and a hand-typed role or project
+ * count would be a third of the same kind — a hardcoded 39 turned `main` red in Phase 4 the moment
+ * a real photograph landed.
+ */
+const currentRole = resume.experience.find((entry) => entry.isPresent) ?? resume.experience[0];
+if (!currentRole) {
+  throw new Error(
+    'HomeActTwo: data/resume.json has no experience entry, so the "By day —" line has no subject. ' +
+      'Rendering the band without it would leave the sentence half-written on the primary route.'
+  );
+}
+const roleCount = resume.experience.length;
+const projectCount = projects.length;
+const skillCategories = resume.skills.map((group) => group.category);
+
+/** §13.2, verbatim including the arrows. */
+const ALL_WORK = 'ALL WORK →';
+const RESUME_ARROW = 'RÉSUMÉ →';
+const VIEW_RESUME = 'View résumé';
+---
+
+{/*
+  `.hm-b { min-height: 100svh }` is required and is not decorative — see `home.css` §5. It failed
+  at exactly one class and only a browser found it: at 768 × 1024 work + résumé + crosslink +
+  footer came to 1012px against a 1024px viewport, so the document's maximum scroll offset was
+  1012px, and a page that cannot scroll a full viewport cannot complete the departure.
+*/}
+<div id="work" class="hm-b">
+  <section class="hm-work" aria-labelledby="hm-work-h">
+    <div class="hm-band-head">
+      <Heading
+        level={2}
+        size="3xl"
+        weight="bold"
+        id="hm-work-h"
+        style={{ lineHeight: 'var(--lh-snug)' }}
+      >
+        The work
+      </Heading>
+      <a class="hm-more" href="/work">{ALL_WORK}</a>
+    </div>
+
+    <ul
+      class="hm-grid"
+      data-project-count={shown.length}
+      data-projects-elided={elided}
+    >
+      {
+        shown.map((project) => (
+          <li class="hm-grid-item">
+            <Card className="hm-card" variant="glass" padding="lg">
+              <div class="hm-card-head">
+                <Heading
+                  level={3}
+                  size="xl"
+                  weight="bold"
+                  className="hm-card-title"
+                >
+                  {project.title}
+                </Heading>
+                <StatusPill tone={project.tone} label={project.statusLabel} />
+              </div>
+              <Text className="hm-card-line" size="base" tone="secondary">
+                {project.resolvedOneLiner}
+              </Text>
+            </Card>
+          </li>
+        ))
+      }
+    </ul>
+
+    {/* GAP 1 of 2 — `--space-8`. See `home.css` §4. */}
+    <p class="hm-byday">
+      <span class="hm-byday-lead">By day —</span> {currentRole.role} at {currentRole.company}.
+    </p>
+  </section>
+
+  {/* GAP 2 of 2 — `--space-8`, immediately before "The résumé". See `home.css` §4. */}
+  <section class="hm-resume" aria-labelledby="hm-resume-h">
+    <Divider />
+    <div class="hm-band-head">
+      <Heading
+        level={2}
+        size="3xl"
+        weight="bold"
+        id="hm-resume-h"
+        style={{ lineHeight: 'var(--lh-snug)' }}
+      >
+        The résumé
+      </Heading>
+      <a class="hm-more" href="/resume">{RESUME_ARROW}</a>
+    </div>
+    <Text className="hm-resume-line" size="base" tone="secondary">
+      {`${roleCount} roles and ${projectCount} projects.`}
+    </Text>
+    <Eyebrow size="xs" className="hm-resume-skills">{skillCategories.join(' · ')}</Eyebrow>
+    <a class="hm-resume-cta" href="/resume">{VIEW_RESUME}</a>
+  </section>
+</div>

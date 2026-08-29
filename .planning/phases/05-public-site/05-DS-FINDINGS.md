@@ -156,3 +156,62 @@ inline-sets its colours, so the footer's underline is black at 25% on a `#0d0d0f
 confirmed in Chromium at all six classes) and **D-13** (`TONE_STEP` collides, so all five
 `StatusPill`s on `/work` render `data-step="1"` and the non-colour signal distinguishes nothing).
 Neither was in beta.2's scope.
+
+---
+
+## The one 05-17 added, rebuilding Home from the rendered prototype — and three corrections
+
+05-17 opened `design_handoff_portfolio/Akhil Saxena - Home.dc.html` in a browser instead of reading
+it, measured it, and rebuilt Home against the measurements. That produced **one new finding** and,
+more usefully, **three corrections to findings this document already carried** — because reading a
+component's `.d.ts` before concluding it cannot do something turns out to be the whole discipline.
+
+### New
+
+| # | Finding | Where measured | Consequence | Proposed fix |
+|---|---|---|---|---|
+| **D-24** | **There is no AMBIENT duration token.** `--dur-1..4` are 120, 180, 240 and 360ms — every one of them an *interaction* duration, "how long a control takes to answer". Nothing names the duration of an idle, looping animation. | `dist/tokens.css` — the `--dur-*` family in full is four steps, longest 360ms. There is no `--dur-5`, no `--dur-slow`, no `--dur-ambient`, and no easing paired with one. | A consumer that needs a breathing/pulsing loop — Home's scroll cue, which the approved prototype specifies as `nudge 2.2s ease-in-out infinite` and which the owner asked for in as many words — **cannot hand a duration through and must originate one**. Pointing it at `--dur-4` is not the same animation faster; a 360ms infinite loop is a twitch. This is the first declaration in `src/styles/` to originate a motion value that is not already someone else's bug, and it ships as `DEBT-AMBIENT-DURATION` in `scripts/assert-app-css-confined-to-layout.mjs`, printed on every gate PASS. | A `--dur-ambient` (or a `--dur-5`/`--dur-6` continuation of the existing ramp) somewhere around 2s, available to every brand. The ramp already exists; it just stops at the boundary between "a control responded" and "something is alive on the page". |
+
+### Corrections — three things this document said the design system could not do, which it can
+
+These are recorded as corrections rather than quietly fixed, because the *pattern* is the finding:
+each was written as "the component cannot express this", each was believed for a whole plan, and
+each was answerable in under a minute from the file that ships beside the component.
+
+- **D-7 is narrower than it was written.** It says `HeadingSizeToken` stops at `4xl` (44) while the
+  scale ships `--text-4xl-plus` (52) and `--text-5xl` (60), and concludes that the design's 60px
+  name is unreachable. The first half is true and worth fixing. The conclusion is not:
+  `Heading.d.ts` declares `size?: number | HeadingSizeToken`, and the **numeric path inlines the
+  exact pixel value**. `size={60}` was always legal. D-7 is a real gap in the *token* path — and it
+  never blocked anything.
+
+- **D-22 does not apply to `Heading`, and Home no longer depends on it.** The finding is correct
+  about `Text`: its family is inline `var(--font)` with no lever. But `Heading` declares
+  `as?: ElementType` and inlines `fontFamily: "var(--display)"` unconditionally
+  (`dist/chunk-DQHLFJNO.js`), so **`Heading as="p"` IS body text in the display face**, through the
+  component's own documented purpose ("useful when the visual size and the semantic level
+  diverge"). Home's subtitle and intro now use it and the `style={{ fontFamily }}` escape hatch is
+  gone from the page. D-22 stands for a consumer that needs `Text`'s `leading`, `maxWidth` or
+  `variant` in the display face; it is no longer a blocker for a serif-voiced site.
+
+- **D-5 is stronger than it was written, and this is the one that got *worse*.** D-5 files
+  `Button`'s missing `as`. 05-17 measured the obvious workaround — put `className="ds-atom-btn"` on
+  a `Link` and let the design system's own stylesheet draw the button — and it **does not work**:
+  `dist/chunk-UHK72XDD.js` keeps `baseStyle`, `sizeStyles` and `variantStyles` as INLINE objects,
+  so `padding`, `border-radius`, `font-size`, `font-weight` and every fill live in JavaScript
+  rather than in `primitives.css`. An anchor carrying the class inherits a transition and a hover
+  rule and nothing that makes it look like a button. **There is no class-borrow path**, so `as` is
+  not one of several possible fixes — it is the only one. (`Chip` is not a substitute either:
+  `fontSize: 11`, `padding: "4px 10px"`, `borderRadius: 999` — a ~21px tag, not a control.)
+
+  Consequence, shipped and visible: Home's two CTAs are `Link`s where the owner asked for buttons.
+  A seam is marked in `src/pages/index.astro` so the beta.3 swap is two lines.
+
+### And one thing that is not a finding, recorded so nobody files it
+
+**`AppBar` cannot render a bar-less surface, and it should not be asked to.** `.ds-atom-appbar` is
+`background: var(--surf-2); backdrop-filter: blur(14px)`, and none of the four `AppBarVariant`s
+removes the fill. Home's design has no bar at all — the row is two `Link`s and an `IconButton` in a
+flex row. That is not a gap in `AppBar`; it is a page that does not want an app bar, and composing
+two primitives is the design system being used at the level the design asks for. Filed here only so
+that the next plan to reach for `AppBar` on `/` finds the reason it was not used.

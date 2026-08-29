@@ -115,11 +115,19 @@ export const ExperienceEntrySchema = z
     logo: z.string().min(1).nullable(),
     url: z.url().nullable(),
     bullets: z.array(proseLine).min(1),
-    // OQ-1b, plan 05-03. The right-aligned figure at the end of each employment row on /work.
+    // OQ-1b, plan 05-03. The right-aligned figure on each employment row — on BOTH routes that
+    // render these records: `/work`'s employment band (§10) and `/resume`'s entry header (§11.1).
     //
-    // REQUIRED, not optional: all three records carry one and the reviewed design (05-UI-SPEC
-    // §10) has no employment row without it. An optional field would make "absent" a second way
-    // of saying something the design cannot render.
+    // 🔴 THIS COMMENT SAID "on /work" AND THAT WAS STALE FROM THE DAY /resume SHIPPED. 05-10
+    // rendered the band on `/resume` too, on Akhil's instruction; 05-15 measured it clean at all
+    // six device classes (116 × 17, never wrapping, never colliding, right-aligned at classes 3–6
+    // and stacked under the identity below the 673px rung) and Akhil confirmed it stays. A field
+    // whose docstring names one of its two consumers is how the next person deletes the other one.
+    // §11.1 of the UI-SPEC was amended in the same commit, in the same direction.
+    //
+    // REQUIRED, not optional: all three records carry one and the reviewed design has no
+    // employment row without it on either route. An optional field would make "absent" a second
+    // way of saying something the design cannot render.
     //
     // TWO FIELDS, not one string, for two independent reasons. §10 gives the value
     // `--ochre-d-strong` and the label the ink ramp at the same size, so a renderer needs them

@@ -1218,8 +1218,18 @@ summary sentence would put copy on the page that exists in no fixture and that n
    exists). The button lives **on this page**, not in the nav, per the roadmap amendment: *"for the
    recruiter who wants the file."*
 4. **Experience** — three entries, **13 bullets** (6 + 3 + 4, MEASURED).
-5. **Skills** — three groups, rendered as `Chip` rows.
-6. **Education** — one entry with its `leadership` bullets.
+5. **The employment metric**, on each experience entry's header row — the same `metric`
+   `{ value, label }` pair §10 puts on `/work`'s employment band, in the same treatment: IBM Plex
+   Mono `--text-xs` 11 / 500 / `--ls-wide`, the value in `--ochre-d-strong` and the label on the
+   ink ramp, right-aligned above the 673px rung and stacked under the identity below it.
+   **AMENDED 2026-08-29, and this list was wrong rather than incomplete.** The band has rendered
+   here since 05-10, on Akhil's instruction. 05-15 measured it at all six device classes — 116 × 17,
+   never wrapping, never colliding, never overflowing, colours identical to `/work`'s — and Akhil
+   confirmed it stays. A structure list that omits a shipping element is how the element gets
+   deleted by someone reading the list as exhaustive; `src/schemas/resume.ts` carried the mirror
+   error at the field itself and was corrected in the same commit.
+6. **Skills** — three groups, rendered as `Chip` rows.
+7. **Education** — one entry with its `leadership` bullets.
 
 ### 11.2 Bullets render as elements, never as an HTML string
 
@@ -1467,7 +1477,7 @@ this was measured, not assumed:
 
 | Company | Sketch metric | Supporting bullet |
 |---|---|---|
-| Brevo | `+15% CONVERSION` | *"Improved **conversion by 15%** by transforming a one-page checkout…"* |
+| Brevo | `+15% CONVERSION` | *"Improved **conversion** by transforming a one-page checkout…"* — **the bullet was reworded 2026-08-29.** It read *"Improved **conversion by 15%** by…"*, which made the band's claim a second time four lines below it. Akhil approved removing the figure from the prose; the band carries the number. `migrate-experience-metric.mjs`'s `evidence` row was re-derived in the same commit, and its provenance refusal is what asked for it. |
 | PharmEasy | `4K+ FRANCHISES` | *"enhancing productivity for **4K+ franchises** across **4 countries**"* |
 | MAQ Software | `6× FASTER PIPELINES` | *"Improved pipeline execution time by **6×**…"* — **bullet 4**, not bullet 1 |
 
@@ -1500,10 +1510,16 @@ added by editing `data/*.json` alone — the schema is the single definition and
 1. **Extend the schema and migrate the data as Phase 5 wave 1** (a `scripts/migrate-project-copy.mjs`
    alongside the four Phase 3 migrations already in `scripts/`), taking the copy from
    `00-COPY/one-liners.md` verbatim. The metric is authored by Akhil — three short strings.
-2. **Derive the metric from the first bullet's first bold span.** MEASURED, it would produce
-   `conversion by 15%`, `4K+ franchises`, `7+ data sources`. Two of three are close to the sketch and
-   the third is wrong (the sketch says `6× FASTER PIPELINES`, which is MAQ's *fourth* bullet). A
-   clever derivation that is right two times in three is worse than a field.
+2. **Derive the metric from the first bullet's first bold span.** MEASURED at the time, it would
+   produce `conversion by 15%`, `4K+ franchises`, `7+ data sources`. Two of three are close to the
+   sketch and the third is wrong (the sketch says `6× FASTER PIPELINES`, which is MAQ's *fourth*
+   bullet). A clever derivation that is right two times in three is worse than a field.
+   **AND THE REJECTION HAS SINCE GOT STRONGER, WHICH IS WORTH RECORDING RATHER THAN QUIETLY
+   RESTATING.** The Brevo bullet was reworded on 2026-08-29 to stop it repeating the band's own
+   figure, so its first bold span is now `conversion` — a derivation would today yield a metric with
+   no number in it at all. The derivation was rejected because it encodes a false relationship into
+   a renderer, and this is what that costs: the relationship broke the first time reviewed copy was
+   edited for a reason that had nothing to do with the metric.
 3. **Drop the metric column and the status pill from Phase 5**, ship the band as company/role/period
    only, and let Phase 6 add them. Costs the reviewed design two of its distinguishing elements.
 

@@ -728,15 +728,26 @@ identity exactly as 05-10 said it would. Its colours match `/work`'s band exactl
 3. **Removal is one block and two rules with nothing depending on it**, so keeping it costs nothing
    that cannot be undone in five minutes if the human review disagrees.
 
-**The residual, recorded rather than closed:** `src/schemas/resume.ts`'s comment still says the
-field is `/work`'s, and §11.1 still does not list it. That is a documentation disagreement, not a
-rendering one, and it should be fixed in whichever direction Akhil takes.
+**The residual, CLOSED 2026-08-29.** `src/schemas/resume.ts`'s comment said the field was
+`/work`'s and §11.1 did not list it at all. Akhil confirmed the band stays, so both were amended in
+that direction: §11.1 gains the band as item 5 with its treatment and the reason it was missing, the
+schema's comment now names both consumers, and `migrate-experience-metric.mjs`'s header — which
+carried the same `/work`-only sentence — was corrected with them. The spec now describes what
+ships.
 
 **Two things about the band that are for Akhil, not for me:**
 
 - **The three values are placeholders** — already on his deferred list, not repeated as work here.
 - **On the Brevo entry the metric says `+15% CONVERSION` and the first bullet says
-  "conversion by 15%".** The band and the bullet make the same claim twice, four lines apart.
+  "conversion by 15%".** The band and the bullet made the same claim twice, four lines apart.
+  **FIXED 2026-08-29**, on Akhil's approval, by removing the figure from the prose and leaving the
+  band to carry it:
+
+      before  Improved **conversion by 15%** by transforming a one-page checkout for **2.5M+ users** into a 3-step flow
+      after   Improved **conversion** by transforming a one-page checkout for **2.5M+ users** into a 3-step flow
+
+  Seven bytes, one bullet, nothing else in `data/resume.json` touched. The corpus is still 13
+  bullets and 17 bold runs, so every count assertion over it is unchanged.
 - **The space between value and label is drawn by CSS, not by text.** `textContent` is
   `+15%CONVERSION`, and `.rs-metric-value { margin-inline-end: 8px }` supplies the gap. It renders
   and reads correctly; a copy-paste and a screen reader get the unspaced string. This is 05-09's
@@ -998,7 +1009,7 @@ Separated from everything above, which is settled.
 | **3** | ~~**`← see the work` on `/photos` — build it, or drop the row from §13.2?**~~ **ANSWERED: build it.** | Built. One element, one rule, and `CROSSLINK_TYPE` lifted into `src/lib/crosslink.ts` so the two halves are ONE declaration rather than two that agree today — the served `/work` half is byte-identical across the move. Asserted on the served bytes in both directions: one row on `/photos`, zero on all seven category routes. |
 | **4** | **Pin the page copy, or leave it unguarded?** `/work`'s `<h1>` and sub-paragraph, `/photos`'s `<h1>`, the three Home Act-2 CTAs and `Download the PDF` are asserted nowhere; a copy edit ships silently. | Pinning is one assertion per string in files that already assert the cross-link, and it means a deliberate copy edit reds the build until you update the assertion. Leaving it means the human review is the only guard — which is what §13.2 chose for everything outside its table. |
 | **5** | ~~**The intermittent snap-on-load — accept, or drop `.hm-a`'s snap point?**~~ **ANSWERED: drop it.** | Taken. `.hm-a`'s snap point and its outset are gone, `#work` is the only snap point, and §2's table was re-run: **0 of 48** under `no-preference` against 15 of 48 before, with `fills` and `departs` still 6/6 in both motion settings. |
-| **6** | **`/resume`'s metric band — I decided it stays (§13). Confirm or overrule.** And separately: the Brevo metric and the Brevo first bullet make the same claim twice. | Removal is one block plus two rules. Either way, `src/schemas/resume.ts`'s comment and §11.1 need to agree with the answer. |
+| **6** | ~~**`/resume`'s metric band — I decided it stays (§13). Confirm or overrule.**~~ **ANSWERED: it stays**, and the doubled Brevo claim is fixed. | Confirmed. §11.1 now lists the band as item 5, `src/schemas/resume.ts`'s comment names both consumers instead of only `/work`, and `migrate-experience-metric.mjs`'s header was corrected with them. The Brevo bullet lost its `15%` — the band carries the figure — and the migration's `evidence` row was re-derived in the same commit, which its own provenance refusal demanded. |
 | **7** | **The three employment metrics as claims** — the plan asks you to read them out loud. `+15% CONVERSION` · `4K+ FRANCHISES` · `6× FASTER PIPELINES`. | Already on your deferred list as placeholders. Named here only because §12's copy walk-through puts them in front of you. |
 | **8** | **The `node_modules/.vite` race — fix the three fixtures, or keep re-running?** It is the only red in `npm test` and it is now diagnosed. | The fix is a `cacheDir` per sandbox: one line in each of three fixtures, no behaviour change, and it retires a blocker that has cost two plans a re-run each. Leaving it means `npm test` fails roughly one full run in two on this machine, always in the same file, always for a reason that is not the code under test. |
 | **9** | **Lighthouse before or during Phase 8?** Two UNVERIFIEDs (§7.2, §9.2) are waiting on one run, and it needs a package installed. | Doing it in Phase 8 against the deployed origin is the better measurement. Doing it now would need `lighthouse` installed on this machine, which no plan in this phase may authorise on its own. |

@@ -213,6 +213,75 @@ describe('/resume — the route answers with the whole record', () => {
 
     say(`pdf: ${RESUME_PDF_PATH} served, ${bytes.length} bytes, magic %PDF- present`);
   });
+
+  /**
+   * §11.1 item 5 — THE EMPLOYMENT METRIC BAND, WHICH SHIPPED FOR THREE PLANS WITH NOTHING HOLDING IT.
+   *
+   * It has rendered here since 05-10, on Akhil's instruction, and §11.1 did not list it. 05-10
+   * flagged that as a documentation disagreement; 05-15 measured the band clean at all six device
+   * classes and left the direction to Akhil, whose answer was that it stays. §11.1 now lists it —
+   * and a structure list that says the page must contain something, with no instrument that can
+   * see it, is a claim rather than a contract. This is the instrument. Before it, "removal is one
+   * block plus two rules and no test depends on it" was literally true.
+   *
+   * 🔴 NOT ONE STRING BELOW IS THE BAND'S WORDING. The three values on disk are PLACEHOLDERS Akhil
+   * intends to revise (OQ-1b), so `+15%`, `4K+` and `6×` appear nowhere here: every expectation is
+   * read out of `data/resume.json` at check time. Revising a placeholder must change rendered text
+   * and nothing else; deleting the band must be red.
+   *
+   * SCOPED PER ENTRY, not counted page-wide. A page-wide `.rs-metric` count of three would be
+   * satisfied by three bands on one record — and this suite has already recorded, in 05-10, a
+   * page-wide `/<li/g` count that also matched `<link`.
+   */
+  it('renders one metric band per experience entry, with both halves derived (§11.1 item 5)', async () => {
+    await loadPage();
+
+    // ANTI-VACUITY, before any comparison: an emptied fixture would make the loop assert nothing.
+    expect(
+      resume.experience.length,
+      'data/resume.json holds no experience records'
+    ).toBeGreaterThan(0);
+
+    /** Every `<article class="rs-entry">…</article>`, sliced by its own depth. */
+    const entries = [...page.matchAll(/<article class="rs-entry">([\s\S]*?)<\/article>/g)].map(
+      (m) => m[1] as string
+    );
+    expect(
+      entries.length,
+      `the page carries ${entries.length} .rs-entry article(s) against ` +
+        `${resume.experience.length} experience record(s)`
+    ).toBe(resume.experience.length);
+
+    const seen: string[] = [];
+    resume.experience.forEach((record, index) => {
+      const article = entries[index] as string;
+
+      const bands = [...article.matchAll(/<p class="rs-metric">([\s\S]*?)<\/p>/g)].map(
+        (m) => m[1] as string
+      );
+      expect(bands.length, `${record.id} carries ${bands.length} metric band(s)`).toBe(1);
+
+      const band = bands[0] as string;
+      const value = /<span class="rs-metric-value">([\s\S]*?)<\/span>/.exec(band)?.[1];
+      const label = /<span class="rs-metric-label">([\s\S]*?)<\/span>/.exec(band)?.[1];
+
+      expect(value, `${record.id} has no .rs-metric-value span`).toBeDefined();
+      expect(label, `${record.id} has no .rs-metric-label span`).toBeDefined();
+      expect(decodeEntitiesOnce(value as string)).toBe(record.metric.value);
+      expect(decodeEntitiesOnce(label as string)).toBe(record.metric.label);
+
+      seen.push(`${record.id} ${record.metric.value} ${record.metric.label}`);
+    });
+
+    // The band's own §13 finding, pinned rather than described: `compressHTML` removes the newline
+    // between the two spans, so `textContent` is the unspaced string and the gap is drawn by
+    // `.rs-metric-value { margin-inline-end }` — which the print-stylesheet test below reads out of
+    // the served CSS. Asserting the adjacency here is what stops someone "fixing" the unspaced
+    // string with a `&nbsp;` and moving the gap into two places.
+    expect(page).toMatch(/<\/span><span class="rs-metric-label">/);
+
+    say(`metric band: ${entries.length} entr(ies), each with one — ${seen.join(' · ')}`);
+  });
 });
 
 describe('/resume — SEO-02 Person data, as microdata (OQ-2)', () => {

@@ -199,3 +199,33 @@ you do not own, it is a wave-mate mid-edit, not your regression — say so rathe
   on a component whose props are destructured three lines below the interface. 05-12 verified it is
   **not** its own by restoring the file from `HEAD` and re-running `astro check` — the warning is
   present on 05-07's committed version too. Left alone; it is out of 05-12's scope.
+
+### 8. The pipeline sandboxes red on ANY uncommitted `data/` edit, and it is not the editor's bug
+
+- **Owner:** whoever owns `test/pipeline/partial-failure.node.test.ts` (and its two siblings that
+  build the same sandbox). **Not fixed here** — it is outside the four decisions this pass applied.
+- **Measured**, twice, on 2026-08-29 while rewording one bullet in `data/resume.json`:
+
+  ```
+  uncommitted data/resume.json   npm test  ->  1 failed | 1492 passed (1493)
+    FAIL  partial-failure.node.test.ts > case 1: a throw in step 2 changes nothing anywhere
+    AssertionError: expected 'M data/resume.json' to be ''
+  the same edit, committed    npm test  ->  1493 passed (1493)
+  ```
+
+- **The mechanism is a collision between two deliberate designs, and both are right on their own.**
+  `overlayWorkingTree` copies every file `git status` reports as modified into the sandbox — by
+  design, and with three separate refusals guarding against it silently copying nothing, because a
+  sandbox that quietly tests `HEAD` instead of the working tree is how a planted defect goes green.
+  Case 1 then asserts `git status --porcelain -- data` is EMPTY inside that sandbox, as the way to
+  say "a throw in step 2 changed nothing". The overlay has already made `data/` dirty before the
+  pipeline runs, so the assertion is reading the *author's* uncommitted edit and reporting it as the
+  pipeline's write.
+- **It is a false RED, never a false green**, which is the safe direction — but it is the second
+  fixture behaviour in this suite (after the `node_modules/.vite` race, §18 of `05-AUDIT.md`) whose
+  failure has nothing to do with the code under test, and both teach a re-run.
+- **The fix, for whoever owns it:** record `git status --porcelain -- data` immediately after the
+  overlay and compare the pipeline's effect against THAT baseline, rather than against the empty
+  string. One line, and it makes the assertion say what it means — "the pipeline changed nothing",
+  not "nothing in `data/` was ever uncommitted". The overlay itself must not be narrowed: copying
+  working-tree modifications in is the property the sandbox exists for.

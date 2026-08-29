@@ -43,6 +43,43 @@
  * go red, and the correct response is to delete this file in the same commit that makes
  * the edit — its job is done at that point. Loosening the assertions to keep it green
  * would leave a test that is present, passing, and no longer proving anything.
+ *
+ * ## 🔴 THAT HAPPENED, 2026-08-29, AND THE FILE WAS COMPLETED RATHER THAN DELETED OR LOOSENED
+ *
+ * One bullet was legitimately reworded: `brevo#0` made the same `+15%` claim as the metric
+ * band four lines above it, and Akhil approved removing the figure from the prose and
+ * letting the band carry it. Three ways out were available and two of them are worse:
+ *
+ *  1. **Delete the file**, as the paragraph above prescribes. That is the author's own
+ *     instruction, and it was written on the assumption that a reword invalidates the
+ *     whole proof. Here it invalidates ONE of thirteen bullets. Twelve bullets' worth of
+ *     three-way equality — still able to fail, still guarding reviewed content — would go
+ *     with it.
+ *  2. **Point the AFTER side at git** instead of at disk, so both sides are immutable
+ *     revisions. That is the worst option, and it is worth naming so it is not proposed:
+ *     a comparison between two fixed revisions CANNOT FAIL, and an unfailable check is the
+ *     exact class this repository has now paid for a dozen times.
+ *  3. **Record the migration's own output for the reworded bullet**, which is what is done.
+ *
+ * `EDITED_SINCE_MIGRATION` below holds the string the MIGRATION produced for `brevo#0`, and
+ * the three equalities run against that string instead of against disk for that one id. The
+ * proof is therefore made for **13 of 13**, not 12 — the reword is not carved out of it, it
+ * is stepped around by supplying the value the reword replaced.
+ *
+ * **This is not the loosening the paragraph above warns about, and here is why.** The table
+ * cannot be used to make a red go green with an invented value: whatever is written in it is
+ * the thing the three equalities are asserted ON, so an entry that is not the migration's
+ * real output fails projection, emphasis and position equality against the `<strong>`
+ * original in git — which no later editor can change. The table can only be extended with
+ * the truth. A second test asserts each entry actually differs from disk, so a no-op row
+ * cannot be parked there to silence something else.
+ *
+ * **What this file stops checking for a reworded id, stated plainly:** the bytes on disk.
+ * `brevo#0`'s current prose is no longer compared to anything here. It is still held by
+ * `ResumeSchema`'s grammar refinement, by `parseBullet` in the last describe block below, by
+ * the corpus counts in the first one (13 bullets, 17 bold runs, twelve emphasised), and by
+ * `test/content/xss-boundaries.unit.test.ts`. What is gone is the pin on its wording — which
+ * is the thing that was rewritten on purpose.
  */
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -84,6 +121,47 @@ const AFTER = flatten(
     readFileSync(fileURLToPath(new URL('../../data/resume.json', import.meta.url)), 'utf8')
   )
 );
+
+/**
+ * Bullets deliberately REWORDED since the migration, each with the string the migration itself
+ * produced. See this file's header for why the proof is completed this way rather than by deleting
+ * the file or by comparing two git revisions.
+ *
+ * `migrated` is not a free literal. It is the value the three equalities below are asserted ON, so
+ * it is checked against the `<strong>` original in git on every run — projection, emphasis and
+ * position. An invented value fails. The only string that can sit here is the migration's own.
+ */
+const EDITED_SINCE_MIGRATION: Readonly<Record<string, { migrated: string; why: string }>> = {
+  'brevo#0': {
+    migrated:
+      'Improved **conversion by 15%** by transforming a one-page checkout for **2.5M+ users** into a 3-step flow',
+    why:
+      'the bullet and the /resume metric band (`+15%` / `CONVERSION`) made the same claim twice, ' +
+      'four lines apart. 05-15 found it; Akhil approved removing the figure from the prose and ' +
+      'letting the band carry it. Reworded 2026-08-29 to "Improved **conversion** by transforming ' +
+      'a one-page checkout for **2.5M+ users** into a 3-step flow".',
+  },
+};
+
+/**
+ * The string THE MIGRATION produced for an id: what is on disk, unless the bullet has since been
+ * reworded on purpose and recorded above.
+ *
+ * It throws rather than returning `undefined` for an id it cannot resolve — a missing bullet must
+ * be a named failure and not a comparison against nothing.
+ */
+function migratedText(id: string): string {
+  const edited = EDITED_SINCE_MIGRATION[id];
+  if (edited) return edited.migrated;
+  const onDisk = AFTER.find((b) => b.id === id);
+  if (onDisk === undefined) {
+    throw new Error(
+      `bullets-migration: no bullet ${id} after the migration, and no recorded reword for it. ` +
+        'A bullet that vanished must fail by name rather than by comparing against nothing.'
+    );
+  }
+  return onDisk.text;
+}
 
 /** The old string's plain-text projection: its tags deleted, every other byte kept. */
 const oldProjection = (html: string) => html.replace(/<\/?strong>/g, '');
@@ -160,11 +238,39 @@ describe('the corpus is the corpus the migration was written for', () => {
   });
 });
 
+describe('the reword table is a record, not a loophole', () => {
+  it('every entry names a bullet that is on disk and is ACTUALLY reworded', () => {
+    const ids = Object.keys(EDITED_SINCE_MIGRATION);
+    // Not `toBeGreaterThan(0)`: an empty table is the correct state for most of this file's life,
+    // and asserting it is non-empty would be a rule about today rather than about the invariant.
+    for (const id of ids) {
+      const onDisk = AFTER.find((b) => b.id === id);
+      expect(onDisk, `${id} is in the reword table but is not on disk at all`).toBeDefined();
+      expect(
+        (onDisk as { text: string }).text,
+        `${id} is recorded as reworded and is byte-identical to the migration output — a row that ` +
+          'changes nothing cannot be parked here to quieten something else'
+      ).not.toBe((EDITED_SINCE_MIGRATION[id] as { migrated: string }).migrated);
+      expect(
+        (EDITED_SINCE_MIGRATION[id] as { why: string }).why.length,
+        `${id} carries no reason`
+      ).toBeGreaterThan(40);
+    }
+  });
+
+  it('every recorded id existed before the migration — the table cannot invent a bullet', () => {
+    for (const id of Object.keys(EDITED_SINCE_MIGRATION)) {
+      expect(
+        BEFORE.some((b) => b.id === id),
+        `${id} is in the reword table but was never in the pre-migration corpus`
+      ).toBe(true);
+    }
+  });
+});
+
 describe('projection equality — every byte of prose survived', () => {
   it.each(BEFORE)('$id keeps its exact plain text', ({ id, text }) => {
-    const after = AFTER.find((b) => b.id === id);
-    expect(after, `no bullet ${id} after the migration`).toBeDefined();
-    const projected = parseBullet((after as { text: string }).text)
+    const projected = parseBullet(migratedText(id))
       .map((r) => r.text)
       .join('');
     expect(projected).toBe(oldProjection(text));
@@ -178,9 +284,7 @@ describe('projection equality — every byte of prose survived', () => {
 
 describe('emphasis equality — every emphasised span survived, in order', () => {
   it.each(BEFORE)('$id keeps its exact bold spans in their exact order', ({ id, text }) => {
-    const after = AFTER.find((b) => b.id === id);
-    expect(after, `no bullet ${id} after the migration`).toBeDefined();
-    const boldRuns = parseBullet((after as { text: string }).text)
+    const boldRuns = parseBullet(migratedText(id))
       .filter((r) => r.bold)
       .map((r) => r.text);
     expect(boldRuns).toEqual(oldEmphasis(text));
@@ -194,11 +298,7 @@ describe('emphasis equality — every emphasised span survived, in order', () =>
 
 describe('position equality — every emphasised span is still on the same words', () => {
   it.each(BEFORE)('$id emphasises the same offsets', ({ id, text }) => {
-    const after = AFTER.find((b) => b.id === id);
-    expect(after, `no bullet ${id} after the migration`).toBeDefined();
-    expect(newEmphasisPositions((after as { text: string }).text)).toEqual(
-      oldEmphasisPositions(text)
-    );
+    expect(newEmphasisPositions(migratedText(id))).toEqual(oldEmphasisPositions(text));
   });
 
   it('detects an emphasis that moved to a different occurrence of the same text', () => {

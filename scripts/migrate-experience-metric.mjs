@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
- * Add `metric` — the right-aligned figure at the end of each employment row on `/work` — to every
- * entry in `data/resume.json`'s `experience` array (OQ-1b, plan 05-03).
+ * Add `metric` — the right-aligned figure on each employment row — to every entry in
+ * `data/resume.json`'s `experience` array (OQ-1b, plan 05-03).
+ *
+ * It renders on BOTH routes that show these records: `/work`'s employment band (§10) and
+ * `/resume`'s entry header (§11.1). This line said "on `/work`" until 2026-08-29; it was stale
+ * from the day `/resume` shipped the same band, and `src/schemas/resume.ts` carried the same
+ * error at the field itself. Corrected together.
  *
  * WHY THIS EXISTS
  * ---------------
@@ -13,11 +18,17 @@
  * WHY THE VALUES ARE NOT DERIVED FROM THE BULLETS
  * -----------------------------------------------
  * §15 OQ-1 measured that option, and it is the reason this table is a table. Taking each entry's
- * FIRST bold span yields `conversion by 15%`, `4K+ franchises` and `7+ data sources`. Two of three
- * are close; the third is wrong, because MAQ's real figure is in its FOURTH bullet. A derivation
+ * FIRST bold span yielded `conversion by 15%`, `4K+ franchises` and `7+ data sources`. Two of three
+ * were close; the third was wrong, because MAQ's real figure is in its FOURTH bullet. A derivation
  * that is right two times in three does not have a bug — it encodes a false relationship ("the
  * headline figure is the first one") into a renderer, where it is invisible and permanent. So the
  * mapping is authored, and the provenance is checked instead (see EVIDENCE below).
+ *
+ * THE PAST TENSE ABOVE IS DELIBERATE, AND IT IS THE BEST ARGUMENT IN THIS FILE. Brevo's bullet was
+ * reworded on 2026-08-29 — it repeated the band's own `+15%` — so its first bold span is now
+ * `conversion`. The derivation would today produce a metric with no figure in it, on a page whose
+ * whole point is the figure. The relationship broke the first time reviewed copy was edited for a
+ * reason unrelated to the metric, which is exactly the failure mode the authored table avoids.
  *
  * THE PROVENANCE IS A CONTROL, NOT A COMMENT
  * -------------------------------------------
@@ -71,7 +82,19 @@ export const METRICS = /** @type {const} */ ({
   brevo: {
     value: '+15%',
     label: 'CONVERSION',
-    evidence: 'Improved **conversion by 15%** by transforming a one-page checkout',
+    // 🔴 RE-DERIVED 2026-08-29, AND THE PROVENANCE CHECK IS WHAT ASKED FOR IT.
+    //
+    // The bullet used to read "Improved **conversion by 15%** by transforming a one-page
+    // checkout …", which made the SAME claim as the band four lines above it — `+15%` /
+    // `CONVERSION` — twice on one page. 05-15's audit found the repetition; Akhil approved
+    // removing it from the prose and letting the band carry the number. The bullet is now
+    // "Improved **conversion** by transforming a one-page checkout …".
+    //
+    // This row was updated IN THE SAME COMMIT as the bullet, which is exactly what the refusal
+    // below prescribes — it fired first, naming the record, the sentence and the six bullets it
+    // searched. The claim "every metric traces to reviewed copy" is still true and still checked:
+    // the supporting sentence is the same sentence, minus the figure the band already carries.
+    evidence: 'Improved **conversion** by transforming a one-page checkout',
   },
   pharmeasy: {
     value: '4K+',

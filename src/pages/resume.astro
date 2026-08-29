@@ -147,11 +147,19 @@ const current = resume.experience.find((entry) => entry.isPresent) ?? null;
  *     h(Link, { href: '/x', itemProp: 'sameAs' })          ->  <a class="ds-atom-link" … itemProp="sameAs">
  *
  * REACT 19 EMITS THESE THREE VERBATIM — it does not lower-case them, and the design system is not
- * involved. An HTML parser lower-cases attribute names, so a browser and Google's parser do see
- * `itemprop`; but the bytes on disk say `itemProp`, every case-sensitive reader of the artefact
- * misses it, and the gate written against the canonical spelling passed the page while reporting
- * zero `sameAs`. That is the shape of defect this project keeps paying for: correct-looking output,
- * a green check, and a claim that was never actually made.
+ * involved.
+ *
+ * WHAT THAT DOES AND DOES NOT COST, MEASURED RATHER THAN ASSUMED. The camel-cased page was
+ * submitted to `validator.schema.org` alongside the lower-case one: BOTH parse to the same single
+ * `Person` with the same six properties and the same nested `Organization`, zero errors. HTML
+ * attribute names are ASCII case-insensitive, so a consumer running an HTML parser is unaffected.
+ *
+ * The cost is to VERIFICATION, and on this project that is not a small cost. The bytes on disk say
+ * `itemProp`, so every case-sensitive reader of the artefact misses it — and the first such reader
+ * was this plan's own gate, which passed the page while reporting zero `sameAs`. Shipping the
+ * camel-cased form would have meant shipping microdata that works and that no artefact-level check
+ * could confirm, which is the shape of defect this repository keeps paying for: correct-looking
+ * output, a green check, and a claim that was never actually made.
  *
  * So the two URL-valued properties are emitted as PLAIN elements, which Astro renders itself and
  * which therefore cannot be re-cased by a framework attribute table. The visible row keeps the

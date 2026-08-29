@@ -292,10 +292,11 @@ describe('/resume — SEO-02 Person data, as microdata (OQ-2)', () => {
      * `itemProp` / `itemScope` / `itemType` passed to a React component are emitted VERBATIM by
      * react-dom 19.2.8's server renderer — measured through `renderToStaticMarkup`, for a bare
      * `<a>` and through the design system's `Link`, and it is React's doing rather than the design
-     * system's. An HTML parser lower-cases attribute names, so a browser still sees the microdata;
-     * but the bytes say `itemProp`, and the first version of the assertion above passed the page
-     * while reporting zero `sameAs`. This fires the moment microdata is put back onto a React
-     * component.
+     * system's. MEASURED at `validator.schema.org`: the camel-cased page parses to the SAME single
+     * `Person` with the same six properties, so a consumer running an HTML parser is unaffected.
+     * The cost is to verification — the bytes say `itemProp`, and the first version of the
+     * assertion above passed the page while reporting zero `sameAs`. This fires the moment
+     * microdata is put back onto a React component.
      */
     for (const camel of ['itemProp', 'itemScope', 'itemType']) {
       expect(page, `${camel} appears in the served page — see this test's comment`).not.toContain(

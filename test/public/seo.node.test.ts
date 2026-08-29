@@ -52,7 +52,10 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, inject, it } from 'vitest';
+import { IMAGE_ORIGIN } from '../../src/lib/image-origin';
 import { photoHref } from '../../src/lib/photo-srcset';
+import { VARIANTS } from '../../src/lib/photo-variants';
+import { SITE_OG_IMAGE, SITE_OG_IMAGE_ALT } from '../../src/lib/site-meta';
 import type { Photo, SiteConfig } from '../../src/schemas';
 
 const previewBaseUrl = inject('previewBaseUrl');
@@ -676,6 +679,332 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
     say(
       `404 page: noindex present · §13.2 copy verbatim · shell present · 0 canonical · 0 og:image · 0 module scripts`
+    );
+  });
+});
+
+/* ============================================================================================= */
+/* SEO-01 — the cross-page audit                                                                  */
+/* ============================================================================================= */
+
+/**
+ * THIS BLOCK CREATES NOTHING. `src/lib/site-meta.ts` and its wiring into `<Seo>`'s defaults were
+ * built in plan 05-06 so that five wave-3 route plans could consume one constant and no later plan
+ * would edit a route file it does not own. This verifies the RESULT on every built page.
+ *
+ * 🔴 THE PLAN'S OWN PREDICATE FOR THIS TASK IS DEFECTIVE, AND IT FAILS ON CORRECT CODE.
+ *
+ * It says: *"Every `og:image` and every canonical is absolute and on the configured `site`
+ * origin."* MEASURED on the built artefact: every `og:image` on the site is on
+ * `https://images.akhilsaxena.com` — never on `https://akhilsaxena.com` — because the manifest's
+ * `urls.*` are absolute against the image CDN (`src/lib/image-origin.ts`, `IMAGE_ORIGIN`), which is
+ * a different host by design and the whole point of `migrate-photo-origin.mjs`. Asserted as
+ * written, that predicate reds all 51 pages of a completely correct site.
+ *
+ * So the two are asserted against their OWN origins, each imported rather than typed:
+ *   - canonical and `og:url`  →  the `site` origin, read from astro.config.mjs
+ *   - `og:image`              →  `IMAGE_ORIGIN`, imported from src/lib/image-origin.ts
+ */
+describe('SEO-01 · every built public page', () => {
+  /** The `large` variant, from the table rather than from a typed `-lg`. */
+  const LARGE = VARIANTS.find((variant) => variant.urlKey === 'large');
+
+  /** Photo detail pages, keyed by the path they are served at. Derived through `photoHref`. */
+  const PHOTO_BY_PATH = new Map(manifest.map((photo) => [`${photoHref(photo)}/`, photo]));
+
+  interface Audited {
+    path: string;
+    tags: Record<string, string | null>;
+    canonical: string | null;
+  }
+
+  const audited: Audited[] = [];
+
+  /**
+   * 🔴 QUOTE-AWARE, AND THAT IS A REPAIR SOMEBODY ELSE ALREADY PAID FOR.
+   *
+   * `attr=["']([^"']*)["']` — the obvious shape, treating EITHER quote as a terminator — truncates
+   * at an apostrophe. 05-08 measured it turning `alt="Phantom Manor's mansard roof, …"` into
+   * `Phantom Manor` and reddening a correct page; **8 of the 40 records carry an apostrophe** in
+   * their `alt` or `title`, and Astro does not escape one inside a double-quoted attribute because
+   * it has no need to. `og:image:alt` on every photo detail page IS that `alt`, so this file walks
+   * straight into it. The opening quote is captured and back-referenced instead.
+   */
+  function attr(tag: string, name: string): string | null {
+    return tag.match(new RegExp(`\\b${name}=(["'])([\\s\\S]*?)\\1`))?.[2] ?? null;
+  }
+
+  /** Every opening `<name …>` tag, sliced with quote awareness so a `>` inside a value cannot cut one in half. */
+  function tagsNamed(html: string, name: string): string[] {
+    const out: string[] = [];
+    const opener = new RegExp(`<${name}\\b`, 'g');
+    let match = opener.exec(html);
+    while (match) {
+      let index = match.index + match[0].length;
+      let quote: string | null = null;
+      while (index < html.length) {
+        const character = html[index];
+        if (quote) {
+          if (character === quote) quote = null;
+        } else if (character === '"' || character === "'") {
+          quote = character;
+        } else if (character === '>') {
+          break;
+        }
+        index += 1;
+      }
+      out.push(html.slice(match.index, index + 1));
+      opener.lastIndex = index;
+      match = opener.exec(html);
+    }
+    return out;
+  }
+
+  /** The `content` of the one `<meta>` matching `attribute=name`. Null unless EXACTLY one exists. */
+  function meta(html: string, attribute: string, name: string): string | null {
+    const found = tagsNamed(html, 'meta').filter((tag) => attr(tag, attribute) === name);
+    // Not `[0]`: two `og:title` tags is a real defect (a scraper takes one, unpredictably) and
+    // indexing would hide it behind a pass.
+    return found.length === 1 ? attr(found[0] as string, 'content') : null;
+  }
+
+  /** The `href` of the one `<link rel="canonical">`. Null unless exactly one exists. */
+  function canonicalOf(html: string): string | null {
+    const found = tagsNamed(html, 'link').filter((tag) => attr(tag, 'rel') === 'canonical');
+    return found.length === 1 ? attr(found[0] as string, 'href') : null;
+  }
+
+  /** `property=` for Open Graph, `name=` for the Twitter tag — as `<Seo>` emits them. */
+  const OG_TAGS = ['og:title', 'og:description', 'og:type', 'og:url', 'og:image', 'og:image:alt'];
+  const TWITTER_CARD = 'summary_large_image';
+
+  beforeAll(() => {
+    if (!LARGE || LARGE.suffix.length === 0) {
+      throw new Error(
+        'seo: VARIANTS carries no `large` entry with a suffix, so the og:image variant assertion ' +
+          'would compare against undefined and pass on anything.'
+      );
+    }
+    // ANTI-VACUITY. An audit that iterates nothing passes every assertion it contains.
+    if (PUBLIC_HTML_PATHS.length === 0) {
+      throw new Error('seo: dist/client holds no public HTML — this audit would check nothing.');
+    }
+
+    for (const path of PUBLIC_HTML_PATHS) {
+      const file = path === '/' ? 'index.html' : `${path.slice(1)}index.html`;
+      const html = readFileSync(new URL(file, distClient), 'utf8');
+      const tags: Record<string, string | null> = {};
+      for (const name of OG_TAGS) tags[name] = meta(html, 'property', name);
+      tags['twitter:card'] = meta(html, 'name', 'twitter:card');
+      audited.push({ path, tags, canonical: canonicalOf(html) });
+    }
+  });
+
+  it('audits every public HTML document in dist/client and no fewer', () => {
+    // The check that stops this suite passing by checking nothing — the plan asks for it by name.
+    expect(audited.length).toBeGreaterThan(0);
+    expect(
+      audited.length,
+      'the audit iterated a different number of pages than dist/client holds'
+    ).toBe(PUBLIC_HTML_PATHS.length);
+    expect(audited.map((entry) => entry.path).sort()).toEqual([...PUBLIC_HTML_PATHS].sort());
+    say(
+      `SEO-01: audited ${audited.length} page(s) against ${PUBLIC_HTML_PATHS.length} public HTML ` +
+        `file(s) in dist/client (${BUILT_HTML_PATHS.length} total, 404 excluded) — equal and non-zero`
+    );
+  });
+
+  it('every page carries the full tag set, each non-empty', () => {
+    expect(audited.length).toBeGreaterThan(0);
+    const missing: string[] = [];
+    for (const entry of audited) {
+      for (const name of [...OG_TAGS, 'twitter:card']) {
+        const value = entry.tags[name];
+        if (value === null || value.length === 0) missing.push(`${entry.path} → ${name}`);
+      }
+      if (!entry.canonical) missing.push(`${entry.path} → canonical`);
+    }
+    expect(
+      missing,
+      'pages missing a required SEO-01 tag (page → tag). A missing tag is invisible on the page ' +
+        "itself and only shows up inside somebody else's product, weeks later"
+    ).toEqual([]);
+    say(
+      `tags: ${audited.length}/${audited.length} pages carry all ${OG_TAGS.length + 2} required tags`
+    );
+  });
+
+  it('canonical and og:url are absolute, on the site origin, and identical to each other', () => {
+    expect(audited.length).toBeGreaterThan(0);
+    const wrong: string[] = [];
+    for (const entry of audited) {
+      const canonical = entry.canonical as string;
+      const ogUrl = entry.tags['og:url'] as string;
+      try {
+        if (new URL(canonical).origin !== SITE_ORIGIN)
+          wrong.push(`${entry.path} canonical=${canonical}`);
+      } catch {
+        wrong.push(`${entry.path} canonical is not absolute: ${canonical}`);
+      }
+      // Asserted because a divergence is completely silent: a crawler reads one and a scraper the
+      // other, and the two would disagree about which URL this page is.
+      if (canonical !== ogUrl)
+        wrong.push(`${entry.path} canonical ${canonical} !== og:url ${ogUrl}`);
+    }
+    expect(wrong).toEqual([]);
+    say(
+      `canonical: ${audited.length}/${audited.length} absolute on ${SITE_ORIGIN}, each equal to its own og:url`
+    );
+  });
+
+  it('every og:image is absolute on the image origin — NOT the site origin (the plan has this wrong)', () => {
+    expect(audited.length).toBeGreaterThan(0);
+    const wrong: string[] = [];
+    for (const entry of audited) {
+      const image = entry.tags['og:image'] as string;
+      try {
+        // `new URL(image)` with no base throws unless already absolute — which also refuses a
+        // protocol-relative `//host/x.webp`, since a scraper has no page protocol to resolve it
+        // against. Same rule `<Seo>` enforces at build time; asserted here on the shipped bytes.
+        if (new URL(image).origin !== IMAGE_ORIGIN) wrong.push(`${entry.path} og:image=${image}`);
+      } catch {
+        wrong.push(`${entry.path} og:image is not absolute: ${image}`);
+      }
+    }
+    expect(
+      wrong,
+      `every og:image must be absolute on ${IMAGE_ORIGIN} (src/lib/image-origin.ts). A relative ` +
+        'og:image is DROPPED by every scraper and produces a card with no picture and no error'
+    ).toEqual([]);
+    say(
+      `og:image: ${audited.length}/${audited.length} absolute on ${IMAGE_ORIGIN} (imported, never typed)`
+    );
+  });
+
+  it('twitter:card is summary_large_image on every page', () => {
+    expect(audited.length).toBeGreaterThan(0);
+    const wrong = audited
+      .filter((entry) => entry.tags['twitter:card'] !== TWITTER_CARD)
+      .map((entry) => `${entry.path} → ${entry.tags['twitter:card']}`);
+    expect(
+      wrong,
+      `the card is a 3:2 landscape photograph; "summary" crops it to a small square`
+    ).toEqual([]);
+    say(`twitter:card: ${audited.length}/${audited.length} are ${TWITTER_CARD}`);
+  });
+
+  it('the site-wide card is used off the photo pages, and is the record OQ-6a names', () => {
+    const siteCardPages = audited.filter((entry) => !PHOTO_BY_PATH.has(entry.path));
+    expect(siteCardPages.length, 'no non-photo page was audited').toBeGreaterThan(0);
+
+    const wrong = siteCardPages.filter(
+      (entry) =>
+        entry.tags['og:image'] !== SITE_OG_IMAGE || entry.tags['og:image:alt'] !== SITE_OG_IMAGE_ALT
+    );
+    expect(
+      wrong.map((entry) => `${entry.path} → ${entry.tags['og:image']}`),
+      'a non-photo page carries something other than the site-wide card from src/lib/site-meta.ts'
+    ).toEqual([]);
+    say(
+      `site card: ${siteCardPages.length} non-photo page(s) all carry ${SITE_OG_IMAGE} ` +
+        `(read by id from the manifest, never pasted)`
+    );
+  });
+
+  it('each photo detail page carries its OWN photograph, at the large variant', () => {
+    const photoPages = audited.filter((entry) => PHOTO_BY_PATH.has(entry.path));
+    expect(photoPages.length, 'no photo detail page was audited — nothing to check').toBe(
+      manifest.length
+    );
+
+    const wrong: string[] = [];
+    for (const entry of photoPages) {
+      const photo = PHOTO_BY_PATH.get(entry.path) as Photo;
+
+      // Compared against the manifest record, which is the ONE source. Comparing against a string
+      // rebuilt here would be a second derivation that agrees with itself.
+      if (entry.tags['og:image'] !== photo.urls.large) {
+        wrong.push(`${entry.path} og:image=${entry.tags['og:image']} expected ${photo.urls.large}`);
+      }
+      // `og:image:alt` is the photograph's own reviewed prose — the apostrophe case this file's
+      // attribute reader exists for.
+      if (entry.tags['og:image:alt'] !== photo.alt) {
+        wrong.push(`${entry.path} og:image:alt did not equal the record's alt`);
+      }
+      // §9.6: a photo detail page is an article, not a website.
+      if (entry.tags['og:type'] !== 'article') {
+        wrong.push(`${entry.path} og:type=${entry.tags['og:type']} expected article`);
+      }
+      // The "large variant" claim itself, proven through VARIANTS rather than a typed `-lg`.
+      if (
+        !new URL(photo.urls.large).pathname.endsWith(`${(LARGE as { suffix: string }).suffix}.webp`)
+      ) {
+        wrong.push(`${entry.path} urls.large does not carry the VARIANTS large suffix`);
+      }
+    }
+    expect(wrong).toEqual([]);
+    say(
+      `photo cards: ${photoPages.length}/${manifest.length} detail pages carry their own record's ` +
+        `urls.large (suffix "${(LARGE as { suffix: string }).suffix}" read from VARIANTS) and their own alt, og:type=article`
+    );
+  });
+
+  /**
+   * 🔴 A FINDING, ASSERTED AT ITS TRUE STRENGTH RATHER THAN AT THE ONE THAT WOULD SHIP RED.
+   *
+   * MEASURED: every canonical except `/` names the UNSLASHED form (`https://akhilsaxena.com/photos`)
+   * while the sitemap advertises the SLASHED form (`https://akhilsaxena.com/photos/`), and the
+   * origin answers **307** on the unslashed form and **200** on the slashed one:
+   *
+   *     GET /photos   -> 307  location: /photos/
+   *     GET /photos/  -> 200
+   *
+   * So on 50 of 51 pages the declared canonical is a URL that does not itself serve the page, and
+   * it is a different string from the URL the sitemap gives a crawler for the same document. Google
+   * follows and consolidates, so this is a defect rather than an outage — but a canonical should be
+   * the URL that answers 200, and a sitemap should list canonical URLs.
+   *
+   * THE REPAIR IS ONE LINE IN `src/components/public/Seo.astro`, WHICH THIS PLAN DOES NOT OWN.
+   * Plan 05-13 scopes this task to verification and says a 05-06 problem is "reported as [a
+   * regression] rather than repaired here"; the canonical strings themselves are passed by five
+   * route files belonging to 05-07…05-11, and 05-12 is editing two of them right now. So it is
+   * reported in the summary and asserted here at the strength that is true today:
+   *
+   *   - every canonical RESOLVES to a 200, and
+   *   - it resolves to the page it appears on and not some other page — which is the failure that
+   *     would actually cost traffic, and which nothing else in this suite would catch.
+   *
+   * The redirect count is printed rather than asserted to zero, so the day the trailing-slash
+   * convention is settled the number moves and is visible, instead of a green suite hiding it.
+   */
+  it('every canonical resolves to 200 AND lands on the page that declares it', async () => {
+    expect(audited.length).toBeGreaterThan(0);
+
+    const wrong: string[] = [];
+    let viaRedirect = 0;
+
+    for (const entry of audited) {
+      const path = new URL(entry.canonical as string).pathname;
+      const response = await fetch(`${previewBaseUrl}${path}`);
+      if (response.redirected) viaRedirect += 1;
+      if (response.status !== 200) {
+        wrong.push(`${entry.path} canonical ${path} → ${response.status}`);
+        continue;
+      }
+      const landed = new URL(response.url).pathname;
+      if (landed !== entry.path) {
+        wrong.push(`${entry.path} canonical ${path} resolves to ${landed} — a DIFFERENT page`);
+      }
+    }
+
+    expect(
+      wrong,
+      'a canonical that resolves to another page tells crawlers to index the wrong document'
+    ).toEqual([]);
+    say(
+      `canonical resolution: ${audited.length}/${audited.length} answer 200 and land on their own ` +
+        `page · ${viaRedirect} reach it through a 307 (RESIDUAL: canonicals name the unslashed ` +
+        `form, the sitemap the slashed one — one line in Seo.astro, owned by 05-06)`
     );
   });
 });

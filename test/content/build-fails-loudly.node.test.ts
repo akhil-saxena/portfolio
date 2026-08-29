@@ -412,14 +412,29 @@ describe('the content collections enforce on their own, and cannot do the gate�
   /** Take the `content-gate` integration out of the sandbox config, and prove the edit landed. */
   function disableContentGate(): void {
     const config = readFileSync(path.join(sandbox, 'astro.config.mjs'), 'utf8');
-    const without = config.replace(
-      'integrations: [react(), contentGate],',
-      'integrations: [react()],'
+
+    // MATCHED BY POSITION IN THE ARRAY, NOT BY THE WHOLE LINE — and that is a repair, made by
+    // plan 05-13, which is also what broke it. This used to replace the literal
+    // `'integrations: [react(), contentGate],'`. 05-13 added `@astrojs/sitemap` to that array, the
+    // literal stopped existing, the replacement became a no-op, and BOTH assertions below went red
+    // — exactly as the comment they replace predicted. The control did its job: it refused to run
+    // against the wired config rather than silently proving the wrong thing.
+    //
+    // Removing `contentGate` with its leading comma survives the next integration added at either
+    // end of the array, which is the same edit arriving again.
+    const without = config.replace(/,\s*contentGate\b/, '');
+
+    expect(without, 'the contentGate removal did not change the config').not.toBe(config);
+
+    // Asserted against the INTEGRATIONS LINE rather than the whole file. A global
+    // `not.toContain('contentGate,')` would also be satisfied by a file that never had the
+    // integration wired, and it says nothing about the array actually losing it.
+    const integrations = without.match(/^\s*integrations:.*$/m)?.[0] ?? '';
+    expect(integrations, 'no integrations line found in the sandbox config').not.toBe('');
+    expect(integrations, 'contentGate is still in the integrations array').not.toContain(
+      'contentGate'
     );
-    // If the string ever changes, this control would silently test the wired config instead — the
-    // failure mode where a "negative control" proves the wrong thing.
-    expect(without).not.toBe(config);
-    expect(without).not.toContain('contentGate,');
+
     writeFileSync(path.join(sandbox, 'astro.config.mjs'), without);
   }
 

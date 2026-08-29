@@ -15,6 +15,39 @@
  * this page has and `/photos` does not. See `home.css` §2.
  *
  * ================================================================================================
+ * ONE FLUSH ROUNDED BLOCK, NOT SIX ROUNDED CARDS — THE COMPOSITION'S LOAD-BEARING DETAIL
+ * ================================================================================================
+ *
+ * `git show legacy/nextjs-portfolio:src/styles/home.css`, `.hd-gallery`:
+ *
+ *     border-radius: 10px;  overflow: hidden;  gap: 0.5rem;
+ *
+ * The radius and the clip are on the **container**. Only the four outer corners of the block are
+ * rounded; the twenty interior corners are square, and the six photographs read as one object.
+ * Phase 5 shipped the radius on the TILE instead — six separately-rounded cards — and that single
+ * difference is most of why the shipped page reads as a grid and the approved one reads as
+ * composed. The markup below therefore carries `.hm-peek-grid` as the rounding/clipping element
+ * and `.hm-tile` carries none; see `home.css` §2 for the rules and the reason the tile keeps
+ * `overflow: hidden` anyway (the hover scale needs a clip of its own).
+ *
+ * ================================================================================================
+ * THE `ALL n →` BADGE IS A REAL LINK, AND `n` IS THE MANIFEST'S LENGTH
+ * ================================================================================================
+ *
+ * The design handoff puts a badge on the last tile reading `ALL 39 →`. **39 is not typed here.**
+ * `05-UI-SPEC.md` said 39, the manifest holds 40, and a hardcoded photograph count turned `main`
+ * red in Phase 4 the moment a real photograph landed — so the figure is `manifest.length` and
+ * moves the day the pipeline runs.
+ *
+ * The handoff makes the WHOLE GRID one anchor to `/photos`. That is not done here, and the reason
+ * is the accessible name: an `<a>` wrapping six `<img>` elements takes their six `alt` strings
+ * concatenated as its name, so a screen-reader user hears a forty-word link. The badge is the
+ * anchor instead — accessible name exactly `ALL 40 →`, one tab stop, `--space-11` of hit box on a
+ * coarse pointer — and the primary route to the gallery stays the `View Portfolio →` CTA that
+ * `home_config.ctas` owns. The photographs themselves are deliberately not links, which is the
+ * legacy behaviour too (`.hd-gallery-item` is a `<div>` there).
+ *
+ * ================================================================================================
  * `alt` IS THE PHOTOGRAPH'S OWN `alt`, NEVER ITS `title` — D-24-1, AND IT IS A PUBLIC DEFECT
  * ================================================================================================
  *
@@ -32,13 +65,16 @@
  * imported by `/photos`, and it is the WRONG function for this grid: it is built for the masonry's
  * own column ladder (1 column at base, 2 at the first breakpoint, `columns` above) against
  * `PAGE_MAX.photos` (1280). The peek grid is 2 columns at base, 3 from 673, against
- * `PAGE_MAX.home` (1080). Calling it here would emit a `sizes` string that is silently wrong —
+ * `ACT_ONE_MAX` (800). Calling it here would emit a `sizes` string that is silently wrong —
  * the browser would download a different variant of all six photographs with no visual symptom and
  * no error, which is the exact failure `sizesFor`'s own docstring refuses a bad column count over.
  *
  * So the arrangement differs and the SOURCE OF TRUTH does not: `peekSizes()` below is composed
- * from the same `GUTTER_RUNGS`, `MASONRY_GAP` and `PAGE_MAX` that `sizesFor` composes, in the same
- * descending, first-match-wins clause order. No breakpoint, gutter, gap or cap is typed here.
+ * from the same `GUTTER_RUNGS` that `sizesFor` composes, in the same descending, first-match-wins
+ * clause order, against this grid's OWN gap and cap — `PEEK_GAP` (8px, the tight gap the flush
+ * block needs) and `ACT_ONE_MAX` (800px, the legacy column). Both live in `src/lib/layout-ladder.ts`
+ * beside `MASONRY_GAP` and `PAGE_MAX`, each with the reason it is not the other. No breakpoint,
+ * gutter, gap or cap is typed here.
  * `srcsetFor` IS imported unchanged — it is arrangement-independent.
  *
  * Recorded as a finding for whoever needs a third grid: `sizesFor` cannot be reused across
@@ -46,7 +82,7 @@
  */
 import homeConfig from '../../../data/home_config.json';
 import manifest from '../../../data/portfolio_images.json';
-import { GUTTER_RUNGS, MASONRY_GAP, PAGE_MAX } from '../../lib/layout-ladder';
+import { ACT_ONE_MAX, GUTTER_RUNGS, PEEK_GAP } from '../../lib/layout-ladder';
 import { srcsetFor } from '../../lib/photo-srcset';
 import { DEFAULT_FOCAL_POINT } from '../../schemas/photo';
 
@@ -73,7 +109,7 @@ function peekColumnsAt(width: number | null): number {
 /**
  * The `sizes` attribute for a peek tile. Descending by `min-width`, because a `sizes` list is
  * first-match-wins, and every term is derived: the gutter from `GUTTER_RUNGS`, the inter-tile gap
- * from `MASONRY_GAP`, the cap from `PAGE_MAX.home`.
+ * from `PEEK_GAP`, the cap from `ACT_ONE_MAX`.
  */
 function peekSizes(): string {
   const conditioned = GUTTER_RUNGS.filter((rung) => rung.minWidth !== null);
@@ -83,9 +119,9 @@ function peekSizes(): string {
 
   const clauses = descending.map((rung) => {
     const cols = peekColumnsAt(rung.minWidth);
-    const content = rung === widest ? `min(100vw, ${PAGE_MAX.home}px)` : '100vw';
+    const content = rung === widest ? `min(100vw, ${ACT_ONE_MAX}px)` : '100vw';
     const gutterTerm = 2 * rung.px;
-    const gapTerm = (cols - 1) * MASONRY_GAP.px;
+    const gapTerm = (cols - 1) * PEEK_GAP.px;
     const condition = `(min-width:${String(rung.minWidth).padStart(pad)}px)`;
     return `${condition} calc((${content} - ${gutterTerm}px - ${gapTerm}px) / ${cols})`;
   });
@@ -100,7 +136,7 @@ function peekSizes(): string {
   }
   const baseCols = peekColumnsAt(null);
   clauses.push(
-    `calc((100vw - ${2 * base.px}px - ${(baseCols - 1) * MASONRY_GAP.px}px) / ${baseCols})`
+    `calc((100vw - ${2 * base.px}px - ${(baseCols - 1) * PEEK_GAP.px}px) / ${baseCols})`
   );
 
   return clauses.join(', ');
@@ -128,12 +164,27 @@ const peekPhotos = homeConfig.peekIds.map((id) => {
 
 /** `home_config.peekPositions` overrides, defaulting to the schema's own constant (OD-5). */
 const positions = homeConfig.peekPositions as Record<string, string | undefined>;
+
+/**
+ * The badge's copy, and the FIGURE IS DERIVED. See this file's header for why `39` is not typed.
+ *
+ * Assembled with an explicit template literal rather than as `ALL {count} {ARROW}` in the
+ * template: **Astro drops the whitespace between two adjacent expressions**, which shipped
+ * `14photographs` on seven routes through a green build and 59 green assertions. One expression,
+ * one string, no adjacency.
+ */
+const ALL_PHOTOGRAPHS = `ALL ${manifest.length} \u2192`;
+
+/** The tile the badge sits on — the last one, so it reads as "…and there are more". */
+const lastPeekId = peekPhotos[peekPhotos.length - 1]?.id;
 ---
 
 {/* §6.6.4 — one of the three named landmarks. `aria-label` names the region; state A itself is a
     plain <div>, so the page carries exactly three and not four. */}
 <section class="hm-peek" aria-label="Photographs">
-  <ul class="hm-peek-grid" data-peek-count={peekPhotos.length}>
+  {/* THE ROUNDING AND CLIPPING ELEMENT. See this file's header: the radius is on the CONTAINER so
+      the six tiles read as one flush block, which is the legacy composition Akhil approved. */}
+  <ul class="hm-peek-grid" data-peek-count={peekPhotos.length} data-peek-total={manifest.length}>
     {
       peekPhotos.map((photo) => (
         <li class="hm-peek-item">
@@ -150,6 +201,11 @@ const positions = homeConfig.peekPositions as Record<string, string | undefined>
               decoding="async"
               style={`object-position: ${positions[photo.id] ?? DEFAULT_FOCAL_POINT}`}
             />
+            {
+              photo.id === lastPeekId && (
+                <a class="hm-peek-all" href="/photos">{ALL_PHOTOGRAPHS}</a>
+              )
+            }
           </div>
         </li>
       ))

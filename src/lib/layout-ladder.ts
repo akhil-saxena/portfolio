@@ -127,6 +127,65 @@ export const MASONRY_GAP: { readonly token: string; readonly px: number } = {
 };
 
 /**
+ * The gap between two peek tiles on Home's Act 1, and it is NOT `MASONRY_GAP`.
+ *
+ * ================================================================================================
+ * WHY THE PEEK GRID HAS ITS OWN GAP — IT IS THE MECHANISM OF THE COMPOSITION, NOT A PREFERENCE
+ * ================================================================================================
+ *
+ * MEASURED off the legacy implementation Akhil approved
+ * (`git show legacy/nextjs-portfolio:src/styles/home.css`, `.hd-gallery`):
+ *
+ *     gap: 0.5rem;  border-radius: 10px;  overflow: hidden;
+ *
+ * The radius and the clip are on the **container**, not on the tile — so six photographs read as
+ * ONE flush rounded block rather than as six separately-rounded cards. That reading only survives
+ * a TIGHT gap: at `MASONRY_GAP` (16px) the block dissolves back into a grid with gutters and the
+ * container radius stops describing anything, because the corner it rounds is 16px away from the
+ * nearest photograph at five of the six tile corners.
+ *
+ * So 8px is load-bearing on the same order as the radius itself, and it is declared here rather
+ * than typed into `home.css` for the reason `MASONRY_GAP` is: `PeekGrid.astro` composes it into
+ * every tile's `sizes` attribute, and a stylesheet that disagreed with that arithmetic would
+ * download the wrong variant of all six photographs with no visual symptom and no error.
+ *
+ * The masonry keeps 16px. Two grids, two jobs: `/photos` is a gallery a reader scans, Home's is a
+ * single composed object. Deriving one from the other would tie a future "the gallery needs more
+ * air" edit to the one place air is the defect.
+ */
+export const PEEK_GAP: { readonly token: string; readonly px: number } = {
+  token: '--space-2',
+  px: 8,
+};
+
+/**
+ * Act 1's column cap, in px — and it is deliberately NOT in `PAGE_MAX`.
+ *
+ * ================================================================================================
+ * 800, FROM THE LEGACY IMPLEMENTATION, AND WHY IT CANNOT JOIN `PAGE_MAX`
+ * ================================================================================================
+ *
+ * `.home-d { max-width: 800px; margin: 0 auto }` is the legacy Home's whole-page measure, and it
+ * is the single value that makes the approved composition read as composed: the identity block,
+ * the six-tile block and the two CTAs share one narrow centred column, and the eye has one axis
+ * to follow instead of 1080px of horizontal travel.
+ *
+ * `PAGE_MAX` carries an invariant asserted in `test/public/layout-ladder.unit.test.ts` — *every
+ * maximum is above the widest breakpoint, or a cap would fight the ladder* — and 800 is below the
+ * 1024px rung, so adding it there would either red that test or force it to be loosened. **The
+ * invariant is right and the value is right; they are simply about different things.** A
+ * `.pub-max-*` is a PAGE measure that the gutter ladder is still steering at every rung; this is
+ * a column INSIDE a page whose measure is still `PAGE_MAX.home` (1080), which is what Act 2 uses
+ * and what the handoff specifies. Home is 1080 wide and its first act is 800 of that.
+ *
+ * The consequence of keeping it out of `PAGE_MAX` is that `scripts/assert-gutter-ladder.mjs` does
+ * not cover it, so `test/public/home.node.test.ts` asserts this constant against the built
+ * stylesheet directly. Two numbers that agree today are a duplication, not a contract — the same
+ * reason `assert-gutter-ladder` exists one level up.
+ */
+export const ACT_ONE_MAX = 800;
+
+/**
  * The layout maxima, in px. §2.2 — each is `min(cap, 100%)` in effect, so none needs a breakpoint.
  *
  *   home   1080

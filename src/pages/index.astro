@@ -30,40 +30,109 @@
  * attribute in code cannot be edited out of the CMS by accident.
  *
  * ================================================================================================
- * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 1)
+ * ACT 1 IS THE LEGACY COMPOSITION, REBUILT — AND THE DESIGN SOURCES OUTRANK 05-UI-SPEC.md
  * ================================================================================================
  *
- * No `client:*` directive appears on this page or in either component. Every design-system
- * component below is server-rendered to static HTML. The two acts are `min-height`, DOM order and
- * a real `<a href="#work">` — there is nothing to hydrate, which is also why there is nothing to
- * trap a keyboard user in.
+ * Phase 5 built this page from `05-UI-SPEC.md`, which had drifted from the design handoff nobody
+ * diffed it against. The result was technically immaculate and visually flat: left-aligned at
+ * 1080px, a sans 13px intro, six separately-rounded tiles and a dead band above the fold. Akhil
+ * compared it with the site it replaced and asked for the original back.
+ *
+ * There are two authoritative sources, both in the repository, and where they disagree the rule
+ * applied here is **legacy for LAYOUT, handoff for DETAIL** — every choice is named in this
+ * plan's report:
+ *
+ *   1. `git show legacy/nextjs-portfolio:src/styles/home.css` + `:src/app/page.tsx`
+ *      the site Akhil actually liked. `.home-d` is `max-width: 800px; margin: 0 auto;
+ *      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+ *      justify-content: center` — everything CENTRED, horizontally and vertically, in one
+ *      viewport. That is the whole complaint about what shipped, and §1 of `home.css` is it.
+ *   2. `design_handoff_portfolio/README.md` + `Akhil Saxena - Home.dc.html`
+ *      the approved high-fidelity design. Every value specified; the 60px name, the serif voice
+ *      on all three identity lines, the `ALL n →` badge and the mono scroll cue come from here.
  *
  * ================================================================================================
- * THE 60px NAME — AN UPSTREAM FINDING, TAKEN THE ONLY WAY THAT WORKS
+ * THE 60px NAME — AN UPSTREAM FINDING, AND THE FIX HAS TO SURVIVE A MEDIA QUERY
  * ================================================================================================
  *
- * §3.1: Playfair `--text-5xl` (60px) / 700 / `--lh-tight` (0.94) / `--ls-tighter`.
+ * §3.1 and the handoff both ask for Playfair `--text-5xl` (60px) / 700 / `--lh-tight`.
  *
  * MEASURED, `dist/components/Heading.d.ts`: `HeadingSizeToken` is `"2xs" … "4xl"` and STOPS at
  * `4xl` (44px). The scale itself ships `--text-4xl-plus` (52) and `--text-5xl` (60) — both
  * confirmed in `dist/tokens.css` — so the component's token union does not expose two steps its
- * own type scale defines. Filed for `2.0.0-beta.2`.
+ * own type scale defines. **This is D-7, filed by 05-09 and still open in beta.2** — not a new
+ * finding; the escape hatch below is.
  *
- * Consequence, and why the class path is not available: MEASURED in `chunk-DQHLFJNO.js`, the
- * numeric `size` path inlines `fontSize`, `lineHeight: 1` and a size-derived `letterSpacing`,
- * while the token path emits `data-size` and inlines nothing. `Heading` does concatenate
- * `className` — but its DEFAULT size is the number 28, so a bare `<Heading className="hm-name">`
- * inlines `font-size: 28px`, which no class rule can beat. Passing a token size instead would emit
- * `data-size`, whose `.ds-atom-heading[data-size=…]` rule is (0,2,0) against a class's (0,1,0), so
- * the class loses that way too.
+ * Consequence, MEASURED in `chunk-DQHLFJNO.js`: the numeric `size` path inlines `fontSize`,
+ * `lineHeight: 1` and a size-derived `letterSpacing`, while the token path emits `data-size` and
+ * inlines nothing. So a bare `<Heading className="hm-name">` inlines `font-size: 28px`, which no
+ * class rule can beat, and a token size emits `.ds-atom-heading[data-size=…]` at (0,2,0) against
+ * a class's (0,1,0), which no class rule can beat either.
  *
- * So the legacy numeric path is used: `size={60}` puts 60px inline and its own derivation lands on
- * `var(--ls-tighter)` above 28px, which is exactly what §3.1 asks for. The one thing it gets wrong
- * is `line-height: 1` where §3.1 wants `--lh-tight`, and `style` spreads LAST in the component, so
- * the correction goes through the component's own prop rather than through a stylesheet that could
- * not win. Both values are tokens; neither is a literal.
+ * 🔴 AND THE NAME NOW HAS TO CHANGE SIZE ON A BREAKPOINT, WHICH THE OLD SPELLING COULD NOT DO.
+ * The legacy design steps the name down at its narrow rung (`.hd-name` 3rem → 2.25rem at 600px)
+ * and it must: at 390 the content box is 342px and "Akhil Saxena" at 60px measures ~360px, so a
+ * fixed inline 60 either wraps the name or overflows the viewport. An inline style cannot be
+ * changed by a media query.
+ *
+ * The escape hatch is the component's own: `style` spreads LAST in `Heading` (MEASURED, same
+ * chunk), so `style={{ fontSize: 'var(--hm-name)' }}` beats the numeric path's inline `fontSize`,
+ * and `--hm-name` is a custom property `home.css` §1 drives from the ladder's own 673px rung —
+ * `--text-4xl` below it, `--text-5xl` at and above. Both are tokens; neither is a literal, and
+ * `size={60}` is kept because its OTHER inline — the `--ls-tighter` letter-spacing derivation
+ * above 28px — is exactly what §3.1 asks for and is not overridden.
+ *
+ * ================================================================================================
+ * THE SERIF VOICE — A NEW UPSTREAM FINDING (D-22), TAKEN THE SAME WAY
+ * ================================================================================================
+ *
+ * All three identity lines are Playfair in BOTH sources. Phase 5 shipped the intro as sans 13px
+ * (`Text` default), which is the single most-visible drift.
+ *
+ * MEASURED, `chunk-FNB2IYRN.js`: `Text`'s `baseStyle` inlines `fontFamily: "var(--font)"`, and
+ * the component's only family lever is `mono` — a BOOLEAN that swaps to `var(--mono)`. There is
+ * no `display`/`serif` selector, so on a site whose voice IS the serif, body text in the brand
+ * face cannot be expressed through the component's API at all, and no consumer class can beat an
+ * inline style. **Filed as D-22.**
+ *
+ * Until it lands, the same documented escape hatch: `style` spreads last, so the family is handed
+ * through as `var(--display)` at the call site. It is a token, not a literal — this is the design
+ * system speaking through the page, which is what `gate:app-css` calls a handover.
+ *
+ * ================================================================================================
+ * THE CTAs COME FROM `home_config.json` AND ARE `Link`s, NOT BUTTONS — D-5, D-6 AND D-4
+ * ================================================================================================
+ *
+ * `home_config.ctas` is CMS content Akhil edits: two records, `{ text, link, style }`, and the
+ * legacy page renders both (`.hd-cta-primary` filled, `.hd-cta-secondary` outlined). The record
+ * is READ here and never written.
+ *
+ * The legacy treatment is two BUTTON-SHAPED ANCHORS and the design system cannot express one:
+ * MEASURED, `Button` extends `ButtonHTMLAttributes<HTMLButtonElement>` and has no `as` prop, so
+ * it is always a `<button>`; `Link` HAS `as?: ElementType` but its variants are text links, and
+ * the one that fits semantically — `action`, "bold action link with trailing arrow" — inlines
+ * `textDecorationColor: "rgba(0, 0, 0, 0.25)"`, a literal colour that is invisible on `#0d0d0f`
+ * and is the same root cause as the `Footer` link defect already filed.
+ *
+ * The Core Value says a gap the design system exposes is a FINDING, not a workaround, so the
+ * bespoke filled button is not re-implemented in app CSS here. **BOTH HALVES WERE ALREADY FILED**
+ * — `Button`'s missing `as` is D-5 (and D-6, which files the same asymmetry across four components)
+ * and `action`'s inline colour is D-4 — so this plan adds no number and cites theirs. The CTAs
+ * ship as `Link variant="default"` / `"quiet"`, the two stylesheet-only variants. That is also
+ * the house precedent: `/resume`'s primary CTA, "Download the PDF", is exactly this spelling.
+ * **This is the one place the design system beat the legacy design, and it is reported as such.**
+ *
+ * ================================================================================================
+ * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 1)
+ * ================================================================================================
+ *
+ * No `client:*` directive appears on this page or in any component it renders. Every
+ * design-system component below is server-rendered to static HTML. The two acts are `min-height`,
+ * DOM order, a real `<a href="#work">` and a `position: sticky` — there is nothing to hydrate,
+ * which is also why there is nothing to trap a keyboard user in.
  */
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Link } from '@akhil-saxena/design-system/components/Link';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import homeConfig from '../../data/home_config.json';
 import HomeActTwo from '../components/public/HomeActTwo.astro';
@@ -73,9 +142,14 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import '../styles/home.css';
 
 /**
- * §13.2, the copy contract's Home row, verbatim including the arrow. It is the page's only CTA in
- * state A and the only focusable element there, which is what makes "one Tab and one Enter from
- * the landing" true.
+ * §13.2, the copy contract's Home row, verbatim including the arrow — and the design handoff's
+ * scroll cue, whose own wording is `↓ THE WORK`.
+ *
+ * THE PINNED STRING WINS OVER THE HANDOFF'S WORDING HERE, deliberately: it is asserted character
+ * for character by `test/public/home.node.test.ts`, it says what the control DOES rather than
+ * where it points, and changing it would be a navigation change for no visual gain — the cue's
+ * appearance (mono, `--text-xs`, wide tracking, centred under the CTAs) is the handoff's and is
+ * carried by `home.css` §3. Recorded as a handoff/legacy divergence in this plan's report.
  */
 const SCROLL_PROMPT = 'SCROLL FOR THE WORK ↓';
 
@@ -85,7 +159,42 @@ const SCROLL_PROMPT = 'SCROLL FOR THE WORK ↓';
  */
 const HOME_RENDER_MARKER = 'home-render-ok';
 
-const { title, subtitle, intro } = homeConfig;
+/**
+ * The identity lines and the two CTAs, all four READ from `data/home_config.json` and none of
+ * them written. Home's three strings are deliberately unpinned so Akhil can edit them through
+ * `/admin`; `test/public/copy-contract.node.test.ts` asserts the page renders what the RECORD
+ * says rather than a literal, so editing the record moves both sides together.
+ */
+const { title, subtitle, intro, ctas } = homeConfig;
+
+/**
+ * The `style` field on a CTA record is CONTENT, so it cannot be trusted to name a design-system
+ * variant directly — a typo in the CMS would render an unstyled link with no error. It is mapped,
+ * and an unmapped value THROWS at build time rather than shipping a bare anchor on the site's
+ * primary route.
+ *
+ * `default` and `quiet` are the only two stylesheet-only `Link` variants. §4.6a MEASURED that
+ * `inline`, `footer` and `action` set `color` — and `action` and `footer` also set
+ * `textDecorationColor: "rgba(0, 0, 0, 0.25)"` — as INLINE styles, which beat any app rule at any
+ * specificity while every jsdom test still passes, because jsdom implements no CSS specificity.
+ * On `#0d0d0f` that underline is invisible. Do not "improve" these to `action`; see D-4.
+ */
+const CTA_VARIANT: Record<string, 'default' | 'quiet'> = {
+  primary: 'default',
+  secondary: 'quiet',
+};
+
+const homeCtas = ctas.map((cta) => {
+  const variant = CTA_VARIANT[cta.style];
+  if (!variant) {
+    throw new Error(
+      `Home: home_config.ctas has style "${cta.style}", which has no Link variant in CTA_VARIANT ` +
+        `(${Object.keys(CTA_VARIANT).join(', ')}). Rendering an unstyled anchor would put an ` +
+        "unthemed control in the middle of the site's first viewport with nothing to catch it.",
+    );
+  }
+  return { ...cta, variant };
+});
 ---
 
 <PublicLayout mainClass="pub-max-home">
@@ -101,26 +210,76 @@ const { title, subtitle, intro } = homeConfig;
     SCROLL POSITION — `display: none`, `visibility: hidden`, `aria-hidden` and `inert` are all
     forbidden on both states, and a screen-reader user reads photographs → work → résumé linearly
     and never encounters the two-state framing at all.
+
+    `.hm-stage` INSIDE `.hm-a` is the legacy `.home-d` column, and the split is load-bearing:
+    `.hm-a` owns the VIEWPORT BUDGET (`min-height`, `position: sticky`, the full 1080px page
+    measure it inherits) while `.hm-stage` owns the 800px CENTRED COLUMN the composition is.
+    Written as one element, the sticky box would be 800px wide and Act 2 would scroll over a
+    strip rather than over the act. See `home.css` §1.
   */
   }
   <div class="hm-a">
-    <div class="hm-identity">
-      <Heading
-        level={1}
-        size={60}
-        weight={700}
-        style={{ lineHeight: 'var(--lh-tight)' }}
-        data-home-marker={HOME_RENDER_MARKER}
-      >
-        {title}
-      </Heading>
-      <p class="hm-subtitle">{subtitle}</p>
-      <Text className="hm-intro" size="base" tone="secondary">{intro}</Text>
+    <div class="hm-stage">
+      <header class="hm-identity">
+        <Heading
+          level={1}
+          size={60}
+          weight={700}
+          style={{ fontSize: 'var(--hm-name)', lineHeight: 'var(--lh-tight)' }}
+          data-home-marker={HOME_RENDER_MARKER}
+        >
+          {title}
+        </Heading>
+
+        {
+          /* Playfair italic, muted — the handoff's subtitle role and the legacy `.hd-tagline`.
+            `style` spreads last in `Text`, which is the only way past its inline `font-family`;
+            see this file's header and D-22. */
+        }
+        <Text
+          as="p"
+          className="hm-subtitle"
+          size="lg"
+          tone="muted"
+          style={{ fontFamily: 'var(--display)', fontStyle: 'italic' }}
+        >
+          {subtitle}
+        </Text>
+
+        {
+          /* SERIF, not sans. `.hd-intro` is `font-family: var(--font-serif)` in the legacy
+            stylesheet and Playfair 21px in the handoff; Phase 5 shipped it sans at `--text-base`,
+            which is the drift Akhil saw first. */
+        }
+        <Text
+          as="p"
+          className="hm-intro"
+          size="lg"
+          tone="secondary"
+          style={{ fontFamily: 'var(--display)' }}
+        >
+          {intro}
+        </Text>
+      </header>
+
+      <PeekGrid />
+
+      {
+        /* `.hd-ctas` — a centred row that becomes a stacked column at the narrow rung, exactly as
+          the legacy stylesheet does it. The records are the CMS's; the variants are D-4's. */
+      }
+      <div class="hm-ctas">
+        {
+          homeCtas.map((cta) => (
+            <Link href={cta.link} variant={cta.variant} className="hm-cta">
+              {cta.text}
+            </Link>
+          ))
+        }
+      </div>
+
+      <a class="hm-prompt" href="#work">{SCROLL_PROMPT}</a>
     </div>
-
-    <PeekGrid />
-
-    <a class="hm-prompt" href="#work">{SCROLL_PROMPT}</a>
   </div>
 
   <HomeActTwo />

@@ -242,7 +242,22 @@ const HANDOVER_KEYWORDS = new Set([
  * 2. The partition
  * ------------------------------------------------------------------------------------------- */
 
-/** (L) — positions, sizes, flows, fragments, scrolls a box. */
+/**
+ * (L) — positions, sizes, flows, fragments, scrolls a box.
+ *
+ * `transform` AND ITS INDIVIDUAL LONGHANDS ARE HERE, AND THE PLACEMENT IS ARGUED RATHER THAN
+ * CONVENIENT. A `transform` translates, rotates or scales a box: it is the same class of statement
+ * as `margin` or `width`, made in paint space instead of in layout space, and its values are
+ * geometric — lengths, angles and ratios. The design system names no `--scale-*`, `--translate-*`
+ * or `--rotate-*`, so there is nothing to hand through and nothing to originate IN A DIMENSION IT
+ * ALREADY NAMES, which is the definition's actual test. A literal colour inside one is still
+ * refused, because [CSS-COLOUR] refuses colour in every property everywhere.
+ *
+ * This entry was added by 05-16, which needed the peek tile's `scale(1.05)` hover — a value
+ * carried by BOTH design sources — and found the gate refusing it by name. That is the allow-list
+ * behaving as designed: an imagination gap produced a LOUD false alarm and one line of thought,
+ * rather than a silent miss.
+ */
 const LAYOUT = new Set(
   (
     'display position inset inset-block inset-inline top right bottom left z-index box-sizing ' +
@@ -265,6 +280,7 @@ const LAYOUT = new Set(
     'background-origin ' +
     'scroll-snap-type scroll-snap-align scroll-snap-stop scroll-behavior overscroll-behavior ' +
     'scroll-margin scroll-margin-top scroll-margin-bottom scroll-padding scroll-padding-top ' +
+    'transform transform-origin translate rotate scale perspective perspective-origin ' +
     'contain isolation float clear visibility resize touch-action pointer-events ' +
     'text-align text-align-last white-space word-break hyphens vertical-align writing-mode ' +
     'direction text-indent tab-size'
@@ -346,6 +362,15 @@ const FREE = new Map(
     'text-decoration-thickness':
       'as text-decoration: the design system names no rule thickness, so there is nothing to hand through.',
     'text-underline-offset': 'no token names an underline offset.',
+    'transition-property':
+      'it names WHICH property animates, not how fast or with what curve — a property NAME is not ' +
+      'a value in any dimension the design system tokenises, and there is no `--transition-*` to ' +
+      'hand through. It is FREE rather than TOKENISED because the `transition` SHORTHAND cannot ' +
+      'be written without it and therefore cannot be written token-only at all: its first term is ' +
+      'always a bare property name, which `originatesInDimension` reads as an origination. That is ' +
+      'exactly what DEBT-CARD-TRANSITION records on /work. Splitting the shorthand into ' +
+      '`transition-property` + `-duration` + `-timing-function` is the ONLY spelling in which a ' +
+      'consumer transition is fully tokenised, so refusing this property would mandate the debt.',
     'font-style': 'italic/normal has no token; the system exposes no `--style-*`.',
     'font-variant-numeric': 'tabular figures are a rendering choice with no token.',
     'font-feature-settings': 'an OpenType feature is a rendering choice with no token.',

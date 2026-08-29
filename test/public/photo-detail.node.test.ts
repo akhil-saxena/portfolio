@@ -501,6 +501,7 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
     const generated = new Set(manifest.map((record) => photoHref(record)));
     const seen = new Set<string>();
     let tiles = 0;
+    let redirected = 0;
 
     for (const url of GALLERY_URLS) {
       const gallery = await get(url);
@@ -526,8 +527,18 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
           generated.has(href),
           `${url} links to ${href}, which no page was generated for`
         ).toBe(true);
-        const page = await get(`${href}/`);
+        /*
+         * FETCHED VERBATIM — no trailing slash added, because the point is the path a reader's
+         * browser actually follows. MEASURED: the emitted href answers 307 to the slashed form and
+         * then 200, so a tile costs one redirect hop and lands on the page. The first version of
+         * this block appended the slash before fetching, which is the shape that would have PASSED
+         * had the un-slashed form 404'd — it would have missed the exact defect a reader clicking a
+         * tile would hit. `fetch` follows the hop, so `status` is the end of the chain and
+         * `redirected` records that there was one.
+         */
+        const page = await get(href);
         expect(page.status, `the tile href ${href} is not answered by a page`).toBe(200);
+        if (page.redirected) redirected += 1;
         expect(
           page.html,
           `${href} answered, but with something that is not a photo page`
@@ -540,7 +551,9 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
     expect(seen.size, 'the tiles do not cover every generated page').toBe(generated.size);
     report(
       `join: ${tiles} tile href(s) across ${GALLERY_URLS.length} built gallery documents, ` +
-        `${seen.size} distinct, every one answered 200 by a photo page; ${generated.size} pages generated`
+        `${seen.size} distinct, every one fetched VERBATIM and answered 200 by a photo page ` +
+        `(${redirected} of ${tiles} through one 307 to the slashed form); ` +
+        `${generated.size} pages generated`
     );
   });
 });

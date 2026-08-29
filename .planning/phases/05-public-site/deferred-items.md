@@ -166,3 +166,36 @@ you do not own, it is a wave-mate mid-edit, not your regression — say so rathe
   is specifically the space BETWEEN two expressions that does not survive the slot crossing.
 - It renders as a page that looks almost right, on every affected route, with a green build. Compose
   the string in frontmatter. 05-07 does, and asserts the exact string over HTTP.
+
+### 6. `<script type="module">` is the wrong predicate for "does this route hydrate" under Astro 7
+
+- **Owner:** **05-14**, and whoever revises `05-UI-SPEC.md` §5.2 and §5.3.
+- **Measured** on the build that landed the island (05-12): a hydrated `/photos` document carries
+  **zero** `<script type="module">`. Astro 7 emits `<astro-island component-url="…" component-export="…"
+  renderer-url="…">` plus **three** classic `<script>` blocks — the shell's theme block and two
+  bootstrap blocks, the second of which reaches the chunk through a dynamic `import()`.
+- So §5.3's assertion 1 ("zero `<script type="module" src=`" on a static route) is **vacuously true
+  everywhere**, and its assertion 3 ("exactly one island entry" on a gallery route, spelled the same
+  way) is **red against a correct build**. 05-12's own plan carried both spellings in its `<verify>`
+  blocks and both were replaced; `test/public/lightbox.node.test.ts` and the rewritten block in
+  `test/public/photos-routes.node.test.ts` assert on `<astro-island>` instead.
+- **§5.2 needs the same repair.** Its rule is "a public route may carry at most one
+  `<script is:inline>` … and it is the theme script". A gallery route now carries three `<script>`
+  blocks; two are Astro's own hydration runtime, not authored ones. The rule has to distinguish
+  authored `is:inline` blocks from the island bootstrap or it refuses the one route it permits to
+  hydrate. Measured bytes: theme block 1,452 B, bootstrap blocks 316 B and 4,380 B.
+- 05-08 flagged the hole this closes: *"Not closed by anything today: a dynamic `import()` inside a
+  classic script."*
+
+### 7. `astro check`'s Result line reports "0 warnings" while printing six
+
+- **Owner:** informational, for anyone reading a build log in this repository.
+- **Measured** by 05-12: `npm run build` prints six `warning ts(…)` diagnostics and then
+  `Result (132 files): 0 errors / 0 warnings / 7 hints`. The printed diagnostics are real; the count
+  is not. 05-07 and 05-08 both recorded "0 warnings" from that line while the same six were on
+  screen.
+- One of the six is **pre-existing and worth someone's attention**:
+  `src/components/public/PhotoGrid.astro:57 - warning ts(6196): 'Props' is declared but never used`,
+  on a component whose props are destructured three lines below the interface. 05-12 verified it is
+  **not** its own by restoring the file from `HEAD` and re-running `astro check` — the warning is
+  present on 05-07's committed version too. Left alone; it is out of 05-12's scope.

@@ -1,0 +1,42 @@
+# SEO-05. Served by Cloudflare Workers Static Assets, which reads this file out of the
+# assets directory — dist/client, per the adapter-generated dist/server/wrangler.json
+# ("assets": {"directory": "../client"}). Astro copies public/ into that directory verbatim.
+#
+# WHY THIS FILE AND NOT astro.config's `redirects` KEY — AND WHY THE PLAN'S REASON IS WRONG
+# Plan 05-13 says the config key "emits an HTML page carrying a meta http-equiv refresh" and that
+# SEO-05 rejects it. That is true of a static build with NO adapter. MEASURED here, with
+# adapter: cloudflare(): the config key emits NO HTML page at all — @astrojs/cloudflare compiles it
+# into this very file, writing BOTH /portfolio/ and /portfolio as real 301s, and a request answers
+#     HTTP/1.1 301  location: /photos  ·  0-byte body
+# exactly as the rules below do. So the plan's "assert no dist/client/portfolio/ document was
+# emitted" check CANNOT distinguish the two mechanisms in this repository; it is true and vacuous,
+# and the suite says so rather than counting it as evidence.
+#
+# The config key is nonetheless not what ships, for a reason that survives being measured: it is
+# invisible. A redirect is a routing decision served to every visitor (threat T-05-13-01) and it
+# should be reviewable where a reader looks for it, with its reasoning beside it — which is here.
+#
+# MEASURED, and it is why the suite asserts this file byte-for-byte against dist/client/_redirects:
+# with BOTH mechanisms present the adapter APPENDS its rules to this file's copy, silently
+# producing four rules where two were written, two of them duplicates, with no warning. A byte
+# comparison is the only check that notices a second, unreviewed source of redirects appearing.
+#
+# TWO LITERAL RULES, NO WILDCARD, NO CAPTURE (threat T-05-13-01)
+# `/portfolio/*  /photos/:splat  301` is the construct that turns a redirects file into an
+# open redirect, and it would also invent sub-paths that never existed. MEASURED on the
+# legacy branch: `git ls-tree -r --name-only legacy/nextjs-portfolio` under src/app/portfolio
+# contains exactly layout.tsx and page.tsx — no nested segment, no [slug], and the category
+# filter was React useState rather than a route. So /portfolio was one page and one page only.
+#
+# THE SECOND RULE IS NOT SYMMETRY, IT IS A MEASUREMENT
+# With only the unslashed rule present, MEASURED against real workerd:
+#     GET /portfolio   -> 301  location: /photos
+#     GET /portfolio/  -> 404
+# A rule does not match its own trailing-slash form. Every bookmark and inbound link ending
+# in /portfolio/ would have 404'd, which is the whole failure SEO-05 exists to prevent, and
+# no build error catches it. Both forms are asserted in test/public/seo.node.test.ts.
+#
+# Query strings are carried across by Cloudflare without being written here — MEASURED:
+# /portfolio?cat=nature&x=1 -> location: /photos?cat=nature&x=1
+/portfolio   /photos  301
+/portfolio/  /photos  301

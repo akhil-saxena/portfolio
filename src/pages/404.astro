@@ -1,36 +1,112 @@
 ---
-// Static, like every other public route. This page exists because wrangler.jsonc sets
-// assets.not_found_handling to "404-page", which needs a dist/404.html to serve — with
-// no such file the Workers asset handler falls back to a bare platform response.
+/**
+ * The 404, on the public shell. Plan 05-13, task 2.
+ *
+ * ================================================================================================
+ * WHY THIS ROUTE EXISTS AT ALL
+ * ================================================================================================
+ *
+ * `wrangler.jsonc` sets `assets.not_found_handling` to `"404-page"`, which needs a
+ * `dist/client/404.html` to serve — with no such file the Workers asset handler falls back to a
+ * bare platform response with no navigation, no theme and no copy. MEASURED against real workerd
+ * with this page in place: a request for `/nope-<random>` answers **404** and returns THIS
+ * document, not a platform page.
+ *
+ * ================================================================================================
+ * WHY IT CARRIES THE SHELL AND NOT A HAND-ROLLED DOCUMENT
+ * ================================================================================================
+ *
+ * The Phase 2 placeholder this replaces was a complete standalone `<html>` — its own `<head>`, its
+ * own `<style>`, no nav, no footer, no theme script. A reader who mistypes a URL therefore left the
+ * site's visual identity at the moment they most need a way back into it, and the page was
+ * unthemed: a dark-mode reader got a white flash and a white page.
+ *
+ * On `PublicLayout` it inherits all of that for free — the nav, the footer, the single inline theme
+ * block (so no flash), and the gutter ladder — which is also why the ladder gate keeps covering it.
+ *
+ * ================================================================================================
+ * 🔴 IT DELIBERATELY DOES NOT USE `<Seo>`, AND THAT IS THE OPPOSITE OF AN OVERSIGHT
+ * ================================================================================================
+ *
+ * Every other route in this phase renders `<Seo>` and SEO-01 requires the full tag set on every
+ * page. This one must not, and the reason is specific rather than stylistic:
+ *
+ *   - `<Seo>` emits `<link rel="canonical">`. A canonical on a 404 declares the not-found URL to be
+ *     a canonical page of this site, which is the definition of a soft 404. The status code says
+ *     "this is not a page" and the canonical would say "this is the page" — a crawler resolves that
+ *     contradiction in favour of the tag it can act on.
+ *   - `<Seo>` emits `og:url`, `og:image` and `og:title`. A 404 sharing as a photograph of Singapore
+ *     with a real-looking title is worse than sharing as nothing.
+ *
+ * So the head slot carries a `<title>` and the `noindex` this page has always had, and nothing
+ * else. `test/public/seo.node.test.ts` excludes exactly `404.html` from the pages it audits, and
+ * asserts that it is BOTH excluded from the sitemap AND present on disk — an exclusion asserted
+ * against a document that does not exist is vacuously true, which is how this would have rotted.
+ *
+ * ================================================================================================
+ * COPY — §13.2, VERBATIM, INCLUDING ONE JUDGEMENT ALREADY RECORDED
+ * ================================================================================================
+ *
+ *     **Not found.**
+ *     *There is nothing at this address.*
+ *     → `Go to the home page`
+ *
+ * THE ARROW IS THE TABLE'S MARKER FOR "THEN A LINK", NOT COPY — it sits outside the backticks,
+ * exactly as it does in the empty-category row directly above, where 05-07 recorded the same
+ * reading in `PhotoEmpty.tsx`. Rows whose arrow IS copy carry it inside the backticks
+ * (`ALL WORK →`, `SCROLL FOR THE WORK ↓`). The trailing period on "Not found." is likewise the
+ * table's, and is kept for the same reason `PhotoEmpty` keeps "…yet.".
+ *
+ * ================================================================================================
+ * ZERO FRAMEWORK JAVASCRIPT (§5.1)
+ * ================================================================================================
+ *
+ * `Heading`, `Text` and `Link` are design-system React components rendered to static markup at
+ * build time — no `client:*` directive, so no island, no hydration and no module script. They are
+ * imported by subpath, never through the barrel, which `gate:ds` enforces.
+ */
+
+import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import { Text } from '@akhil-saxena/design-system/components/Text';
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+/** Where the one link goes. Named so the markup and this file's own docstring cannot disagree. */
+const HOME_PATH = '/';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Not found — akhilsaxena.com</title>
+<PublicLayout mainClass="pub-max-home">
+  <Fragment slot="head">
+    <title>Not found — Akhil Saxena</title>
     <meta name="robots" content="noindex" />
-  </head>
-  <body>
-    <main>
-      <h1>Not found</h1>
-      <p>There is nothing at this address.</p>
-      <p><a href="/">Go to the home page</a></p>
-    </main>
-  </body>
-</html>
+  </Fragment>
+
+  <div class="nf-page">
+    <Heading level={1} size="lg">Not found.</Heading>
+    <Text variant="small">There is nothing at this address.</Text>
+    {
+      /* `variant="default"` — §4.6a measured that `inline`, `footer` and `action` set `color` as an
+         INLINE style, which beats any app rule while every jsdom test still passes. */
+    }
+    <Link href={HOME_PATH} variant="default">Go to the home page</Link>
+  </div>
+</PublicLayout>
 
 <style>
-  body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    line-height: 1.5;
-  }
-
-  main {
-    max-inline-size: 68ch;
-    margin-inline: auto;
-    padding: 2rem 1rem;
+  /*
+   * Layout only — no colour, no type size, no font family. Every one of those belongs to the
+   * design-system components above, which is the project's core value rather than a preference.
+   *
+   * The stack mirrors `.ph-empty` in `src/styles/photos.css` deliberately: the two states are the
+   * same shape (a heading, a line of prose, a link) and a reader who meets both should not find
+   * them spaced differently. It is not extracted into a shared rule because this route is the only
+   * other consumer and `src/styles/` holds one file per route, not per shape.
+   */
+  .nf-page {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding-block: var(--space-16);
   }
 </style>

@@ -977,6 +977,235 @@ test.describe('the whole gallery, in a real DOM', () => {
   });
 });
 
+/* ══ PUB-13 — THE LIGHTBOX, MEASURED IN A BROWSER RATHER THAN READ IN A STYLESHEET ═════════════
+ *
+ * 🔴 THIS IS THE ONE PART OF PUB-13 THAT WAS PROVEN AT THE GREP TIER, AND THIS BLOCK IS THE FIX.
+ *
+ * `05-AUDIT.md` §2 measured suppression on the SHELL — `loadY` is 0 of 48 under `reduce` — and
+ * `test/public/*` assert that every snap and scroll-behaviour declaration sits inside a
+ * `no-preference` query. Neither touches the lightbox. The overlay declares
+ * `animation: lightboxFade 0.2s ease-out` (`.ds-atom-lightbox-backdrop`, `primitives.css`), the
+ * consumer adds no motion of its own (`PhotoLightbox.tsx` § MOTION), and the ONLY thing that
+ * suppresses that animation is the design system's own system-wide guard:
+ *
+ *     @media (prefers-reduced-motion: reduce) {
+ *       [class^="ds-"], … { animation-duration: 0.01ms !important; … }
+ *     }
+ *
+ * Until this test existed, that sentence was the entire proof — a line read out of a stylesheet.
+ * §2's `reduce` run never opened the lightbox, and §8a opened it at DEFAULT motion. So the
+ * requirement's weakest clause was carried by a grep, in a project whose own standard is that a
+ * computed style beats a grep and a browser beats both.
+ *
+ * WHAT IS MEASURED: `getComputedStyle(backdrop).animationName` and `.animationDuration`, on the
+ * real element, in the built artefact, in both motion projects.
+ *
+ * ================================================================================================
+ * WHY `animationName` IS ASSERTED AND NOT ONLY THE DURATION — THIS IS THE VACUITY TRAP
+ * ================================================================================================
+ *
+ * The guard is a BLANKET rule keyed on the class-name prefix, not on the lightbox. It applies
+ * `animation-duration: 0.01ms !important` to every `ds-`-prefixed element whether or not that
+ * element animates. So under `reduce` a duration read of `0.01ms` is ALSO what an element with NO
+ * ANIMATION AT ALL returns — the assertion would stay green if `lightboxFade` were deleted
+ * upstream, if the backdrop stopped carrying a `ds-` class, or if the overlay never animated in
+ * the first place. A duration-only check is a gate that cannot distinguish "the motion is
+ * suppressed" from "there is no motion", which is the same shape as the nineteen vacuous gates
+ * this project has already shipped.
+ *
+ * Hence two reads, and the pairing is the proof:
+ *
+ *   `animationName` must be `lightboxFade` in BOTH projects — there IS an animation to suppress,
+ *                   and it is still declared under `reduce` (the guard collapses the duration
+ *                   rather than removing the animation, which is deliberate upstream: many entry
+ *                   animations land their final opacity with `both`/forwards, and
+ *                   `animation: none` would revert the element to its invisible pre-animation
+ *                   frame. Its own comment says so).
+ *   `animationDuration` must be `0.2s` under `no-preference` and `0.01ms` under `reduce`.
+ *
+ * The `no-preference` half is the DISCRIMINATING CONTROL and is not decoration: the same read, on
+ * the same element, through the same instrument, returns a real 200ms. So `0.01ms` under `reduce`
+ * is a measurement of the guard rather than a property of the harness. A control that cannot
+ * return the failing value proves nothing.
+ *
+ * ================================================================================================
+ * VIEWPORT, AND WHY ONE CLASS
+ * ================================================================================================
+ *
+ * The guard is keyed on a media feature and a class prefix; no rule in the chain is width
+ * conditional, and the backdrop is `position: fixed` at every class. So this runs at ONE class —
+ * §8a's, taken from the declared table by label rather than typed — and that choice is stated
+ * here rather than left to be inferred from the absence of the other five.
+ *
+ * ================================================================================================
+ * THE OPEN IS A POLL, BECAUSE THE ISLAND IS `client:idle`
+ * ================================================================================================
+ *
+ * `PhotoLightbox` hydrates on idle, and BEFORE it hydrates a tile is still a working anchor to a
+ * prerendered page (that is PUB-04/PUB-09 working, not a defect). A single unconditional click
+ * would therefore NAVIGATE on a fast machine and open the overlay on a slow one — a coin flip
+ * that would land as an unattributable flake. So the click is retried until either the overlay
+ * appears or the attempt budget runs out, and a navigation is walked back. The attempt count is
+ * recorded, and exhausting the budget is a FAILURE naming the URL — never a skip.
+ */
+
+const LB_CLASS = CLASSES.find((c) => c.label === 'phone portrait');
+
+if (LB_CLASS === undefined) {
+  throw new Error(
+    'six-class.spec: the device table no longer declares a "phone portrait" class, so the ' +
+      'lightbox measurement has no viewport. Refusing to run it at an arbitrary one.'
+  );
+}
+
+/** The overlay the design system paints, and the animation it declares on it. */
+const LB_BACKDROP = '.ds-atom-lightbox-backdrop';
+const LB_ANIMATION = 'lightboxFade';
+
+/**
+ * What each motion project must read back, IN SECONDS. `0.2` is `primitives.css`'s own
+ * declaration on the backdrop; `0.00001` is the 0.01ms the reduced-motion guard collapses it to.
+ *
+ * 🔴 SECONDS, NOT THE STRING CHROMIUM PRINTS, AND THAT IS A CORRECTION RATHER THAN A PREFERENCE.
+ * Written first as a string comparison against `'0.01ms'`, this assertion failed on correct code:
+ * Chromium serialises the computed value in SECONDS and in exponential form, so the read is
+ * `"1e-05s"` and not `"0.01ms"`. A string equality would have to be "fixed" by pasting whatever
+ * the browser happened to print, which pins the assertion to a serialisation instead of to the
+ * quantity. `durationSeconds` parses and REFUSES anything it cannot read, so an unparseable value
+ * is a failure rather than a silent zero — a zero would satisfy "motion is suppressed" for free.
+ */
+const LB_EXPECTED_SECONDS: Readonly<Record<string, number>> = {
+  normal: 0.2,
+  reduce: 0.00001,
+};
+
+/**
+ * `"0.2s"` / `"1e-05s"` / `"200ms"` -> seconds. Throws on anything else: a duration this cannot
+ * read has NOT been measured, and returning 0 would look exactly like perfect suppression.
+ */
+function durationSeconds(computed: string): number {
+  const m = /^\s*(-?[0-9.]+(?:e[-+]?[0-9]+)?)(ms|s)\s*$/i.exec(computed);
+  if (m === null) {
+    throw new Error(
+      `six-class.spec: cannot read "${computed}" as a CSS duration. Refusing to convert an ` +
+        'unreadable value into a number, because 0 would read as perfect suppression.'
+    );
+  }
+  const n = Number(m[1]);
+  if (!Number.isFinite(n))
+    throw new Error(`six-class.spec: "${computed}" is not a finite duration`);
+  return m[2].toLowerCase() === 'ms' ? n / 1000 : n;
+}
+
+test.describe('PUB-13 — the lightbox backdrop, in both motion settings', () => {
+  test.use({ viewport: { width: LB_CLASS.width, height: LB_CLASS.height }, hasTouch: true });
+
+  test('the backdrop animates for 0.2s normally and is collapsed under `reduce`', async ({
+    page,
+  }, ti) => {
+    const expected = LB_EXPECTED_SECONDS[ti.project.name];
+    expect(
+      expected,
+      `no expected duration is declared for project "${ti.project.name}" — a new motion project ` +
+        'must state what it expects rather than inherit a pass'
+    ).toBeDefined();
+
+    // The emulation is asserted before anything is measured, for the reason every other block
+    // here asserts its pointer: an emulation that silently stopped working would report the
+    // DEFAULT motion setting's number as the reduced one, which is the exact false green.
+    const prefersReduce = await page.evaluate(
+      () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+    expect(
+      prefersReduce,
+      `project "${ti.project.name}" must actually resolve (prefers-reduced-motion: reduce) as ` +
+        `${ti.project.name === 'reduce'}`
+    ).toBe(ti.project.name === 'reduce');
+
+    const gallery = '/photos';
+    const response = await page.goto(gallery, { waitUntil: 'load' });
+    expect(response?.status(), `${gallery} must be a real prerendered document`).toBe(200);
+
+    // Anti-vacuity 1: there must be something to click. A gallery that rendered no tile would
+    // otherwise take the "never opened" path and report a timeout instead of an empty page.
+    const tiles = page.locator('#ph-grid a[data-lb-index]');
+    const tileCount = await tiles.count();
+    expect(
+      tileCount,
+      `${gallery} rendered no tile carrying data-lb-index — there is nothing to open, so this ` +
+        'measurement cannot pass'
+    ).toBeGreaterThan(0);
+
+    const backdrop = page.locator(LB_BACKDROP);
+    const galleryUrl = page.url();
+    const ATTEMPTS = 20;
+    let attempts = 0;
+    let opened = false;
+    for (; attempts < ATTEMPTS && !opened; attempts++) {
+      await tiles.first().click();
+      if ((await backdrop.count()) > 0) {
+        opened = true;
+        break;
+      }
+      // Not hydrated yet: the anchor navigated. Walk it back and try again.
+      if (page.url() !== galleryUrl) {
+        await page.goBack({ waitUntil: 'load' });
+      }
+      await page.waitForTimeout(150);
+    }
+
+    // Anti-vacuity 2: an overlay that never opened is a FAILURE. Skipping here would report a
+    // green audit over a measurement that was never taken.
+    expect(
+      opened,
+      `the lightbox never opened on ${gallery} after ${ATTEMPTS} clicks — the island did not ` +
+        'hydrate, or the overlay no longer carries ' +
+        LB_BACKDROP
+    ).toBe(true);
+
+    const measured = await backdrop.first().evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        animationName: cs.animationName,
+        animationDuration: cs.animationDuration,
+        animationDelay: cs.animationDelay,
+        transitionDuration: cs.transitionDuration,
+      };
+    });
+
+    record('lightbox-motion', {
+      project: ti.project.name,
+      class: LB_CLASS.n,
+      width: LB_CLASS.width,
+      height: LB_CLASS.height,
+      tiles: tileCount,
+      attempts: attempts + 1,
+      ...measured,
+    });
+
+    // The pairing. Name first — without it, `0.01ms` is what a non-animating element reads too.
+    expect(
+      measured.animationName,
+      `${LB_BACKDROP} must still DECLARE ${LB_ANIMATION} under "${ti.project.name}" — the guard ` +
+        'collapses the duration and must not remove the animation, and a duration assertion over ' +
+        'an element with no animation measures nothing'
+    ).toBe(LB_ANIMATION);
+
+    expect(
+      durationSeconds(measured.animationDuration),
+      `${LB_BACKDROP} computed animation-duration under "${ti.project.name}" ` +
+        `(read back as "${measured.animationDuration}")`
+    ).toBe(expected);
+
+    // The guard sets the delay too, and it is asserted so that a partial edit upstream is loud.
+    expect(
+      durationSeconds(measured.animationDelay),
+      `${LB_BACKDROP} computed animation-delay under "${ti.project.name}" ` +
+        `(read back as "${measured.animationDelay}")`
+    ).toBe(0);
+  });
+});
+
 /* ══ THE SCREENSHOT SET (task 2) ═══════════════════════════════════════════════════════════════
  *
  * `00-RESPONSIVE-CONTRACT.md` §9: every public capture is `-dark-` and the viewport token is one

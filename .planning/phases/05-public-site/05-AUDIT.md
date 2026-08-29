@@ -278,6 +278,73 @@ catching the self-scroll live in a single-load-per-class run.
 
 ---
 
+## 2a. PUB-13's last grep, closed in a browser
+
+§2 measured suppression on the **shell** — `loadY` 0 of 48 under `reduce` — and never opened the
+lightbox. §8a opened the lightbox and measured it at **default** motion. So the overlay's own
+`animation: lightboxFade 0.2s ease-out` was, until this run, suppressed only *on paper*: by reading
+the design system's system-wide guard out of `primitives.css` and believing it.
+
+**Verified present at the installed version rather than assumed from a line number.**
+`@akhil-saxena/design-system@2.0.0-beta.2`, `dist/primitives.css:7453` —
+`@media (prefers-reduced-motion: reduce) { [class^="ds-"], … { animation-duration: 0.01ms !important;
+animation-delay: 0ms !important; … } }`, and it survives minification into the shipped artefact as
+`animation-duration:.01ms!important`.
+
+**Measured** on the built artefact at 390 × 844 coarse (`test/audit/six-class.spec.ts`, both motion
+projects), by opening the overlay and reading `getComputedStyle` on the real element:
+
+| project | `animationName` | `animationDuration` | as seconds | `animationDelay` | tiles | clicks to open |
+|---|---|---|---|---:|---:|---:|
+| `normal` | `lightboxFade` | `0.2s` | 0.2 | `0s` | 40 | 1 |
+| `reduce` | `lightboxFade` | `1e-05s` | 0.00001 | `0s` | 40 | 1 |
+
+### The name is asserted with the duration, and that pairing is the whole point
+
+The guard is keyed on the **class-name prefix**, not on the lightbox, so under `reduce` it collapses
+the duration of every `ds-` element whether or not that element animates. A duration-only assertion
+would therefore read `0.01ms` — and pass — if `lightboxFade` were deleted upstream, if the backdrop
+stopped carrying a `ds-` class, or if the overlay had never animated at all. It cannot distinguish
+*"the motion is suppressed"* from *"there is no motion"*. Asserting `animationName === lightboxFade`
+in **both** projects is what makes the reduced-motion read a measurement of the guard.
+
+### 🔴 The first form of this assertion failed on correct code, and the fix was not to paste the browser's string
+
+Written as `expect(animationDuration).toBe('0.01ms')` it reported
+`Expected: "0.01ms" · Received: "1e-05s"`. Chromium serialises a computed duration in **seconds**,
+in exponential form. Pasting `"1e-05s"` in would have pinned the assertion to a serialisation rather
+than to a quantity, so the value is parsed to seconds and compared numerically, and the parser
+**throws** on anything it cannot read — a `0` returned from an unreadable value is indistinguishable
+from perfect suppression.
+
+### Proven able to fail — one plant and two vacuity runs, in `/bin/zsh` 5.9
+
+| # | what was done | result |
+|---|---|---|
+| 1 | **Plant.** The guard's `animation-duration: 0.01ms !important` line deleted from `node_modules/@akhil-saxena/design-system/dist/primitives.css` (exactly one occurrence, asserted before editing), `npm run build` | `[reduce]` **FAILED** naming the element: *".ds-atom-lightbox-backdrop computed animation-duration under \"reduce\" (read back as \"0.2s\") · Expected 0.00001 · Received 0.2"*. `[normal]` stayed green — the failure is **discriminating**, not a suite that reds on any change. The rebuilt artefact carried **0** occurrences of the guard's animation line. |
+| 2 | **Nothing to check, form A.** `AUDIT_ROOT` at a root whose `/photos` answers 200 and carries `#ph-grid` with no tiles | **FAILED**, both projects: *"/photos rendered no tile carrying data-lb-index — there is nothing to open, so this measurement cannot pass"* |
+| 3 | **Nothing to check, form B.** `AUDIT_ROOT` at the real `/photos` with all 3 `<script>` elements stripped — 40 tiles present, island can never hydrate | **FAILED**, both projects, after exhausting the click budget: *"the lightbox never opened on /photos after 20 clicks…"*. Never a skip. |
+| 4 | **Correct code.** `primitives.css` restored from a backup held **outside the repository**, `cmp` exit 0 and SHA-256 `bb70f209…` identical to the pre-plant digest; rebuilt | `dist/client/_astro/PublicLayout.pgvz42sB.css` returned **byte-identical** (`da86300a…`, same content-hashed filename), and both projects **PASS**. |
+
+### Residuals
+
+- **The open is a poll, not a single click.** `PhotoLightbox` is `client:idle`, and before it
+  hydrates a tile is still a working anchor to a prerendered page — which is PUB-04/PUB-09 working.
+  An unconditional click would navigate on a fast machine and open on a slow one. The click is
+  retried up to 20 times, a navigation is walked back, the attempt count is recorded (1 on every
+  run so far), and exhausting the budget is a failure.
+- **One class, stated rather than left to inference.** No rule in the chain is width-conditional and
+  the backdrop is `position: fixed` at every class, so this runs at §8a's class only.
+- **It measures the artefact this repository builds, not the npm tarball in the abstract.** The
+  guard could be removed upstream in a later beta and this test is what would notice — which is the
+  point of measuring it rather than reading it.
+- **`animation-duration` is not the same claim as "no motion is painted".** 0.01ms is one frame's
+  worth of nothing at any refresh rate, which is upstream's deliberate choice (collapsing the
+  duration keeps a `both`/forwards animation's end state where `animation: none` would revert the
+  element to its invisible first frame). This audit asserts the declared quantity, not a paint.
+
+---
+
 ## 3. The mutation controls — three, and only one of the two handed over survives
 
 ### What each control must do

@@ -88,7 +88,28 @@ you do not own, it is a wave-mate mid-edit, not your regression — say so rathe
 
 **Found by:** 05-07 (the gallery and the filter routes), 2026-08-29.
 
-### 1. 🔴 R-6 at 344px on EVERY public route — the AppBar's theme toggle overhangs by 14px
+### 1. ~~🔴~~ ✅ **RESOLVED 2026-08-29** — R-6 at 344px on every public route (the AppBar's theme toggle overhung by 14px)
+
+> **Fixed upstream in `@akhil-saxena/design-system@2.0.0-beta.2`, consumed at commit `2015b4d`.**
+> Re-measured on the built artefact at all six device classes and both pointers:
+> `document.documentElement.scrollWidth === window.innerWidth` on **all six routes at 344**, so the
+> overflow is **0**. `test/audit/six-class.spec.ts` now asserts `toBe(0)` with the class-1 special
+> case deleted, and `05-AUDIT.md` §1 carries the before/after.
+>
+> **The owner line below was wrong, and that is worth keeping.** This item named the shell —
+> `public-shell.css` / `PublicNav.tsx` — as owner and the AppBar row's padding as the fix. Neither
+> was reachable: `AppBar` rendered its two layout gaps as **inline styles on unnamed internal
+> `<div>`s**, which no consumer stylesheet can beat without `!important`. The real fix was
+> `.ds-atom-appbar-lead` / `.ds-atom-appbar-nav` getting real classes plus a
+> `@media (max-width: 380px)` rule, and it could only be made in the library. Filed as **D-21**;
+> the full record is in `05-DS-FINDINGS.md`.
+>
+> **Nothing below is deleted.** The measurement is what made the finding filable, and an item that
+> erases its evidence when it closes cannot be audited. Everything from here down was true of
+> `2.0.0-beta.1`.
+
+#### The original entry, as filed
+
 
 - **Owner:** the shell (05-06's `public-shell.css` / `PublicNav.tsx`), confirmed by **05-15**'s
   six-class audit.

@@ -39,7 +39,7 @@ system wins, and any gap it exposes is a finding rather than a workaround.
   to the repo via the GitHub API; there is nothing to write to at runtime.
 - **Security**: Auth fails closed. Mutating routes verify the signed Cloudflare Access
   JWT; a missing configuration denies rather than degrades.
-- **Performance**: Lighthouse 95+ on public pages, with a real budget on the 39-photo
+- **Performance**: Lighthouse 95+ on public pages, with a real budget on the full photo
   gallery.
 - **Live site is down** until cutover — accepted, but it is a clock on the project.
 <!-- GSD:project-end -->

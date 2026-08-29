@@ -319,7 +319,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. Home presents two acts — identity and photo grid filling the first viewport, work below; Work lists the five projects and the Brevo engineering strip; Résumé renders from structured data, offers the maintained PDF, and prints legibly
-  2. Photos shows all 39 images in a masonry gallery with no pagination, nothing shifts as it loads, and category filtering works as real links to prerendered `/photos/[category]` routes — crawlable, Back-button-capable, zero JavaScript
+  2. Photos shows every photograph in the manifest (40 today, and the page derives the count rather than declaring it) in a masonry gallery with no pagination, nothing shifts as it loads, and category filtering works as real links to prerendered `/photos/[category]` routes — crawlable, Back-button-capable, zero JavaScript
   3. Clicking a photo opens a lightbox dismissible by keyboard, backdrop and swipe, showing EXIF with absent fields omitted entirely rather than placeheld, and cameras and lenses shown as human names; each photo also has its own prerendered page with a social card
   4. A visitor can switch between dark and light, the choice persists, there is no flash of the wrong theme on first paint, motion is suppressed under `prefers-reduced-motion`, and four of the five public routes ship zero framework JavaScript
   5. Every page carries a canonical URL plus Open Graph and Twitter card metadata, the résumé carries `Person` structured data, a sitemap is generated, and the legacy `/portfolio` path 301s to `/photos`

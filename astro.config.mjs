@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
+import sitemap from '@astrojs/sitemap';
 import { defineConfig, envField } from 'astro/config';
 // Astro loads this config through Vite, so it can import TypeScript out of src/ — measured, not
 // assumed (plan 03-08, experiment 4f). Note the explicit `.ts`: `src/schemas/index.ts` re-exports
@@ -126,6 +127,63 @@ const contentGate = {
   },
 };
 
+/**
+ * SEO-03's filter, and the two things MEASURED about it that the plan predicted wrongly.
+ *
+ * MEASUREMENT 1 — `/404` needs no filter, and a filter cannot be what excludes it.
+ * ------------------------------------------------------------------------------
+ * Plan 05-13 instructs "configure a `filter` excluding `/404`" and prescribes a control that
+ * removes that filter and watches the exclusion assertion go red. Built once with a bare
+ * `sitemap()` and no filter at all, the emitted `dist/client/sitemap-0.xml` held **52** `<loc>`
+ * entries and NONE of them was `/404` — `@astrojs/sitemap` drops Astro's 404 route itself. So the
+ * prescribed control is structurally impossible: removing the filter changes nothing, and an
+ * exclusion assertion "proven" that way would have been proven against a no-op. The absence is
+ * still asserted in `test/public/seo.node.test.ts`, and it is proven able to fail by PLANTING a
+ * 404 entry (`customPages`) rather than by removing a filter that never did the work.
+ *
+ * MEASUREMENT 2 — the real leak was `/admin`, and the plan does not mention it.
+ * ---------------------------------------------------------------------------
+ * That same unfiltered build listed `https://akhilsaxena.com/admin/` — the private CMS, gated by
+ * Cloudflare Access, advertised to every crawler. `/admin` carries `export const prerender = false`
+ * and emits no file under `dist/client/` at all, so the sitemap was naming a route Static Assets
+ * cannot serve and the Worker answers only with a valid Access JWT. That is threat T-05-13-02's
+ * named failure mode ("a sitemap that lists a route the site does not serve") arriving through the
+ * one route where it is also an information-disclosure finding, and it reached this config only
+ * because the build was inspected rather than assumed.
+ *
+ * WHY THE LIST IS RESTATED HERE RATHER THAN IMPORTED
+ * -------------------------------------------------
+ * `src/middleware.ts` owns `RUN_WORKER_FIRST_PATTERNS`, the same four patterns `wrangler.jsonc`
+ * sets on `assets.run_worker_first`. It is neither exported nor importable from here: that module's
+ * first import is `astro:middleware`, a virtual module that exists only inside Astro's own module
+ * graph, so pulling it into the config would fail at config load. Exporting the constant means
+ * editing a file this plan does not own while 05-12 runs in the same tree.
+ *
+ * The drift that costs is therefore caught downstream instead of prevented upstream, and it is
+ * caught twice: `test/public/seo.node.test.ts` asserts every sitemap URL resolves to a real file
+ * under `dist/client/` AND fetches every one of them over HTTP expecting 200. A protected or
+ * non-existent route reappearing here fails both, independently of this list. 05-14 should export
+ * the constant and collapse the two definitions.
+ */
+const NON_PUBLIC_SITEMAP_PREFIXES = ['/admin', '/api', '/_actions'];
+
+/**
+ * `@astrojs/sitemap` calls this with the page's FULL ABSOLUTE URL, not a pathname — measured:
+ * `https://akhilsaxena.com/admin/`. Parsing it rather than matching the raw string means a prefix
+ * cannot accidentally match inside the origin.
+ */
+function isPublicSitemapUrl(page) {
+  const { pathname } = new URL(page);
+  // `pathname === prefix || startsWith(prefix + '/')`, and NOT a bare `startsWith(prefix)`. The
+  // loose form matches `/apifoo` and `/administrators` — the identical trap `src/middleware.ts`
+  // documents on its own matcher, where an over-broad pattern is the harmless direction and an
+  // under-broad one fails open. Here it is reversed: over-broad silently DROPS a public route from
+  // the sitemap, which no build error catches. The two-way check in the suite is what would.
+  return !NON_PUBLIC_SITEMAP_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
 export default defineConfig({
   // The `output` key is deliberately absent. 'static' is the default, and attaching an
   // adapter does NOT flip it — it only unlocks `export const prerender = false` on the
@@ -144,7 +202,7 @@ export default defineConfig({
     imageService: 'passthrough',
   }),
 
-  integrations: [react(), contentGate],
+  integrations: [react(), contentGate, sitemap({ filter: isPublicSitemapUrl })],
 
   // No sessions. Astro would otherwise auto-provision a Cloudflare KV namespace for a
   // SESSION binding on deploy; nothing here stores server session state (auth is a

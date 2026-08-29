@@ -320,10 +320,22 @@ canary(
     return splitAtDepthZero(d[0].selector).length === 2;
   })()
 );
-canary('media minimum, source spelling', readMediaMinimum('@media (min-width: 673px)').minWidth === 673);
-canary('media minimum, built range spelling', readMediaMinimum('@media (width>=673px)').minWidth === 673);
-canary('media minimum, reversed range spelling', readMediaMinimum('@media (673px<=width)').minWidth === 673);
-canary('media minimum, whitespace-free source spelling', readMediaMinimum('@media(min-width:673px)').minWidth === 673);
+canary(
+  'media minimum, source spelling',
+  readMediaMinimum('@media (min-width: 673px)').minWidth === 673
+);
+canary(
+  'media minimum, built range spelling',
+  readMediaMinimum('@media (width>=673px)').minWidth === 673
+);
+canary(
+  'media minimum, reversed range spelling',
+  readMediaMinimum('@media (673px<=width)').minWidth === 673
+);
+canary(
+  'media minimum, whitespace-free source spelling',
+  readMediaMinimum('@media(min-width:673px)').minWidth === 673
+);
 canary(
   'an extra media condition is SEEN and REPORTED',
   (() => {
@@ -331,7 +343,10 @@ canary(
     return r.minWidth === 673 && r.extra === 'screen';
   })()
 );
-canary('a bare width minimum reports no extra condition', readMediaMinimum('@media (width>=673px)').extra === '');
+canary(
+  'a bare width minimum reports no extra condition',
+  readMediaMinimum('@media (width>=673px)').extra === ''
+);
 
 if (canaryFailures.length > 0) {
   err('assert-gutter-ladder: SELF-TEST FAILED — the gate cannot be trusted.');
@@ -448,7 +463,11 @@ const builtRungs = rungDecls.map((d) => {
   };
 });
 
-builtRungs.sort((a, b) => (typeof a.minWidth === 'number' ? a.minWidth : -1) - (typeof b.minWidth === 'number' ? b.minWidth : -1));
+builtRungs.sort(
+  (a, b) =>
+    (typeof a.minWidth === 'number' ? a.minWidth : -1) -
+    (typeof b.minWidth === 'number' ? b.minWidth : -1)
+);
 
 if (builtRungs.length !== GUTTER_RUNGS.length) {
   findings.push(
@@ -514,7 +533,9 @@ for (const d of maxWidthDecls) {
 }
 
 if (seenMax.size === 0) {
-  err(`assert-gutter-ladder: not one \`.pub-max-*\` rule in ${cssFiles.length} stylesheet(s) under`);
+  err(
+    `assert-gutter-ladder: not one \`.pub-max-*\` rule in ${cssFiles.length} stylesheet(s) under`
+  );
   err(`  ${rel(distRoot)}. The page maxima did not ship and this run cannot pass.`);
   process.exit(1);
 }
@@ -582,5 +603,7 @@ for (const r of builtRungs) {
 }
 out('  page maxima found:');
 for (const [key, wantPx] of Object.entries(PAGE_MAX)) {
-  out(`    ${`.pub-max-${key}`.padEnd(16)} ${seenMax.get(key).value}   (PAGE_MAX.${key} = ${wantPx})`);
+  out(
+    `    ${`.pub-max-${key}`.padEnd(16)} ${seenMax.get(key).value}   (PAGE_MAX.${key} = ${wantPx})`
+  );
 }

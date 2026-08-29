@@ -218,8 +218,9 @@ describe('site-meta — every refusal, driven by replacing the manifest', () => 
   });
 
   it('refuses a manifest with no such id, naming the id and the record count', async () => {
-    await expect(loadWith([{ id: 'nature-somethingelse', alt: 'x', urls: { large: 'https://x/y' } }]))
-      .rejects.toThrow(new RegExp(`no record with id "${SITE_OG_IMAGE_ID}"`));
+    await expect(
+      loadWith([{ id: 'nature-somethingelse', alt: 'x', urls: { large: 'https://x/y' } }])
+    ).rejects.toThrow(new RegExp(`no record with id "${SITE_OG_IMAGE_ID}"`));
   });
 
   it('refuses a record with no urls.large, rather than emitting an empty og:image', async () => {
@@ -314,7 +315,8 @@ describe('Seo.astro — SEO-01 emits the whole tag set, once, from props', () =>
  * ========================================================================================== */
 
 describe('PublicLayout.astro — PUB-14 and §5.2', () => {
-  const scriptBlocks = (source: string) => [...source.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
+  const scriptBlocks = (source: string) =>
+    [...source.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
 
   it('carries exactly one <script>, and it is is:inline', () => {
     const blocks = scriptBlocks(templateOf(read(LAYOUT_SRC)));
@@ -403,8 +405,10 @@ describe('the design-system stylesheet is imported once, from the shell, and now
         offenders.push(file);
       if (/@akhil-saxena\/design-system\/(themes|fonts)\//.test(code)) offenders.push(file);
     }
-    expect(offenders, 'the four sheets must be reached only through src/styles/design-system.css')
-      .toEqual([]);
+    expect(
+      offenders,
+      'the four sheets must be reached only through src/styles/design-system.css'
+    ).toEqual([]);
   });
 });
 
@@ -417,9 +421,18 @@ describe('public-shell.css — the five sites the ladder has to be paid back at 
   const SITES = [
     ['1 · the shell pays the gutter', /\.pub-shell\s*\{[^}]*padding:\s*0 var\(--pub-gutter\)/],
     ['2 · the bar breaks out', /\.pub-bar\s*\{[^}]*margin-inline:\s*calc\(var\(--pub-gutter\)/],
-    ['3 · the bar pays it back', /\.pub-bar \.ds-atom-appbar\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/],
-    ['4 · the footer breaks out', /\.pub-footer\s*\{[^}]*margin-inline:\s*calc\(var\(--pub-gutter\)/],
-    ['5 · the footer pays it back', /\.pub-footer \.ds-atom-footer\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/],
+    [
+      '3 · the bar pays it back',
+      /\.pub-bar \.ds-atom-appbar\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/,
+    ],
+    [
+      '4 · the footer breaks out',
+      /\.pub-footer\s*\{[^}]*margin-inline:\s*calc\(var\(--pub-gutter\)/,
+    ],
+    [
+      '5 · the footer pays it back',
+      /\.pub-footer \.ds-atom-footer\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/,
+    ],
   ] as const;
 
   it.each(SITES)('site %s is present', (_label, pattern) => {

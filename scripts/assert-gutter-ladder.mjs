@@ -393,6 +393,11 @@ const distRoot = path.resolve(process.argv[2] ?? DEFAULT_DIST);
 /* Relative to the repo when it is inside it, absolute otherwise. A refusal that names a path as
    `../../../../../../private/tmp/...` is a refusal nobody reads to the end of. */
 const rel = (p) => {
+  /* Idempotent. Declaration sources now carry a LABEL rather than a path — an inline block is
+     `dist/client/index.html <style> #1`, which is not a path at all — and several call sites pass
+     that label back through here. `path.relative` on a non-absolute label resolves it against cwd
+     and mangles it, so anything already relative is returned untouched. */
+  if (!path.isAbsolute(p)) return p;
   const r = path.relative(REPO_ROOT, p);
   return !r || r.startsWith('..') ? p : r;
 };
@@ -403,17 +408,60 @@ if (!fs.existsSync(distRoot)) {
   process.exit(1);
 }
 
+/**
+ * BOTH LINKED SHEETS AND INLINE `<style>` BLOCKS, AND THE SECOND HALF IS A REPAIR.
+ *
+ * This gate read only `dist/client/**\/*.css` until plan 05-14. Astro emits a linked stylesheet
+ * only for CSS a shared module imports; everything a single route imports is INLINED into that
+ * route's own `<style>` block, and a `.css`-only reader cannot see one byte of it.
+ *
+ * That blindness has now bitten this phase three times in three different gates — 05-07 (this
+ * gate, against an inlined `photos.css`), 05-08 (`grep -c 'pd-exif'` returning 5 on a page that
+ * renders none) and 05-12 (`.ph-lb-caption` invisible to any `dist/client/**\/*.css` reader, which
+ * made a negative control refuse rather than pass — the good outcome, by luck).
+ *
+ * MEASURED at the time of the repair: `dist/client` emits ONE linked stylesheet (126,892 B) and
+ * SEVEN distinct inline `<style>` texts (142 + 819 + 1,198 + 3,112 + 3,657 + 3,669 + 59 B). None
+ * of the seven declares `--pub-gutter` or a `.pub-max-*` rule today — so this widening changes no
+ * verdict now, which is exactly when to make it. A page-scoped `--pub-gutter` override would
+ * previously have been invisible while silently disagreeing with `GUTTER_RUNGS`, and the `sizes`
+ * attribute of every gallery image is computed from that ladder.
+ *
+ * 05-10's résumé suite is the model: collect both, then assert.
+ */
 const cssFiles = [];
+const htmlFiles = [];
 (function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full);
     else if (entry.name.endsWith('.css')) cssFiles.push(full);
+    else if (entry.name.endsWith('.html')) htmlFiles.push(full);
   }
 })(distRoot);
 
-if (cssFiles.length === 0) {
-  err(`assert-gutter-ladder: no .css file anywhere under ${rel(distRoot)}.`);
+/* Distinct inline texts only — the same page-scoped block is emitted into all 40 photo detail
+   documents, and reporting a finding 40 times says no more than reporting it once. */
+const inlineSheets = [];
+const seenInline = new Set();
+for (const file of htmlFiles.sort()) {
+  let n = 0;
+  for (const m of fs.readFileSync(file, 'utf8').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) {
+    n += 1;
+    if (seenInline.has(m[1])) continue;
+    seenInline.add(m[1]);
+    inlineSheets.push({ label: `${rel(file)} <style> #${n}`, css: m[1] });
+  }
+}
+
+const sources = [
+  ...cssFiles.map((f) => ({ label: rel(f), css: fs.readFileSync(f, 'utf8'), inline: false })),
+  ...inlineSheets.map((s) => ({ ...s, inline: true })),
+];
+
+if (sources.length === 0) {
+  err(`assert-gutter-ladder: no CSS anywhere under ${rel(distRoot)} — no .css file, and no inline`);
+  err(`  <style> block in ${htmlFiles.length} document(s).`);
   err('  This run read nothing and cannot pass.');
   err('');
   err(NO_CONSUMER_NOTE);
@@ -422,14 +470,13 @@ if (cssFiles.length === 0) {
 
 let totalBytes = 0;
 const allDecls = [];
-for (const file of cssFiles) {
-  const raw = fs.readFileSync(file, 'utf8');
-  totalBytes += Buffer.byteLength(raw);
-  for (const d of readDeclarations(raw)) allDecls.push({ ...d, file });
+for (const source of sources) {
+  totalBytes += Buffer.byteLength(source.css);
+  for (const d of readDeclarations(source.css)) allDecls.push({ ...d, file: source.label });
 }
 if (totalBytes === 0) {
   err(
-    `assert-gutter-ladder: every .css file under ${rel(distRoot)} is empty (${cssFiles.length} file(s)).`
+    `assert-gutter-ladder: every stylesheet under ${rel(distRoot)} is empty (${sources.length} source(s)).`
   );
   process.exit(1);
 }
@@ -443,7 +490,7 @@ const findings = [];
 const rungDecls = allDecls.filter((d) => d.prop === '--pub-gutter');
 if (rungDecls.length === 0) {
   err(
-    `assert-gutter-ladder: not one \`--pub-gutter\` declaration in ${cssFiles.length} stylesheet(s)`
+    `assert-gutter-ladder: not one \`--pub-gutter\` declaration in ${sources.length} stylesheet(s)`
   );
   err(`  (${totalBytes} bytes) under ${rel(distRoot)}. The ladder did not ship, so there is`);
   err('  nothing to compare and this run cannot pass.');
@@ -538,9 +585,7 @@ for (const d of maxWidthDecls) {
 }
 
 if (seenMax.size === 0) {
-  err(
-    `assert-gutter-ladder: not one \`.pub-max-*\` rule in ${cssFiles.length} stylesheet(s) under`
-  );
+  err(`assert-gutter-ladder: not one \`.pub-max-*\` rule in ${sources.length} stylesheet(s) under`);
   err(`  ${rel(distRoot)}. The page maxima did not ship and this run cannot pass.`);
   process.exit(1);
 }
@@ -597,7 +642,10 @@ if (findings.length > 0) {
 }
 
 out('assert-gutter-ladder: PASS');
-out(`  scanned ${cssFiles.length} stylesheet(s) (${totalBytes} bytes) under ${rel(distRoot)}`);
+out(
+  `  scanned ${sources.length} stylesheet(s) (${totalBytes} bytes) under ${rel(distRoot)} — ` +
+    `${cssFiles.length} linked + ${inlineSheets.length} distinct inline <style> from ${htmlFiles.length} document(s)`
+);
 out(`  self-test: ${canariesChecked}/${canariesChecked} canaries passed`);
 out('  ladder read from src/lib/layout-ladder.ts — never restated here');
 out('  rungs found, in force order:');

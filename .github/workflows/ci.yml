@@ -159,6 +159,34 @@ jobs:
       - name: Re-assert the gates against the artefact the test run rebuilt
         run: npm run gate:content
 
+      # SEO-01. THE ONLY STEP IN THIS JOB THAT TOUCHES THE NETWORK, and it is its own
+      # step for exactly that reason: a CDN blip must arrive as "the social cards could
+      # not be fetched" and not as "the build broke". It is deliberately NOT inside
+      # `npm run gate:content` — that chain is eleven OFFLINE gates that run inside
+      # `npm run build`, on a laptop on a train and in a sandbox with no egress, and a
+      # network call in it would red a build whose code is fine.
+      #
+      # WHAT IT CATCHES THAT NOTHING ELSE HERE CAN. `test/public/seo.node.test.ts`
+      # proves every og:image is absolute and on the image origin — both claims about
+      # the STRING. Nothing fetched one. A card pointing at an object that was renamed,
+      # re-keyed or lost in a partial upload was a green build, a green test run and a
+      # blank preview on every share.
+      #
+      # It runs AFTER the re-assert step, because `npm test` rebuilds `dist/` and this
+      # gate reads the artefact — the same ordering, and the same reason, as the four
+      # dist-scoped gates above.
+      #
+      # `gate:liveness` is NOT here, and that is a decision rather than an omission. It
+      # sweeps all 160 manifest URLs with HEAD and asks whether the BUCKET still holds
+      # every object — a monitoring question whose answer changes for reasons unrelated
+      # to the push, and which would return the same result twenty times a day for a
+      # corpus that only the pipeline changes. It runs on the ship path instead, inside
+      # `npm run deploy`, where the network is already a precondition because
+      # `wrangler deploy` cannot work without it. See the two sibling `//` keys in
+      # package.json.
+      - name: Fetch-verify the social cards the artefact ships
+        run: npm run gate:og-live
+
       # Advisory on purpose, and the advisory form belongs only here. A file: dependency
       # spec is the sanctioned way to consume an unpublished design-system tarball during
       # Phase 5 development, so everyday CI reports one without failing on it. The

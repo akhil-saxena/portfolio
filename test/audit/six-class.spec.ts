@@ -382,39 +382,30 @@ for (const c of CLASSES) {
         // the document it claims to be, or all 36 cells are a measurement of the error page.
         expect(m.title, `${r.path} did not render a titled document`).not.toBe('');
 
-        if (c.n === 1) {
-          /*
-           * 🔴 A MEASURED R-6 FAILURE, ASSERTED AT ITS MEASURED VALUE — finding D-21.
-           *
-           * At the folded cover (344px, the narrowest class in the approved matrix) the document
-           * is 358px wide on EVERY route: 14px of horizontal scroll. The overflowing element is
-           * the AppBar's theme toggle, at `left: 326, right: 358`.
-           *
-           * The cause is upstream and is not reachable from here. `AppBar` renders two unnamed
-           * `<div>`s with INLINE `gap: 28px` and `gap: 18px` and `min-width: auto`, inside a
-           * `justify-content: space-between` flex row with 16px of padding: 16 + 310 + 32 + 16 =
-           * 374 minimum, against a 344px viewport. An inline `gap` cannot be beaten by any
-           * consumer stylesheet without `!important`, which is the workaround the Core Value
-           * forbids and which this phase has declined nineteen times already.
-           *
-           * MEASURED to be independent of webfont loading (355px before `fonts.ready`, 358px
-           * after) and absent at 360px and 374px — it is a class-1 defect, not a phone defect.
-           *
-           * It is asserted AT 14 rather than tolerated, so the day the upstream fix lands this
-           * line fails and says so. It is not "fixed" locally by clipping the bar: that would
-           * hide the theme toggle, which PUB-12 needs.
-           */
-          expect(
-            overflow,
-            `class 1 carries D-21's measured 14px AppBar overflow on ${r.path}; ` +
-              `if this number changed, the finding changed`
-          ).toBe(14);
-        } else {
-          expect(
-            overflow,
-            `${r.path} at ${c.width} × ${c.height}: doc ${m.docWidth} against viewport ${m.innerWidth}`
-          ).toBe(0);
-        }
+        /*
+         * D-21 IS FIXED UPSTREAM, so every class now asserts zero and the special case is gone.
+         *
+         * At the folded cover (344px, the narrowest class in the approved matrix) the document was
+         * 358px wide on EVERY route: 14px of horizontal scroll, the overflowing element being the
+         * AppBar's theme toggle at `left: 326, right: 358`. `AppBar` rendered two unnamed `<div>`s
+         * with INLINE `gap: 28px` and `gap: 18px` inside a `justify-content: space-between` row
+         * with 16px of padding — 16 + 310 + 32 + 16 = 374 minimum against a 344px viewport — and an
+         * inline gap cannot be beaten by a consumer stylesheet without `!important`, the workaround
+         * the Core Value forbids.
+         *
+         * It was asserted AT 14 rather than tolerated, precisely so that the day the upstream fix
+         * landed this line would fail and say so. It did: `2.0.0-beta.2` gave the layout gaps a
+         * class, and this redded on 2 cells while the pill redded on 10 — 12 failures, all of them
+         * the good news. Re-measured against beta.2: 0px at both pointers on all six routes, with
+         * 360/375/380/390/768/841/1024/1440 unchanged.
+         *
+         * Deleted rather than flipped to 0, because a branch asserting the same thing as its
+         * `else` is a branch that can only rot.
+         */
+        expect(
+          overflow,
+          `${r.path} at ${c.width} × ${c.height}: doc ${m.docWidth} against viewport ${m.innerWidth}`
+        ).toBe(0);
       }
     });
 
@@ -895,8 +886,8 @@ for (const c of CLASSES) {
        */
       expect(
         boxes.pill,
-        'OQ-4 / D-3: the filter pill is 4px under the coarse floor, upstream and unfixed'
-      ).toBe(40);
+        'OQ-4 / D-3: the filter pill must meet the 44px coarse floor (fixed in 2.0.0-beta.2)'
+      ).toBe(44);
     });
   });
 }

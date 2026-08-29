@@ -35,7 +35,9 @@
     "test:workers": "vitest run --project workers",
     "test:integration": "vitest run --project integration",
     "//audit:public": "JSON has no comment syntax, so the reason lives in this sibling key. `audit:public` is NOT chained into `npm test` or `npm run build`, and that is a decision: it needs a ~130 MB Chromium binary that no gate can install for you, and a browser measurement is deterministic PER MACHINE, not per platform - libvips, font rasterisation and sub-pixel layout all diverge on darwin/arm64 against ubuntu/x64, so a cross-platform pixel assertion is a flake generator. Phase 8 owns whether any of it becomes a CI gate under QUAL-01 and QUAL-04. Run `npx playwright install chromium` once, then `npm run build && npm run audit:public`.",
-    "audit:public": "playwright test -c test/audit/playwright.config.ts"
+    "audit:public": "playwright test -c test/audit/playwright.config.ts",
+    "//audit:lighthouse": "Also NOT chained into `npm test` or `npm run build`, for the same reason as `audit:public`: a Lighthouse score is deterministic PER MACHINE, not per platform, and it fetches the 39 gallery photographs from the real image origin. It needs a Chrome; it uses Playwright's pinned Chrome for Testing, so `npx playwright install chromium` once is the same prerequisite the six-class audit already has. Run `npm run build && npm run audit:lighthouse`. Reports land in the gitignored `lighthouse-report/`.",
+    "audit:lighthouse": "node scripts/lighthouse-run.mjs"
   },
   "dependencies": {
     "@akhil-saxena/design-system": "^2.0.0-beta.2",
@@ -57,6 +59,7 @@
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "4.1.10",
     "exif-reader": "^2.0.3",
+    "lighthouse": "^13.4.1",
     "prettier": "^3.9.6",
     "prettier-plugin-astro": "^0.14.1",
     "sharp": "^0.35.4",

@@ -54,3 +54,9 @@ yarn-error.log*
 # runner's own scratch and belongs to whoever last ran it.
 test-results/
 playwright-report/
+
+# the Lighthouse run's reports (`npm run audit:lighthouse`)
+# The deliverable is the table in `05-AUDIT.md` §20 and the closures in `05-UI-SPEC.md` §7.2/§9.2;
+# this is the runner's own record and belongs to whoever last ran it. Biome does not read this
+# file (`vcs.useIgnoreFile: false`), so the directory is excluded in `biome.json` too.
+lighthouse-report/

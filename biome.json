@@ -22,7 +22,8 @@
       "!public",
       "!.planning",
       "!test-results",
-      "!playwright-report"
+      "!playwright-report",
+      "!lighthouse-report"
     ]
   },
   "formatter": {

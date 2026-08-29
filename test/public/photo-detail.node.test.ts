@@ -232,7 +232,10 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
       const headings = page.html.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/g) ?? [];
       expect(headings.length, `${record.id} carries ${headings.length} <h1> elements`).toBe(1);
 
-      const headingText = decodeEntitiesOnce(stripTags(headings[0])).trim();
+      // `?? ''` and not a non-null assertion: `html.match(…) ?? []` types the index as
+      // `string | undefined`, and `astro check` reports it as ts(2345) even though the length was
+      // just asserted. MEASURED — vitest was green on this file while `npm run build` was red.
+      const headingText = decodeEntitiesOnce(stripTags(headings[0] ?? '')).trim();
       expect(headingText, `${record.id}'s <h1> is not its title`).toBe(record.title);
 
       /*

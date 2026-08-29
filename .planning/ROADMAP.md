@@ -42,7 +42,7 @@ and "Phase 06.1" keep resolving; only the execution order moved.
 
 - [x] **Phase 3: Content Layer & Image Origin** ✅ **COMPLETE 2026-08-26** — - One schema module enforced everywhere, HTML sanitized structurally, all 39 photos off `r2.dev`. **Now also owns the `site_config` referential-integrity rule** (ADR-002) — every `photo.category` must exist in `site_config`'s ids, since there is no `/admin/site` screen to guard it
 - [x] **Phase 4: Photo Pipeline (Actions half)** ✅ **COMPLETE 2026-08-28 — 10/10 plans, all five criteria met**, both proven on live runs. CONT-05 holds by construction: each URL carries the content hash of the bytes it serves, so a re-upload changes the address and the old object stays intact — - The riskiest integration, driven from the command line, with zero admin UI in existence
-- [ ] **Phase 5: Public Site** - Home, Work, Photos and **Résumé** on the monochrome identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
+- [x] **Phase 5: Public Site** ✅ **COMPLETE 2026-08-29** — 15/15 plans, 1509 tests, 156 audit cells, 11 gates; - Home, Work, Photos and **Résumé** on the monochrome identity, four of five routes shipping zero framework JS. At launch the project cards link **straight out** — Cairn to `cairn.co.in`, hued and Momentum to Google Play, TimeShift to the Chrome Web Store, the design system to its Storybook — every href already present in `data/resume.json`
 - [ ] **Phase 8: Harden & Cut Over** — **BLOCKING PREREQUISITE: close the `private/*-clean.webp` master exposure (see STATE.md Blockers; 39/39 verified reachable 2026-08-26, deferred here by Akhil). Do not serve the apex domain with this open.** — - 95+ enforced in CI, the boundaries that matter under test, and the apex domain serving. **★ THIS IS THE LIVE MILESTONE.** The accepted-downtime clock stops here
 
 ### Release 2 — depth, then the admin
@@ -474,7 +474,10 @@ and 6.
 
 ## Requirement Coverage
 
-**73 of 73 v1 requirements mapped. No orphans, no duplicates.**
+**76 of 76 v1 requirements mapped. No orphans, no duplicates.**
+
+> Was written as 73 before DS-10 … DS-12 were added for Phase 06.1 and never restated;
+> corrected 2026-08-29 when the full requirements audit counted the rows on disk.
 
 | Phase | Requirements | Count |
 |-------|--------------|------:|
@@ -484,10 +487,11 @@ and 6.
 | 3. Content Layer & Image Origin | CONT-01, CONT-02, CONT-03, CONT-04 | 4 |
 | 4. Photo Pipeline (Actions half) | PIPE-01 … PIPE-05, CONT-05 | 6 |
 | 5. Public Site | PUB-01 … PUB-14, SEO-01, SEO-02, SEO-03, SEO-05 | 18 |
+| 06.1. Design System — Cascade Layers & Density Axis | DS-10 … DS-12 | 3 |
 | 6. Case Studies | CASE-01, CASE-02, CASE-03 | 3 |
 | 7. Admin CMS | ADMIN-01 … ADMIN-10 | 10 |
 | 8. Harden & Cut Over | QUAL-01 … QUAL-04, SEO-04, SEO-06 | 6 |
-| **Total** | | **73** |
+| **Total** | | **76** |
 
 ### Placement notes for requirements that could plausibly sit elsewhere
 

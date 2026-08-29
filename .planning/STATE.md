@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-12 (AppBar height exposed, 44px touch floor, component count reconciled)
-last_updated: "2026-08-25T01:26:39.124Z"
+stopped_at: Completed Phase 5 (15/15 plans; design system consumed at 2.0.0-beta.2; requirements audited 49/6/21)
+last_updated: "2026-08-29T00:00:00.000Z"
 progress:
   total_phases: 11
-  completed_phases: 2
-  total_plans: 59
-  completed_plans: 58
-  percent: 18
+  completed_phases: 6
+  total_plans: 92
+  completed_plans: 92
+  percent: 55
 ---
 
 # Project State
@@ -20,7 +20,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-16)
 
 **Core value:** The site must be the proof that the design system works — where bespoke and design-system conflict, the design system wins and the gap becomes an upstream finding.
-**Current focus:** Phase 5 (public site) — 15 plans written and repaired, awaiting a second plan-check. Phases 0–4 are closed. Phases 0, 1 and 2 are closed; the design system published as `2.0.0-beta.1` on the `next` dist-tag on 2026-08-25.
+**Current focus:** Phase 8 (harden & cut over), preceded by three proof gaps the requirements audit found — PUB-13's lightbox is proven by reading a stylesheet rather than measuring a browser, `gate:liveness` is in neither `gate:content` nor CI so a dead `og:image` ships green, and QUAL-03 has no measurement that addresses what it claims.
+
+**Phases 0–5 are closed.** The design system published `2.0.0-beta.1` on `next` on 2026-08-25 and `2.0.0-beta.2` on 2026-08-29, the latter fixing five defects this site measured; the portfolio consumes it from the registry at `^2.0.0-beta.2`.
+
+**Phase 5 as delivered:** 15/15 plans, 1509 tests across 43 files, 156 audit cells at six device classes, 11 gates. Lighthouse: accessibility, best-practices and SEO 100 in all 48 cells; performance 98/98/99 mobile on `/`, `/work`, `/resume`, and 87/93/94 on the three photo routes — LCP alone, cause diagnosed, decision taken to shrink image bytes first.
 
 ## Current Position
 

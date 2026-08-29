@@ -256,12 +256,29 @@ stays put — never by growing the paint. **Never gate on width** (a 1024px tabl
 laptop window want opposite answers). **Never use `any-pointer`** (a tablet in a keyboard case
 reports fine as *attached* while touch stays primary, and the user still touches the screen).
 
-**MEASURED, and it is a live gap:** the design system now carries the floor for `AppBar`'s links
-(`css/appbar.css:120`, `min-height: 44px` under `@media (pointer: coarse)`) and for
-`Footer`'s (`primitives.css:5763`) — closing both design-system halves of D-16-1. It does **not**
-carry it for `FilterNav`: `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn` is **40px**,
-the tallest of the three sizes, and `primitives.css` contains no `pointer: coarse` rule touching it.
-See §8.3 and **OQ-4**.
+**MEASURED against `2.0.0-beta.1`, and it WAS a live gap:** the design system carried the floor for
+`AppBar`'s links (`css/appbar.css:120`, `min-height: 44px` under `@media (pointer: coarse)`) and for
+`Footer`'s (`primitives.css:5763`) — closing both design-system halves of D-16-1 — and did **not**
+carry it for `FilterNav`: `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn` was **40px**,
+and `primitives.css` contained no `pointer: coarse` rule touching it.
+
+> **✅ CLOSED IN `2.0.0-beta.2`.** `primitives.css:3742` now carries
+> `@media (pointer: coarse) { .ds-atom-segmented-btn { box-sizing: border-box; min-height: 44px } }`,
+> which reaches the pill by `max(min-height, height)` rather than by specificity — the fix D-3
+> proposed, unchanged. **Re-measured 2026-08-29 on `/photos`: 44px at all five coarse classes, 40px
+> at class 6 (fine), where the floor does not bind.** The `[data-size="lg"]` declaration is still
+> 40px and still at `:3702`; nothing about the drawn geometry moved.
+>
+> **The shortfall was worse than "4px at one size" while it lasted, and the register now says so.**
+> This site runs `lg` (40px). The component's **default is `md`, which is 32px**, so the floor was
+> missed by **12px at the default**; all three declared sizes — 28 / 32 / 40 — were under 44.
+>
+> **`Lightbox`'s three controls were the other half of the same gap and are also closed** (D-17):
+> 32 × 32 at *both* pointers in beta.1, now **44 × 44 coarse / 40 × 40 fine**. See §9.1.
+>
+> **One residual, and it does not reach this site.** Upstream deliberately did not floor the pill's
+> *width*, noting a short `md` label measures 42.98px. Every pill here is **77.09px** wide, because
+> each label carries its `· n` count. See §8.3 and **OQ-4**.
 
 ---
 
@@ -525,22 +542,60 @@ Three things are load-bearing:
   one viewport of scroll leaves a band of photographs on screen. Phase 0 measured that band at
   **131px**.
 
-**`--ds-appbar-h` is a real custom property and replaces Phase 0's hardcoded 87px.** MEASURED,
-`dist/css/appbar.css`:
+### `--ds-appbar-h` — the four-stage history of this paragraph, kept because the ending is the point
+
+**This section told you not to measure something, three times, while it was wrong.** The paragraph
+that used to sit here read:
+
+> **`--ds-appbar-h` is a real custom property and replaces Phase 0's hardcoded 87px.** MEASURED,
+> `dist/css/appbar.css`: `:48 --ds-appbar-h: 47px;` · `:138 @media (pointer: coarse) {
+> --ds-appbar-h: 69px; }`. Its own comment names this use case […] **The Phase 0 finding is closed
+> upstream — do not re-measure the AppBar in a browser and paste the number.**
+
+It is **now true**, and it has been rewritten rather than left to become quietly correct, because a
+reader arriving today must not conclude that the spec was right all along. It was not.
+
+| stage | what happened |
+|---|---|
+| **1. Written** | The claim *"closed upstream — do not re-measure"* was made on the strength of the property **existing** and its docstring **naming this use case**. Neither was ever checked against a browser. The instruction not to re-measure is what made the error durable. |
+| **2. Disproven — 05-06** | Measured in Chromium: `--ds-appbar-h` was declared **on `.ds-atom-appbar`**, and custom properties inherit to **descendants, not siblings**. A full-viewport section under `<main>` is a *sibling* of the bar, so `var(--ds-appbar-h)` there was an unresolved property, the whole `calc()` was invalid at computed-value time, and `min-height` fell back to `auto` — a plausible-looking page with no error anywhere. `home.css` was built on a flex column and an over-estimated allowance instead, with a comment forbidding a local re-declaration by name. |
+| **3. Disproven — 05-11** | Re-measured independently. Same result. Filed as **D-2** in `05-DS-FINDINGS.md`. |
+| **4. Disproven — 05-15** | The six-class browser audit confirmed it a third time, at every class, and also measured that the declared **value** was wrong: 47px against a bar that paints 57 at ≥768px fine and **67 at 344 and 390 fine**, where the row does not fit and the logo label wraps. |
+| **5. FIXED — `2.0.0-beta.2`, consumed at `2015b4d`** | Both halves. The declaration moved to **`:root`** (`primitives.css:5715`), with `:root:has(.ds-atom-appbar[data-variant="withSearch"])` at 5721 and `:root:has(.ds-atom-appbar a)` at 5907 under `@media (pointer: coarse)`. The value moved **47 → 57** — `32px` (the `md` IconButton that sits in an actions slot) + 2×12 padding + 1px border — and the bar's own `min-height` now *reads* the property, so the number a sibling subtracts is the number the bar is floored at. |
+
+**MEASURED 2026-08-29 against the installed beta.2**, on the built artefact, `/photos`, at
+344 / 390 / 768 / 841 / 1024 / 1440 × both pointers — 12 cells:
 
 ```
-:48   --ds-appbar-h: 47px;
-:138  @media (pointer: coarse) { --ds-appbar-h: 69px; }
+:root, .ds-atom-appbar and <main> (a SIBLING) return the SAME value in all 12 cells.
+The sibling read "" in NONE.
+
+fine    344 → declared 57, painted 67      coarse  344 → 69 = 69
+        390 → declared 57, painted 67              390 → 69 = 69
+        768 → 57 = 57                              768 → 69 = 69
+        841 → 57 = 57                              841 → 69 = 69
+       1024 → 57 = 57                             1024 → 69 = 69
+       1440 → 57 = 57                             1440 → 69 = 69
 ```
 
-Its own comment names this use case: *"a consumer building a full-viewport landing needs
-`min-height: calc(100svh - var(--ds-appbar-h))`; a bare `100svh` puts its bottom edge below the fold
-by exactly the bar's height."* **The Phase 0 finding is closed upstream — do not re-measure the
-AppBar in a browser and paste the number.**
+**Declared equals painted in 10 of 12.** The two residuals are 344 and 390 on a *fine* pointer,
+where the bar paints 67 against a declared 57 — the label-wrap case beta.2's own docstring names as
+the thing it cannot promise (*"a taller child still makes a taller bar and CSS cannot read layout
+back into a custom property"*). So the residual is **10px at two cells, down from 20px**, and it is
+disclosed at source instead of hidden.
 
-**Consequence: `--hm-above` is 91px on fine pointers and 113px on coarse, not a constant 131.** Every
-Phase 0 peek arrangement therefore gets *more* budget, not less, so all six still fit — class 6
-gains 40px, class 3 gains 18px. Do not re-solve the grid.
+**The recipe now works — and this page still does not use it, deliberately.** `home.css` keeps its
+flex column and its `--hm-bar-allowance` over-estimate, for a reason that survives the fix: the
+error is asymmetric. Under-estimating pushes the scroll prompt below the fold, the single failure
+the subtraction exists to prevent; over-estimating ends state A a few pixels early inside leading
+whitespace, where nothing is drawn. With the bar still painting 67 at the two narrowest fine cells,
+72px is still the right kind of wrong, and it clears every painted value measured above.
+
+**Do not re-instate "do not re-measure".** The instruction is what let stages 1–4 happen.
+
+**Consequence: `--hm-above` would be 101px on fine pointers and 113px on coarse, not a constant
+131** (it was 91/113 while the property said 47). Every Phase 0 peek arrangement therefore gets
+*more* budget, not less, so all six still fit. Do not re-solve the grid.
 
 **`.hm-b { min-height: 100svh }` is required and is not decorative.** State B must be able to fill
 the view for the departure to complete. It failed at exactly one class and only a browser found it:
@@ -776,11 +831,43 @@ above the 1% threshold**, and the single record where the absolute sizes differ 
 **0.025%** in ratio.
 
 Do **not** emit `width` / `height` attributes. `aspect-ratio` + `width: 100%` reserves the box
-correctly. **UNVERIFIED:** Lighthouse's `unsized-images` audit accepts a CSS `aspect-ratio` on a
-`width`-constrained image; confirm this against a real Lighthouse run before QUAL-01 is measured,
-and if it flags, the fix is to emit the *served variant's* size —
-`width={Math.min(800, d.width)} height={Math.round(Math.min(800, d.width) * d.height / d.width)}` —
-never the manifest's raw numbers.
+correctly.
+
+> ### ✅ RESOLVED 2026-08-29 — the UNVERIFIED is measured, and the contingent fix is NOT taken
+>
+> This clause used to end: *"**UNVERIFIED:** Lighthouse's `unsized-images` audit accepts a CSS
+> `aspect-ratio` on a `width`-constrained image; confirm this against a real Lighthouse run […] and
+> if it flags, the fix is to emit the served variant's size."* The run was done — `lighthouse@13.4.1`,
+> `npm run audit:lighthouse`, full table in `05-AUDIT.md` §20.
+>
+> **The audit does NOT accept it. It flags every tile.**
+>
+> ```
+> unsized-images   score 0.5   scoreDisplayMode "metricSavings"   items 40
+> auditRef         { id: "unsized-images", weight: 0, group: "diagnostics" }
+> ```
+>
+> 40 of 40 tiles on `/photos`, 14 on `/photos/architecture`, 1 on a detail page. It reads the
+> `width`/`height` **attributes**; the ratio is in a `style="aspect-ratio:…"` and it does not look
+> there.
+>
+> **The fix this clause pre-authorised is nonetheless refused, on two measurements.**
+>
+> 1. **`unsized-images` carries `weight: 0`.** It is in the `diagnostics` group, not the scored
+>    metric set. Satisfying it moves the performance score by exactly nothing. The three routes that
+>    score under 95 on mobile do so on **LCP alone** (§20), and emitting `width`/`height` does not
+>    touch LCP.
+> 2. **CLS is 0.000** on `/photos` and on `/photos/architecture` at both form factors, and
+>    0.002–0.003 on a detail page. Layout shift is the thing `unsized-images` is a proxy *for*, and
+>    the real quantity is at zero. **The reservation works; the heuristic that goes looking for it
+>    does not see it.**
+>
+> So the choice is between a correct reservation that a diagnostic misreads, and a satisfied
+> diagnostic bought by emitting a pixel size for an image whose served bytes are a different size —
+> which is the exact confusion the ruling above exists to prevent. **The ruling stands unchanged.**
+> If a future reader wants the diagnostic green, the cost is stating a number that is wrong about
+> the bytes in order to be right about a checkbox, and that trade should be made deliberately or
+> not at all.
 
 ### 7.3 Blur-up — CSS only, zero JS, no white flash
 
@@ -864,6 +951,42 @@ fails, the fix is to move `VARIANTS` and `THUMB` down into a Node-free module th
 `loading="eager" fetchpriority="high"` so the LCP candidate is not deferred. Home's six peek photos
 are all above the fold at every class and all take `loading="eager"`.
 
+**This is implemented exactly as written** — the built `/photos` document carries 4 `eager` +
+`fetchpriority="high"` and 36 `lazy`, and Home carries 6 `eager`. Verified 2026-08-29.
+
+> ### 🔴 AND IT IS THE WRONG RULE AT PHONE WIDTHS. NEW FINDING, 2026-08-29 — Akhil decides.
+>
+> **"The first four" is a DOM-order rule. `.ph-masonry` is a CSS multi-column layout, which is a
+> COLUMN-order one.** The two disagree the moment there is more than one column, and the clause does
+> not notice because at 1440 the eager four are wide enough to dominate the fold anyway.
+>
+> **MEASURED at Lighthouse's mobile viewport, 412 × 823:**
+>
+> ```
+> #ph-grid computed column-count: 2      (data-cols says 3 — the CSS drops to 2 here)
+> DOM 0–19 fill column 1 · DOM 20–39 fill column 2
+>
+> the four EAGER tiles land at top 266 / 398 / 530 / 662  — ALL IN COLUMN 1
+> tiles 20, 21, 22, 23 land at top 266 / 398 / 530 / 662  — the SAME four slots, ALL LAZY
+>
+> 9 tiles intersect the first screen. 5 of them are lazy.
+> The largest visible one is dom#23 — 174 × 261 against its neighbours' 174 × 116,
+> 28,014 visible px² against 20,184 — and it is LAZY. Lighthouse names it as the LCP element.
+> ```
+>
+> **So the eager set covers one column out of two, and misses the tile that actually becomes LCP.**
+> `/photos` scores **87 on mobile** and the whole 13-point deficit is LCP at 4.0 s; TBT, CLS and
+> Speed Index all score 1.00. `05-AUDIT.md` §20 has the four options and their costs.
+>
+> **Not fixed here, deliberately.** The honest fix makes the eager count a function of the *rendered*
+> column count, which is a media-query result that the build cannot read — so it has to be
+> over-provisioned from the maximum (12 eager at `cols: 3`), which loads tiles eagerly that are below
+> the fold at 1440. That trades desktop bytes for mobile latency, and choosing which viewport to
+> favour is a design decision, not an executor's.
+>
+> **This clause was never wrong about `decoding`, about Home, or about the principle.** It is wrong
+> about *how many* and *which*, and only where a column layout reorders them.
+
 ---
 
 ## 8. Category filtering (PUB-04) — real links, zero JavaScript
@@ -940,8 +1063,13 @@ Eight anchors at 312px content, at a 44px hit height, wrap to as many as **four 
   consumer**, because `FilterNav`'s `className` reaches the `<nav>` only. That is a descendant
   layout rule, not a restyle, and QUAL-03 permits it — but it is a reach into a design-system class
   name and it belongs in **OQ-4** alongside the hit-area gap.
-- **The 44px floor is NOT met by the component.** MEASURED: `[data-size="lg"]` is **40px** and
-  `primitives.css` carries no `pointer: coarse` rule for it. See **OQ-4**.
+- **The 44px floor was NOT met by the component, and now is.** MEASURED against `2.0.0-beta.1`:
+  `[data-size="lg"]` was **40px** and `primitives.css` carried no `pointer: coarse` rule for it.
+  **✅ `2.0.0-beta.2` adds one** (`primitives.css:3742`, `min-height: 44px` on
+  `.ds-atom-segmented-btn`); re-measured 2026-08-29, the pill is **44px at every coarse class**. See
+  §2.3 and **OQ-4**. **The rail's other half is still open:** `scroll-snap-align` on the anchors was
+  not shipped in beta.2, so the descendant reach described in the bullet above remains this
+  repository's only route to it.
 
 ### 8.4 The filter pill's visual contract
 
@@ -967,7 +1095,7 @@ interactive control and its border is its only boundary (WCAG 1.4.11, 3:1). Meas
 |---|---|
 | backdrop-click close | present, and *"deliberately not suppressible"* per its docstring |
 | `srcset` | `LightboxItem.srcSet` + `sizes`; `srcSet` emitted twice in the chunk. Omitting it emits **no** `srcset` attribute — an empty `srcset=""` is not the same thing. |
-| **swipe** | `onPointerDown` / `onPointerUp` / `onPointerCancel` (×2 each), with a `gestureRef` recording `{x, y, startedOnBackdrop}` |
+| **swipe** | `onPointerDown` / `onPointerUp` / `onPointerCancel` (×2 each), with a `gestureRef` recording `{x, y, startedOnBackdrop}`. **In beta.1 this was swipe-to-NAVIGATE only** — the clause `srcset` and `aria-live` were checked against was met, the one PUB-06 actually asks for was not. See the D-16 note below. |
 | `aria-live` slide announcement | `<div class="ds-visually-hidden" role="status" aria-live="polite" aria-atomic="true">{announcement}</div>` |
 | keyboard | `role="dialog"` + `aria-modal`, `useFocusTrap`, ArrowLeft/Right + Escape on a document listener, wrap-around navigation |
 
@@ -976,6 +1104,31 @@ interactive control and its border is its only boundary (WCAG 1.4.11, 3:1). Meas
 **One property that matters for PUB-12:** the docstring records an *"always-dark invariant (NO
 `:root.dark` overrides)"*. The lightbox is dark in light mode too. That is correct — the image is
 the surface — and it must not be "fixed" to follow the theme.
+
+> ### ✅ Two defects this table did not catch, found later and fixed in `2.0.0-beta.2`
+>
+> The chunk read above is a *source* verification, and both of these needed a browser. Both are now
+> closed, and the chunk has been re-read as `chunk-DHAIXPZQ.js` — the hash changed with the release.
+>
+> **D-16 — the swipe navigated but did not dismiss, so PUB-06 was only partly met.** A vertical drag
+> hit neither branch: `dx` was too small to navigate, and it had travelled past the 10px backdrop tap
+> slop so the close branch returned too. beta.2 adds the dismiss branch before the horizontal test
+> (`dy >= SWIPE_DISMISS_MIN_DISTANCE_PX && dy > |dx| × SWIPE_HORIZONTAL_DOMINANCE`) **and** changes
+> the backdrop's `touch-action` from `pan-y` to **`pinch-zoom`**. The CSS half is the one no consumer
+> could have supplied: with `pan-y` still declared, the browser ate the drag as a scroll before
+> `pointerup` reached the component, so the JavaScript alone did nothing. **Measured 2026-08-29 at
+> 390 × 844 coarse on the built artefact: a 350px downward drag CLOSES; a 180px leftward drag still
+> NAVIGATES.** `05-AUDIT.md` §8a. **PUB-06 is met in full** — keyboard, backdrop and swipe.
+>
+> **D-17 — the three controls painted 32 × 32, not the 40 the component intended, at BOTH pointers.**
+> `.ds-atom-lightbox-close` declared 40px at (0,1,0) and lost to `.ds-atom-iconbtn[data-size="md"]`'s
+> 32px at (0,2,0). beta.2 re-scopes them under `.ds-atom-lightbox-backdrop` — (0,3,0), so the 40
+> applies on specificity rather than on source order — and adds a coarse `min-width`/`min-height:
+> 44px` on both axes. **Re-measured with the overlay open: 44 × 44 coarse, 40 × 40 fine.**
+>
+> **What this says about the table above:** a `.d.ts` and a chunk grep can confirm that a handler
+> *exists*; neither can confirm what it *does*, and neither reads CSS. Both defects were invisible to
+> the method that produced this section and visible in ten seconds to a browser.
 
 ### 9.2 How the island is wired without hydrating the grid
 
@@ -994,8 +1147,31 @@ listener; it renders nothing of its own until opened.
   page.** That is the same mechanism satisfying PUB-04's crawlability, PUB-06's lightbox, PUB-09's
   per-photo page and the Back button — one decision, four requirements.
 - **`client:idle`, not `client:load`.** The gallery's LCP is an image; the lightbox is not needed
-  until a click. **UNVERIFIED:** whether `client:idle` measurably improves the Lighthouse score over
-  `client:load` here — measure both on `/photos` before QUAL-01 is judged and keep the better one.
+  until a click.
+
+  > **✅ RESOLVED 2026-08-29 — and note first that this clause was once cited as already answered
+  > when it never had been.** `src/pages/photos/index.astro` carried a comment reading *"measured,
+  > not reasoned. The four Lighthouse numbers behind that choice are in `05-12-SUMMARY.md`"* — and
+  > that summary contains the word "Lighthouse" **zero** times. 05-15 caught it; the comment was
+  > corrected then, and the measurement is finally here. The failure class is the one this phase
+  > spent itself hunting: a claim citing evidence that does not exist.
+  >
+  > **The answer is that `client:idle` buys no score, because there was none available to buy.**
+  > `total-blocking-time` is **0 ms on every route at both form factors** (`05-AUDIT.md` §20), and
+  > TBT is the 30%-weighted metric a hydration cost would appear in. A directive that defers work
+  > worth 0 ms cannot improve a score by deferring it. This agrees with 05-15's separate finding
+  > that `client:idle` defers **hydration, not download** — all three chunks are requested at
+  > 25–27 ms, before `domContentLoaded`.
+  >
+  > **`client:load` was NOT built and separately scored, and that is a bound rather than a full
+  > closure.** The comparison this clause asked for needs two artefacts. What was measured is that
+  > the metric the comparison would move is pinned at its floor on the shipped one, which bounds the
+  > possible difference at zero. Stated as a bound, not as a run that happened.
+  >
+  > **`client:idle` is kept, on a reason that is not a score:** it is the correct expression of
+  > intent for an island whose entire job begins at a click, and it costs nothing measurable.
+  > Changing it to match a measurement that found no difference would be churn. **"Keep the better
+  > one" resolves to "keep this one", because they are not distinguishable here.**
 - The island must **push a history entry** on open and close on `popstate`, so the Back button
   dismisses the lightbox rather than leaving the page. Without it the Back-button guarantee holds for
   the no-JS path and breaks for the JS path.
@@ -1411,7 +1587,7 @@ ships** — subject to OQ-1's migration.
 | **Photo page — back** | `← All photographs` · `← {Category}` |
 | **Filter — unfiltered** | `ALL · 39` |
 | **Filter — category** | `{LABEL} · {n}` from `site_config.label` and the measured count |
-| **Empty — category with no photos** | **No photographs in {Category} yet.** / *Every category on this site has at least one today; this one is new.* → `See all 39` |
+| **Empty — category with no photos** | **No photographs in {Category} yet.** / *Every category on this site has at least one today; this one is new.* → `See all {n}` |
 | **Error — 404** | **Not found.** / *There is nothing at this address.* → `Go to the home page` |
 | **Destructive actions** | **None. The public site has no mutating action, no form and no destructive path.** Recorded explicitly so the checker's destructive-copy dimension has an answer rather than a blank. |
 
@@ -1423,10 +1599,22 @@ neither photographs nor an explanation is what would ship.
 
 - **The component count** — §6.7. Derived at build time. `00-COPY/one-liners.md` says 79, the
   committed captures say 80, the package says 81. **Do not fix either by hand.**
-- **The photograph count** — `39 PHOTOGRAPHS — ALL OF THEM` and every `· n` in the filter row come
-  from `getCollection('photos').length` and a group-by, never a literal. Plan 03-01's `--verify`
-  already hardcodes 39 and `STATE.md` flags that it stops working the day a 40th lands; do not add a
-  second place with the same problem.
+- **The photograph count** — `{n} PHOTOGRAPHS — ALL OF THEM` and every `· n` in the filter row come
+  from `getCollection('photos').length` and a group-by, never a literal.
+
+  > **✅ THE PREDICTION FIRED, AND THE MECHANISM HELD.** This bullet used to write the string as
+  > `39 PHOTOGRAPHS — ALL OF THEM` and noted that `STATE.md` flags 03-01's `--verify` as stopping
+  > working *"the day a 40th photo lands"*. **A 40th landed** — Phase 4's live run — and
+  > `data/portfolio_images.json` now holds **40** records. The served page says
+  > `40 photographs — all of them` and `All · 40`, because the count is derived exactly as this
+  > bullet requires; the empty-category row above says `See all {n}` because `PhotoEmpty.tsx` reads
+  > `{total}` from a prop. **Nothing in the code was wrong. The two literals in this document were**,
+  > and they are the reason this bullet now writes `{n}` in both places rather than a number that
+  > can rot again. Corrected 2026-08-29.
+  >
+  > **The count is 40 in more prose than this file**, including the roadmap's Phase 5 success
+  > criterion 2 (*"Photos shows all 39 images"*) and `CLAUDE.md`'s *"the 39-photo gallery"*. Both are
+  > outside this document and are flagged rather than edited here.
 
 ---
 

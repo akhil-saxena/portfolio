@@ -67,9 +67,38 @@ interface Props {
    * a property of the list and not of any tile.
    */
   eager: boolean;
+  /**
+   * §9.2's `data-lb-index`, added by plan 05-12. The tile's position in the page's list, which is
+   * also its position in the `items` array `PhotoLightbox` receives.
+   *
+   * IT IS THE ANCHOR THAT CARRIES IT, NOT A WRAPPER, and that is §9.2's spelling: the island's
+   * delegated listener does `target.closest('a[data-lb-index]')`, so the element it finds is the
+   * same element whose `href` it declines to prevent when anything about the click is unusual. A
+   * wrapper would have let those two drift apart.
+   *
+   * `PhotoGrid` owns the value for the same reason it owns `eager` — a position is a property of
+   * the list, not of any tile — and it is the index, never the record's `order`: `order` is dense
+   * over the WHOLE manifest and a category route renders a subset of it.
+   */
+  lightboxIndex: number;
 }
 
-const { photo, sizes, eager } = Astro.props;
+const { photo, sizes, eager, lightboxIndex } = Astro.props;
+
+/*
+ * The index reaches the DOM as a string and the island parses it back, so an unusable value would
+ * be read by `Number.parseInt` as something plausible rather than refused. Guarded here, where the
+ * caller is: the island's own bound check (T-05-12-01) declines to open and lets the link navigate,
+ * which is the right behaviour at runtime and a silent one at build time.
+ */
+if (!Number.isInteger(lightboxIndex) || lightboxIndex < 0) {
+  throw new Error(
+    `PhotoTile: lightboxIndex on ${JSON.stringify(photo.id)} is ` +
+      `${JSON.stringify(lightboxIndex)}, which is not a non-negative integer. It is the tile's ` +
+      "position in the island's `items` array; a wrong one opens the lightbox on a different " +
+      'photograph than the one that was clicked, on a page that otherwise looks correct.'
+  );
+}
 
 /**
  * THE LQIP GUARD — T-05-07-01's mitigation, and it is not defensive coding.
@@ -110,6 +139,7 @@ const { width, height } = photo.dimensions;
 <a
   class="ph-tile"
   href={photoHref(photo)}
+  data-lb-index={String(lightboxIndex)}
   style={`aspect-ratio: ${width} / ${height}; background-image: url('${thumb}')`}
 >
   <img

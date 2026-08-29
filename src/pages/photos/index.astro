@@ -42,8 +42,10 @@ import homeConfig from '../../../data/home_config.json';
 import siteConfig from '../../../data/site_config.json';
 import { PhotoFilters } from '../../components/public/PhotoFilters';
 import PhotoGrid from '../../components/public/PhotoGrid.astro';
+import { PhotoLightbox } from '../../components/public/PhotoLightbox';
 import Seo from '../../components/public/Seo.astro';
 import PublicLayout from '../../layouts/PublicLayout.astro';
+import { lightboxRecordsFor } from '../../lib/photo-lightbox';
 import '../../styles/photos.css';
 
 const entries = await getCollection('photos');
@@ -71,6 +73,13 @@ const photos = entries.map((entry) => entry.data).sort((a, b) => a.order - b.ord
 
 const total = photos.length;
 const siteTitle = homeConfig.title;
+
+/**
+ * The island's props, built at BUILD TIME from the same array `PhotoGrid` renders — so the tile
+ * carrying `data-lb-index="7"` and `lightboxItems[7]` are the same photograph by construction
+ * rather than by two derivations agreeing. Plan 05-12. (§9.2.)
+ */
+const lightboxItems = lightboxRecordsFor(photos);
 ---
 
 <PublicLayout mainClass="pub-max-photos">
@@ -99,4 +108,22 @@ const siteTitle = homeConfig.title;
   </header>
 
   <PhotoGrid photos={photos} columns={siteConfig.defaultColumns} />
+
+  {
+    /* 🔴 THE ONE ISLAND ON THIS SITE, AND THE ONLY `client:*` DIRECTIVE OUTSIDE `/photos`. (§5.1.)
+
+      `client:idle`, NOT `client:load` — measured, not reasoned. The four Lighthouse numbers behind
+      that choice are in `05-12-SUMMARY.md`; §9.2 recorded the question as UNVERIFIED and it is
+      answered there rather than here.
+
+      THE GRID IS NOT HYDRATED. There is no `client:*` on `PhotoGrid` or on `PhotoTile`, and there
+      must never be: the island takes a SELECTOR and attaches one delegated listener to static
+      Astro HTML. That is what keeps every tile a working link with JavaScript off and in the
+      window before this island idles — PUB-04's crawlability, PUB-06's lightbox, PUB-09's per-photo
+      page and the Back button, from one decision.
+
+      `items` is JSON — an island's props are serialised into the document, so a `ReactNode` cannot
+      be built here. The caption is composed inside the island from `exifRows`. */
+  }
+  <PhotoLightbox client:idle items={lightboxItems} gridSelector="#ph-grid" />
 </PublicLayout>

@@ -339,12 +339,43 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
     }
   );
 
+  /**
+   * 🔴 REWRITTEN BY PLAN 05-12, AND THE OLD FORM IS THE REASON.
+   *
+   * It read `'%s ships no framework JavaScript yet — the island arrives in 05-12'` and asserted
+   * `occurrences(html, '<script type="module"') === 0`. The island has now arrived, and that
+   * assertion STILL PASSES — because **Astro 7 does not emit `<script type="module">` for an
+   * island at all.** MEASURED on this build: a gallery document carries `<astro-island>` with
+   * `component-url` / `renderer-url` attributes and THREE classic `<script>` blocks, one of which
+   * dynamically `import()`s the chunk. Zero of type `module`.
+   *
+   * So the old assertion was about to become the worst kind of green: a test named "ships no
+   * framework JavaScript" passing on a page that hydrates React. §5.3's assertions 1 and 3 are
+   * written against the same spelling and inherit the same hole — that is 05-14's to fix
+   * repo-wide; this is the gallery half.
+   *
+   * What is asserted now is the thing PUB-14 needs: exactly ONE island per gallery route, its
+   * component chunk is the Lightbox, and the `type="module"` count is still reported so the day
+   * Astro changes its emission the number changes with it.
+   */
   it.each(ROUTES.map((route) => [route.name, route] as const))(
-    '%s ships no framework JavaScript yet — the island arrives in 05-12',
+    '%s hydrates exactly one island, and it is the Lightbox (PUB-14, §5.1)',
     (_name, route) => {
       const html = bodies.get(route.name) as string;
       const modules = occurrences(html, '<script type="module"');
-      report(`${route.name}: <script type="module"> × ${modules}`);
+      const islands = occurrences(html, '<astro-island');
+      const component = /<astro-island[^>]*\scomponent-url="([^"]*)"/.exec(html)?.[1] ?? '';
+      const exported = /<astro-island[^>]*\scomponent-export="([^"]*)"/.exec(html)?.[1] ?? '';
+      report(
+        `${route.name}: astro-island × ${islands} (${exported} ← ${component}), ` +
+          `<script type="module"> × ${modules}`
+      );
+      expect(islands).toBe(1);
+      expect(exported).toBe('PhotoLightbox');
+      expect(component).toMatch(/^\/_astro\/PhotoLightbox\.[^/]*\.js$/);
+      // Reported rather than removed: the count is 0 today because of HOW Astro emits an island,
+      // not because nothing hydrates. Equality, so a future Astro that does use the module
+      // spelling turns this red and gets read rather than silently satisfying the old claim.
       expect(modules).toBe(0);
     }
   );

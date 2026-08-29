@@ -57,21 +57,18 @@
  * `src`, `alt`, `srcSet`, `place` and the six raw EXIF fields — and the caption is composed here,
  * in React, from `exifRows`.
  *
- * `srcSet` arrives as a FINISHED STRING computed by `srcsetFor` in Astro frontmatter. This file
- * must never import `src/lib/photo-pipeline.ts`, directly or transitively: it reaches `node:crypto`,
- * and this is the only module in the public site that becomes a browser chunk (§5.3 assertion 5,
- * threat T-05-12-04). The gate in this plan's Task 1 greps for it and 05-14 re-checks the built
- * chunks, because a source-level grep says nothing about what the bundler emitted.
+ * `srcSet` arrives as a FINISHED STRING. It is computed at build time in `src/lib/photo-lightbox.ts`
+ * — a SEPARATE module, and the split is the result of a measurement rather than a preference: with
+ * the builder exported from this file, the browser chunk carried `srcsetFor`, `VARIANTS`,
+ * `GUTTER_RUNGS` and `sizesFor`, because an island's client entry is the MODULE and not the
+ * component. That file's header records the before-and-after.
  *
- * `sizes` IS DELIBERATELY OMITTED, and it is not the same omission the plan asked for. The plan's
- * Task 2 says to build the items "with `srcsetFor` / `sizesFor`". `sizesFor` answers a MASONRY
- * COLUMN question — "how wide is one tile in a two- or three-column grid" — and the lightbox image
- * is `max-width: 90vw` (`primitives.css`, `.ds-atom-lightbox-image`). Passing that string would tell
- * the browser to fetch a column-width file for a full-screen display: no error, no visual bug in
- * dev where the cache is warm, just a blurrier photograph. `LightboxItem.sizes`' own docstring says
- * "with `srcset` but no `sizes` the browser assumes 100vw, which is already correct for a full-bleed
- * lightbox, so most callers never need it". 100vw is the right answer, and the right way to say it
- * is to say nothing. This is the same judgement 05-08 made for the detail page, for the same reason.
+ * This file must never import `src/lib/photo-pipeline.ts`, directly or transitively: it reaches
+ * `node:crypto`, and this is the only module in the public site that becomes a browser chunk (§5.3
+ * assertion 5, threat T-05-12-04). Task 1's gate checks the source and 05-14 re-checks the built
+ * chunks, because a source-level scan says nothing about what the bundler emitted.
+ *
+ * `sizes` is DELIBERATELY ABSENT from every item, for the reason recorded in that same file.
  *
  * ================================================================================================
  * COLOUR: THE LIGHTBOX IS ALWAYS DARK, AND THE CAPTION HAS TO BE TOLD
@@ -133,27 +130,7 @@ import { Text } from '@akhil-saxena/design-system/components/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { exifRows } from '../../lib/exif-display';
-import type { PhotoExif } from '../../schemas/photo';
-
-/**
- * One photograph, as the PAGE passes it — every field JSON-serialisable, because an island's props
- * are serialised into the document. `title` is deliberately absent, exactly as it is absent from
- * `PhotoTile`'s props: the lightbox's accessible name and its slide announcement are both built
- * from `alt` by the design system, and D-24-1 is the record of what happens when a title reaches a
- * slot that belongs to a description.
- */
-export interface PhotoLightboxRecord {
-  /** `urls.large` — the fallback `src`, and what `alt` pairs with. */
-  readonly src: string;
-  /** The photograph's own reviewed `alt`. Never its title. */
-  readonly alt: string;
-  /** A finished `srcsetFor(photo)` string, computed in Astro frontmatter. */
-  readonly srcSet: string;
-  /** `place`, when the record carries one. Present on 17 of 40 (measured). */
-  readonly place?: string;
-  /** The record's stored exif object, whole. This component never receives a single field. */
-  readonly exif: PhotoExif;
-}
+import type { PhotoLightboxRecord } from '../../lib/photo-lightbox';
 
 export interface PhotoLightboxProps {
   /** Every photograph on the page, in the order the tiles are rendered. */

@@ -57,8 +57,10 @@ import siteConfig from '../../../../data/site_config.json';
 import { PhotoEmpty } from '../../../components/public/PhotoEmpty';
 import { PhotoFilters } from '../../../components/public/PhotoFilters';
 import PhotoGrid from '../../../components/public/PhotoGrid.astro';
+import { PhotoLightbox } from '../../../components/public/PhotoLightbox';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
+import { lightboxRecordsFor } from '../../../lib/photo-lightbox';
 import '../../../styles/photos.css';
 
 /** One `{ id, label, columns }` record of `data/site_config.json`. Structural, not a rival shape. */
@@ -177,10 +179,22 @@ const countLine = `${count} ${noun}`;
   </header>
 
   {
+    /* THE EMPTY BRANCH RENDERS NO ISLAND, and that is the same decision as the grid's, not a
+      separate one. `Lightbox` requires a non-empty item array when open and `lightboxRecordsFor`
+      refuses a zero-length list by name, so a category with no photographs gets §13.2's copy and
+      nothing to hydrate. The island's `<PhotoGrid>` sibling is what it listens to; with neither
+      present there is nothing for a delegated listener to delegate. */
+  }
+  {
     count === 0 ? (
       <PhotoEmpty label={category.label} total={total} />
     ) : (
-      <PhotoGrid photos={photos} columns={category.columns} />
+      <Fragment>
+        <PhotoGrid photos={photos} columns={category.columns} />
+        {/* See `/photos`'s copy of this comment for why `client:idle`, and why the grid is not
+          hydrated. Same island, same selector, same contract — a different sorted subset. */}
+        <PhotoLightbox client:idle items={lightboxRecordsFor(photos)} gridSelector="#ph-grid" />
+      </Fragment>
     )
   }
 </PublicLayout>

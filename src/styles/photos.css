@@ -281,3 +281,68 @@
   align-items: flex-start;
   gap: var(--space-3);
 }
+
+/*
+ * ================================================================================================
+ * 6. THE LIGHTBOX CAPTION (§9.1, §9.3) — plan 05-12
+ * ================================================================================================
+ *
+ * These rules apply inside `.ds-atom-lightbox-caption`, which the design system renders in a portal
+ * on `document.body`. They are still in this file rather than in a stylesheet of their own because
+ * the caption only exists on the two routes that import this one.
+ *
+ * FOUR DECLARATIONS ARE LAYOUT AND ONE IS A CASCADE INSTRUCTION. Nothing here sets a colour, a type
+ * size or a font family — every one of those is the design system's.
+ *
+ * 🔴 `color: inherit` IS THE ONE THAT NEEDS EXPLAINING, AND IT IS NOT A REACH PAST THE COMPONENT.
+ *
+ * `Lightbox` is ALWAYS DARK, in both themes, by design — §9.1: "the docstring records an
+ * always-dark invariant (NO `:root.dark` overrides). The lightbox is dark in light mode too. That
+ * is correct — the image is the surface — and it must not be 'fixed' to follow the theme."
+ * `.ds-atom-lightbox-caption` therefore sets `color: #ffffff` on the caption container.
+ *
+ * A `Text` inside it renders `<span class="ds-atom-text" data-variant="body">`, whose default
+ * colour is `var(--ink-2)` — in LIGHT mode a near-black, on a 92%-black backdrop. `primitives.css`
+ * declares that default inside `:where(...)` at specificity (0,0,0) and says why, verbatim:
+ *
+ *     "passing `tone` means the component owns the colour; omitting it hands the colour to the
+ *      cascade. That ordering is decided by specificity, not by which stylesheet loaded last."
+ *
+ * So the island passes no `tone`, and this rule — one class, one descendant, (0,2,0) — is the
+ * documented way a consumer accepts that hand-off. `inherit` is not a colour: it is the instruction
+ * to take the always-dark surface's own white, so this file states no palette value and cannot
+ * drift from the theme.
+ *
+ * (`Eyebrow` cannot be reached this way at all — it INLINES `color: var(--ink-3)` when no `tone` is
+ * given — so the island passes its documented `color="inherit"` prop instead. The upstream ask is
+ * in `05-12-SUMMARY.md`: `Eyebrow` should get the `:where()` treatment `Text` got in finding E5.)
+ */
+
+.ph-lb-caption {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.ph-lb-caption .ds-atom-text {
+  color: inherit;
+}
+
+/*
+ * The EXIF rows read as one wrapped line of label/value pairs rather than as the detail page's
+ * `<dl>` column: the caption sits under a full-bleed image with `max-height: 80vh` above it, so
+ * six stacked rows would push the photograph off the screen on a phone. `center` matches
+ * `.ds-atom-lightbox-caption`'s own `text-align: center`.
+ */
+.ph-lb-exif {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+.ph-lb-row {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}

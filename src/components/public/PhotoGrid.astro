@@ -77,14 +77,40 @@ if (photos.length === 0) {
   );
 }
 
+/*
+ * `id="ph-grid"` — §9.2's selector, added by plan 05-12. It is what `PhotoLightbox`'s single
+ * delegated listener attaches to, and it is on the masonry container rather than on the route's
+ * wrapper because the listener's job is to see tile clicks and nothing else.
+ *
+ * An `id` on a reusable component is a claim that only one of it renders per page. MEASURED: both
+ * gallery routes render exactly one `PhotoGrid`, and `/photos/<category>` renders it or the empty
+ * state, never both. If a page ever needs two grids, the id becomes a prop — the island already
+ * takes its selector as one.
+ *
+ * If the island never arrives — JavaScript off, or the window before `client:idle` fires — the
+ * attribute is inert and every tile is still a working link to a prerendered page. That is the
+ * mechanism, not a fallback.
+ *
+ * IT IS WRITTEN HERE AND NOT ABOVE THE ELEMENT, AND THAT IS A MEASURED CONSTRAINT RATHER THAN A
+ * PREFERENCE. Placed as the template's FIRST node, an `{ /* ... *\/ }` expression made `astro
+ * check` report `ts(6196): 'Props' is declared but never used` against this file — a warning on
+ * correct code, on a component whose props are read three lines above. Frontmatter comments never
+ * reach the emitted HTML either, so nothing is lost by keeping the note here.
+ */
+
 /* Computed once. See the header — and `sizesFor` refuses a column count the site does not use. */
 const sizes = sizesFor(columns);
 ---
 
-<div class="ph-masonry" data-cols={String(columns)}>
+<div id="ph-grid" class="ph-masonry" data-cols={String(columns)}>
   {
     photos.map((photo: GalleryPhoto, index: number) => (
-      <PhotoTile photo={photo} sizes={sizes} eager={index < EAGER_TILE_COUNT} />
+      <PhotoTile
+        photo={photo}
+        sizes={sizes}
+        eager={index < EAGER_TILE_COUNT}
+        lightboxIndex={index}
+      />
     ))
   }
 </div>

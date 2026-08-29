@@ -45,7 +45,7 @@
  * the site's own address, and the cutover in Phase 8 would move one of them.
  */
 
-import { SITE_OG_IMAGE, SITE_OG_IMAGE_ALT } from '../../lib/site-meta';
+import { canonicalPath, SITE_OG_IMAGE, SITE_OG_IMAGE_ALT } from '../../lib/site-meta';
 
 interface Props {
   /** The `<title>` and `og:title`. Written per page; never defaulted — see `PublicLayout`. */
@@ -94,9 +94,26 @@ if (!canonical.startsWith('/')) {
   );
 }
 
+/*
+ * THE CANONICAL MUST NAME THE FORM THE ORIGIN ACTUALLY SERVES.
+ *
+ * Cloudflare Static Assets serves `/work/` out of `work/index.html` and answers `/work` with a
+ * 307 to the slashed form — MEASURED against `astro preview`, which runs real `workerd`:
+ * `/work` and `/photos` both 307, `/work/` and `/photos/` both 200. `@astrojs/sitemap` emits the
+ * slashed form for the same reason.
+ *
+ * Routes pass their path unslashed (`/work`, `photoHref(record)`), so without this normalisation
+ * the canonical named a URL that redirects while the sitemap named the one that serves — they
+ * disagreed on 50 of 51 pages, the homepage being the only match. A canonical pointing at a
+ * redirect is the failure this component's header calls invisible: nothing renders wrong and
+ * nothing logs. Measured by plan 05-13, repaired here because `Seo.astro` is the single point
+ * where every canonical on the site is built.
+ */
+const normalisedPath = canonicalPath(canonical);
+
 let canonicalUrl: string;
 try {
-  canonicalUrl = new URL(canonical, Astro.site).href;
+  canonicalUrl = new URL(normalisedPath, Astro.site).href;
 } catch (error) {
   throw new Error(
     `Seo: canonical "${canonical}" could not be made absolute against ${Astro.site.href} ` +

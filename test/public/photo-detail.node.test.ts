@@ -306,8 +306,10 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
       const canonicalTag = tagsNamed(html, 'link').find((tag) => attr(tag, 'rel') === 'canonical');
       const canonical = attr(canonicalTag ?? '', 'href') ?? '';
       expect(canonical, `${record.id} has no canonical`).toBeTruthy();
+      // The origin 307s the unslashed form, so the canonical names `${photoHref(record)}/` —
+      // exact equality, not a prefix match, so a wrong slug still fails here.
       expect(new URL(canonical).pathname, `${record.id}'s canonical is not its own path`).toBe(
-        photoHref(record)
+        `${photoHref(record)}/`
       );
       expect(meta(html, 'property', 'og:url'), `${record.id}'s og:url`).toBe(canonical);
     }

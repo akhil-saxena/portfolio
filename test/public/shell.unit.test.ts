@@ -305,7 +305,9 @@ describe('Seo.astro — SEO-01 emits the whole tag set, once, from props', () =>
 
   it('builds both absolute URLs from Astro.site rather than from a second copy of the origin', () => {
     const source = read(SEO_SRC);
-    expect(source).toContain('new URL(canonical, Astro.site)');
+    expect(source).toContain('new URL(normalisedPath, Astro.site)');
+    // The trailing-slash rule has ONE definition, shared with resume.astro's Person url.
+    expect(source).toContain('canonicalPath(canonical)');
     expect(codeOf(source)).not.toContain('https://akhilsaxena.com');
   });
 });

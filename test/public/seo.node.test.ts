@@ -950,32 +950,26 @@ describe('SEO-01 · every built public page', () => {
   });
 
   /**
-   * 🔴 A FINDING, ASSERTED AT ITS TRUE STRENGTH RATHER THAN AT THE ONE THAT WOULD SHIP RED.
+   * THE CANONICAL NAMES THE URL THAT SERVES, AND IT AGREES WITH THE SITEMAP.
    *
-   * MEASURED: every canonical except `/` names the UNSLASHED form (`https://akhilsaxena.com/photos`)
-   * while the sitemap advertises the SLASHED form (`https://akhilsaxena.com/photos/`), and the
-   * origin answers **307** on the unslashed form and **200** on the slashed one:
+   * This began as a finding measured by plan 05-13 and asserted at the strength true then: every
+   * canonical except `/` named the UNSLASHED form while the sitemap advertised the SLASHED one,
+   * and the origin answered 307 on the unslashed form and 200 on the slashed:
    *
    *     GET /photos   -> 307  location: /photos/
    *     GET /photos/  -> 200
    *
-   * So on 50 of 51 pages the declared canonical is a URL that does not itself serve the page, and
-   * it is a different string from the URL the sitemap gives a crawler for the same document. Google
-   * follows and consolidates, so this is a defect rather than an outage — but a canonical should be
-   * the URL that answers 200, and a sitemap should list canonical URLs.
+   * On 50 of 51 pages the declared canonical was a URL that did not itself serve the page, and a
+   * different string from the one the sitemap handed a crawler for the same document. 05-13 could
+   * not repair it — the fix is upstream in `Seo.astro`, and 05-12 was editing route files in the
+   * same worktree — so it PRINTED the redirect count rather than asserting it to zero, precisely so
+   * the number would move visibly on the day the convention was settled.
    *
-   * THE REPAIR IS ONE LINE IN `src/components/public/Seo.astro`, WHICH THIS PLAN DOES NOT OWN.
-   * Plan 05-13 scopes this task to verification and says a 05-06 problem is "reported as [a
-   * regression] rather than repaired here"; the canonical strings themselves are passed by five
-   * route files belonging to 05-07…05-11, and 05-12 is editing two of them right now. So it is
-   * reported in the summary and asserted here at the strength that is true today:
-   *
-   *   - every canonical RESOLVES to a 200, and
-   *   - it resolves to the page it appears on and not some other page — which is the failure that
-   *     would actually cost traffic, and which nothing else in this suite would catch.
-   *
-   * The redirect count is printed rather than asserted to zero, so the day the trailing-slash
-   * convention is settled the number moves and is visible, instead of a green suite hiding it.
+   * It has been settled: `canonicalPath()` in `src/lib/site-meta.ts` is the one definition, used by
+   * both `Seo.astro` and `resume.astro` (which had built the Person's `url` from a second,
+   * independent derivation — the BL-8 defect). The count is now ASSERTED to zero, and the sitemap
+   * agreement is asserted directly, because that is the invariant the original defect broke and
+   * nothing in this suite was checking it.
    */
   it('every canonical resolves to 200 AND lands on the page that declares it', async () => {
     expect(audited.length).toBeGreaterThan(0);
@@ -1001,10 +995,51 @@ describe('SEO-01 · every built public page', () => {
       wrong,
       'a canonical that resolves to another page tells crawlers to index the wrong document'
     ).toEqual([]);
+    expect(
+      viaRedirect,
+      'a canonical that only reaches its page through a 307 is naming a URL that does not serve it'
+    ).toBe(0);
+
     say(
-      `canonical resolution: ${audited.length}/${audited.length} answer 200 and land on their own ` +
-        `page · ${viaRedirect} reach it through a 307 (RESIDUAL: canonicals name the unslashed ` +
-        `form, the sitemap the slashed one — one line in Seo.astro, owned by 05-06)`
+      `canonical resolution: ${audited.length}/${audited.length} answer 200 directly and land on ` +
+        `their own page · ${viaRedirect} through a redirect`
+    );
+  });
+
+  /**
+   * The invariant the trailing-slash defect actually broke, and the one nothing was asserting: a
+   * crawler is handed two addresses for each document — the sitemap's `<loc>` and the page's own
+   * canonical — and they must be the same string. Compared BOTH ways so neither can drift: every
+   * sitemap entry must be some page's canonical, and every audited page's canonical must be in the
+   * sitemap. A one-way check passes while one side silently loses entries.
+   */
+  it('every sitemap URL is exactly the canonical of the page it names', async () => {
+    const sitemap = await (await fetch(`${previewBaseUrl}/sitemap-0.xml`)).text();
+    const locs = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+
+    expect(locs.length, 'no <loc> entries were parsed out of the sitemap at all').toBeGreaterThan(
+      0
+    );
+    expect(audited.length, 'no pages were audited').toBeGreaterThan(0);
+
+    const canonicals = new Set(audited.map((entry) => entry.canonical as string));
+    const inSitemap = new Set(locs);
+
+    const advertisedButNotCanonical = locs.filter((loc) => !canonicals.has(loc));
+    const canonicalButNotAdvertised = [...canonicals].filter((href) => !inSitemap.has(href));
+
+    expect(
+      advertisedButNotCanonical,
+      'the sitemap hands crawlers a URL that no page declares as its canonical'
+    ).toEqual([]);
+    expect(
+      canonicalButNotAdvertised,
+      'a page declares a canonical the sitemap never lists'
+    ).toEqual([]);
+
+    say(
+      `sitemap agreement: ${locs.length} <loc> entries, ${canonicals.size} distinct canonicals, ` +
+        `identical both ways`
     );
   });
 });

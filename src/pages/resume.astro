@@ -96,6 +96,7 @@ import Seo from '../components/public/Seo.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
 import { home, resume } from '../lib/content';
 import { formatPeriod } from '../lib/period';
+import { canonicalPath } from '../lib/site-meta';
 import '../styles/resume.css';
 
 /** The route's own path, in one place: the canonical, the microdata `url` and the PDF sit beside it. */
@@ -121,7 +122,7 @@ if (!Astro.site) {
       'canonical cannot be made absolute. Set `site` in astro.config.mjs.',
   );
 }
-const canonicalUrl = new URL(RESUME_PATH, Astro.site).href;
+const canonicalUrl = new URL(canonicalPath(RESUME_PATH), Astro.site).href;
 
 /*
  * THE CURRENT ROLE, DERIVED FROM `isPresent` AND NEVER FROM ARRAY POSITION. The records happen to

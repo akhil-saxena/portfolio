@@ -506,7 +506,9 @@ describe('/work — the cross-link, the metadata and the JavaScript budget', () 
 
     const canonical = /<link rel="canonical" href="([^"]+)"/.exec(page)?.[1] ?? '';
     expect(canonical, 'the canonical is not absolute').toMatch(/^https?:\/\//);
-    expect(canonical.endsWith(WORK_PATH), `the canonical is ${canonical}`).toBe(true);
+    // The origin serves `/work/` and 307s `/work` (measured against real `workerd`), so the
+    // canonical names the SLASHED form and agrees with the sitemap. See `canonicalPath`.
+    expect(canonical.endsWith(`${WORK_PATH}/`), `the canonical is ${canonical}`).toBe(true);
 
     for (const property of [
       'og:title',

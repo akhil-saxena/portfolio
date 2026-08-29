@@ -133,3 +133,30 @@ export const SITE_OG_IMAGE: string = resolved.url;
 
 /** The photograph's own `alt`, verbatim. Never a summary, never "Portfolio". */
 export const SITE_OG_IMAGE_ALT: string = resolved.alt;
+
+/**
+ * THE ONE DEFINITION OF THE FORM A CANONICAL TAKES.
+ *
+ * Cloudflare Static Assets serves `/work/` out of `work/index.html` and answers `/work` with a
+ * 307 to it — MEASURED against `astro preview`, which runs real `workerd`: `/work` and `/photos`
+ * both 307, `/work/` and `/photos/` both 200. `@astrojs/sitemap` emits the slashed form for the
+ * same reason.
+ *
+ * Routes hold their paths unslashed (`/work`, `photoHref(record)`), so a canonical built straight
+ * from one named a URL that redirects while the sitemap named the one that serves. They disagreed
+ * on 50 of 51 pages — the homepage the only match — measured by plan 05-13.
+ *
+ * This lives here, and not inside `Seo.astro`, because `resume.astro` built the Person's `url`
+ * from a SECOND, independent derivation. Two derivations of one rule is the defect that shipped
+ * as BL-8 in this phase; one exported function is the fix.
+ */
+export function canonicalPath(path: string): string {
+  if (!path.startsWith('/')) {
+    throw new Error(
+      `canonicalPath: expected a root-relative path beginning with "/", received "${path}". ` +
+        'A bare "work" resolves against the current directory, so the canonical of ' +
+        '/photos/architecture/ would silently become /photos/architecture/work.'
+    );
+  }
+  return path.endsWith('/') ? path : `${path}/`;
+}

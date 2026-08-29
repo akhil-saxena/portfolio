@@ -112,9 +112,18 @@ const lightboxItems = lightboxRecordsFor(photos);
   {
     /* 🔴 THE ONE ISLAND ON THIS SITE, AND THE ONLY `client:*` DIRECTIVE OUTSIDE `/photos`. (§5.1.)
 
-      `client:idle`, NOT `client:load` — measured, not reasoned. The four Lighthouse numbers behind
-      that choice are in `05-12-SUMMARY.md`; §9.2 recorded the question as UNVERIFIED and it is
-      answered there rather than here.
+      🔴 `client:idle`, NOT `client:load` — and the comment that stood here was WRONG. It said
+      "the four Lighthouse numbers behind that choice are in `05-12-SUMMARY.md`". MEASURED by
+      05-15: that file contains the word "Lighthouse" ZERO times, and so does every other summary
+      in this phase. 05-12's plan made the four numbers a done criterion; they were never taken
+      and the omission was never recorded. §9.2's UNVERIFIED is therefore STILL OPEN and belongs
+      to Phase 8 under QUAL-01.
+
+      What 05-15 could measure without installing anything, on the built artefact over a local
+      origin: `client:idle` defers HYDRATION, not download. All three chunks (209,168 B) are
+      requested at 25-27 ms — before `domContentLoaded` (24 ms at 1440, 54 ms at 390) and ~500 ms
+      before the `load` event. So the directive is not buying a later fetch here; whether it buys
+      a better score than `client:load` is the thing still unmeasured.
 
       THE GRID IS NOT HYDRATED. There is no `client:*` on `PhotoGrid` or on `PhotoTile`, and there
       must never be: the island takes a SELECTOR and attaches one delegated listener to static

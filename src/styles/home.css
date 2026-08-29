@@ -134,7 +134,7 @@
   font-family: var(--display);
   font-style: italic;
   font-size: var(--text-xl);
-  font-weight: 400;
+  font-weight: var(--weight-regular);
   line-height: var(--lh-snug);
   letter-spacing: var(--ls-tight);
   color: var(--ink-2);
@@ -251,7 +251,7 @@
   align-self: start;
   font-family: var(--mono);
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: var(--lh-normal);
   letter-spacing: var(--ls-wide);
   /* §4.3 item 4 — one of the six places the accent is allowed. */
@@ -327,7 +327,7 @@
 .hm-resume-cta {
   font-family: var(--mono);
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: var(--lh-normal);
   letter-spacing: var(--ls-wide);
   color: var(--ink-2);
@@ -425,7 +425,7 @@
 .hm-byday-lead {
   font-family: var(--mono);
   font-size: var(--text-xs);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   letter-spacing: var(--ls-wide);
   color: var(--ink-3);
 }

@@ -69,7 +69,10 @@ import { Moon, Sun } from '@akhil-saxena/design-system/icons';
 export const NAV_ITEMS: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
   { href: '/work', label: 'work' },
   { href: '/photos', label: 'photographs' },
-  { href: '/resume', label: 'résumé' },
+  // No `résumé`. The approved design carries TWO nav items and says why: "No résumé button on
+  // home hero; résumé linked from Act-2 strip." The rebuild added a third. Akhil removed it on
+  // 2026-08-30 along with the hero's Resume button, so the résumé is reached from Act 2's
+  // `RÉSUMÉ →` link — one scroll from the landing, and the bar stays quiet.
 ];
 
 /** The id the inline theme script binds its click listener to (`PublicLayout.astro`). */

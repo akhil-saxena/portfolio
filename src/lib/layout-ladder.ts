@@ -217,7 +217,18 @@ export const PEEK_GAP: { readonly token: string; readonly px: number } = {
  * stylesheet directly. Two numbers that agree today are a duplication, not a contract — the same
  * reason `assert-gutter-ladder` exists one level up.
  */
-export const ACT_ONE_MAX = 1000;
+/*
+ * 880, DOWN FROM 1000 — Akhil asked for smaller photographs on 2026-08-30.
+ *
+ * This is the lever, because the tiles are `1fr` in a three-column grid: the column cap sets
+ * their width and `aspect-ratio` sets the rest. At 880 a tile is (880 - 2 x 8) / 3 = 288 wide
+ * against 328 before.
+ *
+ * The legacy site's column was 800 and the approved prototype's was 1000. 880 sits between them,
+ * deliberately: it is a step toward the original rather than a return to it, so the next
+ * adjustment has somewhere to go in either direction.
+ */
+export const ACT_ONE_MAX = 880;
 
 /**
  * The layout maxima, in px. §2.2 — each is `min(cap, 100%)` in effect, so none needs a breakpoint.

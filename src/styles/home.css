@@ -232,11 +232,11 @@
    * bigger than Playfair did at the same value. Recorded rather than absorbed: if 44 is wrong the
    * fix is a rung in the design system's type scale, not a literal here.
    */
-  --hm-name: var(--text-3xl);
+  --hm-name: var(--text-2xl);
 
   box-sizing: border-box;
   min-height: calc(100svh - var(--hm-above));
-  max-width: min(1000px, 100%);
+  max-width: min(880px, 100%);
   width: 100%;
   margin-inline: auto;
   display: flex;
@@ -278,7 +278,7 @@
 
 @media (min-width: 673px) {
   .hm-a {
-    --hm-name: var(--text-4xl);
+    --hm-name: var(--text-3xl);
   }
 }
 

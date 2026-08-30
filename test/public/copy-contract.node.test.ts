@@ -303,14 +303,18 @@ describe('§13.2 — the navigational strings, character for character on the se
 const NAV_CONTRACT: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
   { href: '/work', label: 'work' },
   { href: '/photos', label: 'photographs' },
-  { href: '/resume', label: 'résumé' },
 ];
 
-describe('the AppBar’s three nav labels — the most navigational strings on the site', () => {
+describe('the AppBar’s nav labels — the most navigational strings on the site', () => {
   it('pins the source constant: NAV_ITEMS is exactly the contract, in order', () => {
     expect(NAV_CONTRACT.length, 'the nav contract is empty').toBeGreaterThan(0);
     // Structural equality over the whole array, so a reorder, an addition and a relabel are all
-    // red. OQ-6b resolved the COUNT at three; the order is the reading order of the site.
+    // red.
+    //
+    // THE COUNT IS TWO, not the three OQ-6b resolved. Akhil cut `résumé` on 2026-08-30, with the
+    // hero's Resume button, so the CV is reached from Act 2's `RÉSUMÉ →` link instead. The
+    // approved design carries two and says why: "No résumé button on home hero; résumé linked
+    // from Act-2 strip." OQ-6b's three was the rebuild's addition, not the design's.
     expect(NAV_ITEMS.map((item) => ({ href: item.href, label: item.label }))).toEqual([
       ...NAV_CONTRACT,
     ]);
@@ -332,7 +336,7 @@ describe('the AppBar’s three nav labels — the most navigational strings on t
    * `test/public/home.node.test.ts`, so neither arrangement can drift from the contract or from
    * the other.
    */
-  it('pins the served bar: the same three labels, hrefs and order, in the shipped bytes', async () => {
+  it('pins the served bar: the same labels, hrefs and order, in the shipped bytes', async () => {
     const page = await load('/work');
     const bar = page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/);
     expect(bar, 'no .ds-atom-appbar in the served /work document').not.toBeNull();

@@ -625,11 +625,11 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
     expect(nameRung, 'no --hm-name declaration in the stylesheet').not.toBeNull();
     expect(
       (nameRung as RegExpExecArray)[1],
-      'the name jumped a rung — 5xl is the 60px the prototype had, not the 48 Akhil chose'
-    ).toBe('--text-3xl');
+      'the name jumped a rung — 3xl/4xl was the first pass, 5xl is the prototype 60px'
+    ).toBe('--text-2xl');
 
     process.stdout.write(
-      '  type: name var(--hm-name) = --text-3xl/700 · subtitle 18 · tagline 16 · all var(--display)\n'
+      '  type: name var(--hm-name) = --text-2xl/700 · subtitle 18 · tagline 16 · all var(--display)\n'
     );
   });
 

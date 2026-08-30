@@ -35,11 +35,6 @@
       "text": "View Portfolio →",
       "link": "/photos",
       "style": "primary"
-    },
-    {
-      "text": "View Resume",
-      "link": "/resume",
-      "style": "secondary"
     }
   ]
 }

@@ -419,8 +419,10 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     ];
     expect(
       blocks.length,
-      'expected exactly two no-preference blocks — the dock (§4) and the hover + cue (§7)'
-    ).toBe(2);
+      'expected three no-preference blocks — the dock (§4), the hover + cue (§7), and the ' +
+        "toggle glyph's fade (§1). A count, not a floor: a fourth is a motion source nobody " +
+        'argued for, and this assertion is the argument.'
+    ).toBe(3);
 
     /** Everything between a block's opening brace and its matching close. */
     const bodyOf = (m: RegExpMatchArray): { inside: string; end: number } => {
@@ -870,12 +872,24 @@ describe('Home ships no app bar (05-17)', () => {
    * because the claim is about HOW the shape was obtained — a hand-rolled `width`/`height`/`border`
    * block would look identical in the artefact and would be the workaround QUAL-03 forbids.
    */
-  it('the toggle is a re-pointed IconButton, not a hand-drawn circle', () => {
+  it('the toggle is a re-pointed IconButton reduced to its glyph', () => {
     const rule = /\.pub-nav-plain \.pub-toggle\s*\{([^}]*)\}/.exec(cssCode);
     expect(rule, 'no .pub-toggle rule').not.toBeNull();
     const body = (rule as RegExpExecArray)[1] as string;
     expect(body).toMatch(/border-radius:\s*var\(--radius-full\)/);
-    expect(body).toMatch(/border-color:\s*var\(--rule-strong\)/);
+    expect(body, 'the border came back — the toggle is a glyph now').toMatch(
+      /border-color:\s*transparent/
+    );
+    expect(body, 'the fill came back').toMatch(/background-color:\s*transparent/);
+    expect(cssCode, 'the glyph lost its resting opacity').toMatch(
+      /\.pub-toggle \.ds-atom-iconbtn-glyph\s*\{[^}]*opacity:\s*0\.7/
+    );
+    expect(cssCode, 'the glyph never returns to full strength on hover').toMatch(
+      /\.pub-toggle:hover \.ds-atom-iconbtn-glyph\s*\{[^}]*opacity:\s*1/
+    );
+    expect(cssCode, 'the coarse-pointer touch floor is gone').toMatch(
+      /@media \(pointer: coarse\)[\s\S]{0,240}min-height:\s*44px/
+    );
     expect(
       body,
       "the toggle sets its own size — take the design system's `size` prop instead, which is " +

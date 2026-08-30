@@ -140,20 +140,78 @@
 }
 
 /*
- * The bordered circle. `.ds-atom-iconbtn` already carries `border: 1px solid transparent` and
- * `border-radius: var(--radius-md)`; both are re-pointed at tokens that already exist, which is
- * (T) under QUAL-03 — a handover, not an origination. `IconButton`'s own docstring names this as
- * the supported path: *"All styling lives in primitives.css under `.ds-atom-iconbtn`, so a
- * composing component can restyle it through the cascade by passing its own className."*
+ * THE TOGGLE IS A GLYPH, NOT A BUTTON — Akhil's call, 2026-08-30, after seeing five treatments
+ * rendered in place.
+ *
+ * Home has no header band, so a bordered circle would be the ONLY boxed element on the page: it
+ * out-weighs the nav links beside it, which are plain text with a hover state, and reads as the
+ * page's most important control when it is the least. The border and the fill come off; what is
+ * left is the glyph, quiet at rest and full strength on hover — the same behaviour the nav links
+ * already have, so the row reads as one thing.
+ *
+ * `border-color` and `background` are re-pointed at tokens the system already declares. That is (T)
+ * under QUAL-03 — a handover, not an origination — and `IconButton`'s own docstring names it as the
+ * supported path: *"All styling lives in primitives.css under `.ds-atom-iconbtn`, so a composing
+ * component can restyle it through the cascade by passing its own className."*
  *
  * (0,2,0) against `.ds-atom-iconbtn`'s (0,1,0), for the reason given above `.pub-bar-plain`.
  *
- * The size is NOT set here — `size="lg"` is 40x40 from the design system's own `[data-size]` rule.
- * The design asks for 42. Two pixels, on the rung the system provides. RECORDED.
+ * THE FOCUS RING IS NOT LOST WITH THE BORDER, AND THAT WAS CHECKED RATHER THAN ASSUMED.
+ * `.ds-atom-iconbtn:focus-visible` already declares `outline: 2px solid var(--focus)` with a 2px
+ * offset, in the design system's own stylesheet. Nothing here touches `outline`, so a keyboard user
+ * still gets a ring even though the resting border is gone. Adding one here would have been a
+ * second, drifting copy of a rule the component already owns.
+ *
+ * THE 44px TOUCH FLOOR IS NOT INHERITED, and that was checked too. The design system grows
+ * `.ds-atom-appbar a` and `.ds-atom-footer .ds-atom-footer-link` under `pointer: coarse` — neither
+ * matches this control, which is a `<button>` in Home's plain row rather than a link inside an
+ * AppBar. So the floor is declared below. It grows the ANCHOR BOX and leaves the 34px paint alone,
+ * gated on `pointer` and never on width: a 1024px tablet and a 1024px laptop window want opposite
+ * answers.
  */
 .pub-nav-plain .pub-toggle {
   border-radius: var(--radius-full);
-  border-color: var(--rule-strong);
+  border-color: transparent;
+  background-color: transparent;
+}
+
+/*
+ * LONGHANDS, NOT THE `transition` SHORTHAND. `gate:app-css` refuses the shorthand and is right to:
+ * its first term is a PROPERTY NAME, so the declaration can never be written token-only and the
+ * gate cannot tell a tokenised duration from a typed one inside it. `transition-property` is in the
+ * free set for that reason; the duration and easing come from tokens.
+ *
+ * Only the glyph transitions. The button itself has nothing left to animate.
+ */
+.pub-nav-plain .pub-toggle .ds-atom-iconbtn-glyph {
+  opacity: 0.7;
+}
+
+/*
+ * THE FADE LIVES INSIDE THE MOTION QUERY, and PUB-13's assertion caught it outside — correctly.
+ *
+ * The hover state itself is NOT motion and stays out here: under `reduce` the glyph still goes to
+ * full strength, it just arrives instantly. Suppressing the state rather than the animation would
+ * take the affordance away from exactly the visitor who asked for less movement.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .pub-nav-plain .pub-toggle .ds-atom-iconbtn-glyph {
+    transition-property: opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+.pub-nav-plain .pub-toggle:hover .ds-atom-iconbtn-glyph {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .pub-nav-plain .pub-toggle {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /*

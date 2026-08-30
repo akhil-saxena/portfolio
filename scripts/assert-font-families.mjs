@@ -120,7 +120,7 @@ const rel = (p) => {
  * discrepancy stays visible rather than being smoothed over.
  */
 const REQUIRED_FAMILIES = [
-  { name: 'Playfair Display', match: /^Playfair Display( Variable)?$/ },
+  { name: 'Libre Baskerville', match: /^Libre Baskerville$/ },
   { name: 'DM Sans', match: /^DM Sans( Variable)?$/ },
   { name: 'IBM Plex Mono', match: /^IBM Plex Mono( Variable)?$/ },
 ];
@@ -211,10 +211,30 @@ const CANARIES = [
     antiCanary: '@font-face{font-family:"DM Sans Variable"}',
   },
   {
+    /*
+     * The suffix canary MUST point at a family that actually has a variable build.
+     *
+     * It used to read REQUIRED_FAMILIES[0], which was Playfair Display — variable, so the artefact
+     * declared "Playfair Display Variable" while §1.2 spells it "Playfair Display", and this proved
+     * the matcher tolerated the suffix. Slot 0 is Libre Baskerville now, which has NO variable
+     * build: the artefact declares a bare "Libre Baskerville", so the canary could not fire and the
+     * gate refused to run at all rather than passing quietly. That refusal is the gate working.
+     *
+     * Repointed at DM Sans, which is variable and where the suffix question is still live. Indexed
+     * BY NAME rather than by position, so re-ordering the list cannot silently re-aim the canary at
+     * a family the suffix does not apply to — which is exactly what just happened.
+     */
     id: 'F-REQUIRED-VARIABLE-SUFFIX',
-    run: (s) => REQUIRED_FAMILIES[0].match.test(s),
-    canary: 'Playfair Display Variable',
-    antiCanary: 'Playfair Display Variable Extra',
+    run: (s) => REQUIRED_FAMILIES.find((f) => f.name === 'DM Sans').match.test(s),
+    canary: 'DM Sans Variable',
+    antiCanary: 'DM Sans Variable Extra',
+  },
+  {
+    /* The non-variable half of the same claim: a bare family name must match exactly. */
+    id: 'F-REQUIRED-BARE-FAMILY',
+    run: (s) => REQUIRED_FAMILIES.find((f) => f.name === 'Libre Baskerville').match.test(s),
+    canary: 'Libre Baskerville',
+    antiCanary: 'Libre Baskerville Variable',
   },
   {
     id: 'F-FORBIDDEN-FAMILY',

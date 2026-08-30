@@ -581,6 +581,58 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * Asserted in BOTH directions, because only the absence half catches the regression: a tile that
    * regains a radius re-draws twenty-four corners while every other assertion here stays green.
    */
+  /**
+   * THE TYPE SCALE WAS ENTIRELY UNGUARDED, AND THAT IS HOW THE WRONG SERIF SHIPPED.
+   *
+   * Before this test, changing the name from 60px to 44px — a 27% change to the largest element on
+   * the page — reddened nothing in 1532 assertions. The whole rebuild swapped the brand serif from
+   * Libre Baskerville to Playfair Display and no gate, suite or审 review saw it; Akhil found it by
+   * eye, twice, and named it as "the font is also not looking great".
+   *
+   * So the three display roles are pinned against the SERVED markup. `Heading`'s numeric path
+   * inlines `font-size`, which is why 18 and 16 appear literally; the name reads `var(--hm-name)`
+   * because `home.css` drives it for the dock animation, so its RUNG is asserted in the stylesheet
+   * instead.
+   *
+   * Sizes are the original site's, which Akhil chose on 2026-08-30 after comparing nine pairings:
+   * name 48 (nearest rungs 40/44), subtitle 18, tagline 16. Not the prototype's 60/20/21.
+   */
+  it('the three display roles ship the chosen sizes, in the brand serif', () => {
+    const heading = (cls: string) => {
+      const m = new RegExp(`<[a-z0-9]+ [^>]*\\b${cls}\\b[^>]*>`).exec(html);
+      expect(m, `no element carrying .${cls} in the served page`).not.toBeNull();
+      return (m as RegExpExecArray)[0];
+    };
+
+    // All three are the DISPLAY face, not the body sans. This is the assertion that would have
+    // caught the Playfair swap had it existed — via the token, which `design-system.css` binds.
+    for (const cls of ['hm-name', 'hm-subtitle', 'hm-intro']) {
+      expect(heading(cls), `${cls} is not set in the display face`).toContain(
+        'font-family:var(--display)'
+      );
+    }
+
+    expect(heading('hm-subtitle'), 'the subtitle size moved').toContain('font-size:18px');
+    expect(heading('hm-intro'), 'the tagline size moved').toContain('font-size:16px');
+
+    // The name is driven from the stylesheet, so assert the rung rather than a pixel value —
+    // a literal here would be the thing `gate:app-css` refuses in the CSS.
+    expect(heading('hm-name'), 'the name stopped reading --hm-name').toContain(
+      'font-size:var(--hm-name)'
+    );
+    expect(heading('hm-name'), 'the name lost its weight').toContain('font-weight:700');
+    const nameRung = /--hm-name:\s*var\((--text-[a-z0-9]+)\)/.exec(cssCode);
+    expect(nameRung, 'no --hm-name declaration in the stylesheet').not.toBeNull();
+    expect(
+      (nameRung as RegExpExecArray)[1],
+      'the name jumped a rung — 5xl is the 60px the prototype had, not the 48 Akhil chose'
+    ).toBe('--text-3xl');
+
+    process.stdout.write(
+      '  type: name var(--hm-name) = --text-3xl/700 · subtitle 18 · tagline 16 · all var(--display)\n'
+    );
+  });
+
   it('the peek grid rounds and clips itself, and no tile carries a radius of its own', () => {
     const grid = (/\.hm-peek-grid\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)?.[1] as string;
     expect(grid, 'no .hm-peek-grid rule').toBeTruthy();

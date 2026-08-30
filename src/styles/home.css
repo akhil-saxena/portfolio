@@ -222,7 +222,17 @@
    * handed through `style={{ fontSize: 'var(--hm-name)' }}` at the call site (`style` spreads LAST
    * in `Heading`, MEASURED) and driven from here. Both values are tokens.
    */
-  --hm-name: var(--text-4xl);
+  /*
+   * THE ORIGINAL'S NAME IS 48px (3rem), STEPPING TO 36px (2.25rem) BELOW 600. The scale has no
+   * 48 and no 36 — the rungs either side are `--text-3xl` 40 and `--text-4xl` 44 — so this takes
+   * the NEAREST RUNGS, 40 narrow and 44 wide, rather than typing 48px and putting a literal in a
+   * tokenised dimension (which `gate:app-css` refuses, correctly).
+   *
+   * 44 against the original's 48 is 4px, and Libre Baskerville's large x-height means it reads
+   * bigger than Playfair did at the same value. Recorded rather than absorbed: if 44 is wrong the
+   * fix is a rung in the design system's type scale, not a literal here.
+   */
+  --hm-name: var(--text-3xl);
 
   box-sizing: border-box;
   min-height: calc(100svh - var(--hm-above));
@@ -268,7 +278,7 @@
 
 @media (min-width: 673px) {
   .hm-a {
-    --hm-name: var(--text-5xl);
+    --hm-name: var(--text-4xl);
   }
 }
 

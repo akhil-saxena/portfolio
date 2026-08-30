@@ -39,5 +39,80 @@
 
 @import "@akhil-saxena/design-system/tokens.css";
 @import "@akhil-saxena/design-system/themes/monochrome.css";
-@import "@akhil-saxena/design-system/fonts/monochrome.css";
+/*
+ * FACES ARE IMPORTED HERE, NOT VIA `fonts/monochrome.css`, BECAUSE THE BRAND SERIF DIFFERS.
+ *
+ * That file carries five `@import`s and ZERO custom properties — faces only, which its own
+ * header makes a point of. Two of the five are Playfair Display, which this site no longer
+ * renders. Importing it would ship a fourth family nothing paints: ~38 KB on the wire, and
+ * `gate:fonts` refuses a fourth family by name — correctly, and it caught this.
+ *
+ * So the three families are named here explicitly. The rejected alternative was to keep the
+ * bundle and let Playfair ride along unused; that trades a hard gate failure for silent waste.
+ *
+ * The ITALIC is deliberate and load-bearing. The subtitle is a drawn italic serif; with the
+ * roman alone the browser SYNTHESISES an oblique by shearing outlines and leaving advance
+ * widths untouched — the design system measured an 8.9% divergence doing exactly this, which is
+ * plainly visible on an editorial serif.
+ */
+@import "@fontsource/libre-baskerville/latin-400.css";
+@import "@fontsource/libre-baskerville/latin-400-italic.css";
+@import "@fontsource/libre-baskerville/latin-700.css";
+@import "@fontsource-variable/dm-sans/wght.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+
+/*
+ * ================================================================================================
+ * THE BRAND SERIF IS LIBRE BASKERVILLE, NOT PLAYFAIR DISPLAY
+ * ================================================================================================
+ *
+ * The site this one replaces served Libre Baskerville — `--font-serif: 'Libre Baskerville',
+ * Georgia, serif` in the legacy `globals.css`. The rebuild shipped Playfair Display instead, and
+ * nobody diffed the two. Akhil rejected two iterations over how the type looked before the cause
+ * was found; it was never the sizes and never the sans.
+ *
+ * They are both 'a serif' and they are opposite temperaments. Playfair is a DISPLAY face: very
+ * high stroke contrast, meant to be large. At 21px on `#0d0d0f` its hairlines thin toward nothing.
+ * Libre Baskerville is a TEXT face — low contrast, large x-height, drawn for screen body copy —
+ * which is why it carries 700 at 48px without shouting where Playfair could not.
+ *
+ * SELF-HOSTED, like every other face here: the built page fetches from no third-party font host,
+ * and adding one would put a render-blocking cross-origin request in front of the first paint on
+ * a site with a 95+ Lighthouse budget. `@fontsource/libre-baskerville` is a direct dependency and
+ * Vite bundles the woff2 next to the other twelve.
+ *
+ * THIS IS A SITE-LEVEL OVERRIDE OF A DESIGN-SYSTEM TOKEN, AND IT IS TEMPORARY.
+ * `--font-display` belongs to the theme in `@akhil-saxena/design-system`, which is the only
+ * reason the rebuild could change the brand serif without anyone noticing. Akhil chose to
+ * override here first and land it upstream after, so the site is right today — but until that
+ * release the package and the site disagree about the brand serif, which is the exact drift that
+ * caused this. Filed as D-25. Delete this block when it lands.
+ */
+
+/*
+ * BOTH THEME SELECTORS, MATCHED EXACTLY — a bare `:root` loses, and the gate caught it.
+ *
+ * The theme declares the serif twice, once per mode:
+ *
+ *     :root[data-brand="monochrome"]        (0,2,0)
+ *     :root[data-brand="monochrome"].dark   (0,3,0)
+ *
+ * A `:root` override is (0,1,0) and loses to both, so BOTH modes silently kept Playfair.
+ * `gate:fonts` refused with F4-FALLBACK: `--font-display` resolved to a family no `@font-face`
+ * declares, which paints as Georgia and looks ALMOST right — precisely the silent failure that
+ * gate exists to catch, and it caught it on the first build.
+ *
+ * MATCHED rather than beaten: same selectors, same specificity, later in the cascade. Winning
+ * with an added class or `!important` would leave a rule no future theme change could override.
+ *
+ * `--font-serif` carries the value and `--font-display` reads it, exactly as the theme does, so
+ * nothing depends on which of the two a given component happens to name.
+ */
 @import "@akhil-saxena/design-system/primitives.css";
+
+:root[data-brand="monochrome"],
+:root[data-brand="monochrome"].dark {
+  --font-serif: "Libre Baskerville", Georgia, serif;
+  --font-display: var(--font-serif);
+}

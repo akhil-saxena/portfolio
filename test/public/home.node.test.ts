@@ -217,20 +217,37 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     expect(body).toMatch(/min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/);
 
     /*
-     * THE PADDING THAT CAUSED IT IS GONE, AND THAT IS ASSERTED TOO. State A is a centring
-     * container with one child, so its own padding bought no visual air and cost 24px of budget at
-     * the one class that had none (390 x 844 coarse: a stage of 738 in a 731 budget). Its painted
-     * height now equals its budget at all six classes.
+     * THE PADDING IS BACK, DELIBERATELY, AND IT IS EXACTLY `--hm-above`.
      *
-     * `box-sizing` stays with nothing to absorb, on purpose: it is what keeps `min-height` meaning
-     * "exactly one budget tall" for any padding or border added later. This plan measured that
-     * going wrong once; the declaration is the guard against measuring it again, and this
-     * assertion is what stops the guard being deleted as unused.
+     * It was removed once for a good reason: state A's own padding bought no visual air and cost
+     * 24px of budget at the one class that had none — 390 x 844 coarse, a stage of 738 in a 731
+     * budget. That measurement was true of the page as it then was.
+     *
+     * Akhil, 2026-08-30: "it should occupy the center of the page, not the bottom." The content WAS
+     * centred — 114px above and below — but centred inside this box, which starts `--hm-above`
+     * down under the nav row. From the VIEWPORT that read 178 above and 114 below: a content centre
+     * of 482 against a viewport centre of 450. A padding-bottom of `--hm-above` shortens the
+     * centring box by exactly the offset above it, so the two midpoints coincide.
+     *
+     * RE-MEASURED at all six classes after the type and tile sizes came down: drift is 0 at every
+     * one, and the cue stays above the fold at every one. At 390 x 844 COARSE — the class that had
+     * no budget before — the stage is now 598 in a 780 budget, 115px of headroom, because the name,
+     * the tiles and the CTA count all shrank. The old constraint was real and is no longer binding.
+     *
+     * Asserted as an EQUALITY against the token, not as an absence: arbitrary padding here would
+     * still eat the budget silently, and `box-sizing: border-box` is what keeps `min-height`
+     * meaning "exactly one budget tall" while this padding is inside it.
      */
+    expect(body, 'state A lost the padding that centres it on the viewport').toMatch(
+      /padding-bottom:\s*var\(--hm-above\)/
+    );
     expect(
-      body,
-      'state A has padding again — the budget is no longer what min-height says'
+      body.replace(/padding-bottom:\s*var\(--hm-above\);?/, ''),
+      'state A has padding beyond the one that centres it — that eats the budget silently'
     ).not.toMatch(/padding/);
+    expect(body, 'box-sizing went with it — min-height stops meaning one budget').toMatch(
+      /box-sizing:\s*border-box/
+    );
   });
 
   /**

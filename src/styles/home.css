@@ -294,6 +294,23 @@
 
   box-sizing: border-box;
   min-height: calc(100svh - var(--hm-above));
+  /*
+   * CENTRED ON THE VIEWPORT, NOT ON THIS BOX — Akhil, 2026-08-30: "it should occupy the center of
+   * the page, not the bottom."
+   *
+   * `justify-content: center` was already here and was already working: MEASURED at 1440x900, the
+   * content sat 114px from this box's top and 114px from its bottom. But the box starts
+   * `--hm-above` (64px) down, under the nav row, so from the VIEWPORT it read 178 above and 114
+   * below — content centre at 482 against a viewport centre of 450, and it looked low.
+   *
+   * A padding-bottom of `--hm-above` shortens the centring box by exactly the offset above it, so
+   * the midpoint of the content lands on the midpoint of the screen: 64 + (836 - 64) / 2 = 450.
+   *
+   * `box-sizing: border-box` is what makes this safe — the padding comes OUT of the 100svh budget
+   * rather than adding to it, so Act 1 still fits one viewport and the scroll cue stays above the
+   * fold, which is the one thing this act cannot get wrong.
+   */
+  padding-bottom: var(--hm-above);
   max-width: min(880px, 100%);
   width: 100%;
   margin-inline: auto;

@@ -962,13 +962,44 @@ describe('site_config', () => {
  * ========================================================================================== */
 
 describe('home_config', () => {
+  /*
+   * THIS TEST BUILDS ITS OWN CTA, and that is the point rather than a convenience.
+   *
+   * It used to mutate `HOME.ctas[0]`, which read the LIVE record. `home_config.ctas` is empty since
+   * 2026-08-30 — Act 1 has no calls to action — so `[0]` was undefined and this failed with a
+   * TypeError rather than an assertion: a rule about the SCHEMA broken by a change to the DATA.
+   *
+   * The rule is still live. The field exists, records are validated as strictly as ever, and a CTA
+   * can be added back from the admin at any time. So the fixture pushes the record it needs.
+   */
   it('REJECTS a cta style outside the two in use', () => {
     const result = HomeConfigSchema.safeParse(
-      mutated(HOME, '/ctas/0/style', (draft) => {
-        (draft.ctas as Record<string, unknown>[])[0].style = 'ghost';
+      mutated(HOME, '/ctas/0', (draft) => {
+        (draft.ctas as Record<string, unknown>[]).push({
+          text: 'Somewhere',
+          link: '/somewhere',
+          style: 'ghost',
+        });
       })
     );
-    expect(result.success).toBe(false);
+    expect(result.success, 'a cta style outside primary|secondary was accepted').toBe(false);
+  });
+
+  /*
+   * The other half. Without it the test above passes on ANY push the schema happens to reject —
+   * including one rejected for a reason that has nothing to do with `style`.
+   */
+  it('ACCEPTS a cta the admin could add back', () => {
+    const result = HomeConfigSchema.safeParse(
+      mutated(HOME, '/ctas/0', (draft) => {
+        (draft.ctas as Record<string, unknown>[]).push({
+          text: 'Somewhere',
+          link: '/somewhere',
+          style: 'primary',
+        });
+      })
+    );
+    expect(result.success, 'a well-formed cta was rejected').toBe(true);
   });
 
   it('REJECTS a peek position that is not in the "N% N%" shape', () => {

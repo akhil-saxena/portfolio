@@ -111,7 +111,19 @@
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { Button } from '@akhil-saxena/design-system/components/Button';
 import { Link } from '@akhil-saxena/design-system/components/Link';
-import homeConfig from '../../data/home_config.json';
+/*
+ * THE SCHEMA-VALIDATED EXPORT, NOT THE RAW JSON.
+ *
+ * This imported `data/home_config.json` directly, which typed `ctas` from the LITERAL. With
+ * the array now empty that inferred `never[]`, and `cta.style` stopped existing as a property —
+ * three type errors from a data edit that broke no code.
+ *
+ * `src/lib/content.ts` parses the same file through `HomeConfigSchema` at module scope and
+ * exports it as `HomeConfig`, so the element type comes from the SCHEMA and does not move when
+ * the data does. It also means a malformed record fails the build here, which the raw import
+ * never did.
+ */
+import { home as homeConfig } from '../lib/content';
 import HomeActTwo from '../components/public/HomeActTwo.astro';
 import PeekGrid from '../components/public/PeekGrid.astro';
 import Seo from '../components/public/Seo.astro';
@@ -277,16 +289,35 @@ const homeCtas = ctas.map((cta) => {
 
       <PeekGrid />
 
-      {/* The records are the CMS's; the variants are D-4's; the seam is above. */}
-      <div class="hm-ctas">
-        {
-          homeCtas.map((cta) => (
-            <Button as="a" href={cta.link} variant={cta.variant} size="lg" className="hm-cta">
-              {cta.text}
-            </Button>
-          ))
-        }
-      </div>
+      {
+        /*
+            ACT 1 HAS NO CALLS TO ACTION, and `home_config.ctas` is empty — Akhil, 2026-08-30.
+
+            The approved prototype's Act 1 carries none: the legacy site added them and the rebuild
+            inherited them from there. The button was also the ONLY filled element on the page, so
+            the eye reached it before the photographs, which is backwards for a photographer's
+            landing. The order is now name -> photographs -> scroll.
+
+            Nothing became unreachable. `/photos` is the nav's `photographs` AND the grid's own
+            `ALL 40 →` badge, which links the whole block; `/work` is the nav and Act 2's
+            `ALL WORK →`; `/resume` is Act 2's `RÉSUMÉ →`.
+
+            The mapping and the render stay: the field is CMS content Akhil can refill, and an
+            empty array must render nothing rather than an empty flex row that still takes its
+            `gap` and its margins.
+          */
+      }
+      {
+        homeCtas.length > 0 && (
+          <div class="hm-ctas">
+            {homeCtas.map((cta) => (
+              <Button as="a" href={cta.link} variant={cta.variant} size="lg" className="hm-cta">
+                {cta.text}
+              </Button>
+            ))}
+          </div>
+        )
+      }
 
       <a class="hm-cue" href="#work">{SCROLL_PROMPT}</a>
     </div>

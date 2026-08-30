@@ -436,10 +436,10 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     ];
     expect(
       blocks.length,
-      'expected three no-preference blocks — the dock (§4), the hover + cue (§7), and the ' +
-        "toggle glyph's fade (§1). A count, not a floor: a fourth is a motion source nobody " +
-        'argued for, and this assertion is the argument.'
-    ).toBe(3);
+      'expected four no-preference blocks — the dock (§4), the hover + cue (§7), the toggle ' +
+        "glyph's fade (§1) and the scroll cue's bob (§7a). A count, not a floor: a fifth is a " +
+        'motion source nobody argued for, and this assertion is the argument.'
+    ).toBe(4);
 
     /** Everything between a block's opening brace and its matching close. */
     const bodyOf = (m: RegExpMatchArray): { inside: string; end: number } => {
@@ -735,44 +735,46 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
   });
 
   /**
-   * The CTAs are `home_config.ctas` and nothing else. Asserted against the RECORD, never against a
-   * literal — they are CMS content Akhil edits, so editing the record must move both sides.
+   * ACT 1 HAS NO CALLS TO ACTION, AND THIS ASSERTS BOTH HALVES OF THAT.
+   *
+   * `home_config.ctas` is empty — Akhil, 2026-08-30. The approved prototype's Act 1 carries none;
+   * the legacy site added them and the rebuild inherited them. The button was also the only filled
+   * element on the page, so the eye reached it before the photographs.
+   *
+   * Still asserted against the RECORD rather than a literal, and it holds in BOTH directions: an
+   * empty record must render no control AND no empty container, and a refilled record must render
+   * exactly what it declares. That second half is why the mapping stays in the page — this is CMS
+   * content, and putting a CTA back must not need a code change.
+   *
+   * The container half is the one that matters today: an empty `.hm-ctas` div would still take its
+   * `gap` and its margins, so the spacing under the grid would be wrong with nothing visible to
+   * explain why.
    */
-  it('renders every CTA in data/home_config.json, in order, as a design-system Button', () => {
+  it('renders exactly the CTAs data/home_config.json declares — none, today', () => {
     const home = JSON.parse(
       readFileSync(new URL('../../data/home_config.json', import.meta.url), 'utf8')
     ) as { ctas: ReadonlyArray<{ text: string; link: string }> };
-    expect(home.ctas.length, 'home_config.json declares no CTAs').toBeGreaterThan(0);
 
     const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-btn hm-cta"[^>]*>([\s\S]*?)<\/a>/g)];
-    expect(rendered.length, 'the CTA row is not rendered from the record').toBe(home.ctas.length);
+    expect(rendered.length, 'the CTA row does not match the record').toBe(home.ctas.length);
+
+    if (home.ctas.length === 0) {
+      expect(
+        html,
+        'an empty .hm-ctas container still ships — it takes its gap and margins'
+      ).not.toMatch(/class="hm-ctas"/);
+      return;
+    }
+
     for (const [i, cta] of home.ctas.entries()) {
       const markup = (rendered[i] as RegExpMatchArray)[0] as string;
       expect((rendered[i] as RegExpMatchArray)[1]?.replace(/<[^>]*>/g, '').trim()).toBe(cta.text);
       expect(markup).toContain(`href="${cta.link}"`);
-    }
-  });
-
-  /**
-   * D-4's consequence, pinned so it cannot be "improved" back. `inline`, `footer` and `action` set
-   * `color` as an INLINE style and the latter two also inline
-   * `textDecorationColor: rgba(0, 0, 0, 0.25)` — a literal colour, invisible on `#0d0d0f`, that no
-   * app rule can beat at any specificity while every jsdom test still passes, because jsdom
-   * implements no CSS specificity. Three consecutive Phase 1 plans hit this.
-   */
-  it('the CTAs use only Button variants, and ship no literal colour', () => {
-    const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-btn hm-cta"[^>]*>/g)].map(
-      (m) => m[0] as string
-    );
-    expect(rendered.length).toBeGreaterThan(0);
-    for (const markup of rendered) {
       const variant = /data-variant="([^"]*)"/.exec(markup)?.[1];
       expect(['primary', 'secondary'], `hm-cta shipped variant="${variant}"`).toContain(variant);
-    }
-    // Scoped to the ANCHOR's own tag, for the same reason the badge count is — a rule in an
-    // inlined `<style>` block must not be able to satisfy or falsify a claim about markup.
-    for (const markup of rendered) {
-      expect(markup, 'a literal colour reached the page through a Link variant').not.toMatch(
+      // D-4: `inline`, `footer` and `action` inline a literal colour no app rule can beat at any
+      // specificity, while every jsdom test still passes. Pinned so it cannot be "improved" back.
+      expect(markup, 'a literal colour reached the page through a variant').not.toMatch(
         /rgba\(0, 0, 0/
       );
     }

@@ -787,6 +787,51 @@
   text-decoration: none;
 }
 
+/*
+ * THE CUE IS THE ONLY INVITATION TO SCROLL NOW, so it moves — a slow bob, in the motion query.
+ *
+ * With no button in Act 1 the cue carries the entire "there is more below" job on its own. Static
+ * 11px mono at `--ink-3` is easy to read past; a 2.2s rise and fall makes it register without
+ * raising its contrast, which is what the design asks for (`↓ THE WORK`, barely there).
+ *
+ * `translateY` and `opacity` only — both compositor properties, so the animation never triggers
+ * layout on a page whose first viewport is a height budget.
+ *
+ * The duration is 2.2s and there is no token for it: `--dur-1..4` are 120-360ms INTERACTION
+ * durations and an ambient loop is a different quantity. Filed as D-24 and registered as
+ * DEBT-AMBIENT-DURATION so it is printed on every gate pass rather than sitting silent.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .hm-cue {
+    /*
+     * LONGHANDS. `gate:app-css` refuses the `animation` shorthand and is right to: it carries a
+     * clock, and a shorthand cannot be read for whether the clock is tokenised.
+     *
+     * The duration is the one literal here, and it is the registered DEBT-AMBIENT-DURATION —
+     * `--dur-1..4` are 120-360ms INTERACTION durations and the system names no ambient one.
+     * Pointing this at --dur-4 would make it a 360ms twitch, which is a different and worse
+     * feature, not the same one faster. Filed as D-24; the debt entry is what prints it on
+     * every gate pass rather than letting it go quiet.
+     */
+    animation-name: hm-cue-bob;
+    animation-duration: 2.2s;
+    animation-timing-function: var(--ease-in-out);
+    animation-iteration-count: infinite;
+  }
+
+  @keyframes hm-cue-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.65;
+    }
+    50% {
+      transform: translateY(6px);
+      opacity: 1;
+    }
+  }
+}
+
 @media (pointer: coarse) {
   .hm-cue {
     display: inline-flex;

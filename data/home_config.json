@@ -30,11 +30,5 @@
       "label": "Email"
     }
   ],
-  "ctas": [
-    {
-      "text": "View Portfolio →",
-      "link": "/photos",
-      "style": "primary"
-    }
-  ]
+  "ctas": []
 }

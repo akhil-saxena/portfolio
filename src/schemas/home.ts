@@ -62,16 +62,27 @@ export const HomeConfigSchema = z.strictObject({
     )
     .min(1),
 
-  ctas: z
-    .array(
-      z.strictObject({
-        text: z.string().min(1),
-        // A site-relative path, so URL parsing is the wrong check here.
-        link: z.string().min(1).startsWith('/'),
-        style: z.enum(['primary', 'secondary']),
-      })
-    )
-    .min(1),
+  /*
+   * NO `.min(1)`, AND THE EMPTY ARRAY IS THE POINT.
+   *
+   * It required at least one until 2026-08-30, on the reasonable premise that a landing page needs
+   * a call to action. The approved prototype's Act 1 has none — the legacy site added them and the
+   * rebuild inherited them — and Akhil removed them, because the button was the only filled element
+   * on the page and the eye reached it before the photographs.
+   *
+   * The FIELD stays, and each record is still validated as strictly as before: this is CMS content
+   * he can refill from the admin without a schema change. What is no longer asserted is that he
+   * must. Nothing became unreachable — `/photos` is the nav and the grid's own `ALL 40 →` badge,
+   * `/work` is the nav and Act 2, `/resume` is Act 2.
+   */
+  ctas: z.array(
+    z.strictObject({
+      text: z.string().min(1),
+      // A site-relative path, so URL parsing is the wrong check here.
+      link: z.string().min(1).startsWith('/'),
+      style: z.enum(['primary', 'secondary']),
+    })
+  ),
 });
 
 export type HomeConfig = z.infer<typeof HomeConfigSchema>;

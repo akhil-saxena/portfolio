@@ -350,8 +350,15 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  /*
+   * FOUR ROUNDED CORNERS, NOT TWENTY-FOUR. The radius and the clip are on the GRID, so the six
+   * photographs read as one object with rounded outer corners and square interior ones — the
+   * legacy `.hd-gallery` treatment, which Akhil asked for by name on 2026-08-30.
+   */
+  overflow: hidden;
+  border-radius: var(--radius-md);
 }
 
 @media (min-width: 673px) {
@@ -370,8 +377,8 @@
    * not an aspect-ratio query: nothing on this page branches on the viewport's own ratio.
    */
   aspect-ratio: 16 / 9;
+  /* The clip stays — it holds the hover scale. The RADIUS does not: it belongs to the grid. */
   overflow: hidden;
-  border-radius: var(--radius-md);
   background-color: var(--cream-2);
   background-size: cover;
   background-position: center;

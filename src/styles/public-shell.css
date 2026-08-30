@@ -355,16 +355,29 @@ body {
  * lucide glyphs are `currentColor`.
  */
 
+/*
+ * `flex`, NOT `block`, and that is the whole of the icon-centring fix.
+ *
+ * MEASURED 2026-08-30: the glyph sat 2px above the button's centre. `.ds-atom-iconbtn-glyph` is a
+ * flex box and centres its child correctly — but this wrapper sits between it and the `<svg>`, and
+ * as a BLOCK it lays the svg out inline, on a text baseline, which is 2px high in this face at
+ * 16px. Making the wrapper a flex container makes the svg a flex item, and `place-items` centres
+ * it. Akhil reported the misalignment by eye; `dy` was -2.00 before and 0.00 after.
+ *
+ * The fix is on the wrapper the app owns, not on the design-system glyph span — there is nothing
+ * wrong with `.ds-atom-iconbtn-glyph`.
+ */
 .pub-theme-icon {
   display: none;
+  place-items: center;
 }
 
 .pub-theme-icon-moon {
-  display: block;
+  display: flex;
 }
 
 .dark .pub-theme-icon-sun {
-  display: block;
+  display: flex;
 }
 
 .dark .pub-theme-icon-moon {

@@ -162,9 +162,19 @@ export const MASONRY_GAP: { readonly token: string; readonly px: number } = {
  *
  * The masonry keeps its own 16px. Two grids, two jobs, and they are free to diverge again.
  */
+/*
+ * AKHIL'S CALL, 2026-08-30: the six photographs are ONE block with four rounded corners, as the
+ * legacy site had them — not six separately rounded cards. `.hm-peek-grid` carries the radius
+ * and the clip; `.hm-tile` carries neither. A 16px gap turns that block back into a contact
+ * sheet with wide hairlines, so the gap is 8px, which is what `.hd-gallery` used.
+ *
+ * `PeekGrid.astro` composes this into every tile's `sizes`, so the value has to live here: a
+ * stylesheet disagreeing with that arithmetic downloads the wrong variant of all six
+ * photographs with no visual symptom and no error.
+ */
 export const PEEK_GAP: { readonly token: string; readonly px: number } = {
-  token: '--space-4',
-  px: 16,
+  token: '--space-2',
+  px: 8,
 };
 
 /**

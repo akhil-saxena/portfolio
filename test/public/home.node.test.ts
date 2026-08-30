@@ -563,43 +563,42 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
   });
 
   /**
-   * 🔴 05-17 — THIS IS THE OTHER ASSERTION THAT IS NOW THE INVERSE OF WHAT IT WAS, AND IT IS THE
-   * SINGLE BIGGEST VISUAL CHANGE ON THE PAGE.
+   * AKHIL'S CALL, 2026-08-30 — THIS ASSERTION HAS NOW BEEN INVERTED TWICE. READ THE HISTORY BEFORE
+   * INVERTING IT A THIRD TIME.
    *
-   * 05-16 asserted the radius and the clip were on the CONTAINER with `PEEK_GAP` at 8px, so the six
-   * photographs read as one flush slab with hairlines through it. That was read off the legacy
-   * `.hd-gallery { border-radius: 10px; overflow: hidden }`.
+   * 05-16 put the radius and the clip on the CONTAINER, read off the legacy
+   * `.hd-gallery { border-radius: 10px; overflow: hidden }`. 05-17 moved them ONTO THE TILE, on the
+   * measurement that the approved prototype rounds each of its six photographs at 8px with a 14px
+   * gap, and argued the slab was what made the page read as a contact sheet.
    *
-   * The approved design does the opposite, and it is measurable rather than arguable — MEASURED in
-   * Chromium at 1280x860 against `design_handoff_portfolio/Akhil Saxena - Home.dc.html`:
+   * Akhil looked at both and asked for the slab, by name: "in legacy, the image grid only has 4
+   * rounded corners, not all images have rounded corners. That's what I want in the new app too."
    *
-   *     grid  gap: 14px            (05-16 shipped 8)
-   *     tile  border-radius: 8px   aspect-ratio: 3 / 2   324 x 216   -- ON THE TILE, six times
+   * So the container rounds and clips, `PEEK_GAP` is 8px, and no tile carries a radius. The
+   * prototype's per-tile treatment is OVERRULED, not unmeasured — a measurement decides what IS, it
+   * does not decide what he wants.
    *
-   * Six separated, individually rounded photographs. The slab is what made the shipped page read as
-   * a contact sheet rather than as a portfolio.
-   *
-   * Asserted in BOTH directions, because only the absence half catches the regression: a container
-   * that regains a radius re-draws the grid as a slab while every other assertion here stays green.
+   * Asserted in BOTH directions, because only the absence half catches the regression: a tile that
+   * regains a radius re-draws twenty-four corners while every other assertion here stays green.
    */
-  it('every peek tile rounds and clips itself, and the container has no radius of its own', () => {
+  it('the peek grid rounds and clips itself, and no tile carries a radius of its own', () => {
     const grid = (/\.hm-peek-grid\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)?.[1] as string;
     expect(grid, 'no .hm-peek-grid rule').toBeTruthy();
-    expect(
-      grid,
-      'the container has a border-radius again — one flush slab, not six photographs'
-    ).not.toMatch(/border-radius:/);
-    expect(grid, 'the container clips again, which is the other half of the slab').not.toMatch(
+    expect(grid, 'the container lost its radius — four rounded corners, not none').toMatch(
+      /border-radius:\s*var\(--radius-md\)/
+    );
+    expect(grid, 'the container must clip, or the tiles square off its corners').toMatch(
       /overflow:\s*hidden/
     );
     expect(grid, 'the gap must be PEEK_GAP, from the ladder').toContain(`var(${PEEK_GAP.token})`);
 
     const tile = (/\.hm-tile\s*\{([^}]*)\}/.exec(cssCode) as RegExpExecArray)?.[1] as string;
     expect(tile, 'no .hm-tile rule').toBeTruthy();
-    expect(tile, 'the tile lost its radius — the design gives every photograph its own').toMatch(
-      /border-radius:\s*var\(--radius-md\)/
-    );
-    // the tile keeps its own clip, which the hover scale needs
+    expect(
+      tile,
+      'a tile regained a radius — that is twenty-four rounded corners, not four'
+    ).not.toMatch(/border-radius:/);
+    // The tile keeps its own clip: the hover scale needs it, and it rounds nothing.
     expect(tile).toMatch(/overflow:\s*hidden/);
   });
 

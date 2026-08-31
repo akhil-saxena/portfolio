@@ -474,7 +474,7 @@ describe('the content collections enforce on their own, and cannot do the gate�
        * the build goes green. If a future change makes this case red, that is an improvement and
        * this test is what will say so — update it, do not delete it."
        *
-       * THE FUTURE CHANGE ARRIVED. 05-07 built `/photos` and `/photos/[category]`, the first routes
+       * THE FUTURE CHANGE ARRIVED. 05-07 built `/photography` and `/photography/[category]`, the first routes
        * to read `getCollection('photos')`, and every tile's href comes from `photoHref` →
        * `photoSlug`, which REFUSES an id that does not begin with `category + "-"` rather than
        * slicing blindly (BL-8, `src/lib/photo-srcset.ts`). `architecture-singapore` filed under

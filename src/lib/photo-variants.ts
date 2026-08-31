@@ -136,7 +136,7 @@ export const THUMB = {
  *
  * WHY THIS ONE-CHARACTER CONSTANT LIVES IN A NODE-FREE MODULE (plan 05-05, and it is not
  * housekeeping). `PhotoSchema` has no `slug` field, so the public routes have to RECOVER the slug
- * from the id: `/photos/<category>/<slug>` is derived, not stored. That derivation
+ * from the id: `/photography/<category>/<slug>` is derived, not stored. That derivation
  * (`photoSlug` in `src/lib/photo-srcset.ts`) runs in a prerendered page, so it cannot import
  * `photo-pipeline.ts` — and if it spelled `'-'` itself there would be TWO definitions of the
  * separator, one of which is invisible to `photoIdFor`. The failure mode is silent and total:

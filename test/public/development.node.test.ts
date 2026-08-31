@@ -1,5 +1,5 @@
 /**
- * `/work`, asserted over HTTP against the built artefact served by real `workerd`. Plan 05-09,
+ * `/development`, asserted over HTTP against the built artefact served by real `workerd`. Plan 05-09,
  * task 3.
  *
  * ================================================================================================
@@ -52,8 +52,8 @@ const resume = readJson<Resume>('../../data/resume.json');
 const projects = readJson<Project[]>('../../data/projects.json');
 
 /** The route under test and the one it points at, in one place each. */
-const WORK_PATH = '/work';
-const PHOTOS_PATH = '/photos';
+const WORK_PATH = '/development';
+const PHOTOS_PATH = '/photography';
 
 /** §10 item 7 / §13.2 — the cross-link's reviewed copy, character for character. */
 const CROSSLINK_COPY = 'see the photographs →';
@@ -146,7 +146,7 @@ function attr(attrs: string, name: string): string | null {
   return m ? (m[1] as string) : null;
 }
 
-describe('/work — the route answers with the projects and the employment strip', () => {
+describe('/development — the route answers with the projects and the employment strip', () => {
   it('is served, as HTML, by the built origin', async () => {
     await loadPage();
     expect(response.status).toBe(200);
@@ -169,7 +169,7 @@ describe('/work — the route answers with the projects and the employment strip
   });
 });
 
-describe('/work — the employment strip renders every stored record', () => {
+describe('/development — the employment strip renders every stored record', () => {
   it('renders one row per experience entry, with the period from formatPeriod', async () => {
     await loadPage();
 
@@ -234,7 +234,7 @@ describe('/work — the employment strip renders every stored record', () => {
   });
 });
 
-describe('/work — the project cards', () => {
+describe('/development — the project cards', () => {
   it('renders one card per project, in the order data/projects.json stores them', async () => {
     await loadPage();
 
@@ -469,7 +469,7 @@ describe('/work — the project cards', () => {
   });
 });
 
-describe('/work — the cross-link, the metadata and the JavaScript budget', () => {
+describe('/development — the cross-link, the metadata and the JavaScript budget', () => {
   it('carries the italic serif cross-link with its exact reviewed copy', async () => {
     await loadPage();
 
@@ -506,7 +506,7 @@ describe('/work — the cross-link, the metadata and the JavaScript budget', () 
 
     const canonical = /<link rel="canonical" href="([^"]+)"/.exec(page)?.[1] ?? '';
     expect(canonical, 'the canonical is not absolute').toMatch(/^https?:\/\//);
-    // The origin serves `/work/` and 307s `/work` (measured against real `workerd`), so the
+    // The origin serves `/development/` and 307s `/development` (measured against real `workerd`), so the
     // canonical names the SLASHED form and agrees with the sitemap. See `canonicalPath`.
     expect(canonical.endsWith(`${WORK_PATH}/`), `the canonical is ${canonical}`).toBe(true);
 

@@ -16,7 +16,7 @@
  *      is the whole reason `scripts/assert-gutter-ladder.mjs` exists. Those three numbers are the
  *      SAME three the ladder declares, and the gate reads them out of the BUILT stylesheet — but
  *      only where they carry a `--pub-gutter` declaration, so the masonry queries below are NOT
- *      covered by it. They are covered by `test/public/photos-routes.node.test.ts`, which reads
+ *      covered by it. They are covered by `test/public/photography-routes.node.test.ts`, which reads
  *      `BREAKPOINTS` from the module and asserts this file's queries against it.
  *
  *   2. `border-radius: 10px` ON `.ph-tile`. §7.3 prescribes 10px, and it was reviewed at 1440 and
@@ -173,7 +173,7 @@
  * 52px. Its prescription is a rail scoped to `@media (max-width: 672px)`.
  *
  * 🔴 THE SCOPING ASSUMES THE EIGHT PILLS FIT ABOVE 672px, AND THEY DO NOT. Measured in Chromium
- * against this build, `/photos`, `document.documentElement.scrollWidth` vs `clientWidth`:
+ * against this build, `/photography`, `document.documentElement.scrollWidth` vs `clientWidth`:
  *
  *     viewport   nav box   last pill right edge   document scrollWidth
  *      673px      615px           873px                 873   ← 200px of horizontal scroll
@@ -271,7 +271,7 @@
  * 5. THE EMPTY CATEGORY (§13.2)
  * ================================================================================================
  *
- * Unreachable today, and refused upstream by RI-2 — see `src/pages/photos/[category]/index.astro`.
+ * Unreachable today, and refused upstream by RI-2 — see `src/pages/photography/[category]/index.astro`.
  * Three stacked elements; no width, because the copy is two short lines and a link.
  */
 
@@ -287,13 +287,13 @@
  * 5b. THE CROSS-LINK ROW (§13.2) — the returning half of the pair
  * ================================================================================================
  *
- * LAYOUT ONLY, and it is the mirror of `.wk-crosslink-row` in `src/styles/work.css`. The type role
+ * LAYOUT ONLY, and it is the mirror of `.wk-crosslink-row` in `src/styles/development.css`. The type role
  * — italic Playfair at `--text-lg` in `--ochre-d` — is NOT here and must not be: `Link` inline-sets
  * `font-family` on every variant, so a serif link is unreachable from a stylesheet without
  * `!important`. It travels with the element as `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, which is
- * the ONE declaration both `/work` and `/photos` import.
+ * the ONE declaration both `/development` and `/photography` import.
  *
- * ONE DECLARATION, AND THE ALIGNMENT IS DELIBERATELY ABSENT. `/work`'s row declares
+ * ONE DECLARATION, AND THE ALIGNMENT IS DELIBERATELY ABSENT. `/development`'s row declares
  * `text-align: right` because the arrow points forward and sits at the right edge; this one's arrow
  * points BACK, so it belongs at the start edge — which is the initial value. `text-align: left`
  * here would be an inert declaration restating the default, and this file has already deleted one

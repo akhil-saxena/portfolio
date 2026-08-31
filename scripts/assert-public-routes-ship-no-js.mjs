@@ -8,8 +8,8 @@
  * ---------------------------------------------------------------------------------------------
  * WHAT IT CLAIMS
  *
- * Four of the five public route patterns ship ZERO framework JavaScript; the fifth — `/photos`
- * plus `/photos/<category>`, ONE pattern by OQ-6c — ships exactly one Lightbox island. No public
+ * Four of the five public route patterns ship ZERO framework JavaScript; the fifth — `/photography`
+ * plus `/photography/<category>`, ONE pattern by OQ-6c — ships exactly one Lightbox island. No public
  * chunk carries a forbidden design-system family, none carries the photo pipeline, and the whole
  * of `dist/client` stays under three byte ceilings.
  *
@@ -20,7 +20,7 @@
  * "at most one `<script is:inline>`". BOTH SPELLINGS ARE WRONG AGAINST ASTRO 7, measured by
  * plan 05-12 and re-measured here on every run (the census prints the module-script count):
  *
- *   - A hydrated `/photos` document carries **zero** `<script type="module">`. Astro 7 emits
+ *   - A hydrated `/photography` document carries **zero** `<script type="module">`. Astro 7 emits
  *     `<astro-island component-url=… component-export=… renderer-url=…>` plus classic
  *     attribute-less `<script>` blocks, the last of which reaches the chunk through a dynamic
  *     `import()`. So §5.3's assertion 1 is VACUOUSLY TRUE on a page shipping 209 KB of React,
@@ -452,13 +452,15 @@ try {
 }
 if (categories.length === 0) {
   err(`assert-public-routes-ship-no-js: ${rel(SITE_CONFIG)} declares no category.`);
-  err('  The hydrating set would be `/photos` alone, which is not the site this gate describes.');
+  err(
+    '  The hydrating set would be `/photography` alone, which is not the site this gate describes.'
+  );
   process.exit(1);
 }
 
 const expectHydrating = new Set(
-  [path.join(distRoot, 'photos', 'index.html')].concat(
-    categories.map((id) => path.join(distRoot, 'photos', id, 'index.html'))
+  [path.join(distRoot, 'photography', 'index.html')].concat(
+    categories.map((id) => path.join(distRoot, 'photography', id, 'index.html'))
   )
 );
 

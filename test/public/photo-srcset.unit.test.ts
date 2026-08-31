@@ -7,7 +7,7 @@
  * Every one of these has a failure mode with NO visible symptom, which is why they are derived in
  * one module and asserted here rather than typed into a page.
  *
- *   - `photoSlug` / `photoHref`. `PhotoSchema` has no `slug` field, so `/photos/<category>/<slug>`
+ *   - `photoSlug` / `photoHref`. `PhotoSchema` has no `slug` field, so `/photography/<category>/<slug>`
  *     is RECOVERED from the id. 05-07's gallery tile and 05-08's detail route both import these;
  *     they are both wave 4 and cannot read each other, so two independent derivations would
  *     disagree and every tile would 404 against a page that exists under a different slug — with a
@@ -209,16 +209,16 @@ describe('photoSlug — the id with its category prefix removed', () => {
 });
 
 describe('photoHref — the ONE definition 05-07 and 05-08 both import', () => {
-  it('is exactly /photos/<category>/<slug>', () => {
+  it('is exactly /photography/<category>/<slug>', () => {
     expect(photoHref({ id: 'abstract-intothemist', category: 'abstract' })).toBe(
-      '/photos/abstract/intothemist'
+      '/photography/abstract/intothemist'
     );
   });
 
   it('composes photoSlug and nothing else, for every record', () => {
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     for (const entry of manifest) {
-      expect(photoHref(entry)).toBe(`/photos/${entry.category}/${photoSlug(entry)}`);
+      expect(photoHref(entry)).toBe(`/photography/${entry.category}/${photoSlug(entry)}`);
     }
   });
 
@@ -227,7 +227,7 @@ describe('photoHref — the ONE definition 05-07 and 05-08 both import', () => {
     // or an embedded `..` would each route somewhere else while looking correct in a template.
     for (const entry of manifest) {
       const href = photoHref(entry);
-      expect(href.startsWith('/photos/')).toBe(true);
+      expect(href.startsWith('/photography/')).toBe(true);
       expect(href.endsWith('/')).toBe(false);
       expect(href).not.toContain('//');
       expect(href).not.toContain('..');

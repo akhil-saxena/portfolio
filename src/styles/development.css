@@ -1,5 +1,5 @@
 /*
- * `/work` — the page's own layout and type roles. Plan 05-09.
+ * `/development` — the page's own layout and type roles. Plan 05-09.
  *
  * ================================================================================================
  * WHAT MAY LIVE IN THIS FILE
@@ -39,7 +39,7 @@
  *
  * A CSS media query cannot read a custom property, let alone a TypeScript constant, so the two
  * numbers below are the SECOND copy — exactly the situation `src/styles/public-shell.css` is in,
- * and it is resolved the same way: `test/public/work.node.test.ts` reads the SERVED stylesheet and
+ * and it is resolved the same way: `test/public/development.node.test.ts` reads the SERVED stylesheet and
  * compares each `.wk-grid` media query against `BREAKPOINTS` at test time. A divergence is a red
  * test rather than a silent disagreement, which is the most CSS can be given here.
  */

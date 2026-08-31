@@ -6,8 +6,8 @@
  * WHAT THIS MEASURES, AND WHY IT IS A LOCAL RUN RATHER THAN A GATE
  * ================================================================================================
  *
- * Six route FAMILIES, not six URLs: `/`, `/photos`, one `/photos/[category]`, one
- * `/photos/[category]/[slug]`, `/work`, `/resume`. Every other route in the build is one of these
+ * Six route FAMILIES, not six URLs: `/`, `/photography`, one `/photography/[category]`, one
+ * `/photography/[category]/[slug]`, `/development`, `/resume`. Every other route in the build is one of these
  * six with different content, so a seventh URL would cost a minute and add no information.
  *
  * It is deliberately NOT chained into `npm test` or `npm run build`, for the same reason
@@ -22,7 +22,7 @@
  * `test/audit/serve-dist.mjs` exists and serves the same artefact, but it answers `no-store` and
  * sends every byte uncompressed — both correct for a geometry audit, both wrong here:
  *
- *   - Cloudflare compresses text assets. Serving `/photos`'s document uncompressed presents
+ *   - Cloudflare compresses text assets. Serving `/photography`'s document uncompressed presents
  *     Lighthouse with ~106 KB where production sends ~20 KB, and simulated throttling turns
  *     transfer bytes directly into FCP and LCP milliseconds. The score would be a measurement of
  *     this server rather than of the site.
@@ -72,10 +72,10 @@ const RUNS = Number(process.env.LH_RUNS ?? 3);
 /** The six route families. `label` is what the report table is keyed on. */
 const ROUTES = [
   { label: 'Home', path: '/' },
-  { label: 'Photos (39-photo gallery)', path: '/photos' },
-  { label: 'Photos category', path: '/photos/architecture' },
-  { label: 'Photo detail', path: '/photos/architecture/hawamahaldaytime' },
-  { label: 'Work', path: '/work' },
+  { label: 'Photos (39-photo gallery)', path: '/photography' },
+  { label: 'Photos category', path: '/photography/architecture' },
+  { label: 'Photo detail', path: '/photography/architecture/hawamahaldaytime' },
+  { label: 'Work', path: '/development' },
   { label: 'Résumé', path: '/resume' },
 ];
 
@@ -131,7 +131,7 @@ const TYPES = new Map([
 /** Cloudflare compresses these and not the already-compressed ones (woff2, webp, png). */
 const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.xml', '.txt']);
 
-/** `/work` -> `dist/client/work/index.html`; a miss is a loud 404, never an empty 200. */
+/** `/development` -> `dist/client/development/index.html`; a miss is a loud 404, never an empty 200. */
 function resolveFile(pathname) {
   const clean = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
   const base = resolve(join(ROOT, clean));

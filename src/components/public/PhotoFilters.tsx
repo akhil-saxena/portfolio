@@ -27,10 +27,10 @@
  *
  * `===`, and on no match `currentIndex` is `-1`, so NOTHING is marked current — no error, no
  * warning, a rail that looks completely normal and announces no current page to a screen reader.
- * Astro's directory build format serves `/photos/street/` WITH a trailing slash, so an
+ * Astro's directory build format serves `/photography/street/` WITH a trailing slash, so an
  * un-normalised `Astro.url.pathname` misses every category item and matches nothing.
  *
- * `test/public/photos-routes.node.test.ts` asserts the count is EXACTLY one per route, not `>= 1`:
+ * `test/public/photography-routes.node.test.ts` asserts the count is EXACTLY one per route, not `>= 1`:
  * zero and two are both real failure modes and only an equality catches both.
  *
  * ================================================================================================
@@ -59,7 +59,7 @@
  * It wins over `[data-size="lg"]`'s `height: 40px` at (0,3,0) without entering a specificity
  * contest at all, because used height is `max(min-height, height)` — a different property, no
  * contest to lose — and it leaves the drawn geometry untouched. MEASURED here 2026-08-29 on the
- * built `/photos`: the pill is 44px at all five coarse classes and 40px at 1440 fine, where the
+ * built `/photography`: the pill is 44px at all five coarse classes and 40px at 1440 fine, where the
  * floor does not bind. The declaration is now at `primitives.css:3702`; the line numbers above are
  * beta.1's and are left as they were measured.
  *
@@ -87,12 +87,12 @@ import type { FilterNavItem } from '@akhil-saxena/design-system/components/Filte
 import { FilterNav } from '@akhil-saxena/design-system/components/FilterNav';
 
 /** The unfiltered gallery. THE ONE PLACE THIS PATH IS WRITTEN on the filter side. */
-export const GALLERY_HREF = '/photos';
+export const GALLERY_HREF = '/photography';
 
 /**
  * A category route's href. Astro composes the same string from `getStaticPaths`'s `params`, which
  * is a second derivation this file cannot see — so the standing proof that the two agree is the
- * `aria-current` count in `test/public/photos-routes.node.test.ts`: a disagreement makes
+ * `aria-current` count in `test/public/photography-routes.node.test.ts`: a disagreement makes
  * `findIndex` return -1 and the count drops to zero on every category route at once.
  */
 export function categoryHref(id: string): string {
@@ -136,7 +136,7 @@ export function PhotoFilters({ categories, photos, pathname }: PhotoFiltersProps
    * failure is the QUIET one, a rail rendering one pill and no filtering on a page that looks fine.
    *
    * `counts.size` rather than the length of the category list, for the reason recorded at length in
-   * `src/pages/photos/[category]/index.astro`: `gate:schema`'s `[HAND-ROLLED-VALIDATOR]` rule
+   * `src/pages/photography/[category]/index.astro`: `gate:schema`'s `[HAND-ROLLED-VALIDATOR]` rule
    * refuses a condition naming one of its content field keys when a refusal follows within three
    * lines, and it REFUSED THIS FILE'S FIRST REVISION — and then its own explanatory comment, which
    * is why that condition is described here in words rather than spelled. Guarding the group-by is

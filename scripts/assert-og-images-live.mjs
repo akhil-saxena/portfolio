@@ -15,7 +15,7 @@
  * repository has ever fetched one.** So a card pointing at
  * `https://images.akhilsaxena.com/photos/architecture/singapore-lg.webp` after that object was
  * renamed, re-keyed by a content hash, or lost in a partial upload is a green build, a green test
- * run, eleven green gates — and a blank preview on every share of the home page, `/work`, `/photos`
+ * run, eleven green gates — and a blank preview on every share of the home page, `/development`, `/photography`
  * and `/resume`, which today all carry that one default image.
  *
  * `gate:liveness` (`scripts/verify-photo-urls.mjs`) fetches the MANIFEST's 160 remote URLs and

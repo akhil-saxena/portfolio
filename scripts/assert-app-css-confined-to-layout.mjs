@@ -417,7 +417,7 @@ const FREE = new Map(
       'hand through. It is FREE rather than TOKENISED because the `transition` SHORTHAND cannot ' +
       'be written without it and therefore cannot be written token-only at all: its first term is ' +
       'always a bare property name, which `originatesInDimension` reads as an origination. That is ' +
-      'exactly what DEBT-CARD-TRANSITION records on /work. Splitting the shorthand into ' +
+      'exactly what DEBT-CARD-TRANSITION records on /development. Splitting the shorthand into ' +
       '`transition-property` + `-duration` + `-timing-function` is the ONLY spelling in which a ' +
       'consumer transition is fully tokenised, so refusing this property would mandate the debt.',
     'animation-name':
@@ -479,7 +479,7 @@ const FREE = new Map(
 const DEBTS = [
   {
     id: 'DEBT-RADIUS-10',
-    where: ['src/styles/home.css', 'src/styles/photo-detail.css', 'src/styles/photos.css'],
+    where: ['src/styles/home.css', 'src/styles/photo-detail.css', 'src/styles/photography.css'],
     property: 'border-radius',
     value: '10px',
     why:
@@ -495,7 +495,7 @@ const DEBTS = [
   },
   {
     id: 'DEBT-CARD-TRANSITION',
-    where: ['src/styles/work.css'],
+    where: ['src/styles/development.css'],
     property: 'transition',
     value: 'border-color 0.25s ease, box-shadow 0.15s ease',
     why:
@@ -561,7 +561,7 @@ const OPAQUE_STYLE_SOURCES = new Map([
     {
       file: 'src/lib/crosslink.ts',
       reason:
-        'the italic serif cross-link type, shared by /work and /photos so the two cannot drift. ' +
+        'the italic serif cross-link type, shared by /development and /photography so the two cannot drift. ' +
         'Its object literal is parsed and every value checked below.',
     },
   ],

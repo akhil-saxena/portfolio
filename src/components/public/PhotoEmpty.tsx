@@ -14,7 +14,7 @@
  *      component fails in `vite:import-analysis` on the first template expression.
  *
  *   2. THE STATE CANNOT BE REACHED BY A BUILD OVER PLANTED DATA EITHER — see the finding in
- *      `src/pages/photos/[category]/index.astro`. `validateContentSet`'s RI-2 REFUSES a declared
+ *      `src/pages/photography/[category]/index.astro`. `validateContentSet`'s RI-2 REFUSES a declared
  *      category that no photograph uses, so a build carrying an empty category record never gets
  *      as far as rendering a page.
  *
@@ -65,7 +65,7 @@ export function PhotoEmpty({ label, total }: PhotoEmptyProps) {
       </Text>
       {/* `variant="default"` — §4.6a measured that `inline`, `footer` and `action` set `color` as
           an INLINE style, which beats any app rule while every jsdom test still passes. */}
-      <Link href="/photos" variant="default">
+      <Link href="/photography" variant="default">
         See all {total}
       </Link>
     </div>

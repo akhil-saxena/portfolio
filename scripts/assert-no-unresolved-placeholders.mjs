@@ -20,7 +20,7 @@
  * the schema refuse the literal figure so a stale number could not come back. Phase 4 measured that
  * `alt: "TODO"` passes all four content rules — which is why Akhil then asked for a placeholder
  * refusal on `alt` at all. An unguarded placeholder ships, and the employment band is the first
- * thing a hiring manager reads on `/work`.
+ * thing a hiring manager reads on `/development`.
  *
  * ---------------------------------------------------------------------------------------------
  * IT ENUMERATES NOTHING
@@ -411,7 +411,9 @@ export function main() {
     out('  WHY THIS MATTERS:');
     out('');
     out('    A placeholder in dist/ is a placeholder a reader sees. The employment band is the');
-    out('    first thing a hiring manager reads on /work, and this project has twice measured a');
+    out(
+      '    first thing a hiring manager reads on /development, and this project has twice measured a'
+    );
     out("    placeholder passing every rule it was subject to - Phase 3's stale component figure");
     out('    and Phase 4\'s alt: "TODO". Resolve the token, or remove it from the page.');
     out('');

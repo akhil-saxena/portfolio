@@ -1,6 +1,6 @@
 ---
 /**
- * `/photos` — every photograph, one masonry gallery, no pagination. Plan 05-07, Task 2.
+ * `/photography` — every photograph, one masonry gallery, no pagination. Plan 05-07, Task 2.
  * (PUB-03, PUB-05. §7.1, §8.1, §13.3.)
  *
  * ================================================================================================
@@ -48,10 +48,10 @@ import Seo from '../../components/public/Seo.astro';
 import PublicLayout from '../../layouts/PublicLayout.astro';
 import { CROSSLINK_TYPE } from '../../lib/crosslink';
 import { lightboxRecordsFor } from '../../lib/photo-lightbox';
-import '../../styles/photos.css';
+import '../../styles/photography.css';
 
 /** The cross-link's destination — the work index, and the other half of §13.2's pair. */
-const WORK_PATH = '/work';
+const WORK_PATH = '/development';
 
 const entries = await getCollection('photos');
 
@@ -65,7 +65,7 @@ const entries = await getCollection('photos');
  */
 if (entries.length === 0) {
   throw new Error(
-    "/photos: getCollection('photos') returned no entries. The manifest is committed content and " +
+    "/photography: getCollection('photos') returned no entries. The manifest is committed content and " +
       'the content gate refuses an empty one, so this means the collection loader could not read ' +
       'data/portfolio_images.json — it logs and returns rather than throwing (see ' +
       'src/content.config.ts). Rendering the gallery over zero records would ship a page that is ' +
@@ -73,7 +73,7 @@ if (entries.length === 0) {
   );
 }
 
-/** §7.1: `/photos` sorts by `order`. MEASURED: dense 1..n across the whole manifest. */
+/** §7.1: `/photography` sorts by `order`. MEASURED: dense 1..n across the whole manifest. */
 const photos = entries.map((entry) => entry.data).sort((a, b) => a.order - b.order);
 
 const total = photos.length;
@@ -92,7 +92,7 @@ const lightboxItems = lightboxRecordsFor(photos);
     slot="head"
     title={`Photographs — ${siteTitle}`}
     description={`Every photograph on the site in one gallery — all ${total} of them, no pagination.`}
-    canonical="/photos"
+    canonical="/photography"
   />
 
   <header class="ph-head">
@@ -115,7 +115,7 @@ const lightboxItems = lightboxRecordsFor(photos);
   <PhotoGrid photos={photos} columns={siteConfig.defaultColumns} />
 
   {
-    /* 🔴 THE ONE ISLAND ON THIS SITE, AND THE ONLY `client:*` DIRECTIVE OUTSIDE `/photos`. (§5.1.)
+    /* 🔴 THE ONE ISLAND ON THIS SITE, AND THE ONLY `client:*` DIRECTIVE OUTSIDE `/photography`. (§5.1.)
 
       ✅ `client:idle`, NOT `client:load` — measured at last, and the history matters more than
       the answer. The comment that first stood here said "the four Lighthouse numbers behind that
@@ -146,7 +146,7 @@ const lightboxItems = lightboxRecordsFor(photos);
       DO NOT "optimise" it to `client:load` — the two are indistinguishable here and the change
       would be churn against a reviewed decision.
 
-      WHAT DOES COST THIS PAGE A SCORE IS NOT THIS DIRECTIVE. `/photos` scores 87 on mobile and
+      WHAT DOES COST THIS PAGE A SCORE IS NOT THIS DIRECTIVE. `/photography` scores 87 on mobile and
       99 on desktop, and the ENTIRE mobile deficit is LCP (4.0 s at weight 25; TBT, CLS and Speed
       Index all score 1.00). The cause is in the GRID, not here: §7.5 eagerly loads the first four
       tiles BY DOM ORDER, and the masonry is CSS multi-column, which fills column 1 with DOM 0-19
@@ -172,13 +172,13 @@ const lightboxItems = lightboxRecordsFor(photos);
   {
     /* §13.2 — THE RETURNING HALF OF THE CROSS-LINK PAIR, AND IT WAS NEVER BUILT UNTIL NOW.
 
-      `/work` has shipped *see the photographs →* since 05-09, asserted character for character.
-      §13.2's next row is *← see the work* on `/photos`, and 05-15's audit found that
+      `/development` has shipped *see the photographs →* since 05-09, asserted character for character.
+      §13.2's next row is *← see the work* on `/photography`, and 05-15's audit found that
       `grep -rn "see the work"` over the whole repository returned exactly ONE line — the spec row
       itself. No gate caught it because §13.2 is prose. Akhil decided to build it rather than drop
       the row.
 
-      THE TREATMENT IS `/work`'s, NOT A SECOND ONE. `CROSSLINK_TYPE` is the same object that page
+      THE TREATMENT IS `/development`'s, NOT A SECOND ONE. `CROSSLINK_TYPE` is the same object that page
       imports (`src/lib/crosslink.ts`), so the two halves cannot drift into two italic serifs; the
       only thing this file declares is the row's own layout, in `photos.css`.
 
@@ -186,10 +186,10 @@ const lightboxItems = lightboxRecordsFor(photos);
       tabnabbing guard belong to outbound anchors and to nothing else. That is the same reasoning
       `work.astro` states at its half.
 
-      ON `/photos` ONLY, and that is the pair §13.2 names: `/work` ↔ `/photos`. The seven
-      `/photos/<category>` routes are filtered views of this gallery and get the return path from
-      the AppBar, exactly as `/work` does — a cross-link on each of them would be seven copies of
-      one editorial gesture. `test/public/photos-routes.node.test.ts` asserts BOTH halves of that:
+      ON `/photography` ONLY, and that is the pair §13.2 names: `/development` ↔ `/photography`. The seven
+      `/photography/<category>` routes are filtered views of this gallery and get the return path from
+      the AppBar, exactly as `/development` does — a cross-link on each of them would be seven copies of
+      one editorial gesture. `test/public/photography-routes.node.test.ts` asserts BOTH halves of that:
       exactly one row here, and zero on every category route, so the decision is a red test if it
       is ever changed by accident rather than on purpose. */
   }

@@ -118,7 +118,7 @@ const NO_CONSUMER_NOTE = [
   '',
   '  DO NOT make this case exit 0. The right repair is to chain `gate:ladder` into `gate:content`',
   '  in the SAME commit that lands the first route using PublicLayout. THAT HAS NOW HAPPENED:',
-  '  plan 05-07 built `/photos` and `/photos/[category]`, the first consumers of PublicLayout, and',
+  '  plan 05-07 built `/photography` and `/photography/[category]`, the first consumers of PublicLayout, and',
   '  wired `gate:ladder` into `gate:content` in the same commit. So this refusal reaching a reader',
   '  today means the stylesheet genuinely did not ship — most likely a stale or emptied `dist/`.',
   '  Rebuild before believing it: 05-06 lost an hour to a gate reading an artefact a crashed run',

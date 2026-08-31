@@ -448,7 +448,7 @@ describe('categoryOrder agrees with the global order it was derived from', () =>
    *
    * SCOPE, AND READ THIS BEFORE DELETING IT. This describe block is true OF THIS MIGRATION ONLY.
    * D-22 exists precisely because the two orderings are allowed to diverge, and Phase 7's
-   * `/admin/photos` reorders photographs inside an active category filter — which changes
+   * `/admin/photography` reorders photographs inside an active category filter — which changes
    * `categoryOrder` without changing the global `order` and WILL make this red on purpose. When
    * that happens, retire this block by name, with the reason written beside it, and leave the
    * density block above alone: density and uniqueness stay true forever. Weakening this assertion

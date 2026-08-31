@@ -161,7 +161,7 @@ const CLASSES: readonly DeviceClass[] = [
  *
  * The category and the photograph are DERIVED — first by `order` — rather than named, so the
  * audit follows the content. `photoHref` is imported rather than composed: 05-08 recorded that a
- * hand-rolled `/photos/${category}/${id.split('-')[1]}` produces a plausible slug and a 404 at a
+ * hand-rolled `/photography/${category}/${id.split('-')[1]}` produces a plausible slug and a 404 at a
  * URL nothing in the build checks.
  */
 type PhotoRecord = { readonly id: string; readonly category: string; readonly order?: number };
@@ -183,11 +183,11 @@ type Route = { readonly id: string; readonly path: string; readonly shot: string
 
 const ROUTES: readonly Route[] = [
   { id: 'home', path: '/', shot: 'home-state-a' },
-  { id: 'work', path: '/work', shot: 'work-populated' },
-  { id: 'photos', path: '/photos', shot: 'photos-populated' },
+  { id: 'work', path: '/development', shot: 'work-populated' },
+  { id: 'photos', path: '/photography', shot: 'photos-populated' },
   {
     id: 'category',
-    path: `/photos/${FIRST_BY_ORDER.category}`,
+    path: `/photography/${FIRST_BY_ORDER.category}`,
     shot: 'photos-category',
   },
   { id: 'photo', path: photoHref(FIRST_BY_ORDER), shot: 'photo-detail' },
@@ -196,8 +196,8 @@ const ROUTES: readonly Route[] = [
 
 /** The eight gallery routes §8.2 asks for exactly one `aria-current="page"` on. */
 const GALLERY_ROUTES: readonly string[] = [
-  '/photos',
-  ...[...new Set(PHOTOS.map((p) => p.category))].sort().map((c) => `/photos/${c}`),
+  '/photography',
+  ...[...new Set(PHOTOS.map((p) => p.category))].sort().map((c) => `/photography/${c}`),
 ];
 
 /* ══ POINTER EMULATION — MEASURED, BECAUSE THE OBVIOUS OPTION MOVES THE LAYOUT ═════════════════
@@ -520,7 +520,7 @@ for (const c of CLASSES) {
        * `scrollWidth` is the overflowing content width, which is the thing R-6 is about.
        *
        * An element-level check (`rect.right > innerWidth`) was written first and REJECTED after
-       * measuring it: `/photos` at classes 1–2 is a horizontal RAIL by design (§8.3), so five
+       * measuring it: `/photography` at classes 1–2 is a horizontal RAIL by design (§8.3), so five
        * filter pills legitimately sit past the right edge inside `overflow-x: auto` and the
        * element check reports ten violations on a page whose document does not overflow at all.
        * The rail is the design; the document is the requirement.
@@ -1037,7 +1037,7 @@ for (const c of CLASSES) {
     test('the `Link` colours, read in a browser rather than in jsdom', async ({ page }, ti) => {
       await openHome(page);
       const colours = await page.evaluate(() => {
-        const nav = document.querySelector<HTMLElement>('.ds-atom-appbar a[href="/work"]');
+        const nav = document.querySelector<HTMLElement>('.ds-atom-appbar a[href="/development"]');
         const foot = document.querySelector<HTMLElement>('.ds-atom-footer-link');
         if (nav === null || foot === null) {
           throw new Error('six-class audit: a nav link or a footer link is not in the document.');
@@ -1175,7 +1175,7 @@ for (const c of CLASSES) {
     test('the 44px hit floor — a nav link, a footer link and a filter pill', async ({
       page,
     }, ti) => {
-      await page.goto('/photos', { waitUntil: 'load' });
+      await page.goto('/photography', { waitUntil: 'load' });
       await page.evaluate(async () => {
         await document.fonts.ready;
       });
@@ -1186,7 +1186,7 @@ for (const c of CLASSES) {
           return Math.round(el.getBoundingClientRect().height);
         };
         return {
-          nav: h('.ds-atom-appbar a[href="/work"]'),
+          nav: h('.ds-atom-appbar a[href="/development"]'),
           footer: h('.ds-atom-footer-link'),
           pill: h('.ph-filters .ds-atom-segmented-btn'),
         };
@@ -1254,10 +1254,10 @@ test.describe('the whole gallery, in a real DOM', () => {
      *
      * 🔴 SCOPED TO THE RAIL, AND THE SCOPE IS THE FINDING. §16 item 6 says "exactly once" and the
      * DOCUMENT carries TWO on every gallery route: the FilterNav's active pill, and the AppBar's
-     * own "photographs" link, which `PublicNav` marks current on every route under `/photos`.
+     * own "photographs" link, which `PublicNav` marks current on every route under `/photography`.
      * Written document-wide first, this assertion failed at 2 on all eight routes — independently
      * reproducing the correction 05-07 already recorded in
-     * `test/public/photos-routes.node.test.ts`. Both numbers are asserted, so §16's sentence is
+     * `test/public/photography-routes.node.test.ts`. Both numbers are asserted, so §16's sentence is
      * recorded as wrong about the document and right about the rail.
      *
      * Markup is not viewport-dependent, so this runs at one class rather than six — stated rather
@@ -1292,9 +1292,9 @@ test.describe('the whole gallery, in a real DOM', () => {
       const response = await page.goto(r.path, { waitUntil: 'load' });
       expect(response?.status(), `${r.path} must be a real prerendered document`).toBe(200);
     }
-    expect(ROUTES.map((r) => r.path)).toContain(`/photos/${FIRST_BY_ORDER.category}`);
+    expect(ROUTES.map((r) => r.path)).toContain(`/photography/${FIRST_BY_ORDER.category}`);
     expect(ROUTES.map((r) => r.path)).toContain(
-      `/photos/${FIRST_BY_ORDER.category}/${photoSlug(FIRST_BY_ORDER)}`
+      `/photography/${FIRST_BY_ORDER.category}/${photoSlug(FIRST_BY_ORDER)}`
     );
   });
 
@@ -1458,7 +1458,7 @@ test.describe('PUB-13 — the lightbox backdrop, in both motion settings', () =>
         `${ti.project.name === 'reduce'}`
     ).toBe(ti.project.name === 'reduce');
 
-    const gallery = '/photos';
+    const gallery = '/photography';
     const response = await page.goto(gallery, { waitUntil: 'load' });
     expect(response?.status(), `${gallery} must be a real prerendered document`).toBe(200);
 

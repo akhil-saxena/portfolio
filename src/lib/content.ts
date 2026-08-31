@@ -18,7 +18,7 @@
  * `experience[0].bullets[2]` and this module written exactly as below, `astro build` exited **0**
  * and emitted `dist/`. Astro only evaluates a module something imports, and nothing imports this
  * one — `src/pages/index.astro` renders `StackProof` and no content, and there is no `/resume`,
- * `/photos` or `/work` until Phase 5.
+ * `/photography` or `/development` until Phase 5.
  *
  * The claim is not wrong in general; it is wrong about a repository with no consuming page, which
  * is the repository it was written for. So the load-bearing cross-file rules do NOT depend on it:

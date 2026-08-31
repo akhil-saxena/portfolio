@@ -19,7 +19,7 @@
  *
  * `#work` is a plain `<div>` wrapper carrying `.hm-b`, not a `<section>`. It holds TWO named
  * regions — the work band and the résumé band — and making the wrapper a third named landmark
- * would nest "The résumé" inside a region called "The work", which is both wrong and a fourth
+ * would nest "The résumé" inside a region called "Development", which is both wrong and a fourth
  * landmark where §6.6.4 specifies three.
  *
  * ================================================================================================
@@ -30,14 +30,14 @@
  * intends to add more projects and wants every project to carry equal weight, which rules out a
  * featured slot and any fixed arrangement that has to be redesigned when the count changes.
  *
- * `projects.slice(0, ACT_TWO_CAP)` in file order, with an "ALL WORK →" link to `/work`. `/work` is
+ * `projects.slice(0, ACT_TWO_CAP)` in file order, with an "ALL WORK →" link to `/development`. `/development` is
  * the complete two-band list, so Home is a teaser by design and a seventh project needs no change
  * here. **The rendered count is DERIVED**, never a literal — `data-project-count` on the grid
  * reports what actually shipped, and `data-projects-elided` reports how many the cap withheld, so
  * the SUMMARY's claim about elision is read off the artefact rather than asserted.
  *
  * Each card carries the project's `oneLiner`, not its `description`. Two different strings for two
- * different columns — 60–110 characters at 13px here, 120–200 at 15px on `/work` — which is why
+ * different columns — 60–110 characters at 13px here, 120–200 at 15px on `/development` — which is why
  * 05-02 added the field rather than reusing one string in both places.
  *
  * `resolveDsTokens` resolves `{{ds.componentCount}}` in the design-system project's one-liner from
@@ -46,7 +46,7 @@
  * `{{ds.componentCount}}` on the page a hiring manager reads first.
  * `scripts/assert-no-unresolved-placeholders.mjs dist` is the artefact-side half of that.
  *
- * The cards are deliberately NOT links. `/work` is where a project card links straight out (§10.1);
+ * The cards are deliberately NOT links. `/development` is where a project card links straight out (§10.1);
  * Home's grid is a teaser, and five card links here would put five tab stops between the reader and
  * the two CTAs that actually lead somewhere new.
  */
@@ -116,7 +116,7 @@ const projectCount = projects.length;
 const skillCategories = resume.skills.map((group) => group.category);
 
 /** §13.2, verbatim including the arrows. */
-const ALL_WORK = 'ALL WORK →';
+const ALL_WORK = 'ALL DEVELOPMENT →';
 const RESUME_ARROW = 'RÉSUMÉ →';
 const VIEW_RESUME = 'View résumé';
 ---
@@ -137,9 +137,9 @@ const VIEW_RESUME = 'View résumé';
         id="hm-work-h"
         style={{ lineHeight: 'var(--lh-snug)' }}
       >
-        The work
+        Development
       </Heading>
-      <a class="hm-more" href="/work">{ALL_WORK}</a>
+      <a class="hm-more" href="/development">{ALL_WORK}</a>
     </div>
 
     <ul

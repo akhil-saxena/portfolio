@@ -95,17 +95,17 @@ if (!Array.isArray(siteConfig.categories) || siteConfig.categories.length === 0)
 
 const ROUTES: readonly Route[] = [
   {
-    name: '/photos',
-    url: '/photos/',
-    activeHref: '/photos',
+    name: '/photography',
+    url: '/photography/',
+    activeHref: '/photography',
     columns: siteConfig.defaultColumns,
     expected: manifest,
     countLine: `${manifest.length} photographs — all of them`,
   },
   ...siteConfig.categories.map((category) => ({
-    name: `/photos/${category.id}`,
-    url: `/photos/${category.id}/`,
-    activeHref: `/photos/${category.id}`,
+    name: `/photography/${category.id}`,
+    url: `/photography/${category.id}/`,
+    activeHref: `/photography/${category.id}`,
     columns: category.columns,
     expected: manifest.filter((record) => record.category === category.id),
     countLine: (() => {
@@ -117,9 +117,9 @@ const ROUTES: readonly Route[] = [
 
 /** Every pill the rail must carry, in order: the unfiltered one, then the config's records. */
 const EXPECTED_PILLS: ReadonlyArray<{ href: string; label: string; count: number }> = [
-  { href: '/photos', label: 'All', count: manifest.length },
+  { href: '/photography', label: 'All', count: manifest.length },
   ...siteConfig.categories.map((category) => ({
-    href: `/photos/${category.id}`,
+    href: `/photography/${category.id}`,
     label: category.label,
     count: manifest.filter((record) => record.category === category.id).length,
   })),
@@ -144,7 +144,7 @@ const occurrences = (haystack: string, needle: string) => haystack.split(needle)
  *
  * SCOPED, AND THAT IS THE POINT. §16 item 6 asks for exactly one `aria-current="page"` per gallery
  * page; the PAGE carries two, because `PublicNav` also marks the AppBar's "photographs" link
- * current on every route under `/photos`. Counting document-wide would assert 2 and prove nothing
+ * current on every route under `/photography`. Counting document-wide would assert 2 and prove nothing
  * about the filter; counting inside this slice asserts the thing PUB-04 actually needs. Both are
  * checked below, separately.
  */
@@ -219,9 +219,9 @@ describe('the gallery routes exist and hold every photograph, derived at check t
     }
   );
 
-  it('emits no synthetic /photos/all route — §8.1 forbids inventing one', async () => {
-    const response = await fetch(`${previewBaseUrl}/photos/all/`);
-    report(`/photos/all/ → ${response.status}`);
+  it('emits no synthetic /photography/all route — §8.1 forbids inventing one', async () => {
+    const response = await fetch(`${previewBaseUrl}/photography/all/`);
+    report(`/photography/all/ → ${response.status}`);
     expect(response.status).not.toBe(200);
   });
 });
@@ -242,7 +242,7 @@ describe('exactly one filter pill is marked as the current page (§16 item 6)', 
       expect(inRail).toBe(1);
 
       // The page's second one is the AppBar's own "photographs" link, which `PublicNav` marks
-      // current on every route under /photos. Asserted so that §16 item 6's "exactly once" is
+      // current on every route under /photography. Asserted so that §16 item 6's "exactly once" is
       // recorded as WRONG about the document and right about the rail.
       expect(inPage).toBe(2);
 
@@ -385,7 +385,7 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
   /**
    * `scripts/assert-gutter-ladder.mjs` covers the `--pub-gutter` rungs and the page maxima. It does
    * NOT cover `.ph-masonry`'s media queries, which restate the same three breakpoints in
-   * `src/styles/photos.css` — CSS cannot import the module, so this is the other half.
+   * `src/styles/photography.css` — CSS cannot import the module, so this is the other half.
    *
    * The minifier rewrites `min-width: 375px` as `(width>=375px)` (MEASURED by 05-06 in this
    * repository's own output), so both spellings are read. The check is a SUBSET claim plus a
@@ -393,12 +393,12 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
    * 673px one above it and a minifier is entitled to drop it. The set found is reported either way.
    */
   it('every media minimum attached to a .ph-masonry rule is a ladder breakpoint', async () => {
-    const html = bodies.get('/photos') as string;
+    const html = bodies.get('/photography') as string;
 
     /*
      * BOTH SOURCES, AND THE SECOND ONE IS THE FINDING. Astro's `build.inlineStylesheets` defaults
      * to `'auto'`, which INLINES a stylesheet under ~4 kB into a `<style>` element instead of
-     * emitting a file. MEASURED on this route: `src/styles/photos.css` ships inline and the built
+     * emitting a file. MEASURED on this route: `src/styles/photography.css` ships inline and the built
      * `dist/client/` holds exactly ONE `.css` file, which is the layout's bundle. A check that read
      * only the linked sheets found no `.ph-masonry` at all and failed against correct code — this
      * suite's own first revision did exactly that.
@@ -525,8 +525,8 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
 
 /* ══ §13.2 — THE CROSS-LINK PAIR'S RETURNING HALF ═══════════════════════════════════════════════
  *
- * `/work` has shipped *see the photographs →* since 05-09 and `test/public/work.node.test.ts`
- * asserts it character for character. §13.2's next row is *← see the work* on `/photos`, and
+ * `/development` has shipped *see the photographs →* since 05-09 and `test/public/development.node.test.ts`
+ * asserts it character for character. §13.2's next row is *← see the work* on `/photography`, and
  * 05-15's audit MEASURED that it did not exist: `grep -rn "see the work"` over the whole repository
  * returned one line, the spec row itself. No gate caught it, because §13.2 is prose.
  *
@@ -535,26 +535,26 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
  * it is the navigation between two of the four public views, and the whole reason it is asserted is
  * that a missing navigational string looks exactly like a page that is simply finished.
  *
- * BOTH DIRECTIONS ARE ASSERTED. Exactly one row on `/photos`, and ZERO on all seven category
+ * BOTH DIRECTIONS ARE ASSERTED. Exactly one row on `/photography`, and ZERO on all seven category
  * routes — a floor alone ("at least one somewhere") passes on a page that grew a second copy and on
  * one that put it on the wrong route, and this suite has already been bitten once by a count
  * predicate that was a floor.
  */
-describe('/photos carries §13.2’s returning cross-link, and only /photos does', () => {
+describe('/photography carries §13.2’s returning cross-link, and only /photography does', () => {
   /** The reviewed copy, character for character. `←` is LEFTWARDS ARROW U+2190. */
   const CROSSLINK_COPY = '← see the work';
-  const WORK_PATH = '/work';
+  const WORK_PATH = '/development';
 
   /** Every `<p class="ph-crosslink-row">…</p>` in a document, in order. */
   const rows = (html: string): string[] =>
     [...html.matchAll(/<p class="ph-crosslink-row">([\s\S]*?)<\/p>/g)].map((m) => m[1] as string);
 
-  it('renders exactly one cross-link row on /photos, pointing at /work', () => {
-    const html = bodies.get('/photos') as string;
-    expect(html, 'no /photos body was fetched').toBeTruthy();
+  it('renders exactly one cross-link row on /photography, pointing at /development', () => {
+    const html = bodies.get('/photography') as string;
+    expect(html, 'no /photography body was fetched').toBeTruthy();
 
     const found = rows(html);
-    expect(found, `/photos carries ${found.length} cross-link row(s)`).toHaveLength(1);
+    expect(found, `/photography carries ${found.length} cross-link row(s)`).toHaveLength(1);
 
     const anchors = [...(found[0] as string).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
     expect(anchors, 'the row holds no anchor').toHaveLength(1);
@@ -572,7 +572,7 @@ describe('/photos carries §13.2’s returning cross-link, and only /photos does
       .trim();
     expect(rendered).toBe(CROSSLINK_COPY);
 
-    // The type role is `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, the SAME object `/work` imports.
+    // The type role is `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, the SAME object `/development` imports.
     // `Link` inline-sets `font-family` on every variant, so the served `style` attribute is the
     // only place this can be checked at all — and asserting it on both halves is what makes "one
     // declaration, two importers" a measured fact rather than a comment.
@@ -590,8 +590,8 @@ describe('/photos carries §13.2’s returning cross-link, and only /photos does
     report(`cross-link: ${JSON.stringify(rendered)} → ${WORK_PATH}, italic serif in --ochre-d`);
   });
 
-  it('puts it on /photos and on NO category route — the pair is /work ↔ /photos', () => {
-    const categories = ROUTES.filter((route) => route.name !== '/photos');
+  it('puts it on /photography and on NO category route — the pair is /development ↔ /photography', () => {
+    const categories = ROUTES.filter((route) => route.name !== '/photography');
     // ANTI-VACUITY: an empty category list would make the loop below assert nothing at all.
     expect(categories.length).toBeGreaterThan(0);
 
@@ -602,15 +602,15 @@ describe('/photos carries §13.2’s returning cross-link, and only /photos does
     }
 
     /*
-     * DERIVED, NEVER TYPED. The first draft of this line read "1 on /photos, 0 on each of 7" as a
+     * DERIVED, NEVER TYPED. The first draft of this line read "1 on /photography, 0 on each of 7" as a
      * LITERAL, and the plant that deleted the cross-link row printed it verbatim while the other
      * test failed at zero — a report claiming a number it had not measured, in the middle of a
      * suite whose subject is exactly that failure. It now counts what it says.
      */
-    const onPhotos = rows(bodies.get('/photos') as string).length;
+    const onPhotos = rows(bodies.get('/photography') as string).length;
     const perCategory = categories.map((route) => rows(bodies.get(route.name) as string).length);
     report(
-      `cross-link rows: ${onPhotos} on /photos, [${perCategory.join(', ')}] on the ` +
+      `cross-link rows: ${onPhotos} on /photography, [${perCategory.join(', ')}] on the ` +
         `${categories.length} category route(s)`
     );
   });

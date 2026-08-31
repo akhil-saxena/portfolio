@@ -19,7 +19,7 @@
  * 🔴 THE JOIN. THIS IS THE CHECK NEITHER 05-07 NOR 05-08 COULD WRITE ALONE (BL-8)
  * ================================================================================================
  *
- * `photoHref` in `src/lib/photo-srcset.ts` is the single definition of `/photos/<category>/<slug>`.
+ * `photoHref` in `src/lib/photo-srcset.ts` is the single definition of `/photography/<category>/<slug>`.
  * 05-07's `PhotoTile.astro` builds every gallery tile from it and 05-08's `getStaticPaths` builds
  * every page from it — but both plans are wave 4, neither could read the other's output, and NO
  * GATE IN THE PHASE compares an emitted tile href against an emitted page. Two derivations that
@@ -106,8 +106,8 @@ const SEQUENCES: ReadonlyArray<{ id: string; photos: Record_[] }> = siteConfig.c
 
 /** The eight gallery documents the join reads its hrefs out of. Derived, never listed. */
 const GALLERY_URLS: readonly string[] = [
-  '/photos/',
-  ...siteConfig.categories.map((category) => `/photos/${category.id}/`),
+  '/photography/',
+  ...siteConfig.categories.map((category) => `/photography/${category.id}/`),
 ];
 
 /* ------------------------------------------------------------------------------------------- */
@@ -484,7 +484,10 @@ describe('previous and next are real anchors that wrap inside the category (§9.
         expect(back, `${record.id} has no back navigation`).not.toBe('');
 
         const links = anchorTags(back).map((tag) => attr(tag, 'href'));
-        expect(links, `${record.id}'s back links`).toEqual(['/photos', `/photos/${category.id}`]);
+        expect(links, `${record.id}'s back links`).toEqual([
+          '/photography',
+          `/photography/${category.id}`,
+        ]);
 
         const text = decodeEntitiesOnce(stripTags(back));
         expect(text, `${record.id} is missing the all-photographs back link`).toContain(

@@ -9,7 +9,7 @@
  * ================================================================================================
  *
  * `PhotoSchema` has no `slug` field. The id is `abstract-intothemist` and the category is
- * `abstract`, so `/photos/<category>/<slug>` is RECOVERED, not stored — that is real work, and it
+ * `abstract`, so `/photography/<category>/<slug>` is RECOVERED, not stored — that is real work, and it
  * needs exactly one definition.
  *
  * **05-07's gallery tile and 05-08's detail route both import these. Neither may re-derive.** They
@@ -125,13 +125,13 @@ export function photoSlug(photo: PhotoIdentity): string {
 }
 
 /**
- * The photograph's own page. `/photos/<category>/<slug>` and nothing else.
+ * The photograph's own page. `/photography/<category>/<slug>` and nothing else.
  *
  * THIS IS THE SINGLE DEFINITION. 05-07's gallery tile and 05-08's `getStaticPaths` both import it.
  * If either re-derives, they can disagree and nothing in the phase would notice.
  */
 export function photoHref(photo: PhotoIdentity): string {
-  return `/photos/${photo.category}/${photoSlug(photo)}`;
+  return `/photography/${photo.category}/${photoSlug(photo)}`;
 }
 
 /**

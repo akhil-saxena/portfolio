@@ -137,12 +137,12 @@ export const SITE_OG_IMAGE_ALT: string = resolved.alt;
 /**
  * THE ONE DEFINITION OF THE FORM A CANONICAL TAKES.
  *
- * Cloudflare Static Assets serves `/work/` out of `work/index.html` and answers `/work` with a
- * 307 to it — MEASURED against `astro preview`, which runs real `workerd`: `/work` and `/photos`
- * both 307, `/work/` and `/photos/` both 200. `@astrojs/sitemap` emits the slashed form for the
+ * Cloudflare Static Assets serves `/development/` out of `work/index.html` and answers `/development` with a
+ * 307 to it — MEASURED against `astro preview`, which runs real `workerd`: `/development` and `/photography`
+ * both 307, `/development/` and `/photography/` both 200. `@astrojs/sitemap` emits the slashed form for the
  * same reason.
  *
- * Routes hold their paths unslashed (`/work`, `photoHref(record)`), so a canonical built straight
+ * Routes hold their paths unslashed (`/development`, `photoHref(record)`), so a canonical built straight
  * from one named a URL that redirects while the sitemap named the one that serves. They disagreed
  * on 50 of 51 pages — the homepage the only match — measured by plan 05-13.
  *
@@ -155,7 +155,7 @@ export function canonicalPath(path: string): string {
     throw new Error(
       `canonicalPath: expected a root-relative path beginning with "/", received "${path}". ` +
         'A bare "work" resolves against the current directory, so the canonical of ' +
-        '/photos/architecture/ would silently become /photos/architecture/work.'
+        '/photography/architecture/ would silently become /photography/architecture/development.'
     );
   }
   return path.endsWith('/') ? path : `${path}/`;

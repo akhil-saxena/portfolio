@@ -38,5 +38,5 @@
 #
 # Query strings are carried across by Cloudflare without being written here — MEASURED:
 # /portfolio?cat=nature&x=1 -> location: /photos?cat=nature&x=1
-/portfolio   /photos  301
-/portfolio/  /photos  301
+/portfolio   /photography  301
+/portfolio/  /photography  301

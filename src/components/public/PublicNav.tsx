@@ -67,8 +67,8 @@ import { Moon, Sun } from '@akhil-saxena/design-system/icons';
  * (`scrollWidth === clientWidth === 344`).
  */
 export const NAV_ITEMS: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
-  { href: '/work', label: 'work' },
-  { href: '/photos', label: 'photographs' },
+  { href: '/development', label: 'development' },
+  { href: '/photography', label: 'photography' },
   // No `résumé`. The approved design carries TWO nav items and says why: "No résumé button on
   // home hero; résumé linked from Act-2 strip." The rebuild added a third. Akhil removed it on
   // 2026-08-30 along with the hero's Resume button, so the résumé is reached from Act 2's
@@ -184,7 +184,7 @@ export interface PublicNavProps {
 /**
  * `aria-current="page"` on the nav entry for the section being viewed.
  *
- * Prefix-matched, not equality-matched: `/photos/architecture` and `/photos/architecture/singapore`
+ * Prefix-matched, not equality-matched: `/photography/architecture` and `/photography/architecture/singapore`
  * are both inside "photographs", and a nav that announces nothing on 47 of the 49 pages is a nav
  * that announces nothing. `/` matches no item on purpose — Home is the logo, not a nav entry, and
  * marking a nav item current on a page it does not point at is worse than marking none.

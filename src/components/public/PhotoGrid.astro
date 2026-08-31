@@ -55,7 +55,7 @@ type GalleryPhoto = PhotoIdentity &
   };
 
 interface Props {
-  /** ALREADY SORTED by the caller — `order` on /photos, `categoryOrder` on a category route. */
+  /** ALREADY SORTED by the caller — `order` on /photography, `categoryOrder` on a category route. */
   photos: readonly GalleryPhoto[];
   /** The category's class-5/6 column count, from `data/site_config.json`. */
   columns: number;
@@ -83,7 +83,7 @@ if (photos.length === 0) {
  * wrapper because the listener's job is to see tile clicks and nothing else.
  *
  * An `id` on a reusable component is a claim that only one of it renders per page. MEASURED: both
- * gallery routes render exactly one `PhotoGrid`, and `/photos/<category>` renders it or the empty
+ * gallery routes render exactly one `PhotoGrid`, and `/photography/<category>` renders it or the empty
  * state, never both. If a page ever needs two grids, the id becomes a prop — the island already
  * takes its selector as one.
  *

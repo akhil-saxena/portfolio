@@ -1,6 +1,6 @@
 ---
 /**
- * `/photos/<category>` — the seven prerendered filter routes. Plan 05-07, Task 2.
+ * `/photography/<category>` — the seven prerendered filter routes. Plan 05-07, Task 2.
  * (PUB-04. §8.1, §13.2, §13.3.)
  *
  * ================================================================================================
@@ -11,7 +11,7 @@
  * without a code change (§8.1). Nothing here enumerates seven of anything, and no category id is
  * written in this file.
  *
- * THERE IS NO `"all"` RECORD AND NONE IS INVENTED. `/photos` is the unfiltered route.
+ * THERE IS NO `"all"` RECORD AND NONE IS INVENTED. `/photography` is the unfiltered route.
  * `SiteConfigSchema` refuses `"all"` as an id with its own message explaining why, so a synthetic
  * record added here to make the two routes look symmetrical would fail the content gate.
  *
@@ -61,7 +61,7 @@ import { PhotoLightbox } from '../../../components/public/PhotoLightbox';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
 import { lightboxRecordsFor } from '../../../lib/photo-lightbox';
-import '../../../styles/photos.css';
+import '../../../styles/photography.css';
 
 /** One `{ id, label, columns }` record of `data/site_config.json`. Structural, not a rival shape. */
 type CategoryRecord = {
@@ -117,7 +117,7 @@ const { category } = Astro.props;
 
 const entries = await getCollection('photos');
 
-/* The same loader refusal `/photos` carries — see that file's header for the measurement. */
+/* The same loader refusal `/photography` carries — see that file's header for the measurement. */
 if (entries.length === 0) {
   throw new Error(
     "photos/[category]: getCollection('photos') returned no entries, so EVERY category would " +
@@ -148,7 +148,7 @@ const noun = count === 1 ? 'photograph' : 'photographs';
  * EXPRESSIONS IS DROPPED. Measured in the built HTML on every category route: `0photographs`,
  * `14photographs`. Astro serialises a component's default slot as a template and the whitespace
  * between two adjacent expressions does not survive the crossing — `{total} photographs — all of
- * them` on `/photos` is unaffected, because there the space belongs to a literal text node.
+ * them` on `/photography` is unaffected, because there the space belongs to a literal text node.
  *
  * It renders as a page that looks almost right, on all seven routes, with a green build and a green
  * suite. It was found by the empty-category control, not by an assertion — recorded so the next
@@ -162,7 +162,7 @@ const countLine = `${count} ${noun}`;
     slot="head"
     title={`${category.label} photographs — ${siteTitle}`}
     description={`${category.label}: ${count} ${noun} from the gallery of ${total}.`}
-    canonical={`/photos/${category.id}`}
+    canonical={`/photography/${category.id}`}
   />
 
   <header class="ph-head">
@@ -191,7 +191,7 @@ const countLine = `${count} ${noun}`;
     ) : (
       <Fragment>
         <PhotoGrid photos={photos} columns={category.columns} />
-        {/* See `/photos`'s copy of this comment for why `client:idle`, and why the grid is not
+        {/* See `/photography`'s copy of this comment for why `client:idle`, and why the grid is not
           hydrated. Same island, same selector, same contract — a different sorted subset. */}
         <PhotoLightbox client:idle items={lightboxRecordsFor(photos)} gridSelector="#ph-grid" />
       </Fragment>

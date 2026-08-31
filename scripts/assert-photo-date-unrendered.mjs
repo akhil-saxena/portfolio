@@ -106,13 +106,13 @@ const out = (s) => process.stdout.write(`${s}\n`);
 const err = (s) => process.stderr.write(`${s}\n`);
 
 /**
- * §9.4 names `src/pages/photos*` and `src/components/Photo*`. The third entry is a deliberate
+ * §9.4 names `src/pages/photography*` and `src/components/Photo*`. The third entry is a deliberate
  * widening by plan 05-12 and is recorded rather than slipped in: `src/lib/photo-lightbox.ts` is the
  * module that decides which fields reach the lightbox island, so it is exactly the place a `date`
  * would be added by someone who thought they were only touching a data shape.
  */
 const DEFAULT_SCAN_ROOTS = [
-  { root: 'src/pages/photos', match: /./ },
+  { root: 'src/pages/photography', match: /./ },
   { root: 'src/components/public', match: /^Photo/ },
   { root: 'src/lib/photo-lightbox.ts', match: /./ },
 ];

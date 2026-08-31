@@ -76,13 +76,13 @@ if (!Array.isArray(siteConfig.categories) || siteConfig.categories.length === 0)
 /** The eight documents permitted to hydrate, and the photographs each must hand the island. */
 const GALLERY_ROUTES = [
   {
-    name: '/photos',
-    url: '/photos/',
+    name: '/photography',
+    url: '/photography/',
     expected: [...manifest].sort((a, b) => a.order - b.order),
   },
   ...siteConfig.categories.map((category) => ({
-    name: `/photos/${category.id}`,
-    url: `/photos/${category.id}/`,
+    name: `/photography/${category.id}`,
+    url: `/photography/${category.id}/`,
     expected: manifest
       .filter((record) => record.category === category.id)
       .sort((a, b) => a.categoryOrder - b.categoryOrder),
@@ -90,13 +90,13 @@ const GALLERY_ROUTES = [
 ];
 
 /**
- * Four route families that must ship NO island. `/photos/<category>/<slug>` is represented by every
+ * Four route families that must ship NO island. `/photography/<category>/<slug>` is represented by every
  * one of its pages, derived from the manifest rather than sampled: PUB-14's claim is about all of
  * them, and one spot check would pass on a build that hydrated the other thirty-nine.
  */
 const ZERO_JS_ROUTES = [
   { name: '/', url: '/' },
-  { name: '/work', url: '/work/' },
+  { name: '/development', url: '/development/' },
   { name: '/resume', url: '/resume/' },
   ...manifest.map((record) => ({ name: photoHref(record), url: `${photoHref(record)}/` })),
 ];
@@ -216,7 +216,7 @@ describe('exactly one route family hydrates, and it is the gallery (PUB-14, §5.
     expect(bodies.size).toBeGreaterThanOrEqual(ZERO_JS_ROUTES.length);
     report(
       `zero-island sweep: ${ZERO_JS_ROUTES.length} documents ` +
-        `(/, /work, /resume and all ${manifest.length} photo pages) — 0 astro-island, 0 module scripts`
+        `(/, /development, /resume and all ${manifest.length} photo pages) — 0 astro-island, 0 module scripts`
     );
   });
 });
@@ -249,7 +249,7 @@ describe('the grid is static HTML and every tile is a working link (§9.2)', () 
 
       // The href is the imported one, never re-derived here — 05-08's join, in the third place.
       expect(anchors.map((a) => a.href)).toEqual(route.expected.map((r) => photoHref(r)));
-      for (const a of anchors) expect(a.href.startsWith('/photos/')).toBe(true);
+      for (const a of anchors) expect(a.href.startsWith('/photography/')).toBe(true);
     }
   );
 
@@ -324,7 +324,7 @@ describe("the island's items are the page's photographs, in the page's order", (
   });
 
   it('no item carries `sizes`: the lightbox is full-bleed and 100vw is the correct default', async () => {
-    const html = await body('/photos', '/photos/');
+    const html = await body('/photography', '/photography/');
     const items = island(html).props.items;
     for (const item of items) {
       expect(Object.keys(item)).not.toContain('sizes');
@@ -335,7 +335,7 @@ describe("the island's items are the page's photographs, in the page's order", (
   });
 
   it('`place` is present on exactly the records that carry one, and absent elsewhere', async () => {
-    const html = await body('/photos', '/photos/');
+    const html = await body('/photography', '/photography/');
     const items = island(html).props.items;
     const sorted = [...manifest].sort((a, b) => a.order - b.order);
     const withPlace = sorted.filter((r) => 'place' in r && r.place).length;

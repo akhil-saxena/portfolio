@@ -490,7 +490,7 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
   /**
    * The transition is fully tokenised, which the `transition` SHORTHAND cannot be: its first term
    * is a property NAME, so `gate:app-css` reads the whole value as a motion-dimension origination
-   * — that is precisely what DEBT-CARD-TRANSITION records on `/work`. Longhand is the only
+   * — that is precisely what DEBT-CARD-TRANSITION records on `/development`. Longhand is the only
    * spelling in which a consumer transition carries no literal at all.
    */
   it('the hover transition carries no literal duration or easing', () => {
@@ -710,7 +710,7 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
     expect(manifest.length, 'the manifest is empty, so the count below is vacuous').toBeGreaterThan(
       0
     );
-    const badge = /<a class="hm-peek-all" href="\/photos">([\s\S]*?)<\/a>/.exec(html);
+    const badge = /<a class="hm-peek-all" href="\/photography">([\s\S]*?)<\/a>/.exec(html);
     expect(badge, 'no .hm-peek-all anchor — the badge is decoration or gone').not.toBeNull();
     expect((badge as RegExpExecArray)[1]).toBe(`ALL ${manifest.length} →`);
 

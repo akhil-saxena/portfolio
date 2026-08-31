@@ -12,7 +12,7 @@
  * ladder lives in `src/styles/home.css`; nothing here or there hides a tile.
  *
  * A grid at every class and never a horizontal rail — the reason is the vertical snap container
- * this page has and `/photos` does not. See `home.css` §2.
+ * this page has and `/photography` does not. See `home.css` §2.
  *
  * ================================================================================================
  * ONE FLUSH ROUNDED BLOCK, NOT SIX ROUNDED CARDS — THE COMPOSITION'S LOAD-BEARING DETAIL
@@ -39,7 +39,7 @@
  * red in Phase 4 the moment a real photograph landed — so the figure is `manifest.length` and
  * moves the day the pipeline runs.
  *
- * The handoff makes the WHOLE GRID one anchor to `/photos`. That is not done here, and the reason
+ * The handoff makes the WHOLE GRID one anchor to `/photography`. That is not done here, and the reason
  * is the accessible name: an `<a>` wrapping six `<img>` elements takes their six `alt` strings
  * concatenated as its name, so a screen-reader user hears a forty-word link. The badge is the
  * anchor instead — accessible name exactly `ALL 40 →`, one tab stop, `--space-11` of hit box on a
@@ -62,7 +62,7 @@
  * ================================================================================================
  *
  * 05-05 exports `sizesFor(columns)` and wave 4 is told to import rather than re-derive. It is
- * imported by `/photos`, and it is the WRONG function for this grid: it is built for the masonry's
+ * imported by `/photography`, and it is the WRONG function for this grid: it is built for the masonry's
  * own column ladder (1 column at base, 2 at the first breakpoint, `columns` above) against
  * `PAGE_MAX.photos` (1280). The peek grid is 2 columns at base, 3 from 673, against
  * `ACT_ONE_MAX` (1000). Calling it here would emit a `sizes` string that is silently wrong —
@@ -205,7 +205,7 @@ const lastPeekId = peekPhotos[peekPhotos.length - 1]?.id;
             />
             {
               photo.id === lastPeekId && (
-                <a class="hm-peek-all" href="/photos">{ALL_PHOTOGRAPHS}</a>
+                <a class="hm-peek-all" href="/photography">{ALL_PHOTOGRAPHS}</a>
               )
             }
           </div>

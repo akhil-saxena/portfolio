@@ -164,11 +164,13 @@ function enumerateFixedPublicRoutes(): string[] {
 
 const FIXED_ROUTES = enumerateFixedPublicRoutes();
 
-/** `/photos/<category>/` — one per category record. */
-const CATEGORY_ROUTES = siteConfig.categories.map((category) => `/photos/${category.id}/`).sort();
+/** `/photography/<category>/` — one per category record. */
+const CATEGORY_ROUTES = siteConfig.categories
+  .map((category) => `/photography/${category.id}/`)
+  .sort();
 
 /**
- * `/photos/<category>/<slug>/` — one per photograph, through `photoHref`.
+ * `/photography/<category>/<slug>/` — one per photograph, through `photoHref`.
  *
  * `photoHref` is the single definition of this path (BL-8). Recomputing `id.replace(category, '')`
  * here would be a second one, and 05-08's own header records what two derivations of that slug
@@ -481,7 +483,7 @@ describe('SEO-03 · the sitemap', () => {
  * MEASURED, against this repository's `astro preview`:
  *
  *     HTTP/1.1 301 Moved Permanently
- *     location: /photos
+ *     location: /photography
  *
  * Under `@astrojs/cloudflare`, `astro preview` is NOT a static server: its preview entrypoint
  * starts a Vite preview server with `@cloudflare/vite-plugin` attached, which runs the built Worker
@@ -495,7 +497,7 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
   /** Both forms, because a rule does NOT match its own trailing-slash variant — measured below. */
   const LEGACY_PATHS = ['/portfolio', '/portfolio/'];
-  const REDIRECT_TARGET = '/photos';
+  const REDIRECT_TARGET = '/photography';
 
   it('the _redirects file reached dist/client and carries both literal rules', () => {
     expect(
@@ -956,8 +958,8 @@ describe('SEO-01 · every built public page', () => {
    * canonical except `/` named the UNSLASHED form while the sitemap advertised the SLASHED one,
    * and the origin answered 307 on the unslashed form and 200 on the slashed:
    *
-   *     GET /photos   -> 307  location: /photos/
-   *     GET /photos/  -> 200
+   *     GET /photography   -> 307  location: /photography/
+   *     GET /photography/  -> 200
    *
    * On 50 of 51 pages the declared canonical was a URL that did not itself serve the page, and a
    * different string from the one the sitemap handed a crawler for the same document. 05-13 could

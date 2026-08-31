@@ -468,7 +468,7 @@ describe('/resume — PUB-11, the print stylesheet, read from the served stylesh
   /**
    * The metric value and its label are two adjacent spans, and `compressHTML` removes the newline
    * between them — so the markup is `+15%</span><span>CONVERSION` with no character in between and
-   * the separation is CSS's job alone. Without it the page renders `+15%CONVERSION`. `/work`
+   * the separation is CSS's job alone. Without it the page renders `+15%CONVERSION`. `/development`
    * carried `margin-right` from the start; this route shipped without it until plan 05-09 measured
    * the built page. Asserted against the SERVED CSS, because the source having the rule proves
    * nothing about what reached the reader.

@@ -17,7 +17,7 @@
  * WHY IT CANNOT BE ASSERTED OVER HTTP, WHICH IS THE REST OF THAT REASONING
  * ================================================================================================
  *
- * Both facts are measured and recorded in `src/pages/photos/[category]/index.astro`:
+ * Both facts are measured and recorded in `src/pages/photography/[category]/index.astro`:
  *
  *   1. **No build can reach this branch.** `validateContentSet`'s RI-2 refuses a declared category
  *      that no photograph uses, and it runs in `astro:config:done` — so `build`, `check` and `sync`
@@ -122,7 +122,7 @@ describe('§13.2 — the empty-category state, rendered', () => {
     expect(link, 'no anchor in the rendered empty state').not.toBeNull();
 
     const attrs = (link as RegExpMatchArray)[1] as string;
-    expect(/href="([^"]*)"/.exec(attrs)?.[1]).toBe('/photos');
+    expect(/href="([^"]*)"/.exec(attrs)?.[1]).toBe('/photography');
 
     const label = text((link as RegExpMatchArray)[2] as string);
     // Derived from the prop, so a 41st photograph changes the page and not this file.
@@ -132,7 +132,7 @@ describe('§13.2 — the empty-category state, rendered', () => {
     // ABSENCE so the reading cannot be reversed by someone reading the table the other way.
     expect(label).not.toContain('→');
 
-    say(`photo-empty: ${JSON.stringify(label)} → /photos, count derived from the prop`);
+    say(`photo-empty: ${JSON.stringify(label)} → /photography, count derived from the prop`);
   });
 
   it('uses the prop rather than a hardcoded category or count', () => {

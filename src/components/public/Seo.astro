@@ -5,7 +5,7 @@
  * Emitted into `PublicLayout`'s named `head` slot:
  *
  *     <PublicLayout>
- *       <Seo slot="head" title="Work" description="..." canonical="/work" />
+ *       <Seo slot="head" title="Work" description="..." canonical="/development" />
  *       ...
  *     </PublicLayout>
  *
@@ -52,7 +52,7 @@ interface Props {
   title: string;
   /** `<meta name="description">` and `og:description`. */
   description: string;
-  /** A ROOT-RELATIVE path (`/work`, `/photos/architecture/singapore`). Made absolute here. */
+  /** A ROOT-RELATIVE path (`/development`, `/photography/architecture/singapore`). Made absolute here. */
   canonical: string;
   /** `og:type`. `website` for the four top-level routes; `article` for a case study. */
   ogType?: string;
@@ -74,7 +74,7 @@ const {
 /*
  * `Astro.site` is `URL | undefined` — it is undefined when `astro.config.mjs` omits `site`. That
  * config is committed and sets it, so this branch is not reachable today; it exists because the
- * consequence of it becoming reachable is silent. Without a base, `new URL('/work', undefined)`
+ * consequence of it becoming reachable is silent. Without a base, `new URL('/development', undefined)`
  * throws a TypeError naming neither the component nor the page, and every canonical on the site
  * would be wrong at once.
  */
@@ -90,19 +90,19 @@ if (!canonical.startsWith('/')) {
   throw new Error(
     `Seo: canonical must be a root-relative path beginning with "/", received "${canonical}" ` +
       `(page: ${Astro.url.pathname}). A bare "work" resolves against the CURRENT directory, so ` +
-      'the canonical of /photos/architecture/ would silently become /photos/architecture/work.'
+      'the canonical of /photography/architecture/ would silently become /photography/architecture/development.'
   );
 }
 
 /*
  * THE CANONICAL MUST NAME THE FORM THE ORIGIN ACTUALLY SERVES.
  *
- * Cloudflare Static Assets serves `/work/` out of `work/index.html` and answers `/work` with a
+ * Cloudflare Static Assets serves `/development/` out of `work/index.html` and answers `/development` with a
  * 307 to the slashed form — MEASURED against `astro preview`, which runs real `workerd`:
- * `/work` and `/photos` both 307, `/work/` and `/photos/` both 200. `@astrojs/sitemap` emits the
+ * `/development` and `/photography` both 307, `/development/` and `/photography/` both 200. `@astrojs/sitemap` emits the
  * slashed form for the same reason.
  *
- * Routes pass their path unslashed (`/work`, `photoHref(record)`), so without this normalisation
+ * Routes pass their path unslashed (`/development`, `photoHref(record)`), so without this normalisation
  * the canonical named a URL that redirects while the sitemap named the one that serves — they
  * disagreed on 50 of 51 pages, the homepage being the only match. A canonical pointing at a
  * redirect is the failure this component's header calls invisible: nothing renders wrong and

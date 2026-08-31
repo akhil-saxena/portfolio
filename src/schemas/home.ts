@@ -72,8 +72,8 @@ export const HomeConfigSchema = z.strictObject({
    *
    * The FIELD stays, and each record is still validated as strictly as before: this is CMS content
    * he can refill from the admin without a schema change. What is no longer asserted is that he
-   * must. Nothing became unreachable — `/photos` is the nav and the grid's own `ALL 40 →` badge,
-   * `/work` is the nav and Act 2, `/resume` is Act 2.
+   * must. Nothing became unreachable — `/photography` is the nav and the grid's own `ALL 40 →` badge,
+   * `/development` is the nav and Act 2, `/resume` is Act 2.
    */
   ctas: z.array(
     z.strictObject({

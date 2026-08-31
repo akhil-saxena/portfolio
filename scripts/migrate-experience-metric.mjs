@@ -3,8 +3,8 @@
  * Add `metric` — the right-aligned figure on each employment row — to every entry in
  * `data/resume.json`'s `experience` array (OQ-1b, plan 05-03).
  *
- * It renders on BOTH routes that show these records: `/work`'s employment band (§10) and
- * `/resume`'s entry header (§11.1). This line said "on `/work`" until 2026-08-29; it was stale
+ * It renders on BOTH routes that show these records: `/development`'s employment band (§10) and
+ * `/resume`'s entry header (§11.1). This line said "on `/development`" until 2026-08-29; it was stale
  * from the day `/resume` shipped the same band, and `src/schemas/resume.ts` carried the same
  * error at the field itself. Corrected together.
  *

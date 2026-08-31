@@ -202,7 +202,7 @@ if (failures.length > 0) {
  *
  * THE FIELD IS NAMED `categoryOrder`. 00-ADMIN-IA specifies the semantics and never names the
  * field, and three consumers have to agree on the word: 03-06's schema, Phase 5's gallery and
- * Phase 7's `/admin/photos`. `categoryOrder` was chosen over `rank`, `positionInCategory` and
+ * Phase 7's `/admin/photography`. `categoryOrder` was chosen over `rank`, `positionInCategory` and
  * `sortIndex` because it reads as the sibling of the `order` it sits beside — the pair
  * `order` / `categoryOrder` states the two facts in the two words that distinguish them, and a
  * reader who knows what `order` means needs no glossary for the second.

@@ -1,6 +1,6 @@
 ---
 /**
- * `/work` — PUB-02, SEO-01. Plan 05-09.
+ * `/development` — PUB-02, SEO-01. Plan 05-09.
  *
  * ================================================================================================
  * THE SHAPE OF THE PAGE, AND WHERE EVERY STRING ON IT COMES FROM
@@ -23,7 +23,7 @@
  *
  * No count is RENDERED as a literal and none is ASSERTED as one — not in this file, in
  * `EmploymentBand.astro`, in `ProjectCard.astro`, in `work.css` or in
- * `test/public/work.node.test.ts`. (The figures named in these comments are prose describing the
+ * `test/public/development.node.test.ts`. (The figures named in these comments are prose describing the
  * fixture on the day it was written; nothing reads them.) §13.3 is explicit that
  * no hand-maintained copy of a count may exist, and this project has already paid for it twice:
  * the design system's component figure went stale three times in nine days, and plan 04-09 turned
@@ -49,17 +49,17 @@ import Seo from '../components/public/Seo.astro';
 import { resume } from '../lib/content';
 import { CROSSLINK_TYPE } from '../lib/crosslink';
 import { resolveDsTokens } from '../lib/ds-component-count';
-import '../styles/work.css';
+import '../styles/development.css';
 
 /** The route's own path, in one place: the canonical and the `<Seo>` call sit beside it. */
-const WORK_PATH = '/work';
+const WORK_PATH = '/development';
 
 /** The cross-link's destination — the gallery index, a real route rather than a photograph. */
-const PHOTOS_PATH = '/photos';
+const PHOTOS_PATH = '/photography';
 
 /*
  * §4.3 item 3 / §3.1 "Italic serif cross-link" / J2 — the type role was DECLARED HERE until the
- * returning half of §13.2's pair was built on `/photos`. It now lives in `src/lib/crosslink.ts`,
+ * returning half of §13.2's pair was built on `/photography`. It now lives in `src/lib/crosslink.ts`,
  * imported above, and the reasoning that used to sit at this line moved with it: why it must be an
  * inline style object at all (`Link` inline-sets `font-family` on every variant, so a serif link is
  * unreachable from `work.css` without `!important`), and why the values are J2's verdict rather

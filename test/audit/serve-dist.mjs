@@ -22,8 +22,8 @@
  * THE RESOLUTION RULE, AND WHY IT IS NOT "JUST SERVE THE FILE"
  * ================================================================================================
  *
- * Astro's directory build format emits `dist/client/work/index.html` and the site links to
- * `/work` with NO trailing slash (see `dist/client/_redirects`, which 05-13 measured both ways).
+ * Astro's directory build format emits `dist/client/development/index.html` and the site links to
+ * `/development` with NO trailing slash (see `dist/client/_redirects`, which 05-13 measured both ways).
  * Cloudflare Static Assets does that mapping in production. A naive `fs.readFile(url)` 404s every
  * route on the site and the audit would report six blank pages as six passing ones — the exact
  * failure class T-05-15-01 names. So the resolution order is stated, and a miss is a LOUD 404
@@ -64,7 +64,7 @@ const TYPES = new Map([
 ]);
 
 /**
- * `/work` -> `dist/client/work/index.html`. The order is: the literal path, then the directory
+ * `/development` -> `dist/client/development/index.html`. The order is: the literal path, then the directory
  * index, then the same path with `.html`. Returns `null` rather than guessing.
  *
  * `normalize` before `join` and a containment check after it: a request for `/../../etc/passwd`

@@ -2,11 +2,11 @@
  * The italic serif cross-link's type role — ONE declaration, shared by both halves of the pair.
  *
  * ================================================================================================
- * WHY THIS IS A MODULE AND NOT A SECOND OBJECT LITERAL ON `/photos`
+ * WHY THIS IS A MODULE AND NOT A SECOND OBJECT LITERAL ON `/photography`
  * ================================================================================================
  *
- * §13.2 makes the cross-link a PAIR: `/work` points at the gallery with *see the photographs →*
- * and `/photos` points back with *← see the work*. `/work` shipped its half in 05-09; the return
+ * §13.2 makes the cross-link a PAIR: `/development` points at the gallery with *see the photographs →*
+ * and `/photography` points back with *← see the work*. `/development` shipped its half in 05-09; the return
  * path was never built, and 05-15's audit found it with a grep whose only hit in the whole
  * repository was the spec row itself.
  *
@@ -36,7 +36,7 @@
  * smaller font too"*, so both the 22px size and the `--ochre-d-strong` weight were rejected. It is
  * `--text-lg` 17 in `--ochre-d` — the smallest serif on the site, and at weight 400 on a dark field
  * it clears §3.3's floor only because 17 is above the 15px that section sets for a Playfair body
- * role. §4.3 keeps `--ochre-d-strong` for the metric; `test/public/work.node.test.ts` asserts the
+ * role. §4.3 keeps `--ochre-d-strong` for the metric; `test/public/development.node.test.ts` asserts the
  * served bytes carry `--ochre-d` and NOT `--ochre-d-strong`, and `photos-routes.node.test.ts`
  * asserts the same of the returning half.
  *

@@ -434,7 +434,7 @@ export const OBJECT_CACHE_CONTROL = 'public, max-age=31536000, immutable';
  *
  * `PHOTO_ID_SEPARATOR` itself is DECLARED in `src/lib/photo-variants.ts` and re-exported from §3,
  * because the public routes have to run this join BACKWARDS — `PhotoSchema` has no `slug` field,
- * so `/photos/<category>/<slug>` is derived from the id at prerender time, in workerd, where this
+ * so `/photography/<category>/<slug>` is derived from the id at prerender time, in workerd, where this
  * module cannot go. That inverse is `photoSlug` in `src/lib/photo-srcset.ts` and it reads the same
  * separator constant, so the two directions cannot disagree.
  */

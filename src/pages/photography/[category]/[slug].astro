@@ -1,6 +1,6 @@
 ---
 /**
- * `/photos/<category>/<slug>` — one prerendered page per photograph. Plan 05-08.
+ * `/photography/<category>/<slug>` — one prerendered page per photograph. Plan 05-08.
  * (PUB-07, PUB-08, PUB-09, SEO-01. §9.3, §9.4, §9.5, §9.6, §13.2, §4.4 rule 2, §7.2, §7.4.)
  *
  * ================================================================================================
@@ -8,7 +8,7 @@
  * ================================================================================================
  *
  * `photoSlug` and `photoHref` in `src/lib/photo-srcset.ts` are the SINGLE definition of
- * `/photos/<category>/<slug>`. `PhotoTile.astro` (plan 05-07) builds every gallery tile's `href`
+ * `/photography/<category>/<slug>`. `PhotoTile.astro` (plan 05-07) builds every gallery tile's `href`
  * from `photoHref`; the params below come from `photoSlug`, and the two are tied together at build
  * time by the equality a few lines down.
  *
@@ -92,7 +92,7 @@ export async function getStaticPaths() {
    * equality below is worth asserting rather than assuming: it is the seam between the file
    * system's opinion about the path and the library's.
    */
-  const ROUTE_ROOT = 'photos';
+  const ROUTE_ROOT = 'photography';
 
   const entries = await getCollection('photos');
 

@@ -170,7 +170,7 @@ describe('target assembly over the committed manifest', () => {
     for (const target of targets) {
       const category = byId.get(target.id)?.category;
       expect(category, `no record for ${target.id}`).toBeTruthy();
-      expect(new URL(target.url).pathname.startsWith(`/photos/${category}/`)).toBe(true);
+      expect(new URL(target.url).pathname.startsWith(`/photography/${category}/`)).toBe(true);
     }
   });
 });

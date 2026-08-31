@@ -5,11 +5,11 @@
  * WHY THIS FILE EXISTS, AND WHAT IT DELIBERATELY DOES NOT DO
  * ================================================================================================
  *
- * 05-09 and 05-10 both recorded, in passing, that rewriting `/work`'s `<h1>` leaves the entire suite
+ * 05-09 and 05-10 both recorded, in passing, that rewriting `/development`'s `<h1>` leaves the entire suite
  * green. 05-15 went looking and MEASURED the whole of it. §13.2's contract table has ten rows, one
  * of them `n/a`. **Three of them carried no assertion anywhere in `test/` or `scripts/`** — the
  * Home Act-2 secondary CTAs, `Download the PDF` and the empty-category state, five strings between
- * them — **and a fourth had never been built at all**, which is the `/photos` cross-link. 1,488
+ * them — **and a fourth had never been built at all**, which is the `/photography` cross-link. 1,488
  * tests passed over a site whose navigation could be rewritten silently.
  *
  * (That sentence read "of §13.2's eleven contract rows, five had no assertion" in this file's first
@@ -49,7 +49,7 @@
  *
  * **Astro drops the whitespace between two adjacent expressions** inside a framework component's
  * children. Written `{count} {noun}`, the category routes shipped `14photographs` — on all seven of
- * them, through a green build and 59 green assertions in `test/public/photos-routes.node.test.ts`.
+ * them, through a green build and 59 green assertions in `test/public/photography-routes.node.test.ts`.
  * It was found by an unrelated control, not by a test. A `toContain` would have passed. Only an
  * exact string catches it, which is why every assertion below is `toBe` over a decoded, tag-stripped
  * slice and never a substring check.
@@ -69,10 +69,10 @@
  *                                     the same commit — Akhil: "The scroll for work should not be
  *                                     this apparent… not this." The design handoff's own wording
  *                                     leads with the arrow.)
- *   `see the photographs →`          `test/public/work.node.test.ts`
- *   `← see the work`                 `test/public/photos-routes.node.test.ts`
+ *   `see the photographs →`          `test/public/development.node.test.ts`
+ *   `← see the work`                 `test/public/photography-routes.node.test.ts`
  *   `← All photographs` · `← {Cat}`  `test/public/photo-detail.node.test.ts`
- *   `All · n` and `{Label} · n`      `test/public/photos-routes.node.test.ts`, derived
+ *   `All · n` and `{Label} · n`      `test/public/photography-routes.node.test.ts`, derived
  *   the three 404 lines              `test/public/seo.node.test.ts`
  *   the empty-category copy          `test/public/photo-empty.unit.test.ts` — it CANNOT be asserted
  *                                    from here: `validateContentSet`'s RI-2 refuses a declared
@@ -165,8 +165,8 @@ const PINS: readonly Pin[] = [
   {
     what: '§13.2 Secondary CTA — Home Act 2, the work band',
     route: '/',
-    slice: /<a class="hm-more" href="\/work">([\s\S]*?)<\/a>/,
-    copy: 'ALL WORK →',
+    slice: /<a class="hm-more" href="\/development">([\s\S]*?)<\/a>/,
+    copy: 'ALL DEVELOPMENT →',
     why: 'the control that leaves Home for the complete project list',
   },
   {
@@ -187,7 +187,7 @@ const PINS: readonly Pin[] = [
     what: '§6.4 Act-2 band heading — the work',
     route: '/',
     slice: /<h2[^>]*id="hm-work-h"[^>]*>([\s\S]*?)<\/h2>/,
-    copy: 'The work',
+    copy: 'Development',
     why:
       'it names the band a reader is sent to by `SCROLL FOR THE WORK ↓` and is the accessible ' +
       'name of the region (`aria-labelledby="hm-work-h"`), so it is structure and not description',
@@ -217,14 +217,14 @@ const PINS: readonly Pin[] = [
  * next person to loop over it and assert something — at which point they are pinned, and the
  * decision is reversed by accident.
  *
- *   `/work`   <h1>        "Things I design and build."   — Akhil’s voice, reviewed copy, his to change
- *   `/work`   sub-para    "Products shipped on my own …" — the same
- *   `/work`   eyebrows    "Professional experience", "Projects"
+ *   `/development`   <h1>        "Things I design and build."   — Akhil’s voice, reviewed copy, his to change
+ *   `/development`   sub-para    "Products shipped on my own …" — the same
+ *   `/development`   eyebrows    "Professional experience", "Projects"
  *                                                        — they label content; they are not links
- *   `/work`   count line  "five — shipped on my own"     — DERIVED and already asserted by
+ *   `/development`   count line  "five — shipped on my own"     — DERIVED and already asserted by
  *                                                          work.node.test.ts against projects.json
- *   `/photos` <h1>        "Photographs"                  — describes the page, does not navigate
- *   `/photos` eyebrow     "40 photographs — all of them" — the COUNT is derived and asserted by
+ *   `/photography` <h1>        "Photographs"                  — describes the page, does not navigate
+ *   `/photography` eyebrow     "40 photographs — all of them" — the COUNT is derived and asserted by
  *                                                          photos-routes.node.test.ts; the WORDING
  *                                                          is prose and stays free
  *   `/resume` eyebrows    "Experience", "Skills", "Education"
@@ -301,8 +301,8 @@ describe('§13.2 — the navigational strings, character for character on the se
  * instead of one: the component, and this table. That is what a pin costs and it is the point.
  */
 const NAV_CONTRACT: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
-  { href: '/work', label: 'work' },
-  { href: '/photos', label: 'photographs' },
+  { href: '/development', label: 'development' },
+  { href: '/photography', label: 'photography' },
 ];
 
 describe('the AppBar’s nav labels — the most navigational strings on the site', () => {
@@ -321,13 +321,13 @@ describe('the AppBar’s nav labels — the most navigational strings on the sit
   });
 
   /**
-   * 05-17 — THIS READS `/work`, NOT `/`, AND THE CHANGE IS THE FINDING RATHER THAN A REPAIR.
+   * 05-17 — THIS READS `/development`, NOT `/`, AND THE CHANGE IS THE FINDING RATHER THAN A REPAIR.
    *
    * Home no longer has an AppBar. Akhil: *"the header is not required for such a page"*, and the
    * approved prototype has none — the row there is two `Link`s and an `IconButton` composed
    * directly on the page background (see `src/components/public/PublicNav.tsx`).
    *
-   * `/work` is now the representative route for the BAR arrangement, and it is a better subject
+   * `/development` is now the representative route for the BAR arrangement, and it is a better subject
    * for this assertion than `/` ever was: the bar is site-wide furniture on 51 documents and Home
    * was always the one route with an exception in it (the wordmark, suppressed by 05-16). Pinning
    * navigational copy to the page that opts out of the navigation was a latent trap.
@@ -337,9 +337,9 @@ describe('the AppBar’s nav labels — the most navigational strings on the sit
    * the other.
    */
   it('pins the served bar: the same labels, hrefs and order, in the shipped bytes', async () => {
-    const page = await load('/work');
+    const page = await load('/development');
     const bar = page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/);
-    expect(bar, 'no .ds-atom-appbar in the served /work document').not.toBeNull();
+    expect(bar, 'no .ds-atom-appbar in the served /development document').not.toBeNull();
     navMarkup = (bar as RegExpMatchArray)[0];
 
     const anchors = [...navMarkup.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((m) => ({
@@ -422,7 +422,7 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
    *     bar paints 67px against `--ds-appbar-h`'s declared 57 — the one case the design system's
    *     own docstring says the property cannot promise.
    *
-   * `/work` is the positive half, and it is what keeps this from being a test that passes because
+   * `/development` is the positive half, and it is what keeps this from being a test that passes because
    * the wordmark was deleted site-wide. `PublicNav.tsx` records the full reasoning.
    */
   /**
@@ -453,16 +453,16 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
     // bar-bearing routes really do still have one — so this is not passing because `load` is broken.
     expect(page, 'the served Home document has no <h1> at all').toMatch(/<h1[^>]*data-home-marker/);
     expect(
-      await load('/work'),
-      '/work lost its AppBar too — this is not a Home-only change'
+      await load('/development'),
+      '/development lost its AppBar too — this is not a Home-only change'
     ).toMatch(/ds-atom-appbar/);
   });
 
   it('renders the site title in the AppBar logo on every other route, from the same record', async () => {
-    const page = await load('/work');
+    const page = await load('/development');
     const bar = (page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/) ?? [''])[0];
     const logo = (bar as string).match(/<a[^>]*class="[^"]*pub-logo[^"]*"[^>]*>([\s\S]*?)<\/a>/);
-    expect(logo, 'no .pub-logo anchor in /work’s served AppBar').not.toBeNull();
+    expect(logo, 'no .pub-logo anchor in /development’s served AppBar').not.toBeNull();
     expect(text((logo as RegExpMatchArray)[1] as string)).toBe(home.title);
     expect(
       /href="\/"/.test((logo as RegExpMatchArray)[0] as string),

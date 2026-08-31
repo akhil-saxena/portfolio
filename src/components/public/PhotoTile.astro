@@ -7,7 +7,7 @@
  * THE HREF IS IMPORTED. IT IS NEVER RE-DERIVED HERE. (BL-8)
  * ================================================================================================
  *
- * `photoHref` is the SINGLE definition of `/photos/<category>/<slug>` and it lives in
+ * `photoHref` is the SINGLE definition of `/photography/<category>/<slug>` and it lives in
  * `src/lib/photo-srcset.ts` (05-05). Plan 05-08 builds the detail pages' `getStaticPaths` from the
  * same function. Both are wave 4, so neither can read the other's output, and NO GATE IN THIS PHASE
  * compares an emitted tile href against an emitted page. Two independent derivations that disagree

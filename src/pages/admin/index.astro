@@ -16,7 +16,7 @@ export const prerender = false;
 //
 // Protection is prefix-shaped rather than per-file: run_worker_first in wrangler.jsonc
 // covers "/admin" and "/admin/*", and src/middleware.ts carries the same four patterns,
-// so the five D-05 admin sub-routes arriving in Phase 7 (/admin/home, /admin/photos,
+// so the five D-05 admin sub-routes arriving in Phase 7 (/admin/home, /admin/photography,
 // /admin/resume, /admin/projects, /admin/site) are covered by construction instead of by
 // each author remembering a guard. (threat T-02-18)
 

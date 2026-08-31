@@ -292,7 +292,7 @@ describe('vacuity — nothing to check is a failure, never a pass', () => {
     const report = validateContentSet({ ...wholeSet(), photos: [] });
     expect(report.ok).toBe(false);
     expect(report.checked.photos).toBe(0);
-    expect(reportText(report)).toMatch(/photos/i);
+    expect(reportText(report)).toMatch(/photography/i);
   });
 
   it('fails on empty categories', () => {

@@ -292,7 +292,9 @@ describe('vacuity — nothing to check is a failure, never a pass', () => {
     const report = validateContentSet({ ...wholeSet(), photos: [] });
     expect(report.ok).toBe(false);
     expect(report.checked.photos).toBe(0);
-    expect(reportText(report)).toMatch(/photography/i);
+    // `photos` is the COLLECTION's name in the report (`SCHEMA-photos`), not the route. The
+    // 2026-08-30 rename moved the route to /photography and left this identifier alone.
+    expect(reportText(report)).toMatch(/photos/i);
   });
 
   it('fails on empty categories', () => {

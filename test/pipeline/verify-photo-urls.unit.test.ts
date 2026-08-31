@@ -170,7 +170,9 @@ describe('target assembly over the committed manifest', () => {
     for (const target of targets) {
       const category = byId.get(target.id)?.category;
       expect(category, `no record for ${target.id}`).toBeTruthy();
-      expect(new URL(target.url).pathname.startsWith(`/photography/${category}/`)).toBe(true);
+      // The R2 STORAGE prefix, not the route. Every object lives under `photos/` in the bucket;
+      // the 2026-08-30 rename moved the ROUTE to /photography and deliberately left the keys.
+      expect(new URL(target.url).pathname.startsWith(`/photos/${category}/`)).toBe(true);
     }
   });
 });

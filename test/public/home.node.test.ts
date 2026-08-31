@@ -891,6 +891,55 @@ describe('Home ships no app bar (05-17)', () => {
    * because the claim is about HOW the shape was obtained — a hand-rolled `width`/`height`/`border`
    * block would look identical in the artefact and would be the workaround QUAL-03 forbids.
    */
+  /**
+   * THE NAV'S HOVER, PINNED — because the first attempt at it failed SILENTLY.
+   *
+   * `.pub-nav-plain .pub-nav-link:hover` is (0,3,0). So is the design system's
+   * `.ds-atom-link[data-variant="quiet"]:hover`, which sets `text-decoration: underline`. A tie,
+   * resolved by file order, and the design system's sheet won it: the underline stayed, the page
+   * looked unchanged, and every assertion in this file stayed green because nothing asserted the
+   * hover. It was caught by reading the computed style in a browser, not by the suite.
+   *
+   * So the suite asserts it now, and it asserts the SPECIFICITY rather than the outcome — the
+   * variant attribute is what makes the rule (0,4,0) and wins on specificity instead of on import
+   * order. A future edit that drops the attribute reads identically and breaks identically.
+   *
+   * The rule itself is the design: `muted #8F8B82, hover → #EAE7E0`, no underline. It also matches
+   * the toggle beside it, and frees the underline to mean `aria-current="page"` and nothing else.
+   */
+  it('the nav links drop the variant underline on hover, and win the tie on specificity', () => {
+    const rule = /\.pub-nav-plain \.pub-nav-link\[data-variant="quiet"\]:hover\s*\{([^}]*)\}/.exec(
+      cssCode
+    );
+    expect(
+      rule,
+      'no (0,4,0) hover rule — a (0,3,0) selector TIES with the design system and loses on file order'
+    ).not.toBeNull();
+    expect((rule as RegExpExecArray)[1], 'the hover no longer removes the underline').toMatch(
+      /text-decoration:\s*none/
+    );
+  });
+
+  /**
+   * THE 44px COARSE-POINTER FLOOR ON THE NAV — a measured defect, not a tidy-up.
+   *
+   * MEASURED at 390 x 844 coarse before the rule: `work` was 30 x 20 and `photographs` 78 x 20,
+   * against a 44px floor, on the site's primary navigation — while the toggle, the badge and the
+   * cue in the same viewport all met it.
+   *
+   * The design system grows `.ds-atom-appbar a` under `pointer: coarse`, but Home's nav is a plain
+   * row rather than an AppBar, so nothing matched. The same gap the toggle has its own rule for,
+   * and the reason inheritance here has to be checked rather than assumed.
+   */
+  it('the nav links take the 44px floor on a coarse pointer', () => {
+    expect(
+      cssCode,
+      'the nav links lost their coarse-pointer floor — 30 x 20 targets on a phone'
+    ).toMatch(
+      /@media \(pointer: coarse\)[\s\S]{0,320}\.pub-nav-plain \.pub-nav-link\s*\{[^}]*min-height:\s*44px/
+    );
+  });
+
   it('the toggle is a re-pointed IconButton reduced to its glyph', () => {
     const rule = /\.pub-nav-plain \.pub-toggle\s*\{([^}]*)\}/.exec(cssCode);
     expect(rule, 'no .pub-toggle rule').not.toBeNull();

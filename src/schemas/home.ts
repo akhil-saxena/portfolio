@@ -37,7 +37,33 @@ const position = z.string().regex(POSITION, {
 export const HomeConfigSchema = z.strictObject({
   title: z.string().min(1),
   subtitle: z.string().min(1),
-  intro: z.string().min(1),
+  /*
+   * NO `.min(1)`, and the empty string is deliberate.
+   *
+   * The intro read "Building for the web. Photographing everything else." Akhil removed it on
+   * 2026-09-02: the phrase "everything else" subordinated the photography to the development,
+   * while Act 1 is six photographs filling the screen — the words and the picture led with
+   * different things. `Interfaces & Imagery` already names both as equals, so deleting the line
+   * removed the ranking rather than relocating it.
+   *
+   * The FIELD stays, as `ctas` did: this is CMS content he can restore from the admin without a
+   * schema change. What is no longer asserted is that he must.
+   */
+  intro: z.string(),
+
+  /*
+   * THE META DESCRIPTION, SEPARATE FROM THE VISIBLE LINE — and it is separate because coupling
+   * them was a latent bug that fired.
+   *
+   * `<Seo description={intro} />` meant the on-page tagline WAS the page's description. Emptying
+   * `intro` on 2026-09-02 therefore removed `<meta name="description">` from the home page, which
+   * SEO-01 caught. A visible line and a description for search results answer different questions
+   * and change for different reasons; one should never silently be the other.
+   *
+   * `.min(1)`, unlike `intro`: the page must always describe itself, whatever Act 1 chooses to
+   * show. It carries the sentence the intro used to, so nothing about the description changed.
+   */
+  description: z.string().min(1),
 
   peekIds: z.array(photoId).min(1, {
     error:

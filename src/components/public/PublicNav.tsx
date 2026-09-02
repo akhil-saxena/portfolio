@@ -288,11 +288,25 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
    * viewport 64px before the name starts moving, so the corner it docks into is empty.
    */
   if (variant === 'plain') {
+    /*
+     * NO NAV LINKS IN THE PLAIN ROW — Akhil, 2026-09-02, once Home became a single screen.
+     *
+     * Home's two doors ARE the navigation now: `Photography →` and `Development →` sit under the
+     * photographs as the page's only choice, so a `development · photography` pair in the row above
+     * was the same two destinations offered twice, in a weaker treatment, on a page with nothing
+     * else on it.
+     *
+     * `NAV_ITEMS` is untouched — the AppBar arrangement below still renders it on every OTHER route,
+     * where the links are the only navigation there is. This is a Home-only omission, not a
+     * deletion.
+     *
+     * A `<div>` rather than a `<nav>`: a navigation landmark with no navigation in it is a landmark
+     * a screen-reader user is sent to for nothing. The toggle is a control, not a destination.
+     */
     return (
-      <nav className="pub-nav-plain">
-        <div className="pub-nav-links">{navLinks}</div>
+      <div className="pub-nav-plain">
         <ThemeToggle size="lg" />
-      </nav>
+      </div>
     );
   }
 

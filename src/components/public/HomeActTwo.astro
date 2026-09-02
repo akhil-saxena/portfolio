@@ -51,8 +51,7 @@
  * the two CTAs that actually lead somewhere new.
  */
 import { Card } from '@akhil-saxena/design-system/components/Card';
-import { Divider } from '@akhil-saxena/design-system/components/Divider';
-import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
+import { Button } from '@akhil-saxena/design-system/components/Button';
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { StatusPill } from '@akhil-saxena/design-system/components/StatusPill';
 import { Text } from '@akhil-saxena/design-system/components/Text';
@@ -104,20 +103,10 @@ const elided = projects.length - shown.length;
  * count would be a third of the same kind — a hardcoded 39 turned `main` red in Phase 4 the moment
  * a real photograph landed.
  */
-const currentRole = resume.experience.find((entry) => entry.isPresent) ?? resume.experience[0];
-if (!currentRole) {
-  throw new Error(
-    'HomeActTwo: data/resume.json has no experience entry, so the "By day —" line has no subject. ' +
-      'Rendering the band without it would leave the sentence half-written on the primary route.'
-  );
-}
-const roleCount = resume.experience.length;
-const projectCount = projects.length;
-const skillCategories = resume.skills.map((group) => group.category);
+
 
 /** §13.2, verbatim including the arrows. */
 const ALL_WORK = 'ALL DEVELOPMENT →';
-const RESUME_ARROW = 'RÉSUMÉ →';
 const VIEW_RESUME = 'View résumé';
 ---
 
@@ -169,33 +158,28 @@ const VIEW_RESUME = 'View résumé';
           </li>
         ))
       }
+      {/*
+        THE RÉSUMÉ IS THE GRID'S LAST CELL — Akhil, 2026-09-02: "add as a button in place of 6th
+        card in development, bottom right", and "needs less prominence".
+
+        `ACT_TWO_CAP` is 6 and there are 5 projects, so the sixth cell was empty in a
+        `repeat(auto-fit, …)` grid — the résumé takes it rather than sitting in a row of its own
+        below, which is what gave it more weight than the projects it follows.
+
+        `ghost` is the quietest Button variant: no fill, no border until hover. Deliberately weaker
+        than the project cards beside it, because it is the step AFTER reading them.
+
+        Outside the `shown.map` so `data-project-count` still counts projects and nothing downstream
+        starts treating the résumé as one.
+      */}
+      <li class="hm-grid-item hm-grid-resume">
+        <Button as="a" href="/resume" variant="ghost" className="hm-resume-btn">
+          {VIEW_RESUME}
+        </Button>
+      </li>
     </ul>
 
     {/* GAP 1 of 2 — `--space-8`. See `home.css` §4. */}
-    <p class="hm-byday">
-      <span class="hm-byday-lead">By day —</span> {currentRole.role} at {currentRole.company}.
-    </p>
   </section>
 
-  {/* GAP 2 of 2 — `--space-8`, immediately before "The résumé". See `home.css` §4. */}
-  <section class="hm-resume" aria-labelledby="hm-resume-h">
-    <Divider />
-    <div class="hm-band-head">
-      <Heading
-        level={2}
-        size="3xl"
-        weight="bold"
-        id="hm-resume-h"
-        style={{ lineHeight: 'var(--lh-snug)' }}
-      >
-        The résumé
-      </Heading>
-      <a class="hm-more" href="/resume">{RESUME_ARROW}</a>
-    </div>
-    <Text className="hm-resume-line" size="base" tone="secondary">
-      {`${roleCount} roles and ${projectCount} projects.`}
-    </Text>
-    <Eyebrow size="xs" className="hm-resume-skills">{skillCategories.join(' · ')}</Eyebrow>
-    <a class="hm-resume-cta" href="/resume">{VIEW_RESUME}</a>
-  </section>
 </div>

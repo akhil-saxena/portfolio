@@ -383,3 +383,83 @@ body {
 .dark .pub-theme-icon-moon {
   display: none;
 }
+
+/*
+ * ================================================================================================
+ * THE FOOTER — one centred row, as the legacy site's Home had it
+ * ================================================================================================
+ *
+ * `.hd-bottom` on the site this replaces: a flex row, centred, `gap: 1.5rem`, holding three 18px
+ * marks and the copyright at `0.7rem` in the faintest ink. Reproduced on the nearest rungs —
+ * `--space-6` for the row gap, `--space-4` between marks, `--text-2xs` for the line.
+ *
+ * COMPOSED IN THE APP rather than through `Footer`, because `FooterProps.links` is plain data with
+ * no icon and no per-item hook (D-26). So these rules ARRANGE and hand tokens through; they
+ * originate nothing.
+ *
+ * The marks are `currentColor`, so the anchor's colour is the only thing that moves on hover — the
+ * same treatment as the nav links and the theme toggle, which makes the whole chrome one system.
+ */
+.pub-footer-row {
+  display: flex;
+  align-items: center;
+  /*
+   * SPACE-BETWEEN, not centred — Akhil, 2026-09-02. The legacy Home clustered the marks and the
+   * copyright in the middle; the design system's own `Footer` pushes them to the edges. This is the
+   * legacy's ICONS in the design system's PLACEMENT, which is what he asked for.
+   *
+   * The inline padding is the shell's gutter, so the marks sit under the theme toggle and the
+   * copyright under the nav — the footer lines up with the row at the other end of the page rather
+   * than floating between them.
+   */
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding-block: var(--space-5);
+  padding-inline: var(--pub-gutter);
+}
+
+.pub-social {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.pub-social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.pub-social-link:hover {
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pub-social-link {
+    transition-property: color;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+/*
+ * The 44px floor. The marks paint at 18px, so the ANCHOR BOX grows and the paint does not — the
+ * same treatment the nav links take, and for the same reason: no design-system coarse rule matches
+ * an anchor outside an AppBar or a `.ds-atom-footer`.
+ */
+@media (pointer: coarse) {
+  .pub-social-link {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+.pub-copy {
+  margin: 0;
+  font-family: var(--font);
+  font-size: var(--text-2xs);
+  line-height: var(--lh-normal);
+  color: var(--ink-5);
+}

@@ -124,7 +124,6 @@ import { Link } from '@akhil-saxena/design-system/components/Link';
  * never did.
  */
 import { home as homeConfig } from '../lib/content';
-import HomeActTwo from '../components/public/HomeActTwo.astro';
 import PeekGrid from '../components/public/PeekGrid.astro';
 import Seo from '../components/public/Seo.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
@@ -147,7 +146,6 @@ import '../styles/home.css';
  * BOTH PINS WERE UPDATED IN THE SAME COMMIT AS THIS LINE. A copy contract whose pin is edited
  * without its subject is a contract; one edited with it is a note.
  */
-const SCROLL_PROMPT = '↓ THE WORK';
 
 /**
  * The behavioural marker `GET /` must carry. See this file's header, and `src/middleware.ts`,
@@ -161,7 +159,7 @@ const HOME_RENDER_MARKER = 'home-render-ok';
  * `/admin`; `test/public/copy-contract.node.test.ts` asserts the page renders what the RECORD
  * says rather than a literal, so editing the record moves both sides together.
  */
-const { title, subtitle, intro, ctas } = homeConfig;
+const { title, subtitle, intro, description, ctas } = homeConfig;
 
 /**
  * The `style` field on a CTA record is CONTENT, so it cannot be trusted to name a design-system
@@ -207,7 +205,7 @@ const homeCtas = ctas.map((cta) => {
 ---
 
 <PublicLayout mainClass="pub-max-home" navVariant="plain">
-  <Seo slot="head" title={`${title} — ${subtitle}`} description={intro} canonical="/" />
+  <Seo slot="head" title={`${title} — ${subtitle}`} description={description} canonical="/" />
 
   {
     /*
@@ -282,12 +280,43 @@ const homeCtas = ctas.map((cta) => {
           {subtitle}
         </Heading>
 
-        <Heading as="p" size={16} weight="regular" tone="secondary" className="hm-intro">
-          {intro}
-        </Heading>
+        {
+          /* Rendered only when the record carries one — an empty `<p>` still takes its
+            padding-block-start, so the gap under the subtitle would be wrong with nothing
+            visible to explain it. The field survives so the admin can restore the line. */
+        }
+        {
+          intro.length > 0 && (
+            <Heading as="p" size={16} weight="regular" tone="secondary" className="hm-intro">
+              {intro}
+            </Heading>
+          )
+        }
       </div>
 
       <PeekGrid />
+
+      {
+        /*
+        THE TWO DOORS — real `Button` components, not hand-rolled anchors.
+
+        Act 1's job is a choice, not a scroll: a photographer takes one, a hiring manager takes the
+        other, and neither is ranked above the other by word order or by weight. `primary` and
+        `secondary` are the design system's own pair for exactly that — one filled, one outlined,
+        equal size, equal position.
+
+        `Button as="a"` because these navigate. It exists since 2.0.0-beta.3; before it, a
+        button-shaped link was not expressible and this row would have been two text links.
+      */
+      }
+      <div class="hm-doors">
+        <Button as="a" href="/photography" variant="primary" size="lg" className="hm-door">
+          Photography →
+        </Button>
+        <Button as="a" href="/development" variant="secondary" size="lg" className="hm-door">
+          Development →
+        </Button>
+      </div>
 
       {
         /*
@@ -319,9 +348,13 @@ const homeCtas = ctas.map((cta) => {
         )
       }
 
-      <a class="hm-cue" href="#work">{SCROLL_PROMPT}</a>
+      {
+        /*
+        NO SCROLL CUE. Act 1 is the whole page now — the two doors ARE the next step, so there is
+        nothing below to point at. The cue's job was to say "there is more"; with Act 2 gone it
+        would be pointing at the footer.
+      */
+      }
     </div>
   </div>
-
-  <HomeActTwo />
 </PublicLayout>

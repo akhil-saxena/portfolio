@@ -13,9 +13,78 @@
  *
  * So the pins below are re-derived from `design_handoff_portfolio/Akhil Saxena - Home.dc.html`,
  * MEASURED in Chromium at 1280x860, and the four that changed are marked `05-17` where they sit.
- * The ones that did NOT change — zero framework JS, the three landmarks, the derived `ALL n →`
- * count, the CMS-driven CTAs, no scroll-snap — are untouched, because they were about behaviour
- * rather than about a composition.
+ * The ones that did NOT change — zero framework JS, the derived `ALL n →` count, the CMS-driven
+ * CTAs, no scroll-snap — are untouched, because they were about behaviour rather than about a
+ * composition.
+ *
+ * ================================================================================================
+ * 🔴 2026-09-02 — HOME BECAME ONE SCREEN, AND TEN ASSERTIONS HERE WERE INVERTED RATHER THAN DELETED
+ * ================================================================================================
+ *
+ * WHAT THE PAGE IS NOW:
+ *
+ *     top      the theme toggle only, right-aligned, in a <div> (NOT a <nav>, NOT an AppBar)
+ *     centre   Akhil Saxena · Interfaces & Imagery · six photographs · two doors
+ *     doors    `Photography →` (primary) and `Development →` (secondary), real `Button as="a"`
+ *     bottom   an app-composed footer: © left, three brand marks right, gutter-aligned
+ *
+ * WHAT WENT, and every one of these had an assertion here that now requires its ABSENCE:
+ *
+ *     Act 2 entirely      `HomeActTwo` is neither rendered nor imported by `index.astro`
+ *     the scroll cue      `.hm-cue`, `↓ DEVELOPMENT`, `#work` — nothing left to scroll to
+ *     the dock            `.hm-name` sticky, `@keyframes hm-dock`/`hm-shed`, every `--hm-dock-*`
+ *     the height budget   `min-height: calc(100svh - var(--hm-above))` and its centring padding
+ *     the intro           `home_config.intro` is `''` and the line renders only when non-empty
+ *     the nav links       on HOME only — `NAV_ITEMS` still renders on the other 51 routes
+ *     the DS `Footer`     `FooterProps.links` carries no icon and no per-item hook (D-26)
+ *
+ * ------------------------------------------------------------------------------------------------
+ * INVERTED, NOT DELETED — AND THE REASON IS THAT SEVERAL OF THESE HAVE BEEN INVERTED BEFORE
+ * ------------------------------------------------------------------------------------------------
+ *
+ * The cue's copy has changed three times. The `position: sticky` assertion has been reversed twice.
+ * The peek grid's radius moved from container to tile and back. Each of those reversals was argued
+ * from a measurement or from a sentence Akhil said, and deleting the assertion deletes the
+ * argument — which invites the same round trip a third time. So every one below keeps its history,
+ * flips to require the absence, and names who decided what and when.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * 🟠 THREE ANTI-VACUITY ANCHORS IN THIS FILE WERE POINTED AT THE THING BEING REMOVED
+ * ------------------------------------------------------------------------------------------------
+ *
+ * This is the failure this pass had to go looking for, because none of the three was RED:
+ *
+ *     `position: sticky`             proved the sheet was non-empty — and was the DOCK's own
+ *                                     declaration. Re-pointed at `--hm-above:` when the dock went.
+ *     `--hm-above:`                  its replacement, chosen as "structural". It lost its only
+ *                                     READER one commit later; the DECLARATION stayed, so it kept
+ *                                     passing while proving nothing. Now `.hm-a { flex: 1 }`.
+ *     `animation-name: hm-cue-bob`   proved the motion query held motion — and was the CUE's, which
+ *                                     no longer renders. Now the toggle glyph's fade and the tile
+ *                                     hover, both paired with a check that the element is in the
+ *                                     served document.
+ *
+ * THE RULE THAT FALLS OUT OF IT, and it is why two of these were also wrong before this pass:
+ * **AN ANTI-VACUITY ANCHOR MUST BE SOMETHING THE PAGE STILL RENDERS, NOT MERELY SOMETHING THE
+ * STYLESHEET STILL SPELLS.** Grep every anchor against the artefact before trusting it.
+ *
+ * ------------------------------------------------------------------------------------------------
+ * 🟠 `home.css` AND `HomeActTwo.astro` STILL CARRY THE REMOVED PAGE. THAT IS NOT THIS FILE'S TO FIX
+ * ------------------------------------------------------------------------------------------------
+ *
+ * §6 of `home.css` — `.hm-b`, `.hm-work`, `.hm-resume`, `.hm-more`, `.hm-grid`, `.hm-card` — and
+ * §5's `.hm-cue` with BOTH of its bob keyframes are still in the sheet, and `HomeActTwo.astro` is
+ * still on disk. It was MODIFIED rather than deleted in the same session, which reads as parked for
+ * a decision rather than forgotten, and deleting a section Akhil may restore is not an executor's
+ * call. Consequences, so nobody has to rediscover them:
+ *
+ *   - Assertions about removed things read the DOCUMENT, not the stylesheet. `not.toMatch(/\.hm-b/)`
+ *     over `home.css` would red today on correct behaviour.
+ *   - Three custom properties are DECLARED AND UNREAD: `--hm-above`, `container-type`'s `cqw`
+ *     readers, and (before the cue was removed) `@keyframes hm-cue-bob`, which was already shadowed
+ *     by `hm-nudge` on the same selector. Each has an assertion below refusing a NEW reader.
+ *   - The `no-preference` block count is 3 and two of the three are dead. When the cue CSS goes it
+ *     becomes 2, and the assertion says so at the point it counts.
  *
  * This is an `integration` file (`*.node.test.ts`), so it runs in plain Node against the built
  * site served by real `workerd` — `astro preview` under `@astrojs/cloudflare` runs the build output
@@ -36,6 +105,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { describe, expect, inject, it } from 'vitest';
+import { NAV_ITEMS } from '../../src/components/public/PublicNav';
 import { ACT_ONE_MAX, BREAKPOINTS, PEEK_GAP } from '../../src/lib/layout-ladder';
 
 const previewBaseUrl = inject('previewBaseUrl');
@@ -44,8 +114,48 @@ const previewBaseUrl = inject('previewBaseUrl');
 const response = await fetch(`${previewBaseUrl}/`);
 const html = await response.text();
 
+/**
+ * A SECOND ROUTE, fetched for one job: to keep this file's Home-only ABSENCES honest.
+ *
+ * Since 2026-09-02 several assertions here say "Home ships no X" — no nav links, no app bar. Every
+ * one of those passes just as well if X was deleted from all fifty-two documents, which would be a
+ * site-wide regression reported as a Home-only design decision. `/development` is the representative
+ * route for the `bar` arrangement, so pairing each absence on `/` with the matching PRESENCE here
+ * is what makes the claim "Home is the exception" rather than "nothing has a nav".
+ *
+ * It is deliberately ONE extra route and one extra fetch. Everything else about `/development` belongs
+ * to `test/public/development.node.test.ts`.
+ */
+const barRouteHtml = await (await fetch(`${previewBaseUrl}/development`)).text();
+
 const HOME_CSS_PATH = 'src/styles/home.css';
 const homeCss = readFileSync(HOME_CSS_PATH, 'utf8');
+
+/**
+ * The SHELL's stylesheet, read for one reason and stated here so it is not quietly widened.
+ *
+ * Act 1 stopped declaring its own height on 2026-09-02 — it is `flex: 1` now, and the `100svh` it
+ * fills is `.pub-shell`'s. Two assertions below therefore have to read the file where that number
+ * actually lives, or they anchor on `home.css`'s only remaining `100svh`, which belongs to `.hm-b`
+ * — Act 2's rule, and Act 2 no longer renders. See `uses svh, and never vh or dvh`.
+ *
+ * Everything ELSE about the shell is `test/public/shell.unit.test.ts`'s. This file reads it for the
+ * viewport-height unit and nothing more.
+ */
+const shellCssCode = readFileSync('src/styles/public-shell.css', 'utf8').replace(
+  /\/\*[\s\S]*?\*\//g,
+  ''
+);
+
+/**
+ * `data/home_config.json`, read once. THE RECORD, not a literal — Home's identity lines and its
+ * CTAs are CMS content Akhil edits through `/admin`, so three assertions below compare the page
+ * against THIS rather than against a string typed here. `test/public/copy-contract.node.test.ts`
+ * carries the full argument for why that is derivation and not pinning.
+ */
+const homeRecord = JSON.parse(
+  readFileSync(new URL('../../data/home_config.json', import.meta.url), 'utf8')
+) as { title: string; subtitle: string; intro: string; ctas: ReadonlyArray<unknown> };
 
 /**
  * Comment-stripped CSS. Every textual rule below counts over THIS, never over the raw file: this
@@ -86,42 +196,125 @@ describe('Home ships zero framework JavaScript (PUB-14, §5.1 route 1)', () => {
   });
 });
 
-describe('the scroll cue is a real anchor with a real target (§6.1, §13.2)', () => {
+/*
+ * ══ THERE IS NO SCROLL CUE, BECAUSE THERE IS NOTHING BELOW — Akhil, 2026-09-02 ══════════════════
+ *
+ * 🔴 THIS BLOCK IS THE INVERSE OF THE ONE IT REPLACES. THE HISTORY IS KEPT BECAUSE THE STRING HAS
+ * NOW BEEN CHANGED THREE TIMES AND REMOVED ONCE, AND EACH MOVE HAD A REASON.
+ *
+ *     05-16  `SCROLL FOR THE WORK ↓`   kept over the handoff's, on the argument that it "says what
+ *                                       the control DOES rather than where it points"
+ *     05-17  `↓ DEVELOPMENT`           the handoff's own wording, arrow leading — Akhil: *"The
+ *                                       scroll for work should not be this apparent. It should
+ *                                       just be a small animation with an arrow showcasing that I
+ *                                       need to scroll, not this."*
+ *     now    nothing                   Home is ONE SCREEN. Act 2 is gone, so the cue would be
+ *                                       pointing at the footer.
+ *
+ * WHAT REPLACED IT, and this is why the removal is a design rather than a subtraction: Act 1 ends
+ * in TWO DOORS — `Photography →` and `Development →`, real `Button as="a"` controls. The cue's job
+ * was to say "there is more, below"; the doors say "there is more, and here are the two ways in".
+ * A reader is not asked to discover the rest of the site by scrolling at all.
+ *
+ * So every assertion below requires an ABSENCE, and each one is anchored on the doors — the thing
+ * that made the cue unnecessary. An absence assertion over a page that failed to render passes
+ * trivially, and the doors are the positive fact that proves the document is real. Anchoring them
+ * on the cue's own machinery would be the trap this file has already fallen into twice (see
+ * `no scroll-snap declaration survives anywhere on this page`).
+ *
+ * ------------------------------------------------------------------------------------------------
+ * 🟠 `home.css` STILL CARRIES `.hm-cue` AND ITS TWO BOB KEYFRAMES. THAT IS DEAD CSS, ON PURPOSE OF
+ * NOBODY'S — see this file's header. These assertions therefore read the DOCUMENT and not the
+ * stylesheet: the claim is that a reader gets no cue, which stays true whoever eventually deletes
+ * the rules. A stylesheet-side `not.toMatch(/\.hm-cue/)` would red today on correct behaviour.
+ */
+describe('Home ships no scroll cue — the doors replaced it (2026-09-02)', () => {
+  /** The doors, which every absence below is anchored on. Two, and both real `Button`s. */
+  const doors = [...html.matchAll(/<a class="ds-atom-btn hm-door"[^>]*>([\s\S]*?)<\/a>/g)];
+
   /**
-   * 05-17: the string changed, and the change is the point rather than a detail.
+   * 🔴 CALLED FIRST IN EVERY ABSENCE TEST BELOW, AND A VACUITY CONTROL IS WHY IT EXISTS.
    *
-   *     was  `SCROLL FOR THE WORK ↓`   05-16's, kept over the handoff's on the argument that it
-   *                                     "says what the control DOES rather than where it points"
-   *     now  `↓ THE WORK`               the handoff's own wording, verbatim
+   * The first version of this block anchored on the doors ONCE, in the test below, and left the
+   * five absence tests to stand alone. Run with `html` forced to the empty string — the control
+   * this file's contract requires — that test failed and ALL FIVE ABSENCES PASSED. Of course they
+   * did: `expect('').not.toMatch(/href="#work"/)` is true.
    *
-   * Akhil on the result of the first choice: *"The scroll for work should not be this apparent. It
-   * should just be a small animation with an arrow showcasing that I need to scroll, not this."*
-   *
-   * The arrow LEADS. `THE WORK ↓` would be the same four characters in the wrong order — the
-   * design puts the arrow first so the eye meets the direction before the destination — so the
-   * assertion is an equality and not a `toContain`.
+   * A per-file or per-block anti-vacuity check is not enough for an absence claim. Vitest runs
+   * each `it` independently, so a sibling proving the document rendered proves nothing about THIS
+   * assertion — it only makes the suite red somewhere. Every absence needs the positive fact in
+   * the same test body.
    */
-  it('is <a href="#work"> carrying the design handoff copy verbatim', () => {
-    expect(html).toMatch(/<a[^>]*href="#work"[^>]*>↓ THE WORK<\/a>/);
+  const givenTheDoorsRendered = (): void => {
+    expect(
+      doors.length,
+      'Act 1 ships no doors, so this document is not the page under test — the absence asserted ' +
+        'below would be true of a blank response and of a 404 alike. Fix the page or the harness ' +
+        'before reading the failure under this one.'
+    ).toBe(2);
+  };
+
+  it('ends Act 1 in two doors rather than an invitation to scroll', () => {
+    expect(
+      doors.length,
+      'Act 1 ships no doors. Everything else in this block asserts an ABSENCE, and without a ' +
+        'positive fact about the same document every one of them passes on a blank page.'
+    ).toBe(2);
+    expect(doors.map((m) => m[1] as string)).toEqual(['Photography →', 'Development →']);
+    // `Button as="a"`, not a hand-rolled anchor: the shape is the design system's (Core Value).
+    for (const [markup] of doors) expect(markup).toMatch(/data-variant="(?:primary|secondary)"/);
+  });
+
+  it('emits no anchor pointing at #work, and no ↓ DEVELOPMENT copy', () => {
+    givenTheDoorsRendered();
+    expect(
+      html,
+      'the cue is back, and there is still nothing below Act 1 for it to reach — it would scroll ' +
+        'the reader to the footer'
+    ).not.toMatch(/href="#work"/);
+    expect(html, 'the 05-17 cue copy is back on the page').not.toMatch(/↓ DEVELOPMENT/);
   });
 
   it('no longer ships the shouted string 05-16 pinned', () => {
-    expect(html).not.toMatch(/SCROLL FOR THE WORK/);
+    // The ASSERTION is unchanged — it is the one here that was already an absence, and it pins a
+    // specific rejected string rather than the mechanism. What is new is the anchor: without it
+    // this passed on an empty document (see `givenTheDoorsRendered`).
+    givenTheDoorsRendered();
+    expect(html, 'the shouted 05-16 cue string is back on the page').not.toMatch(
+      /SCROLL FOR THE WORK/
+    );
   });
 
-  it('is not underlined — the cue recedes, which is the whole complaint about the old one', () => {
-    const rule = /\.hm-cue\s*\{([^}]*)\}/.exec(cssCode);
-    expect(rule, 'no .hm-cue rule at all').not.toBeNull();
-    expect((rule as RegExpExecArray)[1]).toMatch(/text-decoration:\s*none/);
+  it('emits no #work target, because there is no second act to target', () => {
+    givenTheDoorsRendered();
+    expect(
+      html,
+      'an id="work" landing place is back. Act 2 was removed on 2026-09-02; an in-page anchor ' +
+        'target with no section under it scrolls to the end of the document.'
+    ).not.toMatch(/<[a-z]+[^>]*\sid="work"/);
+  });
+
+  it('ships no element carrying the cue class, so .hm-cue in home.css is dead', () => {
+    givenTheDoorsRendered();
+    // The class, not the rule. `home.css` is delivered as a <link> today (5,965 bytes, over
+    // Astro's 4,096-byte inlining threshold — D-05-16-1), but that margin has been 35 bytes
+    // before now, so a bare class-name grep on this route can be satisfied by a <style> block.
+    // Matching `class="…hm-cue…"` cannot be.
+    expect(html, 'a cue element is back in the document').not.toMatch(
+      /class="[^"]*\bhm-cue\b[^"]*"/
+    );
   });
 
   it('is not a button, a chevron or a div calling scrollIntoView', () => {
-    expect(html).not.toMatch(/scrollIntoView/);
-    expect(html).not.toMatch(/<button[^>]*class="[^"]*hm-cue/);
-  });
-
-  it('the #work id exists on an element in the document', () => {
-    expect(html).toMatch(/<[a-z]+[^>]*\sid="work"/);
+    // The ASSERTION outlived its subject: the cue is gone, and what this refuses is the class of
+    // replacement — a scripted scroll — which PUB-14 forbids on this route in any shape. It was
+    // vacuous before this pass too, and the anchor is the fix.
+    givenTheDoorsRendered();
+    expect(
+      html,
+      'a scripted scroll reached this route — PUB-14 forbids it in any shape'
+    ).not.toMatch(/scrollIntoView/);
+    expect(html, 'the cue came back as a button').not.toMatch(/<button[^>]*class="[^"]*hm-cue/);
   });
 });
 
@@ -184,70 +377,138 @@ describe('the arrangement ladder agrees with src/lib/layout-ladder.ts', () => {
   });
 });
 
-describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => {
+/*
+ * ══ HOME IS ONE SCREEN. THE HEIGHT BUDGET AND THE ACT-2 REVEAL ARE BOTH GONE ════════════════════
+ *
+ * 🔴 EVERY ASSERTION IN THIS BLOCK USED TO DESCRIBE ARITHMETIC THAT NO LONGER EXISTS, AND THEY ARE
+ * INVERTED RATHER THAN DELETED BECAUSE THE ARITHMETIC IS WHAT THE NEXT PERSON WILL RE-DERIVE.
+ *
+ * The old shape, kept so the inversions below can be read against it:
+ *
+ *     .hm-a  min-height: calc(100svh - var(--hm-above))   one viewport, less the nav row
+ *     .hm-a  padding-bottom: var(--hm-above)              so the CONTENT centred on the VIEWPORT
+ *     .hm-b  min-height: 100svh                           so one gesture landed in Act 2, fully
+ *
+ * That was correct while Act 2 existed: Act 1 owned exactly one screen and the footer sat below the
+ * fold with Act 2. Act 2 was removed on 2026-09-02, which left the footer as the only thing under
+ * Act 1 — and the budget then overflowed by exactly the footer's height, MEASURED at 49px
+ * identically at 1440, 1280, 390 and 344. Identical at four widths is the signature of a fixed
+ * element the arithmetic forgot, not of a layout bug.
+ *
+ * What replaced it is `flex: 1` inside `.pub-shell`'s `100svh`: Act 1 takes whatever is left after
+ * the row above and the footer below, at any viewport, WITHOUT NAMING EITHER HEIGHT. The old form
+ * had to know `--hm-above`; this one has to know nothing, which is why it cannot go stale the next
+ * time either end changes — and it is why `--hm-above` now has no reader at all (asserted below).
+ */
+describe('Home is one screen — Act 1 fills what is left, and there is no Act 2 (2026-09-02)', () => {
+  /**
+   * `svh`, never `vh`, never `dvh`. THE RULE IS UNCHANGED; ITS POSITIVE ANCHOR HAD TO MOVE.
+   *
+   * 🔴 This read `expect(cssCode).toMatch(/100svh/)` over `home.css`. Once Act 1 became `flex: 1`,
+   * the ONLY `100svh` left in that file is `.hm-b`'s — Act 2's rule, on a section that no longer
+   * renders. The anchor proving the unit is in use would have been satisfied by dead CSS alone,
+   * which is the third time this file has anchored a check on something that had been removed.
+   *
+   * The live declaration is `.pub-shell`'s, because that is the box `flex: 1` resolves against, so
+   * that is what the anchor reads now. The two NEGATIVES sweep BOTH files: `100vh` is the LARGE
+   * viewport — the height with the mobile URL bar retracted — and it is the same defect in either
+   * sheet, because either one can push Act 1's bottom edge behind that bar at first paint.
+   */
   it('uses svh, and never vh or dvh', () => {
-    expect(cssCode).toMatch(/100svh/);
-    expect(cssCode).not.toMatch(/\d+dvh/);
-    expect(cssCode).not.toMatch(/(?<![sd])\d+vh\b/);
+    expect(
+      shellCssCode,
+      'the shell stopped declaring a viewport height, so `.hm-a { flex: 1 }` has nothing to fill'
+    ).toMatch(/\.pub-shell\s*\{[^}]*min-height:\s*100svh/);
+    for (const [label, source] of [
+      ['home.css', cssCode],
+      ['public-shell.css', shellCssCode],
+    ] as const) {
+      expect(source, `${label} names dvh`).not.toMatch(/\d+dvh/);
+      expect(source, `${label} names vh — the LARGE viewport, not the small one`).not.toMatch(
+        /(?<![sd])\d+vh\b/
+      );
+    }
   });
 
   it('states A and B use min-height, never height', () => {
+    // UNCHANGED. It is now a claim about `.hm-a` in practice — `.hm-b` is Act 2's dead rule — but
+    // the shape is deliberately left sweeping both: if Act 2 is ever restored it must come back
+    // under the same rule, and narrowing this to `.hm-a` today is how that gets forgotten.
     const stateRules = [...cssCode.matchAll(/\.hm-[ab]\s*\{([^}]*)\}/g)].map((m) => m[1]);
     expect(stateRules.length).toBeGreaterThanOrEqual(2);
     for (const rule of stateRules) expect(rule).not.toMatch(/(?<!min-)height:/);
   });
 
   /**
-   * 🔴 `box-sizing: border-box` ON STATE A IS LOAD-BEARING, AND ITS ABSENCE WAS A MEASURED DEFECT.
+   * 🔴 THIS ASSERTION IS INVERTED. IT USED TO REQUIRE THE BUDGET; IT NOW REQUIRES ITS ABSENCE.
    *
-   * The design system ships no `*` reset, so the initial `content-box` applies and state A's
-   * `padding-block-end` ADDED to its `min-height`. MEASURED in Chromium on the built artefact
-   * before the fix: state A painted the budget plus exactly `--space-6` at all six classes — 790
-   * against a 766 budget at 344 × 882 — which put Act 2's document offset 24px below one viewport
-   * at every class and left a 19px strip of state A on screen after a full-viewport scroll.
+   * WHAT IT USED TO SAY, and why it was right at the time. The design system ships no `*` reset,
+   * so the initial `content-box` applies and state A's `padding-block-end` ADDED to its
+   * `min-height`. MEASURED in Chromium on the built artefact before that fix: state A painted the
+   * budget plus exactly `--space-6` at all six classes — 790 against a 766 budget at 344 × 882 —
+   * which put Act 2's document offset 24px below one viewport at every class and left a 19px strip
+   * of state A on screen after a full-viewport scroll. It was invisible because the strip happened
+   * to be state A's own bottom padding.
    *
-   * It was invisible because the strip happened to be state A's own bottom padding. Asserted here
-   * rather than left to the browser audit, because the browser audit is not in CI and this is.
+   * WHAT IT SAYS NOW. Both the `min-height` and the `padding-bottom` are gone (2026-09-02), so the
+   * defect above cannot recur — there is no budget for a padding to be added to. What is asserted
+   * instead is the mechanism that replaced them, in both directions:
+   *
+   *   - `flex: 1` is PRESENT, so Act 1 grows into the space between the row and the footer.
+   *   - the budget arithmetic is ABSENT, because re-adding `min-height: calc(100svh - …)` under a
+   *     footer that is now in flow is exactly the 49px overflow that removing it fixed.
+   *   - `.hm-a` still has NO padding of any kind. That half is unchanged and is the reason this
+   *     test keeps its border-box clause: padding here silently changes what `flex: 1` resolves to.
+   *
+   * `box-sizing: border-box` IS KEPT AND IS STILL ASSERTED. It is doing less work than it was, but
+   * it is not doing none: the flex basis is resolved against the border box, so a padding added
+   * later would behave the way the author expects rather than the way `content-box` would.
    */
-  it('state A is border-box, so its padding comes OUT of the budget rather than adding to it', () => {
-    const a = /\.hm-a\s*\{([^}]*)\}/.exec(cssCode);
+  it('state A is flex: 1 and border-box — the height budget is gone, not merely unused', () => {
+    const a = /\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode);
     expect(a, 'no .hm-a rule at all').not.toBeNull();
     const body = (a as RegExpExecArray)[1] as string;
-    expect(body).toMatch(/box-sizing:\s*border-box/);
-    expect(body).toMatch(/min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/);
+
+    expect(
+      body,
+      'box-sizing went — a padding added later would resolve against the content box'
+    ).toMatch(/box-sizing:\s*border-box/);
+    expect(
+      body,
+      'Act 1 lost `flex: 1`, so it no longer grows into the space between the row and the footer ' +
+        'and collapses to its content height'
+    ).toMatch(/flex:\s*1/);
 
     /*
-     * THE PADDING IS BACK, DELIBERATELY, AND IT IS EXACTLY `--hm-above`.
+     * THE INVERSION. Both of these were REQUIRED here until 2026-09-02 and are now REFUSED.
      *
-     * It was removed once for a good reason: state A's own padding bought no visual air and cost
-     * 24px of budget at the one class that had none — 390 x 844 coarse, a stage of 738 in a 731
-     * budget. That measurement was true of the page as it then was.
+     * The budget was `100svh` less the nav row, on the premise that Act 1 owned exactly one screen
+     * and everything else — the footer included — sat below the fold with Act 2. Removing Act 2
+     * left the footer in flow under Act 1, and the arithmetic then overflowed by exactly the
+     * footer's height: MEASURED at 49px, IDENTICALLY at 1440, 1280, 390 and 344. The same number at
+     * four widths is a fixed element the formula forgot, not a layout bug.
      *
-     * Akhil, 2026-08-30: "it should occupy the center of the page, not the bottom." The content WAS
-     * centred — 114px above and below — but centred inside this box, which starts `--hm-above`
-     * down under the nav row. From the VIEWPORT that read 178 above and 114 below: a content centre
-     * of 482 against a viewport centre of 450. A padding-bottom of `--hm-above` shortens the
-     * centring box by exactly the offset above it, so the two midpoints coincide.
+     * The padding was the other half of the same premise. It shortened the centring box by exactly
+     * the offset ABOVE it so the content's midpoint landed on the screen's — correct when there was
+     * nothing below. With a footer below, it over-corrected by exactly the footer's height, MEASURED
+     * identically at 1440, 1280 and 390. `flex: 1` centres inside the space the content actually
+     * has, so the residual is (footer - row) / 2 = 9px and no literal offset is needed.
      *
-     * RE-MEASURED at all six classes after the type and tile sizes came down: drift is 0 at every
-     * one, and the cue stays above the fold at every one. At 390 x 844 COARSE — the class that had
-     * no budget before — the stage is now 598 in a 780 budget, 115px of headroom, because the name,
-     * the tiles and the CTA count all shrank. The old constraint was real and is no longer binding.
-     *
-     * Asserted as an EQUALITY against the token, not as an absence: arbitrary padding here would
-     * still eat the budget silently, and `box-sizing: border-box` is what keeps `min-height`
-     * meaning "exactly one budget tall" while this padding is inside it.
+     * Refused rather than merely un-asserted, because "put the budget back" is the obvious repair
+     * for anyone who sees Act 1 sitting shorter than a viewport on a tall screen — and it is the
+     * repair that reintroduces both measured defects at once.
      */
-    expect(body, 'state A lost the padding that centres it on the viewport').toMatch(
-      /padding-bottom:\s*var\(--hm-above\)/
-    );
     expect(
-      body.replace(/padding-bottom:\s*var\(--hm-above\);?/, ''),
-      'state A has padding beyond the one that centres it — that eats the budget silently'
+      body,
+      'the height budget is back. Under a footer that is now IN FLOW, `100svh - --hm-above` ' +
+        "overflows by the footer's height — MEASURED at 49px at 1440, 1280, 390 and 344. Use " +
+        '`flex: 1`, which has to know neither height.'
+    ).not.toMatch(/min-height:\s*calc\(100svh/);
+    expect(
+      body,
+      'the centring padding is back. It over-corrects by the footer height now that the footer is ' +
+        'in flow — MEASURED identically at 1440, 1280 and 390.'
     ).not.toMatch(/padding/);
-    expect(body, 'box-sizing went with it — min-height stops meaning one budget').toMatch(
-      /box-sizing:\s*border-box/
-    );
   });
 
   /**
@@ -333,54 +594,113 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
   });
 
   /**
-   * 05-17 — "one gesture lands in Act 2, fully", asserted as the arithmetic that makes it true.
+   * 🔴 INVERTED, AND THIS IS THE ASSERTION THE WHOLE REDESIGN TURNS ON.
    *
-   * MEASURED in Chromium at 1280x860 on the built artefact: `document.scrollHeight` 1833, Act 2's
-   * top edge at y=860 when scrollY is 0 and at y=0 when scrollY is 860. Exactly one viewport.
+   * IT USED TO SAY: "one gesture lands in Act 2, fully" — MEASURED in Chromium at 1280x860 on the
+   * built artefact, `document.scrollHeight` 1833, Act 2's top edge at y=860 when scrollY was 0 and
+   * at y=0 when scrollY was 860. Exactly one viewport. The stylesheet cannot be asked for that
+   * number, so it asserted the two facts it followed from: Act 1 was the viewport minus the row
+   * above it, and Act 2 was a full viewport.
    *
-   * The stylesheet cannot be asked for that number, so what is asserted here is the two facts it
-   * follows from — Act 1 is the viewport minus the row above it, and Act 2 is a full viewport — and
-   * `05-AUDIT.md` owns the browser measurement. Two facts that agree today are a duplication; these
-   * two are a derivation.
+   * IT NOW SAYS: there is no second gesture, because there is no second act. Home is a single
+   * screen — Akhil, 2026-09-02 — and `HomeActTwo.astro` is neither rendered nor imported by
+   * `src/pages/index.astro`.
+   *
+   * ASSERTED ON THE DOCUMENT, NOT THE STYLESHEET, AND THAT CHOICE IS LOAD-BEARING.
+   * `home.css` STILL CONTAINS §6's entire Act-2 block — `.hm-b`, `.hm-work`, `.hm-resume`,
+   * `.hm-more`, `.hm-grid`, `.hm-card` and the rest — and `HomeActTwo.astro` still exists on disk.
+   * That is dead code (see this file's header), and it is NOT this suite's to delete: the component
+   * was modified rather than removed in the same session, which reads as parked for a decision
+   * rather than forgotten. A stylesheet-side `not.toMatch(/\.hm-b/)` would therefore red today on
+   * correct behaviour, and would red again the day someone does the cleanup. What a READER gets is
+   * the durable claim, so that is what is asserted.
    */
-  it('Act 1 + the row above it is exactly one viewport, and Act 2 is a full one', () => {
+  it('the served document is one screen — no Act 2 renders', () => {
+    // ANTI-VACUITY FIRST: Act 1 really is in this document. Every absence below depends on it.
+    expect(html, 'Act 1 is not in the document at all').toMatch(/<div class="hm-a">/);
+
+    for (const [what, pattern] of [
+      ['the Act-2 root', /class="[^"]*\bhm-b\b[^"]*"/],
+      ['the work band', /class="[^"]*\bhm-work\b[^"]*"/],
+      ['the résumé band', /class="[^"]*\bhm-resume\b[^"]*"/],
+      ['the project grid', /class="[^"]*\bhm-grid\b[^"]*"/],
+      ['a project card', /class="[^"]*\bhm-card\b[^"]*"/],
+      ['the band CTAs', /class="[^"]*\bhm-more\b[^"]*"/],
+    ] as const) {
+      expect(html, `${what} is back in the document — Home is one screen`).not.toMatch(pattern);
+    }
+
+    // And the CSS half of the claim: Act 1 no longer derives its height from the row above it.
     const a = /\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode);
     expect(a, 'no .hm-a rule at all').not.toBeNull();
-    expect((a as RegExpExecArray)[1]).toMatch(
-      /min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/
-    );
     expect(
       (a as RegExpExecArray)[1],
-      '--hm-above must be composed from the tokens the nav row is built from, not measured off it'
-    ).toMatch(/--hm-above:\s*calc\(var\(--space-\d+\)\s*\+\s*var\(--space-\d+\)\)/);
-
-    const b = /\.hm-b\s*\{([^}]*)\}/.exec(cssCode);
-    expect(b, 'no .hm-b rule at all').not.toBeNull();
-    expect(
-      (b as RegExpExecArray)[1],
-      'Act 2 is shorter than a viewport, so one gesture cannot land in it fully'
-    ).toMatch(/min-height:\s*100svh/);
+      'Act 1 computes a height again. It fills the shell instead — see the block docstring.'
+    ).toMatch(/flex:\s*1/);
   });
 
   it('no scroll-snap declaration survives anywhere on this page', () => {
     expect(cssCode).not.toMatch(/scroll-snap-/);
     expect(cssCode).not.toMatch(/--hm-sticky-nav/);
-    // ANTI-VACUITY: the stripper did not simply delete the file, and the sheet still has rules.
-    // This used to anchor on `position: sticky`, which was the dock's. With the dock removed that
-    // anchor asserted the absence it was meant to disprove — so it anchors on Act 1's own budget,
-    // which is structural and cannot leave while this page exists.
-    expect(cssCode).toMatch(/--hm-above:/);
+    /*
+     * ANTI-VACUITY, RE-POINTED FOR THE THIRD TIME, AND THE TWO PREVIOUS CHOICES ARE THE LESSON.
+     *
+     *   1. `position: sticky`   — the DOCK's own declaration. When the dock was removed this
+     *                             anchor asserted the very absence it existed to disprove.
+     *   2. `--hm-above:`        — chosen as its replacement on the argument that it was
+     *                             "structural and cannot leave while this page exists". ONE COMMIT
+     *                             LATER IT LOST ITS ONLY READER (see the next test). The
+     *                             DECLARATION is still in the sheet, so this kept passing — an
+     *                             anchor on an orphan, which is a worse state than a red one
+     *                             because nothing announces it.
+     *   3. `.hm-a { … flex: 1 }` — Act 1's own box, and the property that gives it its height. It
+     *                             cannot become an orphan: if it leaves, Act 1 collapses and four
+     *                             other assertions in this file red in the same run.
+     *
+     * The general rule this file has now learnt twice: AN ANTI-VACUITY ANCHOR MUST BE SOMETHING
+     * THE PAGE STILL RENDERS, not merely something the stylesheet still spells.
+     */
+    expect(cssCode, 'Act 1 has no flex basis — the anchor for this check is gone').toMatch(
+      /\.hm-a\s*\{[\s\S]*?flex:\s*1/
+    );
     expect(cssCode.replace(/\s/g, '').length).toBeGreaterThan(500);
   });
 
   /**
-   * `--hm-above` keeps its FIRST job — the height budget's subtrahend (§1) — and lost its second
-   * (a snap outset) in 05-15. Both halves are asserted, because deleting the property outright
-   * would break §1 silently and a test that only checked the absence would have called that a pass.
+   * 🔴 INVERTED, AND IT IS A REAL FINDING RATHER THAN A BOOKKEEPING CHANGE.
+   *
+   * `--hm-above` had two jobs. It lost the second (a snap outset) in 05-15 and this test was
+   * written to hold BOTH halves — that it was still the budget's subtrahend, and no longer an
+   * outset — precisely so that deleting the property outright could not pass as a fix.
+   *
+   * ON 2026-09-02 IT LOST THE FIRST JOB TOO. The budget went with Act 2, and `--hm-above` is now
+   * DECLARED ON `.hm-a` AND READ BY NOTHING: `var(--hm-above)` appears zero times in `home.css`.
+   * MEASURED, not inferred — the grep is the assertion below.
+   *
+   * That is worth an assertion of its own, in this direction, for two reasons:
+   *
+   *   1. IT IS THE ORPHAN THAT DISARMED THE ANTI-VACUITY ANCHOR one test above. The property being
+   *      unread and the anchor being satisfied are the same fact, and only one of them was visible.
+   *   2. RE-INTRODUCING A READER IS THE REGRESSION. The only reason to read `--hm-above` again is
+   *      to compute a height from the row above Act 1 — which is the 49px overflow that removing
+   *      the budget fixed. A new `var(--hm-above)` should cost a deliberate edit here.
+   *
+   * DELETING THE DECLARATION IS FINE AND IS NOT ASSERTED EITHER WAY. It is `home.css`'s to remove
+   * along with the rest of the Act-2 leftovers; this test only refuses a new CONSUMER.
    */
-  it('--hm-above is still the budget’s subtrahend and is no longer a scroll outset', () => {
-    expect(cssCode).toMatch(/min-height:\s*calc\(100svh\s*-\s*var\(--hm-above\)\)/);
+  it('--hm-above has no reader left — nothing derives a height from the row above Act 1', () => {
+    expect(
+      [...cssCode.matchAll(/var\(--hm-above\)/g)].length,
+      'something reads --hm-above again. The only thing it can be used for is a height derived ' +
+        'from the row above Act 1, and that is the arithmetic which overflowed by the footer.'
+    ).toBe(0);
     expect(cssCode).not.toMatch(/scroll-margin-top:\s*var\(--hm-above\)/);
+    // ANTI-VACUITY: the sheet was read and really does still mention the property, so a zero
+    // above is "declared and unread" rather than "the file failed to load".
+    expect(
+      cssCode,
+      'home.css does not mention --hm-above at all — read the file, not this test'
+    ).toMatch(/--hm-above\s*:/);
   });
 
   /**
@@ -415,11 +735,35 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     const blocks = [
       ...cssCode.matchAll(/@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{/g),
     ];
+    /*
+     * THREE, AND TWO OF THE THREE ARE NOW DEAD. RECOUNTED, NOT GUESSED — the three blocks, in
+     * file order, are:
+     *
+     *   §1   `.pub-nav-plain .pub-toggle .ds-atom-iconbtn-glyph`  opacity fade    LIVE
+     *   §7a  `.hm-cue`  animation-name: hm-cue-bob                                DEAD
+     *   §7   `.hm-tile img` scale on hover  +  `.hm-cue` animation-name: hm-nudge  LIVE / DEAD
+     *
+     * 🟠 TWO SEPARATE DEFECTS ARE VISIBLE IN THAT LIST AND BOTH ARE RECORDED RATHER THAN FIXED:
+     *
+     *   1. THE CUE DOES NOT RENDER AT ALL (2026-09-02), so both of its animations are dead.
+     *   2. THERE ARE TWO OF THEM, TARGETING THE SAME SELECTOR. `.hm-cue { animation-name }` is
+     *      declared in §7a as `hm-cue-bob` and again in §7 as `hm-nudge`. Later wins, so
+     *      `hm-cue-bob` and its `@keyframes` were already dead BEFORE the cue was removed — a
+     *      leftover from the pass that renamed the animation and did not delete the first copy.
+     *      Nothing caught it because the anti-vacuity anchor below was pointed at it.
+     *
+     * THE COUNT IS KEPT AT 3 ON PURPOSE. Its job is unchanged — a FOURTH block is a motion source
+     * nobody argued for — and lowering it to the two live ones would require deleting §7a here as
+     * well as in the stylesheet, which is the Act-2 cleanup this suite does not own.
+     *
+     * >>> WHEN THE DEAD `.hm-cue` CSS GOES, THIS BECOMES 2. CHANGE IT IN THE SAME COMMIT. <<<
+     */
     expect(
       blocks.length,
-      "expected three no-preference blocks — the hover + cue (§7), the toggle glyph's fade (§1) " +
-        "and the scroll cue's bob (§7a). The dock's block went with the dock on 2026-09-02. A " +
-        'count, not a floor: a fourth is a motion source nobody argued for.'
+      'expected three no-preference blocks: the toggle glyph fade (§1, live), the cue bob ' +
+        '(§7a, DEAD), and the tile hover + cue nudge (§7, half live). A count, not a floor — a ' +
+        'fourth is a motion source nobody argued for, and a THIRD-minus-one means the dead cue ' +
+        'CSS was cleaned up, in which case this number is 2.'
     ).toBe(3);
 
     /** Everything between a block's opening brace and its matching close. */
@@ -456,13 +800,38 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
      */
     outside = outside.replace(/@[a-z-]+[^{;]*/gi, '');
 
+    /*
+     * ANTI-VACUITY, RE-POINTED — AND THIS IS THE SECOND ANCHOR IN THIS FILE THAT WAS AIMED AT
+     * SOMETHING BEING REMOVED.
+     *
+     * It looked for `position: sticky` (the dock's). When the dock went, it was re-pointed at
+     * `animation-name: hm-cue-bob` and `animation-name: hm-nudge` — the cue's two animations —
+     * on the reasoning that "the cue's bob is the motion that must be inside a no-preference
+     * query". The cue was removed from the document three days later, so BOTH anchors now sit on
+     * CSS that can never run, and this check went on passing while proving nothing about a reader.
+     *
+     * The two anchors below are the motion that a reader ACTUALLY receives on this route, verified
+     * against the served document rather than against the sheet alone:
+     *
+     *   the toggle glyph's opacity fade — the toggle is the only control in the top row
+     *   the peek tile's hover scale     — the six photographs are the page's whole middle
+     *
+     * `transition-duration` and `transform: scale` above are kept and are both live: the first is
+     * the glyph fade AND the tile transition, the second is the tile hover.
+     */
     expect(inside).toMatch(/transition-duration/);
     expect(inside).toMatch(/transform:\s*scale/);
-    // ANTI-VACUITY: the block was found and has motion in it. This used to look for the dock's
-    // `position: sticky`; with the dock removed on 2026-09-02 the cue's bob is the motion that
-    // must be inside a no-preference query, so it is what proves the block is the right one.
-    expect(inside, 'the motion query holds no motion').toMatch(/animation-name:\s*hm-cue-bob/);
-    expect(inside, 'the cue does not breathe').toMatch(/animation-name:\s*hm-nudge/);
+    expect(
+      inside,
+      'the motion query holds no motion a reader can reach — the toggle glyph fade is gone'
+    ).toMatch(/\.pub-toggle \.ds-atom-iconbtn-glyph\s*\{[^}]*transition-property:\s*opacity/);
+    expect(inside, 'the photographs stopped responding to hover').toMatch(
+      /\.hm-tile:hover img\s*\{[^}]*transform:\s*scale/
+    );
+    // Both anchors above are on elements the SERVED page really has, which is what the two
+    // previous choices lacked.
+    expect(html, 'no theme toggle in the document').toMatch(/class="ds-atom-iconbtn pub-toggle"/);
+    expect(html, 'no peek tiles in the document').toMatch(/class="hm-tile"/);
 
     expect(
       outside,
@@ -496,8 +865,9 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     // why `:global()` must not be written here, so a rule reading the raw file was falsified by
     // the sentence recording the reason.
     expect(cssCode).not.toMatch(/:global\(/);
-    // anti-vacuity: the stripper did not simply delete the file
-    expect(cssCode).toMatch(/\.hm-b\s*\{/);
+    // ANTI-VACUITY, RE-POINTED: this anchored on `.hm-b {` — Act 2's root, which no longer
+    // renders. `.hm-a {` is Act 1's, which is the whole page now.
+    expect(cssCode).toMatch(/\.hm-a\s*\{/);
   });
 });
 
@@ -551,17 +921,39 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
   });
 
   /**
-   * 05-17 — the containment context the dock measures itself against.
+   * 🔴 INVERTED — AND IT IS THE THIRD ORPHAN THE 2026-09-02 REDESIGN LEFT BEHIND.
    *
-   * `translateX(calc(50% - 50cqw))` is the whole X axis of the interaction, and `50cqw` silently
-   * resolves against the VIEWPORT if no ancestor is a container — which would send the name off
-   * the left edge of the screen instead of onto the photo column, with no error anywhere.
+   * IT USED TO SAY: `.hm-a` must be a container, because the dock's `translateX(calc(50% - 50cqw))`
+   * resolves `50cqw` against the nearest containment context and silently falls back to the
+   * VIEWPORT when there is none — which would have sent the name off the left edge of the screen
+   * with no error anywhere. That was a good assertion about a real trap.
+   *
+   * IT NOW SAYS: nothing reads `cqw` on this page any more. The dock was removed on 2026-09-02 and
+   * `container-type: inline-size` was its only consumer, so the declaration is DECLARED AND
+   * UNREAD — the same shape as `--hm-above`, and found the same way (by grepping the anchors rather
+   * than trusting them).
+   *
+   * 🟠 THIS ORPHAN IS NOT INERT, WHICH IS WHY IT GETS AN ASSERTION AND NOT JUST A NOTE.
+   * `container-type: inline-size` applies `contain: inline-size layout style`, and LAYOUT
+   * CONTAINMENT MAKES `.hm-a` A CONTAINING BLOCK FOR FIXED- AND ABSOLUTELY-POSITIONED DESCENDANTS.
+   * So a future `position: fixed` child of Act 1 would anchor to Act 1 rather than to the viewport,
+   * for a reason nothing on the page explains. Recorded for whoever owns the Act-2 cleanup.
+   *
+   * WHAT IS REFUSED is a new `cqw` reader, because the only thing that wanted one was the dock.
    */
-  it('Act 1 is the container the dock resolves 50cqw against', () => {
+  it('nothing resolves against a container query any more — the dock was its only reader', () => {
+    expect(
+      [...cssCode.matchAll(/\d+cq[wibhm]/g)].map((m) => m[0]),
+      'a container-query unit is back. The dock was removed on 2026-09-02 ("remove the motion in ' +
+        'heading text"); re-adding one means re-adding the interaction, which is a decision.'
+    ).toEqual([]);
+    // ANTI-VACUITY: the containment context itself is still declared, so the empty list above is
+    // "the reader went" and not "the rule went". Both halves visible in one place.
     const body = (/\.hm-a\s*\{([\s\S]*?)\n\}/.exec(cssCode) as RegExpExecArray)[1] as string;
     expect(
       body,
-      'no container-type on .hm-a — `50cqw` falls back to the viewport and the name docks off-screen'
+      'container-type has gone from .hm-a too — then this test has nothing left to say and should ' +
+        'be deleted along with the note about layout containment above'
     ).toMatch(/container-type:\s*inline-size/);
   });
 
@@ -600,39 +992,87 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * Sizes are the original site's, which Akhil chose on 2026-08-30 after comparing nine pairings:
    * name 48 (nearest rungs 40/44), subtitle 18, tagline 16. Not the prototype's 60/20/21.
    */
-  it('the three display roles ship the chosen sizes, in the brand serif', () => {
+  it('the display roles ship the chosen sizes, in the brand serif', () => {
     const heading = (cls: string) => {
       const m = new RegExp(`<[a-z0-9]+ [^>]*\\b${cls}\\b[^>]*>`).exec(html);
       expect(m, `no element carrying .${cls} in the served page`).not.toBeNull();
       return (m as RegExpExecArray)[0];
     };
 
-    // All three are the DISPLAY face, not the body sans. This is the assertion that would have
-    // caught the Playfair swap had it existed — via the token, which `design-system.css` binds.
-    for (const cls of ['hm-name', 'hm-subtitle', 'hm-intro']) {
+    /*
+     * TWO ROLES ARE UNCONDITIONAL AND THE THIRD IS DERIVED FROM THE RECORD. THAT IS THE INVERSION.
+     *
+     * This asserted THREE — name, subtitle, tagline — and reddened on 2026-09-02 because the third
+     * stopped rendering. `home_config.intro` is now the empty string, and `index.astro` renders the
+     * line only when it is non-empty: an empty `<p>` still takes its `padding-block-start`, so the
+     * gap under the subtitle would be wrong with nothing visible to explain it.
+     *
+     * WHY THE INTRO IS NOT SIMPLY DROPPED FROM THE LIST. `intro` is a FIELD, not a deleted feature
+     * — the schema keeps it (with no `.min(1)`, deliberately) so Akhil can restore the line from
+     * `/admin` without a code change. An assertion that only knows about two roles would let a
+     * restored intro ship in the WRONG FACE AT THE WRONG SIZE with the suite green, which is
+     * exactly how the Playfair swap got in.
+     *
+     * So the intro's assertion is CONDITIONAL ON THE RECORD, which is the same shape
+     * `renders exactly the CTAs data/home_config.json declares` already uses for the other
+     * emptied field. Both directions hold: empty record -> no element; filled record -> the
+     * element, in the display face, at 16.
+     *
+     * Akhil's reason for emptying it, from `src/schemas/home.ts`: the phrase "everything else"
+     * subordinated the photography to the development, while Act 1 IS six photographs filling the
+     * screen. `Interfaces & Imagery` already names both as equals.
+     */
+    for (const cls of ['hm-name', 'hm-subtitle']) {
       expect(heading(cls), `${cls} is not set in the display face`).toContain(
         'font-family:var(--display)'
       );
     }
-
     expect(heading('hm-subtitle'), 'the subtitle size moved').toContain('font-size:18px');
-    expect(heading('hm-intro'), 'the tagline size moved').toContain('font-size:16px');
 
-    // The name is driven from the stylesheet, so assert the rung rather than a pixel value —
-    // a literal here would be the thing `gate:app-css` refuses in the CSS.
+    if (homeRecord.intro.length === 0) {
+      expect(
+        html,
+        'the tagline ships while home_config.intro is empty — an empty <p> still takes its ' +
+          'padding-block-start, so the gap under the subtitle is wrong with nothing to explain it'
+      ).not.toMatch(/class="[^"]*\bhm-intro\b[^"]*"/);
+    } else {
+      expect(heading('hm-intro'), 'the restored tagline is not in the display face').toContain(
+        'font-family:var(--display)'
+      );
+      expect(heading('hm-intro'), 'the tagline size moved').toContain('font-size:16px');
+    }
+
+    /*
+     * THE NAME'S RUNG, AND BOTH RUNGS ARE PINNED NOW RATHER THAN ONLY THE BASE ONE.
+     *
+     * The name is driven from the stylesheet (`style={{ fontSize: 'var(--hm-name)' }}`), because it
+     * steps down below the 673px rung and an inline `font-size` cannot be reached by a media query.
+     * So the RUNG is asserted in the CSS and the READER in the markup.
+     *
+     * This used to `.exec()` once and check the FIRST declaration only — the base `--text-2xl` —
+     * which left the 673px step completely unguarded: the name could jump from `--text-3xl` to
+     * `--text-5xl` above 673 and nothing would say so. Both are pinned, in order. The whole reason
+     * this test exists is that a 27% change to the largest element on the page reddened nothing in
+     * 1,532 assertions, and half a guard is how that happens again.
+     */
     expect(heading('hm-name'), 'the name stopped reading --hm-name').toContain(
       'font-size:var(--hm-name)'
     );
     expect(heading('hm-name'), 'the name lost its weight').toContain('font-weight:700');
-    const nameRung = /--hm-name:\s*var\((--text-[a-z0-9]+)\)/.exec(cssCode);
-    expect(nameRung, 'no --hm-name declaration in the stylesheet').not.toBeNull();
+    const nameRungs = [...cssCode.matchAll(/--hm-name:\s*var\((--text-[a-z0-9]+)\)/g)].map(
+      (m) => m[1] as string
+    );
     expect(
-      (nameRung as RegExpExecArray)[1],
-      'the name jumped a rung — 3xl/4xl was the first pass, 5xl is the prototype 60px'
-    ).toBe('--text-2xl');
+      nameRungs,
+      'the name jumped a rung. Akhil chose these on 2026-08-30 after comparing nine pairings: ' +
+        '--text-2xl below the 673px rung, --text-3xl above it. 3xl/4xl was the first pass and ' +
+        '5xl is the prototype 60px, which he rejected.'
+    ).toEqual(['--text-2xl', '--text-3xl']);
 
     process.stdout.write(
-      '  type: name var(--hm-name) = --text-2xl/700 · subtitle 18 · tagline 16 · all var(--display)\n'
+      `  type: name var(--hm-name) = ${nameRungs.join(' -> ')}/700 · subtitle 18 · tagline ${
+        homeRecord.intro.length === 0 ? 'not rendered (record empty)' : '16'
+      } · all var(--display)\n`
     );
   });
 
@@ -739,6 +1179,15 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
       readFileSync(new URL('../../data/home_config.json', import.meta.url), 'utf8')
     ) as { ctas: ReadonlyArray<{ text: string; link: string }> };
 
+    /*
+     * ANCHORED, and a vacuity control is why. With `ctas` empty BOTH halves below were satisfied by
+     * a blank document: `0 === 0`, and `expect('').not.toMatch(/class="hm-ctas"/)`. The record
+     * being empty is exactly the state in which this check needed the anchor most.
+     */
+    expect(html, 'Act 1 is not in the document — this is not the page under test').toMatch(
+      /<div class="hm-a">/
+    );
+
     const rendered = [...html.matchAll(/<a[^>]*class="ds-atom-btn hm-cta"[^>]*>([\s\S]*?)<\/a>/g)];
     expect(rendered.length, 'the CTA row does not match the record').toBe(home.ctas.length);
 
@@ -786,8 +1235,24 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * rather than the source: it is a claim about what a reader gets, and it must stay true however
    * the page obtains it.
    */
-  it('the subtitle and the intro ship in the display face, not the body face', () => {
-    for (const cls of ['hm-subtitle', 'hm-intro']) {
+  it('the identity lines ship in the display face, not the body face', () => {
+    /*
+     * 🔴 INVERTED IN THE SAME SHAPE AS THE TEST ABOVE, AND FOR THE SAME REASON.
+     *
+     * It looped over `['hm-subtitle', 'hm-intro']` unconditionally and reddened on 2026-09-02 when
+     * `home_config.intro` was emptied. The line the loop is REALLY making — every identity line
+     * this page renders is in the display face — is unchanged; what changed is how many there are.
+     *
+     * Driving the list off the RECORD keeps both halves true at once: the subtitle is always
+     * checked, and the intro is checked exactly when it exists. A hardcoded two-element list would
+     * red today; a hardcoded one-element list would stop guarding a restored intro.
+     */
+    const lines = ['hm-subtitle', ...(homeRecord.intro.length > 0 ? ['hm-intro'] : [])];
+    // ANTI-VACUITY: an emptied record must not empty this loop. The subtitle has no `.min(1)`
+    // escape — `HomeConfigSchema` requires it — so there is always at least one line to check.
+    expect(lines.length, 'the list of identity lines came out empty').toBeGreaterThan(0);
+
+    for (const cls of lines) {
       const el = new RegExp(`<p[^>]*class="[^"]*\\b${cls}\\b[^"]*"[^>]*>`).exec(html);
       expect(el, `no <p> carrying ${cls}`).not.toBeNull();
       const markup = (el as RegExpExecArray)[0] as string;
@@ -795,6 +1260,14 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
         'font-family:var(--display)'
       );
       expect(markup, `${cls} still ships the body face`).not.toContain('font-family:var(--font)');
+    }
+
+    // The other half, and it is what makes the conditional above honest rather than convenient:
+    // when the record is empty the element must be ABSENT, not merely unchecked.
+    if (homeRecord.intro.length === 0) {
+      expect(html, 'hm-intro ships while the record holds no intro').not.toMatch(
+        /class="[^"]*\bhm-intro\b[^"]*"/
+      );
     }
   });
 
@@ -828,41 +1301,125 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
  */
 describe('Home ships no app bar (05-17)', () => {
   it('emits no AppBar on this route', () => {
+    // THE CLAIM FIRST, THE ANCHORS AFTER. Deliberate ordering: a plant that puts the bar back
+    // must fail on the sentence about the bar, not on an anchor two lines above it. Vitest reports
+    // the FIRST failing expectation, so the primary absence has to be the first thing asserted.
     expect(
       html,
       'the design-system AppBar is back on Home. It paints a --surf-2 band with a hard bottom ' +
         'edge, which is the "header" the owner rejected on sight.'
     ).not.toMatch(/ds-atom-appbar/);
-  });
 
-  it('composes the row from Link + IconButton directly', () => {
-    expect(html, 'no plain nav row').toMatch(/<nav class="pub-nav-plain">/);
-    const links = [...html.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g)];
-    expect(links.length, 'the nav links are not design-system Links').toBeGreaterThan(0);
-    expect(html, 'no theme toggle in the row').toMatch(
-      /<button[^>]*class="ds-atom-iconbtn pub-toggle"/
+    /*
+     * ANCHORED, and a vacuity control is why. `expect('').not.toMatch(/ds-atom-appbar/)` passes,
+     * so this said nothing about a blank response — and "Home has no bar" is ALSO true of every
+     * route if the bar were deleted site-wide, which would be a regression reported as a design
+     * decision. `/development` is the positive half. See this file's header on absence anchoring.
+     */
+    expect(html, 'the plain row is not in the document — this is not the page under test').toMatch(
+      /<div class="pub-nav-plain">/
     );
+    expect(
+      barRouteHtml,
+      '/development lost its AppBar too — this is not a Home-only change'
+    ).toMatch(/ds-atom-appbar/);
   });
 
   /**
-   * `quiet`, not `default`, and this is the variant 05-16 got wrong. MEASURED, `primitives.css`:
+   * 🔴 INVERTED ON 2026-09-02. THE ROW HELD TWO LINKS AND A TOGGLE; IT NOW HOLDS THE TOGGLE ALONE.
+   *
+   * Akhil, once Home became a single screen: Act 1's TWO DOORS are the navigation. `Photography →`
+   * and `Development →` sit under the photographs as the page's only choice, so a
+   * `development · photography` pair in the row above was the SAME TWO DESTINATIONS offered twice,
+   * in a weaker treatment, on a page with nothing else on it.
+   *
+   * TWO STRUCTURAL CHANGES CAME WITH IT AND BOTH ARE ASSERTED, because either could be undone by
+   * someone "restoring" the row without reading why it emptied:
+   *
+   *   1. `<nav>` BECAME `<div>`. A navigation landmark with no navigation in it is a landmark a
+   *      screen-reader user is sent to for nothing. The toggle is a CONTROL, not a destination.
+   *      This is also why the landmark count at the foot of this file went from three to one.
+   *   2. THE TOGGLE MOVED TO THE END. `justify-content` was `space-between`, which spaced it
+   *      against links that no longer exist and would have parked it on the LEFT.
+   *
+   * `NAV_ITEMS` IS UNTOUCHED, and the assertion pairs `/` with `/development` to prove it: this is a
+   * Home-only omission, not a deletion. Without that pairing, deleting the nav from all fifty-two
+   * documents would pass this test.
+   */
+  it('composes the row from the theme toggle alone — the doors are the navigation now', () => {
+    expect(html, 'no plain row at all').toMatch(/<div class="pub-nav-plain">/);
+    expect(
+      html,
+      'the plain row is a <nav> again — a navigation landmark holding only a theme toggle sends a ' +
+        'screen-reader user somewhere with nothing in it'
+    ).not.toMatch(/<nav class="pub-nav-plain"/);
+    expect(html, 'no theme toggle in the row').toMatch(
+      /<button[^>]*class="ds-atom-iconbtn pub-toggle"/
+    );
+    expect(html, 'the toggle is not the 42px `lg` rung the design asks for').toMatch(
+      /class="ds-atom-iconbtn pub-toggle"[^>]*data-size="lg"/
+    );
+
+    expect(
+      [...html.matchAll(/class="ds-atom-link pub-nav-link"/g)].length,
+      "nav links are back in Home's top row. The doors under the photographs already go to both " +
+        'of those destinations; this is the same two links twice, in a weaker treatment.'
+    ).toBe(0);
+
+    // ANTI-VACUITY, AND IT IS THE HALF THAT MATTERS: the nav still exists everywhere else.
+    expect(NAV_ITEMS.length, 'NAV_ITEMS is empty — the nav was deleted, not omitted').toBe(2);
+    expect(
+      [...barRouteHtml.matchAll(/class="ds-atom-link pub-nav-link"/g)].length,
+      "/development lost its nav links too. Emptying Home's row is a Home-only decision; if the " +
+        'links have gone site-wide, that is a regression wearing this test as cover.'
+    ).toBe(NAV_ITEMS.length);
+  });
+
+  /**
+   * 🔴 INVERTED — AND THE INVERSION SURFACED DEAD CODE IN `PublicNav.tsx` ITSELF.
+   *
+   * WHAT IT USED TO SAY, kept because the measurement is still the reason the OTHER arrangement is
+   * the way it is. MEASURED, `primitives.css`:
    *
    *     [data-variant="default"]  color: var(--ink-2);  text-decoration: underline;
    *     [data-variant="quiet"]    color: var(--ink-3);  text-decoration: none;
    *
-   * The design's nav is muted and NOT underlined. Shipping `default` is why the rejected capture
-   * has three underlined links across the top. Both are stylesheet-only variants, so neither
-   * smuggles the `rgba(0, 0, 0, 0.25)` underline D-4 files against `inline`/`footer`/`action`.
+   * The design's plain-row nav was muted and NOT underlined; shipping `default` is why the capture
+   * Akhil rejected had underlined links across the top. `quiet` was the fix.
+   *
+   * 🟠 `quiet` IS NOW UNREACHABLE, AND IT READS AS WORKING. `PublicNav.tsx` computes
+   * `const navVariant = variant === 'plain' ? 'quiet' : 'default'` and builds `navLinks` from it
+   * BEFORE the `if (variant === 'plain')` early return — and that early return renders only the
+   * toggle. So on Home the `quiet` links are constructed and then discarded, and on every other
+   * route `navVariant` is `default`. The `'quiet'` branch can never reach a document.
+   *
+   * That is precisely the failure mode that file's own header warns about for event handlers — *"a
+   * React handler on a component that never hydrates is dead code that reads as working"* — arriving
+   * through a different door. RECORDED, NOT FIXED: removing the branch is a change to a component
+   * shared by fifty-two documents, and it belongs with the Act-2 cleanup, not with a test pass.
+   *
+   * So this asserts the two things that are still true and falsifiable: Home ships NO nav link at
+   * all, and the bar arrangement's links are `default` — which is what pins the surviving branch.
    */
-  it('the nav links are quiet — muted and not underlined', () => {
-    const links = [...html.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g)].map(
-      (m) => m[0] as string
-    );
-    expect(links.length).toBeGreaterThan(0);
-    for (const markup of links) {
-      expect(/data-variant="([^"]*)"/.exec(markup)?.[1], `nav link shipped ${markup}`).toBe(
-        'quiet'
-      );
+  it('Home ships no nav links, and the surviving arrangement uses the default variant', () => {
+    expect(
+      [...html.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g)].length,
+      'a nav link is back on Home'
+    ).toBe(0);
+
+    const barLinks = [
+      ...barRouteHtml.matchAll(/<a[^>]*class="ds-atom-link pub-nav-link"[^>]*>/g),
+    ].map((m) => m[0] as string);
+    // ANTI-VACUITY: the absence above is Home-only, and these are the links it is absent OF.
+    expect(barLinks.length, 'the bar arrangement ships no nav links either').toBe(NAV_ITEMS.length);
+    for (const markup of barLinks) {
+      expect(
+        /data-variant="([^"]*)"/.exec(markup)?.[1],
+        `bar nav link shipped ${markup} — 'quiet' here would mean the plain branch was wired to ` +
+          'the AppBar, which is the arrangement Akhil rejected on sight'
+      ).toBe('default');
+      // D-4: `inline`, `footer` and `action` inline a literal colour no app rule can beat at any
+      // specificity, while every jsdom test still passes. Pinned so it cannot be "improved" back.
       expect(markup, 'a literal colour reached the nav through a Link variant').not.toMatch(
         /rgba\(0, 0, 0/
       );
@@ -891,17 +1448,46 @@ describe('Home ships no app bar (05-17)', () => {
    * The rule itself is the design: `muted #8F8B82, hover → #EAE7E0`, no underline. It also matches
    * the toggle beside it, and frees the underline to mean `aria-current="page"` and nothing else.
    */
-  it('the nav links drop the variant underline on hover, and win the tie on specificity', () => {
+  it('the nav-link hover rule keeps the specificity that made it apply, dead or not', () => {
+    /*
+     * 🟠 THIS RULE IS DEAD AS OF 2026-09-02 — `.pub-nav-plain` holds no `.pub-nav-link` any more —
+     * AND THE ASSERTION IS KEPT ANYWAY. THE LESSON IN IT IS THE MOST EXPENSIVE ONE THIS PAGE HAS
+     * TAUGHT, AND THE RULE IS THE TEMPLATE ANYONE RESTORING THE ROW WILL COPY.
+     *
+     * WHAT HAPPENED. The first attempt was `.pub-nav-plain .pub-nav-link:hover`, which is (0,3,0).
+     * So is the design system's `.ds-atom-link[data-variant="quiet"]:hover`, which sets
+     * `text-decoration: underline`. A TIE, resolved by file order, and the design system's sheet
+     * won it. The underline stayed, the page looked unchanged, and EVERY ASSERTION IN THIS FILE
+     * STAYED GREEN because nothing asserted the hover. It was caught by reading the computed style
+     * in a browser, not by the suite.
+     *
+     * THE FIX WAS THE SPECIFICITY, NOT THE DECLARATION. Adding `[data-variant="quiet"]` makes the
+     * selector (0,4,0), which wins on specificity instead of on import order. A future edit that
+     * drops the attribute reads identically and breaks identically — which is why this asserts the
+     * SELECTOR SHAPE and not just that `text-decoration: none` appears somewhere.
+     *
+     * >>> IF YOU ARE DELETING THE DEAD NAV-LINK CSS: delete this test with it, and move the
+     *     specificity rule into whatever replaces it. Do not delete the rule and keep the
+     *     declaration. <<<
+     */
     const rule = /\.pub-nav-plain \.pub-nav-link\[data-variant="quiet"\]:hover\s*\{([^}]*)\}/.exec(
       cssCode
     );
     expect(
       rule,
-      'no (0,4,0) hover rule — a (0,3,0) selector TIES with the design system and loses on file order'
+      'no (0,4,0) hover rule — a (0,3,0) selector TIES with the design system and loses on file ' +
+        'order. If the nav-link rules were removed on purpose, remove this test in the same commit.'
     ).not.toBeNull();
     expect((rule as RegExpExecArray)[1], 'the hover no longer removes the underline').toMatch(
       /text-decoration:\s*none/
     );
+
+    // AND THE HALF THAT RECORDS WHY IT IS DEAD, so this cannot be read as "the hover ships".
+    expect(
+      html,
+      'a .pub-nav-link is back in the document — then this rule is LIVE again and the note above ' +
+        'is stale; update it rather than leaving two readings in the file'
+    ).not.toMatch(/class="ds-atom-link pub-nav-link"/);
   });
 
   /**
@@ -915,10 +1501,26 @@ describe('Home ships no app bar (05-17)', () => {
    * row rather than an AppBar, so nothing matched. The same gap the toggle has its own rule for,
    * and the reason inheritance here has to be checked rather than assumed.
    */
-  it('the nav links take the 44px floor on a coarse pointer', () => {
+  it('the nav links keep their coarse-pointer floor, dead or not', () => {
+    /*
+     * 🟠 DEAD SINCE 2026-09-02, FOR THE SAME REASON AS THE HOVER RULE ABOVE, AND KEPT FOR THE SAME
+     * REASON: it records a MEASURED defect, and the row it applies to may come back.
+     *
+     * MEASURED at 390 x 844 coarse before the rule existed: `work` was 30 x 20 and `photographs`
+     * 78 x 20, against a 44px floor, on the site's primary navigation — while the toggle, the badge
+     * and the cue in the same viewport all met it. The design system grows `.ds-atom-appbar a`
+     * under `pointer: coarse`, but Home's row is a plain row rather than an AppBar, so NOTHING
+     * MATCHED. That gap is a property of the arrangement, not of the links, so it returns the
+     * moment the arrangement does.
+     *
+     * The toggle that IS in the row today has its own floor, and that one is live — asserted in
+     * `the toggle is a re-pointed IconButton reduced to its glyph` below.
+     */
     expect(
       cssCode,
-      'the nav links lost their coarse-pointer floor — 30 x 20 targets on a phone'
+      'the nav links lost their coarse-pointer floor — 30 x 20 targets on a phone the moment the ' +
+        'plain row carries links again. If the nav-link rules were removed on purpose, remove ' +
+        'this test in the same commit.'
     ).toMatch(
       /@media \(pointer: coarse\)[\s\S]{0,320}\.pub-nav-plain \.pub-nav-link\s*\{[^}]*min-height:\s*44px/
     );
@@ -963,11 +1565,62 @@ describe('nothing is hidden from assistive technology (§6.6.3)', () => {
     expect(cssCode).not.toMatch(/[^-]order:\s*-?\d/);
   });
 
-  it('carries exactly three named landmarks', () => {
+  /**
+   * 🔴 THREE BECAME ONE ON 2026-09-02, AND THE COUNT IS STILL A COUNT RATHER THAN A FLOOR.
+   *
+   * §6.6.4 specified three named regions and this asserted exactly three. Two of them were Act 2's
+   * — `aria-labelledby="hm-work-h"` (the development band) and `aria-labelledby="hm-resume-h"` (the
+   * résumé band) — and both went with Act 2. What is left is the photographs, which is the whole
+   * middle of the page.
+   *
+   * THE ROW ABOVE LOST ITS LANDMARK TOO, and that is a separate, deliberate change rather than a
+   * consequence: the plain row is a `<div>` now, not a `<nav>`, because a navigation landmark
+   * holding nothing but a theme toggle is somewhere a screen-reader user is sent for no reason. It
+   * is asserted here as well as in the top-row block, because THIS is the file's landmark budget
+   * and a `<nav>` creeping back would change it without touching the `<section>` count.
+   *
+   * An EQUALITY, not `toBeGreaterThan`. The reason is unchanged from when the number was three: a
+   * fourth named region is a structural change to how the page is announced, and it should cost a
+   * deliberate edit here.
+   */
+  it('carries exactly one named landmark — the photographs', () => {
     const named = html.match(/<section[^>]*aria-label(?:ledby)?="/g) ?? [];
-    expect(named.length).toBe(3);
-    expect(html).toMatch(/<section[^>]*aria-label="Photographs"/);
-    expect(html).toMatch(/<section[^>]*aria-labelledby="hm-work-h"/);
-    expect(html).toMatch(/<section[^>]*aria-labelledby="hm-resume-h"/);
+    expect(
+      named.length,
+      'the named-region count moved. Act 2 took two of the original three with it on 2026-09-02; ' +
+        'a new one is a change to how this page announces itself.'
+    ).toBe(1);
+    expect(html, 'the photographs lost their accessible name').toMatch(
+      /<section[^>]*aria-label="Photographs"/
+    );
+
+    for (const [what, pattern] of [
+      ['the development band', /aria-labelledby="hm-work-h"/],
+      ['the résumé band', /aria-labelledby="hm-resume-h"/],
+    ] as const) {
+      expect(html, `${what} is back — Home is one screen`).not.toMatch(pattern);
+    }
+
+    expect(
+      html,
+      'a <nav> landmark is back on Home. The row holds only the theme toggle, which is a control ' +
+        'and not a destination.'
+    ).not.toMatch(/<nav[\s>]/);
+    /*
+     * ANTI-VACUITY: the row itself really did render, as a `<div>`. It is deliberately NOT paired
+     * with "and /development has a <nav>", because MEASURED on the built artefact, /development HAS
+     * NONE EITHER:
+     *
+     *     <header class="ds-atom-appbar"> … <div style="display:flex;gap:18px"><a …>development</a> …
+     *
+     * 🟠 A FINDING, NOT A PASS. `AppBar` wraps its nav group in a plain `<div>`, so NO ROUTE ON
+     * THIS SITE exposes a navigation landmark — a screen-reader user cannot jump to the site's
+     * top-level map on any of the fifty-two documents. That is the design system's markup and not
+     * this page's to change; recorded here because this is the file that counts landmarks, and
+     * because "Home has no <nav>" reads like a Home decision until you check the others.
+     */
+    expect(html, 'the plain row is not in the document at all').toMatch(
+      /<div class="pub-nav-plain">/
+    );
   });
 });

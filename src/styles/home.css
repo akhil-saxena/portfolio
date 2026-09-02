@@ -110,7 +110,9 @@
 .pub-nav-plain {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* Only the toggle is left in this row, so it sits at the end rather than being spaced
+     against links that no longer exist. */
+  justify-content: flex-end;
   gap: var(--space-6);
   width: 100%;
 }
@@ -353,24 +355,35 @@
   --hm-name: var(--text-2xl);
 
   box-sizing: border-box;
-  min-height: calc(100svh - var(--hm-above));
   /*
-   * CENTRED ON THE VIEWPORT, NOT ON THIS BOX — Akhil, 2026-08-30: "it should occupy the center of
-   * the page, not the bottom."
+   * FLEX, NOT A FIXED BUDGET — and the change is what "no scroll" costs.
    *
-   * `justify-content: center` was already here and was already working: MEASURED at 1440x900, the
-   * content sat 114px from this box's top and 114px from its bottom. But the box starts
-   * `--hm-above` (64px) down, under the nav row, so from the VIEWPORT it read 178 above and 114
-   * below — content centre at 482 against a viewport centre of 450, and it looked low.
+   * This was `min-height: calc(100svh - var(--hm-above))`: one viewport less the nav row. That was
+   * right while Act 2 existed, because Act 1 owned exactly one screen and the footer sat below the
+   * fold with Act 2. With Act 2 removed on 2026-09-02 the footer is the only thing under Act 1, so
+   * the arithmetic overflowed by exactly its height — MEASURED at 49px, identically at 1440, 1280,
+   * 390 and 344, which is the signature of a fixed element rather than a layout bug.
    *
-   * A padding-bottom of `--hm-above` shortens the centring box by exactly the offset above it, so
-   * the midpoint of the content lands on the midpoint of the screen: 64 + (836 - 64) / 2 = 450.
-   *
-   * `box-sizing: border-box` is what makes this safe — the padding comes OUT of the 100svh budget
-   * rather than adding to it, so Act 1 still fits one viewport and the scroll cue stays above the
-   * fold, which is the one thing this act cannot get wrong.
+   * `.pub-main` is already `flex: 1` inside a `100svh` shell, so growing to fill it takes whatever
+   * is left after the bar AND the footer, at any viewport, without naming either height here. The
+   * old form had to know `--hm-above`; this one has to know nothing.
    */
-  padding-bottom: var(--hm-above);
+  flex: 1;
+  /*
+   * NO PADDING — `justify-content: center` now does the whole job, and the padding that used to
+   * help is what was hurting.
+   *
+   * It was `padding-bottom: var(--hm-above)`, added when Act 1 sat under a 64px nav row with
+   * nothing below it: shortening the centring box by the offset above it put the content's midpoint
+   * on the screen's. Both halves of that arithmetic have since changed — the row is 40px now that
+   * it holds only the toggle, and the footer takes 58 below. The old padding over-corrected by
+   * exactly 58px, MEASURED identically at 1440, 1280 and 390.
+   *
+   * `flex: 1` already sizes this box to whatever is left between the bar and the footer, so
+   * centring inside it is centring inside the space the content actually has. The residual is
+   * (footer - bar) / 2 = 9px, which is below the threshold of anything and does not justify a
+   * literal offset that would go stale the next time either end changes.
+   */
   max-width: min(880px, 100%);
   width: 100%;
   margin-inline: auto;
@@ -486,8 +499,30 @@
  */
 
 .hm-peek {
-  padding-block-start: var(--space-12);
+  /*
+   * `--space-6` (24), down from `--space-12` (48). Akhil, 2026-09-02: "excess space between
+   * subtitle and photos."
+   *
+   * 48 was right when the intro sat between them — it separated three text blocks from the grid.
+   * With the intro gone the subtitle and the photographs are adjacent, and a 48px gap read as a
+   * break rather than a join. 24 is the rung that matches the gap the doors take below the grid,
+   * so the composition is symmetric about the photographs.
+   */
+  padding-block-start: var(--space-6);
   width: 100%;
+}
+
+/*
+ * THE TWO DOORS — the row under the photographs.
+ *
+ * Layout only: the buttons' shape, fill and type are the design system's, and `.hm-door` carries
+ * no padding, border or radius of its own. `--space-4` between them is the gap the CTA row used.
+ */
+.hm-doors {
+  display: flex;
+  gap: var(--space-4);
+  justify-content: center;
+  padding-block-start: var(--space-8);
 }
 
 .hm-peek-grid {
@@ -827,6 +862,20 @@
 
 .hm-grid-item {
   display: flex;
+}
+
+/*
+ * THE RÉSUMÉ CELL — the grid's sixth, and deliberately the quietest thing in it.
+ *
+ * `ACT_TWO_CAP` is 6 with 5 projects, so this fills a cell that was empty. It aligns to the
+ * BOTTOM-RIGHT of its cell rather than filling it: a card-sized control would read as a sixth
+ * project, which is the opposite of "less prominence". The cell keeps the grid's own sizing; only
+ * the button inside it is placed.
+ */
+.hm-grid-resume {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .hm-card {

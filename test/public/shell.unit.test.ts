@@ -431,9 +431,29 @@ describe('public-shell.css — the five sites the ladder has to be paid back at 
       '4 · the footer breaks out',
       /\.pub-footer\s*\{[^}]*margin-inline:\s*calc\(var\(--pub-gutter\)/,
     ],
+    /*
+     * 🔴 SITE 5 MOVED ON 2026-09-02, AND THE OLD PATTERN WOULD HAVE GONE ON PASSING FOREVER.
+     *
+     * It read `.pub-footer .ds-atom-footer { padding-inline: var(--pub-gutter) }` — the payback
+     * INSIDE the design system's `Footer` component. `PublicLayout.astro` no longer renders
+     * `Footer`: MEASURED on the built artefact, `ds-atom-footer` appears in ZERO of the fifty-three
+     * documents and survives only in the CSS bundle, while `pub-footer-row` ships on all fifty-three.
+     *
+     * So the old rule is DEAD CSS, and this row was pinning it. The check stayed green, and the
+     * payback that actually runs — `.pub-footer-row`'s — had no assertion at all. That is the exact
+     * failure mode §2.1 calls "the one that gets missed", reintroduced by a component swap.
+     *
+     * WHY `Footer` WAS DROPPED: `FooterProps.links` is plain data with no `icon`, no `children` and
+     * no per-item `className` or `style` — `className` reaches the `<footer>` element only. A footer
+     * of brand marks is not expressible through the component at any effort short of reaching into
+     * its internals. Filed as D-26; `src/layouts/PublicLayout.astro` carries the measurement.
+     *
+     * The BREAK-OUT half (site 4) is unchanged: `.pub-footer` still takes the negative margin. Only
+     * the element that pays it back changed, which is why this is one edited row and not two.
+     */
     [
       '5 · the footer pays it back',
-      /\.pub-footer \.ds-atom-footer\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/,
+      /\.pub-footer-row\s*\{[^}]*padding-inline:\s*var\(--pub-gutter\)/,
     ],
   ] as const;
 

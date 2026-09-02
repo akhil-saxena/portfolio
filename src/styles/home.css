@@ -587,218 +587,31 @@
   }
 }
 
-/* ================================================================================================
- * §4. THE NAME DOCKS INTO THE CORNER — THE HEADLINE INTERACTION
+/*
+ * ================================================================================================
+ * §4. THE NAME DOES NOT MOVE — THE DOCK IS REMOVED
  * ================================================================================================
  *
- * Akhil, verbatim: *"When I try to scroll down, I should see a motion of the text that is centered
- * move to the left corner at the top and disappear into just the name without the interfaces and
- * imagery text or the subtext underneath it."*
+ * There was a scroll-driven animation here: the name travelled from the centre of the composition
+ * to the top-left corner and shrank to `--text-lg`, while the subtitle, tagline and photographs
+ * faded. It was built to Akhil's own description and he removed it on 2026-09-02 after living with
+ * it: *"remove the motion in heading text."*
  *
- * Two motions, driven by one scroll:
+ * BOTH halves went, because they could not be separated. The dock made `.hm-name` sticky, so it
+ * stayed on screen after Act 1 scrolled past — the shed existed to clear the photographs out from
+ * under it. Keeping the shed alone would fade content for no reason; keeping the dock alone would
+ * pin the name over a grid nothing was removing. 05-17 measured that pairing and it held.
  *
- *   1. THE NAME travels from the centre of the composition to the top-left corner and shrinks
- *      from `--hm-name` to `--hm-dock-size`.
- *   2. EVERYTHING ELSE in Act 1 — subtitle, intro, photographs, CTAs, cue — sheds to `opacity: 0`,
- *      which is the "without the interfaces and imagery text or the subtext underneath it" half.
+ * So the name now scrolls away with the rest of Act 1, which is what a heading does.
  *
- * ------------------------------------------------------------------------------------------------
- * ZERO JAVASCRIPT, AND THE Y AXIS IS NOT ANIMATED AT ALL
- * ------------------------------------------------------------------------------------------------
+ * WHAT WENT WITH IT, so nobody hunts for it: `--hm-dock-top`, `--hm-dock-size`, `--hm-dock-range`,
+ * `@keyframes hm-dock`, `@keyframes hm-shed`, the `position: sticky` and `z-index: 2` on
+ * `.hm-name`, and the `container-type` dependency that `translateX(calc(50% - 50cqw))` needed to
+ * find the column's centre.
  *
- * `/` ships no framework JavaScript (PUB-14) and `gate:public-js` asserts it across 43 documents,
- * so this is `animation-timeline: scroll()` — a scroll-progress timeline, no listener, no rAF, no
- * island. But the interesting half is what the timeline does NOT do.
- *
- * A scroll-driven animation cannot move an element to a fixed corner by itself, because the corner
- * is at an offset from the element's flow position that CSS cannot read: the name's distance from
- * the top of the viewport depends on how tall the rest of Act 1 is, and no `calc()` can ask.
- * Every version of this that starts from `position: fixed` needs a number measured in devtools and
- * pasted in — which is exactly the defect `--ds-appbar-h`'s docstring was written to kill.
- *
- * So the Y axis is `position: sticky` and the browser does the measuring. The name pins itself at
- * `--hm-dock-top` the moment its own flow position reaches that offset, whatever that position
- * turns out to be, and unpins when `.hm-a`'s bottom edge arrives — which is `100svh`, which is
- * exactly where Act 2 begins. The name is therefore never on screen at the same time as Act 2, and
- * "disappear" is a fact about the layout rather than a fade that has to be timed.
- *
- * The X axis IS animated, and it needs no measurement either:
- *
- *     the name is centred in `.hm-a`, so its left edge is at (100cqw - w) / 2
- *     to put that edge at 0:  dx = -(100cqw - w) / 2  =  w/2 - 50cqw  =  50% - 50cqw
- *
- * `50%` in a translate resolves against the element's OWN border box, which is `w`. So
- * `translateX(calc(50% - 50cqw))` lands the name's left edge on the container's left edge for any
- * viewport, any name length and any font size — including mid-animation, while `w` is still
- * shrinking. `ACT_ONE_MAX` never appears as a number; the container IS the measure.
- *
- * ------------------------------------------------------------------------------------------------
- * WHY THE NAV ROW DOES NOT COLLIDE WITH THE DOCKED NAME
- * ------------------------------------------------------------------------------------------------
- *
- * Both want the same corner. They never share it, because the row is in NORMAL FLOW — "fixed-flow,
- * not sticky" is the handoff's own wording for it. MEASURED at 1280x860: the row's bottom edge is
- * at y=64 and has left the viewport by scrollY 64; the name's transform does not begin until
- * scrollY 0 and does not reach the corner until scrollY ≈ 230. The row is long gone.
- *
- * ------------------------------------------------------------------------------------------------
- * THE FALLBACK, AND `prefers-reduced-motion`
- * ------------------------------------------------------------------------------------------------
- *
- * The whole section is inside `@supports (animation-timeline: scroll())` AND
- * `@media (prefers-reduced-motion: no-preference)`. `position: sticky` is inside that guard too,
- * deliberately: on its own it would pin the name over the photographs with nothing fading them
- * out, which is worse than not docking at all. So a browser without scroll timelines, and a reader
- * who has asked for less motion, both get the prototype's composition scrolling normally — no
- * pinning, no transform, no fade, and NOTHING hidden. PUB-13's "inert under reduce" is the whole
- * feature being absent rather than a fast version of it.
- *
- * `animation-timing-function` is `var(--ease-in-out)`, and BOTH halves of that were measured.
- *
- * It is not `linear`, because `linear` is a value in a dimension the design system names
- * (`--ease-out`, `--ease-in-out`, `--ease-spring`) and choosing it would be an origination under
- * QUAL-03 — a literal wearing a keyword's clothes.
- *
- * It is not `--ease-out`, which is what 05-17 wrote first. MEASURED on the built page: with
- * `--ease-out` (`cubic-bezier(0.2, 0.8, 0.2, 1)`), 60px of scroll — one flick — took the name from
- * 60px to 30.2px, half the whole journey in 7% of the range. On a CLOCK-driven animation that
- * front-loading is what makes a control feel responsive; on a SCROLL-driven one it is the opposite,
- * because the reader is holding the other end of it and feels the element run away from the
- * gesture. `--ease-in-out` (`cubic-bezier(0.65, 0, 0.35, 1)`) is near-linear through the middle
- * with soft ends, which is the closest thing the scale has to "attached to the scroll".
+ * The `.hm-cue` bob (§7) is untouched — it is the only motion left in Act 1, and it is the one
+ * carrying the invitation to scroll.
  */
-
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .hm-a {
-      /*
-       * Where the docked name sits, and what size it lands at.
-       *
-       * `--hm-dock-top` centres a `--text-lg` line on the nav row's own centre: the row is
-       * `--space-6` of padding plus a 40px control, so its centre is at 44, and a 17px line whose
-       * box is 16 tall wants its top at 36. `--space-9` is 36.
-       *
-       * `--hm-dock-size` is `--text-lg` (17), the step the design gives the Brevo strip and the
-       * nearest one above the 13.5px nav. A wordmark that matched the nav exactly would read as a
-       * fourth nav item; one step up reads as the site's name.
-       */
-      --hm-dock-top: var(--space-9);
-      --hm-dock-size: var(--text-lg);
-
-      /*
-       * The scroll distances, in viewport fractions. Act 1 is one viewport, so these are
-       * percentages of the single gesture that carries the reader from Act 1 to Act 2:
-       *
-       *   the name reaches the corner at 34% of it — MEASURED at 860, scrollY 292, and
-       *     `position: sticky` pins its Y at scrollY ≈ 91, so the two resolve close enough
-       *     together to read as one motion rather than two;
-       *   the shed runs 10% -> 50% — MEASURED, scrollY 86 -> 430. The END is the number that
-       *     matters and it is not a taste: the photo grid's top edge is at y = 268.8, so at
-       *     scrollY 430 its first row spans y = -161 to +54 and therefore OVERLAPS the docked
-       *     name's band (36..53). The fade has to be complete by then or the site's name is
-       *     painted over a photograph. 05-17's first cut ended at 42% and dissolved the
-       *     photographs while they still filled the viewport, which read as a dissolve rather
-       *     than as a departure; 50% is the latest value that still clears the collision.
-       *
-       * These are lengths in a scroll range, not durations, which is why they are `svh` and not
-       * `--dur-*`: there is no clock in a scroll-progress timeline to point a duration token at.
-       */
-      --hm-dock-range: 34svh;
-      --hm-shed-start: 10svh;
-      --hm-shed-end: 50svh;
-      --hm-lede-end: 14svh;
-    }
-
-    .hm-name {
-      position: sticky;
-      top: var(--hm-dock-top);
-      /*
-       * Above the photographs while they are still fading. `.hm-a` opens no stacking context, so
-       * this is resolved against the root — and `.hm-b` is not positioned, so it cannot be
-       * overlapped by this even if the two ever shared a scroll position, which they do not.
-       */
-      z-index: 2;
-      animation-name: hm-dock;
-      animation-timeline: scroll(root block);
-      animation-range: 0 var(--hm-dock-range);
-      animation-fill-mode: both;
-      animation-timing-function: var(--ease-in-out);
-    }
-
-    /*
-     * ONE element sheds, not five, and that is forced rather than tidy. `.hm-cue` runs its own
-     * infinite nudge (§7) and `animation-name` is a single property — a second declaration would
-     * replace the first outright, so listing the cue here would silently delete its breath AND
-     * hand the replacement a `scroll()` timeline, turning an idle loop into a scroll-linked one.
-     * The multi-value form (`animation-name: hm-nudge, hm-shed`) avoids that and drags four more
-     * comma-lists behind it, three of which would have to originate a literal in the motion
-     * dimension (`auto`, `normal`, `1`) to keep the two in step.
-     *
-     * A wrapper is cheaper and reads better: `.hm-shed` is exactly "Act 1 minus the name", which
-     * is exactly what Akhil described shedding.
-     */
-    .hm-shed {
-      animation-name: hm-shed;
-      animation-timeline: scroll(root block);
-      animation-range: var(--hm-shed-start) var(--hm-shed-end);
-      animation-fill-mode: both;
-      animation-timing-function: var(--ease-in-out);
-    }
-
-    /*
-     * The lede goes FIRST, and the reason is a collision rather than a flourish.
-     *
-     * MEASURED on the built page at 1280x860: the name's flow position is y = 91.4 and it pins at
-     * `--hm-dock-top` (36), so it stops moving after 55px of scroll — while it is still 58px tall.
-     * The rest of Act 1 keeps scrolling underneath it. At scrollY 120 the subtitle's flow position
-     * has reached y = 27.8, which is ABOVE the pinned name's top edge: the two are interleaved,
-     * and on the slow shed they are both at ~0.99 opacity when it happens.
-     *
-     * So the lede finishes at 14% of the gesture (scrollY 120) — the frame the overlap begins —
-     * and the photographs keep their slower 10%..50%. Opacity multiplies down the tree, so the
-     * lede is inside `.hm-shed`'s fade as well as its own; that is intended, not a leak.
-     */
-    .hm-lede {
-      animation-name: hm-shed;
-      animation-timeline: scroll(root block);
-      animation-range: 0 var(--hm-lede-end);
-      animation-fill-mode: both;
-      animation-timing-function: var(--ease-in-out);
-    }
-
-    /*
-     * `font-size` in a keyframe beats `Heading`'s INLINE `fontSize`, and that is a cascade fact
-     * rather than a specificity trick: CSS animations are their own origin and outrank all normal
-     * author declarations, inline styles included. The static value is still handed through at the
-     * call site, so the un-animated page is unaffected.
-     *
-     * It animates `font-size` rather than `scale()`. A scale is cheaper — it stays on the
-     * compositor — but it renders a 60px glyph outline at 28% and the Playfair hairlines go to
-     * mush at the size the reader actually looks at. This is one element, one line, on a page with
-     * nothing else moving; the layout cost is a text measure per frame and it was worth paying.
-     */
-    @keyframes hm-dock {
-      from {
-        transform: translateX(0);
-        font-size: var(--hm-name);
-      }
-      to {
-        transform: translateX(calc(50% - 50cqw));
-        font-size: var(--hm-dock-size);
-      }
-    }
-
-    @keyframes hm-shed {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
-    }
-  }
-}
-
 /* ================================================================================================
  * §5. THE CTAs AND THE SCROLL CUE
  * ================================================================================================ */

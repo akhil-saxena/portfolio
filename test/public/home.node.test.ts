@@ -311,47 +311,25 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
   });
 
   /**
-   * 05-17 — the one element that IS sticky, and everything about how it is guarded.
+   * THE DOCK IS GONE, AND THIS ASSERTS ITS ABSENCE.
    *
-   * The dock is the page's headline interaction and it is also the thing most likely to be
-   * "tidied" into something that breaks a requirement, so each half is asserted separately:
-   * PUB-14 (no JavaScript), PUB-13 (inert under reduce) and the progressive-enhancement guard.
+   * `.hm-name` used to be `position: sticky` with a scroll timeline: the name travelled to the
+   * top-left corner and shrank while the subtitle, tagline and photographs faded. Built to Akhil's
+   * own description, and removed by him on 2026-09-02 after living with it — "remove the motion in
+   * heading text."
+   *
+   * BOTH halves went, because they were coupled: sticky kept the name on screen after Act 1 had
+   * scrolled past, and the shed existed only to clear the photographs out from under it.
+   *
+   * Asserted as an absence in BOTH the mechanism and the leftovers, because a half-removal is the
+   * likely failure — a `@keyframes` nobody runs, or a `container-type` whose only reader has gone.
    */
-  it('the <h1> docks with sticky + a scroll timeline, behind BOTH guards, with no JavaScript', () => {
-    const supports = /@supports\s*\(animation-timeline:\s*scroll\(\)\)\s*\{/.exec(cssCode);
-    expect(supports, 'the dock is not behind an @supports guard — no fallback path').not.toBeNull();
-
-    // Walk to the matching close brace so "inside" is the real block and not a prefix.
-    const start = (supports?.index ?? 0) + (supports?.[0]?.length ?? 0);
-    let depth = 1;
-    let i = start;
-    while (i < cssCode.length && depth > 0) {
-      if (cssCode[i] === '{') depth++;
-      else if (cssCode[i] === '}') depth--;
-      i++;
-    }
-    const inside = cssCode.slice(start, i - 1);
-    const outside = cssCode.slice(0, supports?.index ?? 0) + cssCode.slice(i);
-
-    expect(inside, 'the @supports block does not also gate on reduced motion').toMatch(
-      /@media\s*\(prefers-reduced-motion:\s*no-preference\)/
-    );
-    expect(inside).toMatch(/position:\s*sticky/);
-    expect(inside).toMatch(/animation-timeline:\s*scroll\(root block\)/);
-    expect(inside, 'the name never moves left, so it docks nowhere').toMatch(/50cqw/);
-
-    expect(
-      outside,
-      'a sticky/animation declaration escaped the @supports + reduced-motion guard. A reader who ' +
-        'asked for less motion would get the pinned name with nothing fading the photographs out ' +
-        'from under it, which is worse than no dock at all.'
-    ).not.toMatch(/position:\s*sticky|animation-timeline|animation-range/);
-
-    // PUB-14: the whole interaction is CSS. No island, no listener, no inline handler on the page.
-    expect(html).not.toMatch(/astro-island/);
-    expect(html, 'a scroll listener appeared on a route that ships zero framework JS').not.toMatch(
-      /addEventListener\(\s*['"]scroll/
-    );
+  it('the name does not dock — no sticky, no scroll timeline, no orphaned keyframes', () => {
+    expect(cssCode, 'a scroll timeline came back').not.toMatch(/animation-timeline/);
+    expect(cssCode, 'the dock keyframes are back').not.toMatch(/@keyframes\s+hm-dock/);
+    expect(cssCode, 'the shed keyframes are back').not.toMatch(/@keyframes\s+hm-shed/);
+    expect(cssCode, 'a dock custom property survived the removal').not.toMatch(/--hm-dock-/);
+    expect(cssCode, 'nothing on this page is sticky any more').not.toMatch(/position:\s*sticky/);
   });
 
   /**
@@ -388,7 +366,10 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     expect(cssCode).not.toMatch(/scroll-snap-/);
     expect(cssCode).not.toMatch(/--hm-sticky-nav/);
     // ANTI-VACUITY: the stripper did not simply delete the file, and the sheet still has rules.
-    expect(cssCode).toMatch(/position:\s*sticky/);
+    // This used to anchor on `position: sticky`, which was the dock's. With the dock removed that
+    // anchor asserted the absence it was meant to disprove — so it anchors on Act 1's own budget,
+    // which is structural and cannot leave while this page exists.
+    expect(cssCode).toMatch(/--hm-above:/);
     expect(cssCode.replace(/\s/g, '').length).toBeGreaterThan(500);
   });
 
@@ -436,10 +417,10 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
     ];
     expect(
       blocks.length,
-      'expected four no-preference blocks — the dock (§4), the hover + cue (§7), the toggle ' +
-        "glyph's fade (§1) and the scroll cue's bob (§7a). A count, not a floor: a fifth is a " +
-        'motion source nobody argued for, and this assertion is the argument.'
-    ).toBe(4);
+      "expected three no-preference blocks — the hover + cue (§7), the toggle glyph's fade (§1) " +
+        "and the scroll cue's bob (§7a). The dock's block went with the dock on 2026-09-02. A " +
+        'count, not a floor: a fourth is a motion source nobody argued for.'
+    ).toBe(3);
 
     /** Everything between a block's opening brace and its matching close. */
     const bodyOf = (m: RegExpMatchArray): { inside: string; end: number } => {
@@ -477,7 +458,10 @@ describe('the height budget and the Act-2 reveal (§6.2, §6.5, PUB-13)', () => 
 
     expect(inside).toMatch(/transition-duration/);
     expect(inside).toMatch(/transform:\s*scale/);
-    expect(inside, 'the dock is not inside a motion query').toMatch(/position:\s*sticky/);
+    // ANTI-VACUITY: the block was found and has motion in it. This used to look for the dock's
+    // `position: sticky`; with the dock removed on 2026-09-02 the cue's bob is the motion that
+    // must be inside a no-preference query, so it is what proves the block is the right one.
+    expect(inside, 'the motion query holds no motion').toMatch(/animation-name:\s*hm-cue-bob/);
     expect(inside, 'the cue does not breathe').toMatch(/animation-name:\s*hm-nudge/);
 
     expect(

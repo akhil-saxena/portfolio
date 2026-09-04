@@ -378,29 +378,56 @@ describe('/development — the project cards', () => {
     say(`outbound: ${external} anchor(s) in the grid, ${announced} announced, all rel-paired`);
   });
 
-  it('carries exactly one StatusPill per card, on the generic path, and no Badge', async () => {
+  it('renders NO status pill anywhere, and still stores a status for every project', async () => {
+    /*
+     * ============================================================================================
+     * THE CONTRACT INVERTED, AND THE SECOND HALF IS WHY THIS TEST STILL EXISTS
+     * ============================================================================================
+     *
+     * This asserted "exactly one StatusPill per card, in the head". Akhil: *"remove pils for
+     * maintained/live etc."* — so the pill is gone and the old assertion is asserting a design
+     * decision that was reversed.
+     *
+     * IT IS INVERTED RATHER THAN DELETED, because "no pills" is a claim worth holding. The pill was
+     * removed for a reason (four of five cards read `Maintained`, and it sat where it competed with
+     * the project's own name); a component re-appearing here should be a decision, not a merge.
+     *
+     * AND THE FIELD IS ASSERTED SEPARATELY FROM ITS RENDERING. `status` stays REQUIRED in
+     * `ProjectSchema` — Home's Act 2 reads it and a case-study page will — so this checks that the
+     * DATA still carries a status for every project while the PAGE draws none. Deleting the test
+     * would have left both halves unguarded: a schema change dropping `status` and a card change
+     * re-adding a pill would each have passed.
+     */
     await loadPage();
 
     const cards = sliceCards(page);
     expect(cards.length).toBe(projects.length);
 
+    // Scoped to the grid, not the document: the shell is free to use a pill somewhere else.
+    const grid = cards.join('');
+    expect(
+      grid.match(/ds-atom-statuspill/g) ?? [],
+      'a StatusPill is back in the project grid'
+    ).toHaveLength(0);
+    expect(grid, 'Badge is back in the project grid, which §10.2 forbids here').not.toContain(
+      'ds-atom-badge'
+    );
+
+    // The three labels the pill used to draw, absent as text too — a pill removed and then typed
+    // back as a <span> would pass the class check above.
     projects.forEach((project, index) => {
       const card = cards[index] as string;
-      const pills = card.match(/class="ds-atom-statuspill"/g) ?? [];
-      expect(pills.length, `${project.id} carries ${pills.length} StatusPill spans`).toBe(1);
-      // The generic path always renders a <span> and marks itself non-interactive.
-      expect(card).toContain('data-interactive="false"');
-      expect(card, `${project.id} uses Badge, which §10.2 forbids here`).not.toContain(
-        'ds-atom-badge'
-      );
-      // The label is the stored status, capitalised — never `badges[0].label`.
       const label = project.status.charAt(0).toUpperCase() + project.status.slice(1);
-      expect(card, `${project.id}'s pill does not read its own status`).toContain(`>${label}<`);
+      expect(card, `${project.id} still prints "${label}" in its card`).not.toContain(`>${label}<`);
+      // The data half: still stored, still one of the three, for every project.
+      expect(['live', 'maintained', 'archived'], `${project.id} has no stored status`).toContain(
+        project.status
+      );
     });
 
     say(
-      `statuses: ${projects.length} pill(s), one per card, generic path, zero Badge; ` +
-        `tones ${[...new Set(projects.map((p) => p.status))].join(', ')}`
+      `statuses: 0 pill(s) rendered, 0 Badge; ` +
+        `${projects.length} project(s) still store one (${[...new Set(projects.map((p) => p.status))].join(', ')})`
     );
   });
 
@@ -587,15 +614,55 @@ describe('/development — the cross-link, the metadata and the JavaScript budge
       const query = new RegExp(`@media\\s*\\((?:min-width:\\s*${px}px|width>=${px}px)\\)`);
       expect(css, `the grid does not step at ${px}px, which the ladder declares`).toMatch(query);
     }
-    // And it must not step anywhere the ladder does not.
-    const declared = new Set(BREAKPOINTS.map(String));
+    /*
+     * And it must not step anywhere the ladder does not — WITH TWO NAMED EXCEPTIONS, and naming
+     * them is the point rather than a way around the rule.
+     *
+     * 🔴 This swept the WHOLE served bundle and required every `min-width` in it to be a ladder
+     * rung. That was true until the bar grew a rung of its own, and then it failed here — on
+     * `/development`, over a stylesheet this page does not own, for a change to the header.
+     *
+     * `--pub-bar-h` and the nav's visibility ladder are NOT page-layout breakpoints. They are
+     * derived from a measured constraint Akhil set on the bar itself: *"ensure minimum of 60px gap
+     * remains between text on header from right & left side, if lesser, remove the button, keep
+     * brand."* Sweeping the bar 300→1100px in 2px steps put one nav word over that floor at 344 and
+     * both words over it at 458, so the rungs are 344 and 460. Adding them to `BREAKPOINTS` would
+     * be worse than listing them here: the ladder is what the page GRID steps at, and a card grid
+     * that started stepping at 344 because the wordmark is 112px wide would be nonsense.
+     *
+     * The sweep is kept because it is the valuable half — a third unexplained rung still fails.
+     */
+    const SHELL_NAV_RUNGS = ['344', '460'];
+    const declared = new Set([...BREAKPOINTS.map(String), ...SHELL_NAV_RUNGS]);
     const found = [...css.matchAll(/@media\s*\((?:min-width:\s*(\d+)px|width>=(\d+)px)\)/g)].map(
       (m) => (m[1] ?? m[2]) as string
     );
     for (const px of found) {
-      expect(declared.has(px), `the served CSS steps at ${px}px, which is not in BREAKPOINTS`).toBe(
-        true
-      );
+      expect(
+        declared.has(px),
+        `the served CSS steps at ${px}px, which is neither a BREAKPOINTS rung nor one of the ` +
+          `shell's nav rungs (${SHELL_NAV_RUNGS.join(', ')})`
+      ).toBe(true);
+    }
+
+    /*
+     * AND THE EXCEPTIONS ARE NOT THIS PAGE'S. Asserted so the allowance above cannot quietly
+     * become cover for a card-grid rule that steps at 344: every query containing a `.wk-` selector
+     * must sit on a ladder rung, with no exceptions at all.
+     */
+    const wkQueries = [
+      ...css.matchAll(
+        /@media\s*\((?:min-width:\s*(\d+)px|width>=(\d+)px)\)\s*\{([\s\S]{0,2000}?)\}\s*\}/g
+      ),
+    ]
+      .filter((m) => (m[3] as string).includes('.wk-'))
+      .map((m) => (m[1] ?? m[2]) as string);
+    expect(wkQueries.length, 'no .wk- rule sits inside a width query at all').toBeGreaterThan(0);
+    for (const px of wkQueries) {
+      expect(
+        BREAKPOINTS.map(String).includes(px),
+        `a .wk- rule steps at ${px}px, which is not a ladder rung`
+      ).toBe(true);
     }
 
     say(

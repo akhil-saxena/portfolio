@@ -72,6 +72,23 @@ const PROJECT_KEYS = ['id', 'title', 'label', 'description', 'tech', 'icon', 'hr
  */
 const PHASE_5_KEYS = ['status', 'oneLiner'];
 
+/**
+ * Keys added AFTER the move, named one at a time so an unnamed one still fails.
+ *
+ * `evidence` — plan 05-16. `ProjectSchema` gained `evidence: z.enum(['components']).optional()` so a
+ * project can declare what it is able to SHOW of itself, and `design-system` declares `components`:
+ * its own Chip, StatusPill, Button and Link render on the card as the evidence, rather than a
+ * paragraph describing a component library. Akhil chose that treatment out of three: *"i is okay"*.
+ *
+ * WHY THIS LIST EXISTS RATHER THAN THE PROOF BEING RELAXED. The claim below is that the five project
+ * records moved from `resume.json` to `projects.json` BYTE-IDENTICALLY, and every exception erodes
+ * it. So exceptions are enumerated: a key in this list is a change someone made on purpose and
+ * wrote down here, and any other new key fails the assertion by name. The alternative — comparing
+ * only the keys both files happen to share — would let the record be rewritten a field at a time
+ * with the test staying green, which is precisely what it was written to prevent.
+ */
+const POST_MOVE_KEYS = ['evidence', 'mark'];
+
 /** The record whose description OD-6 changed, and the token it now carries. */
 const FIGURE_RECORD_ID = 'design-system';
 const COMPONENT_COUNT_TOKEN = '{{ds.componentCount}}';
@@ -262,6 +279,8 @@ const maskDescription = (record: ProjectRecord): Record<string, unknown> => {
   // Not cast back to `ProjectRecord`: after the deletions it is deliberately NOT one, and saying
   // so would be a lie the compiler rejects (ts2352). The only consumer is `JSON.stringify`.
   for (const key of PHASE_5_KEYS) delete masked[key];
+  // …and the keys added after the move, each named in POST_MOVE_KEYS with its reason.
+  for (const key of POST_MOVE_KEYS) delete masked[key];
   return masked;
 };
 
@@ -358,14 +377,26 @@ describe.each(PROJECT_IDS)('project "%s" moved verbatim', (id) => {
   });
 
   it('carries the eight authored keys, in the order they were authored in', () => {
-    // Derived by removing the 05-02 keys BY NAME, not by taking the first eight: a ninth key
+    // Derived by removing the later keys BY NAME, not by taking the first eight: an unnamed key
     // appearing later must fail here. The evidence revision is asserted to hold exactly the eight,
-    // so this proof did not shrink — it stopped owning two fields it never had.
-    const carried = Object.keys(after).filter((key) => !PHASE_5_KEYS.includes(key));
+    // so this proof did not shrink — it stopped owning fields it never had.
+    const added = [...PHASE_5_KEYS, ...POST_MOVE_KEYS];
+    const carried = Object.keys(after).filter((key) => !added.includes(key));
     expect(carried).toEqual(PROJECT_KEYS);
     expect(Object.keys(before)).toEqual(PROJECT_KEYS);
-    // The handover is asserted, not assumed: both new keys must be present, in their own order.
+    // The handover is asserted, not assumed: both 05-02 keys must be present, in their own order.
     expect(Object.keys(after).filter((key) => PHASE_5_KEYS.includes(key))).toEqual(PHASE_5_KEYS);
+  });
+
+  it('carries no key that is neither authored, handed over, nor named as a later addition', () => {
+    /*
+     * THE CATCH-ALL, and it is the assertion that keeps the two lists above honest. Without it,
+     * adding a field and adding its name to `POST_MOVE_KEYS` would be indistinguishable from adding
+     * a field and forgetting to — both green. Here, only the second is.
+     */
+    const legal = new Set([...PROJECT_KEYS, ...PHASE_5_KEYS, ...POST_MOVE_KEYS]);
+    const unexpected = Object.keys(after).filter((key) => !legal.has(key));
+    expect(unexpected, `${id} carries unnamed key(s): ${unexpected.join(', ')}`).toEqual([]);
   });
 
   it('is byte-identical to its previous home, key order included, except the OD-6 field', () => {
@@ -559,7 +590,13 @@ describe('formatPeriod on shapes the corpus does not contain', () => {
   it('renders single-digit months without zero-padding or an off-by-one', () => {
     // January is month 1 and index 0. Both ends of the table, in one case.
     expect(
-      formatPeriod({ startMonth: 1, startYear: 2020, endMonth: 9, endYear: 2021, isPresent: false })
+      formatPeriod({
+        startMonth: 1,
+        startYear: 2020,
+        endMonth: 9,
+        endYear: 2021,
+        isPresent: false,
+      })
     ).toBe('Jan 2020 – Sep 2021');
     expect(
       formatPeriod({

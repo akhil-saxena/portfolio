@@ -83,7 +83,14 @@ const RESUME = read('data/resume.json') as Record<string, unknown>;
 const MIN_PHOTOS = 39;
 
 /** The censuses this plan was written against, re-derived here rather than trusted. */
-const EXPECTED_CATEGORIES = 7;
+/*
+ * FIVE, and it was seven. The taxonomy was re-authored after a pass over all forty photographs —
+ * Akhil: *"seems we have lot of categories"*, then *"5 is better"* — retiring `abstract`, `nature`,
+ * `product` and `street` and adding `landscape` and `still-life`. It stays an EQUALITY rather than
+ * becoming `SITE.categories.length`: the whole point of a census is that a change to it is a
+ * decision someone makes in writing, and this one was.
+ */
+const EXPECTED_CATEGORIES = 5;
 const EXPECTED_PEEK_IDS = 6;
 const EXPECTED_PROJECTS = 5;
 const EXPECTED_BULLETS = 13;
@@ -229,7 +236,7 @@ describe('the data this file is written against', () => {
     const allNull = PHOTOS.filter((p) =>
       Object.values(p.exif as Record<string, unknown>).every((v) => v === null)
     ).map((p) => p.id);
-    expect(allNull).toEqual(['product-peppers']);
+    expect(allNull).toEqual(['still-life-peppers']);
   });
 });
 
@@ -387,7 +394,10 @@ describe('RI-1 — the rule ADR-002 traded /admin/site for', () => {
 
 describe('RI-2 — the other direction: a category no photo uses ships as an empty filter tab', () => {
   it('names the unused id', () => {
-    const site = mutated(SITE, '/categories/7', (draft) => {
+    // The index is DERIVED: `/categories/<n>` is where the pushed record lands, and hand-typing
+    // `7` made this fail as soon as the taxonomy went from seven records to five — `mutated()`
+    // correctly refused to describe a change at a path that did not receive one.
+    const site = mutated(SITE, `/categories/${(SITE.categories as unknown[]).length}`, (draft) => {
       (draft.categories as unknown[]).push({ id: 'macro', label: 'Macro', columns: 3 });
     });
     const report = validateContentSet({ ...wholeSet(), site });
@@ -411,13 +421,16 @@ describe('RI-3 / RI-4 — peek ids and peek positions', () => {
   });
 
   it('a peek POSITION for a photo not in peekIds fails separately, with its own message', () => {
-    const home = mutated(HOME, '/peekPositions/street-davidjpg', (draft) => {
-      (draft.peekPositions as Record<string, string>)['street-davidjpg'] = '50% 25%';
+    // `still-life-davidjpg` is a REAL record — verified against the manifest — and is NOT in
+    // `peekIds`, which is exactly the pair of conditions RI-4 fires on and RI-3 does not. The id
+    // used to be `street-davidjpg`; the category re-author moved that photograph to `still-life`.
+    const home = mutated(HOME, '/peekPositions/still-life-davidjpg', (draft) => {
+      (draft.peekPositions as Record<string, string>)['still-life-davidjpg'] = '50% 25%';
     });
     const report = validateContentSet({ ...wholeSet(), home });
     expect(report.ok).toBe(false);
     const text = reportText(report);
-    expect(text).toContain('street-davidjpg');
+    expect(text).toContain('still-life-davidjpg');
     expect(text).toContain('RI-4');
     // It is a real photo, so RI-3 has nothing to say about it. One rule fires, not two.
     expect(text).not.toContain('RI-3');
@@ -468,7 +481,7 @@ describe('RI-5 / RI-6 — uniqueness', () => {
 
   it('duplicate categoryOrder WITHIN a category fails, naming the category', () => {
     const inAbstract = PHOTOS.map((p, i) => ({ p, i })).filter(
-      ({ p }) => p.category === 'abstract'
+      ({ p }) => p.category === 'architecture'
     );
     const target = inAbstract[1];
     const photos = mutated(PHOTOS, `/${target.i}/categoryOrder`, (draft) => {
@@ -477,7 +490,7 @@ describe('RI-5 / RI-6 — uniqueness', () => {
     const report = validateContentSet({ ...wholeSet(), photos });
     expect(report.ok).toBe(false);
     const text = reportText(report);
-    expect(text).toContain('abstract');
+    expect(text).toContain('architecture');
     expect(text).toContain('RI-6');
   });
 
@@ -718,8 +731,8 @@ describe('OD-3 — tags is dropped', () => {
  * ========================================================================================== */
 
 describe('exif', () => {
-  it('accepts product-peppers, whose six fields are all null', () => {
-    const peppers = PHOTOS.find((p) => p.id === 'product-peppers');
+  it('accepts still-life-peppers, whose six fields are all null', () => {
+    const peppers = PHOTOS.find((p) => p.id === 'still-life-peppers');
     const result = PhotoSchema.safeParse(peppers);
     expect(result.success ? null : errorText(result)).toBeNull();
   });

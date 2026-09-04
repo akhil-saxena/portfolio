@@ -99,7 +99,7 @@ const FILE = {
  * The name of the top-level array in the two files that ARE arrays.
  *
  * A zod issue path for `photos[12].order` begins at the index, so it carries no name for the thing
- * being indexed. The formatter needs one to render `nature-hillsandgreens [photos[12] of 39]`, and
+ * being indexed. The formatter needs one to render `landscape-hillsandgreens [photos[12] of 39]`, and
  * it comes from here rather than from a string literal at the call site so the two array files and
  * the three object files are described by one table.
  */

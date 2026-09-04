@@ -164,16 +164,56 @@ describe('target assembly over the committed manifest', () => {
     expect([...origins]).toEqual([IMAGE_ORIGIN]);
   });
 
-  it('keeps the category segment in every pathname — a basename rewrite would 404 plausibly', () => {
+  it('keeps a directory segment in every pathname — a basename rewrite would 404 plausibly', () => {
+    /*
+     * 🔴 THE SEGMENT IS NO LONGER THE RECORD'S `category`, AND THAT IS A FINDING RATHER THAN A
+     * BROKEN TEST.
+     *
+     * This assertion used to read `startsWith(`/photos/${category}/`)`. The taxonomy was
+     * re-authored from seven categories to five — Akhil: *"5 is better"* — and that rewrote every
+     * record's `id` and `category`. It did NOT rewrite the R2 keys, because renaming forty objects
+     * in a bucket is a migration with a failure mode, and the keys are physical storage rather than
+     * editorial structure. MEASURED on the committed manifest: `architecture-intothemist` carries
+     * `…/photos/abstract/intothemist.webp` — a record in `architecture` living under the retired
+     * `abstract` prefix, which is correct and deliberate.
+     *
+     * So the invariant "the URL's directory is the record's category" is FALSE BY DESIGN now, and
+     * asserting it would be asserting that the re-author had not happened.
+     *
+     * WHAT STILL PROTECTS AGAINST THE ORIGINAL HAZARD — a basename rewrite that drops the
+     * directory and 404s plausibly — is that all five variants of ONE record share ONE directory.
+     * That is strictly stronger than the old form against the thing it was written for: a rewrite
+     * that flattened `photos/abstract/x-md.webp` to `photos/x-md.webp` passed the old check only if
+     * it also renamed the directory, and fails this one outright.
+     */
     const targets = assembleTargets(manifest, { manifestPath: MANIFEST_PATH });
     const byId = new Map(manifest.map((r) => [r.id, r]));
+    const dirsById = new Map<string, Set<string>>();
+
     for (const target of targets) {
-      const category = byId.get(target.id)?.category;
-      expect(category, `no record for ${target.id}`).toBeTruthy();
-      // The R2 STORAGE prefix, not the route. Every object lives under `photos/` in the bucket;
-      // the 2026-08-30 rename moved the ROUTE to /photography and deliberately left the keys.
-      expect(new URL(target.url).pathname.startsWith(`/photos/${category}/`)).toBe(true);
+      expect(byId.get(target.id), `no record for ${target.id}`).toBeTruthy();
+      const segments = new URL(target.url).pathname.split('/').filter(Boolean);
+      // `photos/<dir>/<basename>` — three segments, and the first is the bucket prefix the
+      // 2026-08-30 route rename deliberately left alone.
+      expect(segments[0]).toBe('photos');
+      expect(segments).toHaveLength(3);
+      expect(segments[1]).toMatch(/^[a-z][a-z0-9-]*$/);
+      if (!dirsById.has(target.id)) dirsById.set(target.id, new Set());
+      (dirsById.get(target.id) as Set<string>).add(segments[1] as string);
     }
+
+    // ANTI-VACUITY: no records would make the loop above assert nothing.
+    expect(dirsById.size).toBeGreaterThan(0);
+    const split = [...dirsById.entries()].filter(([, dirs]) => dirs.size !== 1);
+    expect(split.map(([id, dirs]) => `${id} → ${[...dirs].join(', ')}`)).toEqual([]);
+
+    const drifted = [...dirsById.entries()].filter(
+      ([id, dirs]) => !dirs.has(byId.get(id)?.category as string)
+    );
+    process.stdout.write(
+      `[verify-photo-urls] ${dirsById.size} record(s), each under one directory; ` +
+        `${drifted.length} whose directory is no longer their category (the re-author, expected)\n`
+    );
   });
 });
 
@@ -222,7 +262,7 @@ describe('the floors — "nothing to check" is a refusal, never a pass', () => {
   });
 
   it('refuses a record whose remote key is missing, naming the record and the key', () => {
-    const record = makeRecord('nature-example');
+    const record = makeRecord('landscape-example');
     delete (record.urls as Partial<PhotoUrls>).medium;
     let message = '';
     try {
@@ -231,12 +271,12 @@ describe('the floors — "nothing to check" is a refusal, never a pass', () => {
       message = (error as Error).message;
     }
     expect(message.length).toBeGreaterThan(0);
-    expect(message).toContain('nature-example.medium');
+    expect(message).toContain('landscape-example.medium');
     expect(message).toContain('missing or not a string');
   });
 
   it('refuses an unparseable URL, naming the record and the key', () => {
-    const record = makeRecord('nature-example', { large: 'not a url at all' });
+    const record = makeRecord('landscape-example', { large: 'not a url at all' });
     let message = '';
     try {
       assembleTargets([record], {});
@@ -244,15 +284,15 @@ describe('the floors — "nothing to check" is a refusal, never a pass', () => {
       message = (error as Error).message;
     }
     expect(message.length).toBeGreaterThan(0);
-    expect(message).toContain('nature-example.large');
+    expect(message).toContain('landscape-example.large');
     expect(message).toContain('not a parseable URL');
   });
 });
 
 describe('the origin check fires before any request (T-04-10)', () => {
   it('reports a foreign origin as a finding and does not fetch it', () => {
-    const record = makeRecord('nature-example', {
-      original: 'https://evil.example.com/photos/nature/example.webp',
+    const record = makeRecord('landscape-example', {
+      original: 'https://evil.example.com/photos/landscape/example.webp',
     });
     let message = '';
     try {
@@ -261,7 +301,7 @@ describe('the origin check fires before any request (T-04-10)', () => {
       message = (error as Error).message;
     }
     expect(message.length).toBeGreaterThan(0);
-    expect(message).toContain('nature-example.original');
+    expect(message).toContain('landscape-example.original');
     expect(message).toContain('https://evil.example.com');
     expect(message).toContain(IMAGE_ORIGIN);
     expect(message).toContain('not requested');
@@ -272,7 +312,7 @@ describe('the origin check fires before any request (T-04-10)', () => {
     // The walk-through attempt: a data: URI parses, so a filter-based verifier would accept it.
     // `new URL('data:...').origin` is "null", which is not IMAGE_ORIGIN, so the origin check
     // catches it before any request.
-    const record = makeRecord('nature-example', {
+    const record = makeRecord('landscape-example', {
       original: 'data:image/webp;base64,UklGRhICAABXRUJQ',
     });
     let message = '';
@@ -282,7 +322,7 @@ describe('the origin check fires before any request (T-04-10)', () => {
       message = (error as Error).message;
     }
     expect(message.length).toBeGreaterThan(0);
-    expect(message).toContain('nature-example.original');
+    expect(message).toContain('landscape-example.original');
     expect(message).toContain('not requested');
   });
 });
@@ -410,9 +450,9 @@ describe('the argv contract, including the HEAD/GET rule', () => {
   });
 
   it('takes a manifest path positionally and an id after --only', () => {
-    const parsed = parseArgv(['some/other.json', '--only', 'nature-example']);
+    const parsed = parseArgv(['some/other.json', '--only', 'landscape-example']);
     expect(parsed.manifestArg).toBe('some/other.json');
-    expect(parsed.only).toBe('nature-example');
+    expect(parsed.only).toBe('landscape-example');
   });
 
   it('refuses --only with no id, so the flag cannot silently widen the scope', () => {
@@ -425,7 +465,7 @@ describe('the argv contract, including the HEAD/GET rule', () => {
     // record — or, in the pipeline, look like a one-record check that was really 156.
     let message = '';
     try {
-      parseArgv(['--onlyy', 'nature-example']);
+      parseArgv(['--onlyy', 'landscape-example']);
     } catch (error) {
       message = (error as Error).message;
     }
@@ -467,9 +507,9 @@ describe('the retry path cannot mask a real failure', () => {
   });
 
   const TARGET = {
-    id: 'nature-example',
+    id: 'landscape-example',
     key: 'medium',
-    url: `${IMAGE_ORIGIN}/photos/nature/example-md.webp`,
+    url: `${IMAGE_ORIGIN}/photos/landscape/example-md.webp`,
   };
   const HEAD_MODE = parseArgv([]).mode;
   const NO_WAIT = { backoffMs: 0 };
@@ -509,7 +549,7 @@ describe('the retry path cannot mask a real failure', () => {
     expect(calls).toBe(3);
     expect(result).not.toBe(null);
     expect(String(result).length).toBeGreaterThan(0);
-    expect(String(result)).toContain('nature-example.medium');
+    expect(String(result)).toContain('landscape-example.medium');
     expect(String(result)).toContain('HTTP 502');
     expect(String(result)).toContain('after 3 attempts');
     expect(String(result)).toContain(TARGET.url);

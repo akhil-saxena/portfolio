@@ -8,8 +8,8 @@
  * `photoSlug` / `photoHref` — BL-8. THE SINGLE DEFINITION, AND WHY IT HAD TO BE MADE ONE.
  * ================================================================================================
  *
- * `PhotoSchema` has no `slug` field. The id is `abstract-intothemist` and the category is
- * `abstract`, so `/photography/<category>/<slug>` is RECOVERED, not stored — that is real work, and it
+ * `PhotoSchema` has no `slug` field. The id is `architecture-intothemist` and the category is
+ * `architecture`, so `/photography/<category>/<slug>` is RECOVERED, not stored — that is real work, and it
  * needs exactly one definition.
  *
  * **05-07's gallery tile and 05-08's detail route both import these. Neither may re-derive.** They
@@ -97,8 +97,10 @@ export type PhotoSources = {
 /**
  * The photograph's slug: its id with the `category + PHOTO_ID_SEPARATOR` prefix removed.
  *
- * `abstract-intothemist` in category `abstract` → `intothemist`. Only the FIRST prefix goes; every
- * later separator is part of the slug, so `nature-river-bend-2024` → `river-bend-2024`. A
+ * `architecture-intothemist` in category `architecture` → `intothemist`. Only the FIRST prefix
+ * goes; every later separator is part of the slug, so `landscape-river-bend-2024` →
+ * `river-bend-2024`. That case is no longer hypothetical: `still-life` is a category whose id
+ * CONTAINS the separator, so `still-life-peppers` must yield `peppers` and not `life-peppers`. A
  * `split('-')[1]` implementation looks right on the first example and truncates the second.
  *
  * Throws rather than returning a wrong slug — see the header.

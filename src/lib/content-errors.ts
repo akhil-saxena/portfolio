@@ -87,11 +87,11 @@ const ADDRESSING_KEYS = ['id'] as const;
  * `company: "Brevo (Formerly Sendinblue)"`. With `id` alone the message said `brevo`, which is
  * correct and is not what the author calls the record; with the display field alone a photograph
  * would be reported as "Hills and Greens" when `peekIds` and every URL address it as
- * `nature-hillsandgreens`. So both are printed when both exist and differ.
+ * `landscape-hillsandgreens`. So both are printed when both exist and differ.
  *
  * Order matters within this list, and the order below was corrected by planting a defect too:
  * `category` started above `title` and a photograph came out as
- * `nature-hillsandgreens — nature`, which repeats a facet instead of naming the picture. `category`
+ * `landscape-hillsandgreens — landscape`, which repeats a facet instead of naming the picture. `category`
  * is now LAST, where it serves only the one record that has nothing better — a skill group, whose
  * `category` genuinely is its name ("Frontend"). Otherwise: `company` for experience, `school` for
  * education, `title` for a photograph or a project, `label` for a badge or a social link, `text`
@@ -183,7 +183,7 @@ export function valueAtPath(data: unknown, path: readonly PropertyKey[]): unknow
 
 /** The named records an issue path passes through, and the field path below the last of them. */
 export interface IssueFraming {
-  /** `nature-hillsandgreens [photos[12] of 39]`, outermost first. Empty when none is named. */
+  /** `landscape-hillsandgreens [photos[12] of 39]`, outermost first. Empty when none is named. */
   records: string[];
   /** What is left of the path below the innermost named record. May be empty. */
   field: string;

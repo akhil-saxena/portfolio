@@ -148,9 +148,9 @@ describe('§1 stemFrom', () => {
 
 describe('§2 stagingKeyFor', () => {
   it('composes a key rooted at the staging prefix, as an independent literal', () => {
-    const key = stagingKeyFor({ category: 'abstract', stem: 'intothemist', extension: '.jpg' });
+    const key = stagingKeyFor({ category: 'architecture', stem: 'intothemist', extension: '.jpg' });
     expect(key.startsWith(PREFIX)).toBe(true);
-    expect(key).toBe('temp/abstract/intothemist.jpg');
+    expect(key).toBe('temp/architecture/intothemist.jpg');
     expect(key).toMatch(KEY_GRAMMAR);
   });
 
@@ -166,11 +166,11 @@ describe('§2 stagingKeyFor', () => {
    */
   it('refuses a key whose prefix was mutated, which is what the grep alone would miss', () => {
     expect(() =>
-      stagingKeyFor({ category: 'abstract', stem: 'x', extension: '.jpg' })
+      stagingKeyFor({ category: 'architecture', stem: 'x', extension: '.jpg' })
     ).not.toThrow();
     // The mutated form, composed the way a plausible refactor would.
-    const mutated = `${PREFIX.replace('temp', 'tmp')}abstract/x.jpg`;
-    expect(mutated).toBe('tmp/abstract/x.jpg');
+    const mutated = `${PREFIX.replace('temp', 'tmp')}architecture/x.jpg`;
+    expect(mutated).toBe('tmp/architecture/x.jpg');
     expect(mutated).not.toMatch(KEY_GRAMMAR);
   });
 
@@ -190,14 +190,14 @@ describe('§2 stagingKeyFor', () => {
 
 describe('§3 the wrangler argv', () => {
   const argv = wranglerPutArgv({
-    key: 'temp/abstract/x.jpg',
+    key: 'temp/architecture/x.jpg',
     file: '/tmp/x.jpg',
     contentType: 'image/jpeg',
   });
 
   it('is a put against the bucket, with --remote and never --local', () => {
     expect(argv.slice(0, 3)).toEqual(['r2', 'object', 'put']);
-    expect(argv[3]).toBe('portfolio-photos/temp/abstract/x.jpg');
+    expect(argv[3]).toBe('portfolio-photos/temp/architecture/x.jpg');
     expect(argv).toContain('--remote');
     expect(argv).not.toContain('--local');
   });
@@ -226,27 +226,31 @@ describe('§3 the wrangler argv', () => {
 
 describe('§4 the staged name decides the record id', () => {
   it('slugFromStagingKey is the identity on a key this script composed', async () => {
-    const plan = await planStaging({ file: FIXTURE, category: 'abstract', name: null });
+    const plan = await planStaging({ file: FIXTURE, category: 'architecture', name: null });
     expect(slugFromStagingKeyIndependently(plan.key)).toBe(plan.stem);
-    expect(plan.photoId).toBe(`abstract-${plan.stem}`);
+    expect(plan.photoId).toBe(`architecture-${plan.stem}`);
     expect(plan.photoId).toMatch(ID_GRAMMAR);
   });
 
   it('survives a name that needed normalising — the round trip is stable, not merely equal once', async () => {
     const plan = await planStaging({
       file: FIXTURE,
-      category: 'nature',
+      category: 'landscape',
       name: 'Fairway Reflections (2).JPG',
     });
     expect(plan.stem).toBe('fairway-reflections-2');
     expect(slugFromStagingKeyIndependently(plan.key)).toBe(plan.stem);
     // Applying the rule a second time changes nothing — which is what makes the printed id honest.
-    expect(slugFromStagingKeyIndependently(`temp/nature/${plan.stem}.jpg`)).toBe(plan.stem);
+    expect(slugFromStagingKeyIndependently(`temp/landscape/${plan.stem}.jpg`)).toBe(plan.stem);
   });
 
   it('is a pure function of (category, name, format) — no timestamp, no nonce', async () => {
-    const first = await planStaging({ file: FIXTURE, category: 'abstract', name: 'ridge.jpg' });
-    const second = await planStaging({ file: SMALL_FIXTURE, category: 'abstract', name: 'ridge' });
+    const first = await planStaging({ file: FIXTURE, category: 'architecture', name: 'ridge.jpg' });
+    const second = await planStaging({
+      file: SMALL_FIXTURE,
+      category: 'architecture',
+      name: 'ridge',
+    });
     // Different bytes, same name and category => the SAME staging key and the SAME record id.
     // This is what makes a re-upload an upsert (OD-4) rather than a duplicate insert, and it is
     // the mechanism CONT-05 relies on.
@@ -266,25 +270,29 @@ describe('§5 validation', () => {
     );
     await expect(
       planStaging({ file: FIXTURE, category: 'landscapes', name: null })
-    ).rejects.toThrow(/abstract, architecture, nature/);
+    ).rejects.toThrow(/architecture, landscape, portraits/);
   });
 
   it('refuses a file that is not there', async () => {
     await expect(
-      planStaging({ file: 'test/pipeline/fixtures/nope.jpg', category: 'abstract', name: null })
+      planStaging({
+        file: 'test/pipeline/fixtures/nope.jpg',
+        category: 'architecture',
+        name: null,
+      })
     ).rejects.toThrow(/cannot be read/);
   });
 
   it('refuses bytes that do not decode as a permitted image', async () => {
     const notAnImage = fileURLToPath(new URL('../../package.json', import.meta.url));
     await expect(
-      planStaging({ file: notAnImage, category: 'abstract', name: null })
+      planStaging({ file: notAnImage, category: 'architecture', name: null })
     ).rejects.toThrow(/did not decode|not one of the formats/);
   });
 
   it('reads the extension from the decoded format, not from the supplied name', async () => {
     // The fixture is a JPEG named with a lie. The composed key must end `.jpg`.
-    const plan = await planStaging({ file: FIXTURE, category: 'abstract', name: 'claim.png' });
+    const plan = await planStaging({ file: FIXTURE, category: 'architecture', name: 'claim.png' });
     expect(plan.key.endsWith('.jpg')).toBe(true);
     expect(plan.contentType).toBe('image/jpeg');
   });
@@ -302,26 +310,26 @@ describe('§5 validation', () => {
 
 describe('§6 parseArgv', () => {
   it('reads the three flags', () => {
-    expect(parseArgv(['--file', 'a.jpg', '--category', 'abstract', '--dry-run'])).toEqual({
+    expect(parseArgv(['--file', 'a.jpg', '--category', 'architecture', '--dry-run'])).toEqual({
       file: 'a.jpg',
-      category: 'abstract',
+      category: 'architecture',
       name: null,
       dryRun: true,
     });
   });
 
   it('refuses an unknown flag rather than ignoring it', () => {
-    expect(() => parseArgv(['--file', 'a.jpg', '--category', 'abstract', '--dryrun'])).toThrow(
+    expect(() => parseArgv(['--file', 'a.jpg', '--category', 'architecture', '--dryrun'])).toThrow(
       /unknown argument/
     );
   });
 
   it('refuses a flag whose value was swallowed by the next flag', () => {
-    expect(() => parseArgv(['--file', '--category', 'abstract'])).toThrow(/--file requires a/);
+    expect(() => parseArgv(['--file', '--category', 'architecture'])).toThrow(/--file requires a/);
   });
 
   it('requires both of the two mandatory flags', () => {
-    expect(() => parseArgv(['--category', 'abstract'])).toThrow(/--file <path> is required/);
+    expect(() => parseArgv(['--category', 'architecture'])).toThrow(/--file <path> is required/);
     expect(() => parseArgv(['--file', 'a.jpg'])).toThrow(/--category <id> is required/);
   });
 });
@@ -351,7 +359,7 @@ describe('§7 --dry-run', () => {
   }
 
   it('exits 0 and prints an argv whose key is rooted at the staging prefix', () => {
-    const out = runDry(['--file', FIXTURE, '--category', 'abstract']);
+    const out = runDry(['--file', FIXTURE, '--category', 'architecture']);
     expect(out).toContain(`wrangler r2 object put portfolio-photos/${PREFIX}`);
     expect(out).toContain('--remote');
     expect(out).toContain('DRY RUN');
@@ -360,14 +368,14 @@ describe('§7 --dry-run', () => {
   it('runs with no CLOUDFLARE_API_TOKEN in the environment at all', () => {
     // If this ever starts failing with the r2.mjs credential message, the module graph has
     // acquired a static import of r2.mjs and --dry-run is no longer reviewable without secrets.
-    const out = runDry(['--file', FIXTURE, '--category', 'abstract']);
+    const out = runDry(['--file', FIXTURE, '--category', 'architecture']);
     expect(out).not.toContain('CLOUDFLARE_API_TOKEN');
   });
 
   it('prints the record id the dispatch will produce', () => {
-    const out = runDry(['--file', FIXTURE, '--category', 'nature', '--name', 'ridge.jpg']);
-    expect(out).toContain('temp/nature/ridge.jpg');
-    expect(out).toContain('nature-ridge');
+    const out = runDry(['--file', FIXTURE, '--category', 'landscape', '--name', 'ridge.jpg']);
+    expect(out).toContain('temp/landscape/ridge.jpg');
+    expect(out).toContain('landscape-ridge');
   });
 
   it('exits non-zero on a refusal, and says why', () => {

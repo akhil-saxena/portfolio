@@ -1,0 +1,207 @@
+name: Migrate Photo Keys
+
+# Move every photo object in R2 onto the pipeline's own key shape, and repoint the manifest at it.
+# Driven by `scripts/migrate-photo-keys.mjs`; this file is the credential surface and the audit
+# trail, and nothing else.
+#
+# WHY THIS IS A WORKFLOW AND NOT A COMMAND SOMEONE RUNS
+#
+# `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are repository secrets and exist nowhere else
+# — MEASURED: absent from the shell, and `.dev.vars`/`.env` carry only the two `CF_ACCESS_*`
+# values. Every R2 write in this repository already happens on an Actions runner for that reason
+# (`process-photos.yml`), and a migration that moved 160 objects is not the thing to make the
+# exception for. `scripts/lib/r2.mjs` fails closed on import without both, so the local path is
+# not merely discouraged, it does not work.
+#
+# WHAT IS BEING MIGRATED, AND WHY
+#
+#   publishedKey() produces  photos/<category>/<slug>-<hash8><suffix>.webp
+#   the bucket holds         photos/abstract/intothemist.webp   (× 156 of 160)
+#
+# Two drifts at once. The corpus predates the content-hashed scheme — one photograph has been
+# through the current pipeline, so 4 of the 160 objects match the shape the code can produce. And
+# an `id` is `category + "-" + slug`, so re-authoring the taxonomy from seven categories to five
+# renamed every record without moving a single object: 72 of the 160 objects now sit in a
+# directory that is not their record's category, under the RETIRED names `abstract`, `nature`,
+# `product`, `street`.
+#
+# THE THREE PHASES, AND WHERE THE IRREVERSIBLE LINE FALLS
+#
+#   plan     read-only. No credential is even exported. Prints the census.
+#   publish  --copy then --repoint, then one commit. WRITES new objects and REWRITES the manifest.
+#            The old keys are untouched, so the live site is serving correctly throughout; the
+#            commit is what moves it onto the new addresses, via CI → Deploy.
+#   sweep    DELETES the 160 old objects. The only irreversible step in the migration.
+#   -------------------- NOTHING BEFORE `sweep` DESTROYS ANYTHING --------------------
+#
+# `publish` is safe to re-run: `--copy` re-reads and re-verifies, and a target key is a function of
+# the bytes, so a second run writes the same keys. `sweep` is idempotent by R2's own semantics —
+# deleting an absent key is success — but it is a separate dispatch on purpose, because it must not
+# run until the repointed manifest is DEPLOYED. Akhil holds that trigger.
+#
+# HOW IT IS CALLED
+#
+#   gh workflow run migrate-photo-keys.yml --ref main -f phase=plan
+#   gh workflow run migrate-photo-keys.yml --ref main -f phase=publish
+#   # …watch CI + Deploy land, load the site, confirm the photographs render…
+#   gh workflow run migrate-photo-keys.yml --ref main -f phase=sweep -f confirm='DELETE OLD KEYS'
+
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        description: 'plan (read-only) · publish (copy + repoint + commit) · sweep (DELETES)'
+        required: true
+        type: choice
+        options: [plan, publish, sweep]
+        default: plan
+      confirm:
+        description: "For sweep only: type DELETE OLD KEYS"
+        required: false
+        type: string
+
+# READ, and the two steps that need more ask for it themselves. The publish phase pushes with a
+# short-lived App token minted next to the push it authorises, never with the ambient one.
+permissions:
+  contents: read
+
+# ONE AT A TIME. Two concurrent runs could interleave a copy with a sweep, and the sweep's guard
+# reads the manifest on disk — which the other run may be halfway through rewriting.
+concurrency:
+  group: migrate-photo-keys
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: ${{ inputs.phase }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # The sweep's confirmation, checked FIRST so a mistyped dispatch costs nothing. A `choice`
+      # input cannot express "and you must also mean it", so this is the second factor.
+      - name: Refuse an unconfirmed sweep
+        if: inputs.phase == 'sweep'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$CONFIRM" != "DELETE OLD KEYS" ]; then
+            echo "::error::phase=sweep requires -f confirm='DELETE OLD KEYS'. This phase deletes"
+            echo "::error::160 objects and is the only irreversible step in the migration."
+            exit 1
+          fi
+
+      # Same action SHAs as ci.yml, deploy.yml and process-photos.yml, on purpose: four workflows
+      # agreeing on one revision is one thing to audit. The version comment is documentation; the
+      # SHA is the contract.
+      #
+      # `fetch-depth: 0` because the repository's migration proofs walk `git log -- <file>` and a
+      # depth-1 clone makes them throw rather than pass vacuously (deploy.yml records the run this
+      # broke). `persist-credentials: false` so there is no ambient credential to push with — the
+      # publish phase brings its own, scoped to the one step that uses it.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies from the lockfile
+        run: npm ci
+
+      # ALWAYS, WHATEVER THE PHASE, and it is the run's own record of what it was about. Read-only:
+      # no credential is exported in this step, and the script's plan path opens no socket.
+      - name: Plan
+        run: node scripts/migrate-photo-keys.mjs
+
+      # ── publish ────────────────────────────────────────────────────────────────────────────────
+      #
+      # Minted here rather than at the top of the job: the argument for an App token over a PAT is
+      # that it is short-lived, and a token minted before a step that reads and writes 320 objects
+      # is short-lived only on paper. The two App secrets appear in this step and nowhere else.
+      - name: Mint the push token
+        id: push-token
+        if: inputs.phase == 'publish'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ secrets.PHOTO_PIPELINE_APP_ID }}
+          private-key: ${{ secrets.PHOTO_PIPELINE_APP_PRIVATE_KEY }}
+
+      # THE SIDE-EFFECTING STEP, and the only one in this phase holding a credential that can
+      # cause one.
+      #
+      # `--copy` reads each object, hashes its own bytes, writes the new key, then READS IT BACK and
+      # re-hashes before counting it done — a put that succeeded and stored truncated bytes is the
+      # one failure that `sweep` could later turn into data loss. It exits non-zero on any single
+      # failure, and `--repoint` refuses a journal shorter than the manifest, so a partial copy
+      # cannot become a partial cutover.
+      #
+      # THE JOURNAL IS COMMITTED, not kept as an artefact. A runner's filesystem does not survive
+      # the dispatch boundary, and `sweep` — a different run, days later — needs to know which old
+      # key each object came from. That mapping is a fact about a migration that happened, so it
+      # belongs in the history beside the manifest it explains.
+      #
+      # Every value reaches the process through `env:`. A `run:` block is bash and `${{ … }}` is
+      # substituted textually before bash starts, so an input in that position would be shell
+      # source.
+      - name: Copy the objects and repoint the manifest
+        if: inputs.phase == 'publish'
+        run: |
+          CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')"
+          CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+
+          node scripts/migrate-photo-keys.mjs --copy
+          node scripts/migrate-photo-keys.mjs --repoint
+
+          # The content gate over the rewritten manifest, before anything is committed. `astro
+          # sync` fires the same `astro:config:done` hook the build does, so all five per-file
+          # schemas and all six RI rules run — and a manifest full of plausible-looking addresses
+          # that no object answers is exactly what this migration could produce.
+          npx astro sync
+
+          git config user.name 'photo-pipeline'
+          git config user.email 'photo-pipeline@users.noreply.github.com'
+          git add data/portfolio_images.json .migration/photo-keys.json
+          git commit -m 'chore(photos): move R2 keys onto the published-key shape
+
+          Every remote URL now names photos/<category>/<slug>-<hash8><suffix>.webp, the shape
+          publishedKey() produces and parsePublishedKey() guards. The old objects are still in the
+          bucket and are removed by a separate `sweep` dispatch once this is deployed.
+
+          .migration/photo-keys.json records source -> target and the hash that verified each copy.'
+          git remote set-url origin "https://x-access-token:${PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin HEAD:main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PUSH_TOKEN: ${{ steps.push-token.outputs.token }}
+
+      - name: Say what happens next
+        if: inputs.phase == 'publish'
+        run: |
+          echo '::notice::The manifest is committed. CI then Deploy will publish it.'
+          echo '::notice::LOAD THE SITE and confirm the photographs render before sweeping.'
+          echo "::notice::Then: gh workflow run migrate-photo-keys.yml --ref main -f phase=sweep -f confirm='DELETE OLD KEYS'"
+
+      # ── sweep ──────────────────────────────────────────────────────────────────────────────────
+      #
+      # The script's own guard refuses if the manifest still names a legacy key — proof that
+      # `--repoint` ran and was committed. It is a PROXY for what matters, and the script says so:
+      # nothing on a runner can see what is DEPLOYED. That is why this is a separate dispatch with
+      # a typed confirmation rather than a step chained onto publish behind a sleep.
+      - name: Delete the old objects
+        if: inputs.phase == 'sweep'
+        run: |
+          CLOUDFLARE_API_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '[:space:]')"
+          CLOUDFLARE_ACCOUNT_ID="$(printf '%s' "$CLOUDFLARE_ACCOUNT_ID" | tr -d '[:space:]')"
+          export CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID
+          node scripts/migrate-photo-keys.mjs --sweep
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -107,14 +107,25 @@ const err = (s) => process.stderr.write(`${s}\n`);
 
 /**
  * §9.4 names `src/pages/photography*` and `src/components/Photo*`. The third entry is a deliberate
- * widening by plan 05-12 and is recorded rather than slipped in: `src/lib/photo-lightbox.ts` is the
- * module that decides which fields reach the lightbox island, so it is exactly the place a `date`
- * would be added by someone who thought they were only touching a data shape.
+ * widening by plan 05-12 and is recorded rather than slipped in: it is the module that decides
+ * which fields reach the gallery island, so it is exactly the place a `date` would be added by
+ * someone who thought they were only touching a data shape.
+ *
+ * 🔴 THAT MODULE CHANGED, AND THE GATE CAUGHT IT — which is the whole reason it refuses a missing
+ * root instead of skipping one. It was `src/lib/photo-lightbox.ts`; the overlay that module served
+ * was replaced by the `/photography/<category>/<slug>` document and both were deleted. The build
+ * refused with *"scan root does not exist. A PASS here would be a statement about an empty set"*
+ * rather than quietly narrowing its own coverage by a third.
+ *
+ * `src/lib/photo-filter.ts` inherits the role: it is what the island and the page BOTH read to
+ * decide what a category shows, and `src/lib/photo-srcset.ts` is where a record becomes markup.
+ * Both are named, because the field could be leaked from either.
  */
 const DEFAULT_SCAN_ROOTS = [
   { root: 'src/pages/photography', match: /./ },
   { root: 'src/components/public', match: /^Photo/ },
-  { root: 'src/lib/photo-lightbox.ts', match: /./ },
+  { root: 'src/lib/photo-filter.ts', match: /./ },
+  { root: 'src/lib/photo-srcset.ts', match: /./ },
 ];
 
 const SCAN_EXTENSIONS = ['.astro', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];

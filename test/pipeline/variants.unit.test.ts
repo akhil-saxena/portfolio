@@ -120,13 +120,13 @@ beforeAll(async () => {
   smallSource = await meta(SMALL);
   rich = await deriveAssets({
     bytes: RICH,
-    category: 'nature',
+    category: 'landscape',
     slug: 'rich-exif',
     ingestionDate: INGESTION_DATE,
   });
   small = await deriveAssets({
     bytes: SMALL,
-    category: 'nature',
+    category: 'landscape',
     slug: 'small-source',
     ingestionDate: INGESTION_DATE,
   });
@@ -295,7 +295,7 @@ describe('input refusal, before sharp decodes anything', () => {
     await expect(
       deriveAssets({
         bytes: oversized,
-        category: 'nature',
+        category: 'landscape',
         slug: 'oversized',
         ingestionDate: INGESTION_DATE,
       })
@@ -307,7 +307,7 @@ describe('input refusal, before sharp decodes anything', () => {
     await expect(
       deriveAssets({
         bytes: notAnImage,
-        category: 'nature',
+        category: 'landscape',
         slug: 'not-an-image',
         ingestionDate: INGESTION_DATE,
       })
@@ -328,7 +328,7 @@ describe('input refusal, before sharp decodes anything', () => {
     await expect(
       deriveAssets({
         bytes: Buffer.alloc(0),
-        category: 'nature',
+        category: 'landscape',
         slug: 'empty',
         ingestionDate: INGESTION_DATE,
       })

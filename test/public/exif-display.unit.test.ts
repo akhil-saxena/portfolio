@@ -8,7 +8,7 @@
  *    about coverage, and about the ugly focal length is asserted against
  *    `data/portfolio_images.json` READ FROM DISK AT CHECK TIME. A hand-typed fixture proves
  *    only that the fixture agrees with itself; the whole reason PUB-07 exists is that
- *    `product-peppers` really has six nulls and `lens` really is null on a quarter of the
+ *    `still-life-peppers` really has six nulls and `lens` really is null on a quarter of the
  *    corpus, and a fixture cannot go stale in a way that tells you.
  *
  * 2. NO COUNT IS LITERALLED. The record count, the distinct camera count and the distinct lens
@@ -270,13 +270,13 @@ describe('exifRows — the omit-null rule', () => {
     expect(exifRows(ALL_NULL)).toEqual([]);
   });
 
-  it('returns ZERO rows for product-peppers, read out of the real manifest', () => {
-    const peppers = recordById('product-peppers');
+  it('returns ZERO rows for still-life-peppers, read out of the real manifest', () => {
+    const peppers = recordById('still-life-peppers');
     // Guard the premise: if this record ever gains a field, the zero-row claim below stops
     // being about the degenerate case and this test must say so rather than quietly pass.
     expect(
       Object.values(peppers.exif).every((v) => v === null),
-      'product-peppers no longer has six nulls — PUB-07 needs a new degenerate witness'
+      'still-life-peppers no longer has six nulls — PUB-07 needs a new degenerate witness'
     ).toBe(true);
     expect(exifRows(peppers.exif)).toEqual([]);
   });

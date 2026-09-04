@@ -362,7 +362,7 @@ export function publishedKey(parts: PublishedKeyParts): string {
  * The inverse. Built from the same constants as `publishedKey`, so the pair cannot drift.
  *
  * The `slug` group is `[a-z0-9-]+` and GREEDY, which is what resolves the only real ambiguity:
- * a slug that itself ends in something hash-shaped (`nature-deadbeef`) or suffix-shaped
+ * a slug that itself ends in something hash-shaped (`landscape-deadbeef`) or suffix-shaped
  * (`pano-lg`). Greedy means the LAST `-<hash8>` in the basename is read as the hash, which is
  * where `publishedKey` put it.
  */
@@ -424,7 +424,7 @@ export const OBJECT_CACHE_CONTROL = 'public, max-age=31536000, immutable';
  * THE OLD INVARIANT, measured true on 39/39 pre-hash records and asserted NOWHERE:
  *     id === category + "-" + basename(urls.original, ".webp")
  * OD-1 option A breaks it on purpose — a hashed basename is `<slug>-<hash8>`, so the old
- * derivation would produce `nature-riverbend-a1b2c3d4`.
+ * derivation would produce `landscape-riverbend-a1b2c3d4`.
  *
  * THE NEW INVARIANT, which replaces it:
  *     id === category + "-" + slug,  where slug is recoverable via slugFromPublishedKey()

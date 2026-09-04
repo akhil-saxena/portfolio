@@ -156,19 +156,23 @@ describe('the corpus this suite reads is real and non-trivial', () => {
 
 describe('photoSlug — the id with its category prefix removed', () => {
   it('strips the prefix on the documented example', () => {
-    expect(photoSlug({ id: 'abstract-intothemist', category: 'abstract' })).toBe('intothemist');
+    expect(photoSlug({ id: 'architecture-intothemist', category: 'architecture' })).toBe(
+      'intothemist'
+    );
   });
 
   it('keeps every later hyphen — only the FIRST category prefix is removed', () => {
     // The failure this catches is a `split('-')[1]` or a `replace(/-.*$/, '')` implementation,
-    // both of which look right against `abstract-intothemist` and truncate a real slug.
-    expect(photoSlug({ id: 'nature-river-bend-2024', category: 'nature' })).toBe('river-bend-2024');
+    // both of which look right against `architecture-intothemist` and truncate a real slug.
+    expect(photoSlug({ id: 'landscape-river-bend-2024', category: 'landscape' })).toBe(
+      'river-bend-2024'
+    );
   });
 
   it('does not strip a prefix that merely LOOKS like the category', () => {
-    // `naturewatch-x` starts with "nature" but not with "nature-". A `startsWith(category)` plus a
+    // `naturewatch-x` starts with "landscape" but not with "landscape-". A `startsWith(category)` plus a
     // fixed-length slice would return "watch-x" here and be wrong by one character forever.
-    expect(photoSlug({ id: 'nature-naturewatch', category: 'nature' })).toBe('naturewatch');
+    expect(photoSlug({ id: 'landscape-naturewatch', category: 'landscape' })).toBe('naturewatch');
   });
 
   it('ROUND-TRIPS for every record in the real manifest', () => {
@@ -201,17 +205,21 @@ describe('photoSlug — the id with its category prefix removed', () => {
   it('REFUSES an id that does not carry its category prefix', () => {
     // Silently slicing would produce a wrong slug from a malformed id and route to a page that
     // does not exist. A throw is the only outcome a prerender can act on.
-    expect(() => photoSlug({ id: 'intothemist', category: 'abstract' })).toThrow(/abstract/);
-    expect(() => photoSlug({ id: 'nature-riverbend', category: 'abstract' })).toThrow(/abstract/);
-    expect(() => photoSlug({ id: 'abstract', category: 'abstract' })).toThrow();
-    expect(() => photoSlug({ id: 'abstract-', category: 'abstract' })).toThrow();
+    expect(() => photoSlug({ id: 'intothemist', category: 'architecture' })).toThrow(
+      /architecture/
+    );
+    expect(() => photoSlug({ id: 'landscape-riverbend', category: 'architecture' })).toThrow(
+      /architecture/
+    );
+    expect(() => photoSlug({ id: 'architecture', category: 'architecture' })).toThrow();
+    expect(() => photoSlug({ id: 'architecture-', category: 'architecture' })).toThrow();
   });
 });
 
 describe('photoHref — the ONE definition 05-07 and 05-08 both import', () => {
   it('is exactly /photography/<category>/<slug>', () => {
-    expect(photoHref({ id: 'abstract-intothemist', category: 'abstract' })).toBe(
-      '/photography/abstract/intothemist'
+    expect(photoHref({ id: 'architecture-intothemist', category: 'architecture' })).toBe(
+      '/photography/architecture/intothemist'
     );
   });
 
@@ -249,8 +257,8 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   const expected = (entry: ManifestRecord, widths: readonly number[]): string =>
     VARIANTS.map((variant, index) => `${entry.urls[variant.urlKey]} ${widths[index]}w`).join(', ');
 
-  it('nature-fairwayreflections (source 4608) → 2000w, 1200w, 800w, 400w', () => {
-    const entry = record('nature-fairwayreflections');
+  it('landscape-fairwayreflections (source 4608) → 2000w, 1200w, 800w, 400w', () => {
+    const entry = record('landscape-fairwayreflections');
     expect(entry.dimensions.width).toBe(4608);
     expect(srcsetFor(entry)).toBe(expected(entry, [2000, 1200, 800, 400]));
   });
@@ -261,8 +269,8 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
     expect(srcsetFor(entry)).toBe(expected(entry, [1920, 1200, 800, 400]));
   });
 
-  it('abstract-plane (source 1318) → 1318w, 1200w, 800w, 400w', () => {
-    const entry = record('abstract-plane');
+  it('landscape-plane (source 1318) → 1318w, 1200w, 800w, 400w', () => {
+    const entry = record('landscape-plane');
     expect(entry.dimensions.width).toBe(1318);
     expect(srcsetFor(entry)).toBe(expected(entry, [1318, 1200, 800, 400]));
   });
@@ -286,10 +294,10 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 
   it('emits four candidates, in VARIANTS order, joined by ", "', () => {
-    const parts = srcsetFor(record('abstract-intothemist')).split(', ');
+    const parts = srcsetFor(record('architecture-intothemist')).split(', ');
     expect(parts).toHaveLength(VARIANTS.length);
     for (const [index, variant] of VARIANTS.entries()) {
-      expect(parts[index].startsWith(record('abstract-intothemist').urls[variant.urlKey])).toBe(
+      expect(parts[index].startsWith(record('architecture-intothemist').urls[variant.urlKey])).toBe(
         true
       );
     }
@@ -318,7 +326,7 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 
   it('THROWS if any of the four url keys is missing on the record', () => {
-    const base = record('abstract-intothemist');
+    const base = record('architecture-intothemist');
     for (const variant of VARIANTS) {
       const urls = { ...base.urls };
       delete urls[variant.urlKey];
@@ -332,7 +340,7 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
     // `dimensions` supplies the ratio and the descriptor arithmetic. A record with width 0 would
     // make every descriptor `0w`, which a browser treats as "no information" and silently falls
     // back to the last candidate.
-    const base = record('abstract-intothemist');
+    const base = record('architecture-intothemist');
     for (const width of [0, -1, Number.NaN]) {
       expect(() => srcsetFor({ ...base, dimensions: { ...base.dimensions, width } })).toThrow(
         /width/i

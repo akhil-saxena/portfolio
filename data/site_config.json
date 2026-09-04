@@ -1,18 +1,13 @@
 {
   "categories": [
     {
-      "id": "abstract",
-      "label": "Abstract",
-      "columns": 3
-    },
-    {
       "id": "architecture",
       "label": "Architecture",
       "columns": 3
     },
     {
-      "id": "nature",
-      "label": "Nature",
+      "id": "landscape",
+      "label": "Landscape",
       "columns": 2
     },
     {
@@ -21,13 +16,8 @@
       "columns": 2
     },
     {
-      "id": "product",
-      "label": "Product",
-      "columns": 2
-    },
-    {
-      "id": "street",
-      "label": "Street",
+      "id": "still-life",
+      "label": "Still Life",
       "columns": 2
     },
     {

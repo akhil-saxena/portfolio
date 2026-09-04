@@ -171,9 +171,9 @@ function expectRejection(result: SyncResult, mustName: string[]): void {
  * The record under test, produced by the module this plan ships.
  * ============================================================================================ */
 
-const CATEGORY = 'nature';
+const CATEGORY = 'landscape';
 const SLUG = 'gateproof';
-const ID = 'nature-gateproof';
+const ID = 'landscape-gateproof';
 const THUMB_URI = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
 
 const assetsFor = (version: string) => ({
@@ -473,7 +473,7 @@ describe('what the content gate structurally cannot see', () => {
       // The record is 04-01's `FORTIETH_PHOTO`, used HERE IN A SANDBOX and nowhere else: its own
       // first assertion is that the committed manifest does not contain it, so committing this
       // fixture's output would fail four of that file's assertions BY DESIGN. Its four URLs point
-      // at `photos/nature/fortiethproof*.webp`, which was never uploaded to anything.
+      // at `photos/landscape/fortiethproof*.webp`, which was never uploaded to anything.
       let expectedCount = 0;
       const result = await syncAfter(() => {
         const grown = appendFortieth(readManifest());

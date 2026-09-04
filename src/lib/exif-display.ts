@@ -6,7 +6,7 @@
  *   PUB-07  A field whose stored value is `null` produces NO ROW. Not an em dash, not
  *           "Unknown", not an empty `<dd>`. If no row survives, the caller renders no block —
  *           no heading, no rule, no empty panel. MEASURED on the committed manifest:
- *           `product-peppers` has all six fields null and `architecture-redbuilding` has five
+ *           `still-life-peppers` has all six fields null and `architecture-redbuilding` has five
  *           of six, so both degenerate cases are real records rather than hypotheticals, and
  *           `lens` is null on more than a quarter of the corpus. `Lens: —` eleven times over
  *           is the defect this requirement exists to prevent.
@@ -192,7 +192,7 @@ export const EXIF_LABELS: Readonly<Record<keyof PhotoExif, string>> = Object.fre
  * the requirement would then have two implementations and one of them grows an em dash the first
  * time someone thinks a gap looks unbalanced.
  *
- * An empty array is a complete answer and means "render no block at all" — see `product-peppers`.
+ * An empty array is a complete answer and means "render no block at all" — see `still-life-peppers`.
  * The caller checks `rows.length === 0`, not each field.
  *
  * `photo.date` is deliberately unreachable from here: this takes the exif object only. §9.4 rules

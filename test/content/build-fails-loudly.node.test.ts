@@ -46,7 +46,16 @@
 
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { cpSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -198,7 +207,38 @@ beforeAll(() => {
   for (const entry of COPIED) {
     cpSync(path.join(REPO_ROOT, entry), path.join(sandbox, entry), { recursive: true });
   }
-  symlinkSync(path.join(REPO_ROOT, 'node_modules'), path.join(sandbox, 'node_modules'));
+  /*
+   * 🔴 `node_modules` IS SYMLINKED PER PACKAGE, WITH `astro` COPIED, AND THAT IS NOT TIDINESS.
+   *
+   * A single symlink for the whole directory used to be enough. It stopped being enough the moment
+   * a route imported a `.astro` component OUT of `node_modules` — `ClientRouter`, added to the photo
+   * documents so the header and footer survive a step between photographs (Akhil: *"keep those
+   * elements fixed"*). MEASURED, the sandbox build then died with:
+   *
+   *   No cached compile metadata found for "…/node_modules/astro/components/ClientRouter.astro
+   *   ?astro&type=style&index=0&lang.css". The main Astro module
+   *   "<sandbox>/Users/akhilsaxena/…/node_modules/astro/components/ClientRouter.astro" should have
+   *   compiled and filled the metadata first…
+   *
+   * Read the second path: the SANDBOX prefix followed by the REPOSITORY's absolute path. Vite
+   * resolves the import through the symlink to its real location, while `vite-plugin-astro` looks
+   * the module up under the sandbox root — two keys for one file, so the compile-metadata map is
+   * written under one and read under the other. Nothing about the content gate was wrong; the
+   * harness could not build a route that imports a component from a symlinked package.
+   *
+   * Copying `astro` alone costs 6.9MB and leaves every other package a symlink, so the sandbox is
+   * still cheap. The alternative was `resolve.preserveSymlinks` in `astro.config.mjs`, which would
+   * change module resolution for the REAL build to fix a test — and this repository's duplicate-React
+   * hazard is exactly the kind of thing that setting moves around.
+   */
+  const modules = path.join(sandbox, 'node_modules');
+  mkdirSync(modules);
+  for (const entry of readdirSync(path.join(REPO_ROOT, 'node_modules'))) {
+    const from = path.join(REPO_ROOT, 'node_modules', entry);
+    const to = path.join(modules, entry);
+    if (entry === 'astro') cpSync(from, to, { recursive: true });
+    else symlinkSync(from, to);
+  }
 
   pristine.set('astro.config.mjs', readFileSync(path.join(sandbox, 'astro.config.mjs')));
   for (const name of CONTENT_FILES) {
@@ -248,7 +288,16 @@ describe('a clean tree builds, and the gate says how much it looked at', () => {
       expect(Array.isArray(sandboxPhotos)).toBe(true);
       expect(sandboxPhotos.length).toBeGreaterThan(0);
       expect(result.output).toContain(`${sandboxPhotos.length} photo(s)`);
-      expect(result.output).toContain('7 category record(s)');
+      /*
+       * DERIVED FROM THE SANDBOX'S OWN COPY, not typed. This read `7 category record(s)` and the
+       * taxonomy is five now — but the fix is not `5`, because the number this assertion is about
+       * is "however many the gate was HANDED", which is the whole anti-vacuity point: a gate that
+       * reports a count lower than the file it read has skipped records.
+       */
+      const categoryCount = (readJson('site_config.json') as { categories: unknown[] }).categories
+        .length;
+      expect(categoryCount).toBeGreaterThan(0);
+      expect(result.output).toContain(`${categoryCount} category record(s)`);
       expect(result.output).toContain('5 project(s)');
       expect(result.output).toContain('RI-1, RI-2, RI-3, RI-4, RI-5, RI-6');
     },
@@ -268,14 +317,14 @@ describe('a malformed data file stops the build and names file, record and field
     async () => {
       const result = await buildAfter(() => {
         const photos = readJson('portfolio_images.json') as { id: string; order: unknown }[];
-        expect(photos[12].id).toBe('nature-hillsandgreens');
+        expect(photos[12].id).toBe('landscape-hillsandgreens');
         photos[12].order = 'twelve';
         writeJson('portfolio_images.json', photos);
       });
 
       expectRejection(result, [
         'data/portfolio_images.json',
-        'nature-hillsandgreens',
+        'landscape-hillsandgreens',
         'order',
         'received "twelve"',
       ]);
@@ -346,16 +395,29 @@ describe('a malformed data file stops the build and names file, record and field
   it(
     'site_config.json — a wrong type on columns names the category record',
     async () => {
+      let mutatedCategoryId = '';
       const result = await buildAfter(() => {
         const site = readJson('site_config.json') as {
           categories: { id: string; columns: unknown }[];
         };
-        expect(site.categories.length).toBe(7);
+        // DERIVED. This was `7` and the taxonomy is 5 now; the literal made the harness fail
+        // before the mutation it was setting up had a chance to be judged.
+        expect(site.categories.length).toBeGreaterThan(2);
         site.categories[2].columns = 'three';
+        // The record's own id, read back rather than typed: index 2 was `nature` under the retired
+        // seven and is `portraits` under the five, and a hand-typed name made the assertion below
+        // fail on a message that was perfectly correct.
+        mutatedCategoryId = site.categories[2].id;
         writeJson('site_config.json', site);
       });
 
-      expectRejection(result, ['data/site_config.json', 'nature', 'columns', 'received "three"']);
+      expect(mutatedCategoryId.length).toBeGreaterThan(0);
+      expectRejection(result, [
+        'data/site_config.json',
+        mutatedCategoryId,
+        'columns',
+        'received "three"',
+      ]);
     },
     BUILD_TIMEOUT
   );
@@ -456,7 +518,11 @@ describe('the content collections enforce on their own, and cannot do the gate�
         writeJson('portfolio_images.json', photos);
       });
 
-      expectRejection(result, ['InvalidContentEntryDataError', 'nature-hillsandgreens', 'order']);
+      expectRejection(result, [
+        'InvalidContentEntryDataError',
+        'landscape-hillsandgreens',
+        'order',
+      ]);
       // And it is genuinely the collection speaking, not the gate.
       expect(result.output).not.toContain('BUILD REFUSED');
     },

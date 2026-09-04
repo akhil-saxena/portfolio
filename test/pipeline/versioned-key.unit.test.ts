@@ -48,7 +48,7 @@ const COMMITTED = JSON.parse(
   readFileSync(new URL('../../data/portfolio_images.json', import.meta.url), 'utf8')
 ) as Photo[];
 
-const CATEGORY = 'nature';
+const CATEGORY = 'landscape';
 const SLUG = 'versionproof';
 const TITLE = 'Version Proof';
 const ALT =

@@ -196,13 +196,13 @@ describe('contentHash — the CONT-05 mechanism', () => {
 
   it('two different byte buffers produce two different published keys', () => {
     const first = publishedKey({
-      category: 'nature',
+      category: 'landscape',
       slug: 'riverbend',
       hash: contentHash(alpha),
       suffix: '-lg',
     });
     const second = publishedKey({
-      category: 'nature',
+      category: 'landscape',
       slug: 'riverbend',
       hash: contentHash(beta),
       suffix: '-lg',
@@ -235,10 +235,10 @@ describe('contentHash — the CONT-05 mechanism', () => {
     // The CONTENT_HASH_BYTES misuse guard: a four-character slice fails loudly at the first
     // key composition rather than silently shortening every URL in the manifest.
     expect(() =>
-      publishedKey({ category: 'nature', slug: 'riverbend', hash: '2cf2', suffix: '' })
+      publishedKey({ category: 'landscape', slug: 'riverbend', hash: '2cf2', suffix: '' })
     ).toThrow(/hex/i);
     expect(() =>
-      publishedKey({ category: 'nature', slug: 'riverbend', hash: '2CF24DBA', suffix: '' })
+      publishedKey({ category: 'landscape', slug: 'riverbend', hash: '2CF24DBA', suffix: '' })
     ).toThrow(/hex/i);
   });
 });
@@ -251,11 +251,11 @@ describe('publishedKey / publishedUrl', () => {
   it('composes photos/<category>/<slug>-<hash8><suffix>.webp', () => {
     // Composed from literals, NOT from PUBLISHED_PREFIX or VARIANTS.
     expect(
-      publishedKey({ category: 'nature', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '-lg' })
-    ).toBe('photos/nature/riverbend-a1b2c3d4-lg.webp');
+      publishedKey({ category: 'landscape', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '-lg' })
+    ).toBe('photos/landscape/riverbend-a1b2c3d4-lg.webp');
     expect(
-      publishedKey({ category: 'nature', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '' })
-    ).toBe('photos/nature/riverbend-a1b2c3d4.webp');
+      publishedKey({ category: 'landscape', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '' })
+    ).toBe('photos/landscape/riverbend-a1b2c3d4.webp');
   });
 
   it('refuses a category or slug outside the schema slug grammar', () => {
@@ -263,25 +263,25 @@ describe('publishedKey / publishedUrl', () => {
       publishedKey({ category: 'Nature', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '' })
     ).toThrow(/a-z0-9/);
     expect(() =>
-      publishedKey({ category: 'nature', slug: 'river bend', hash: 'a1b2c3d4', suffix: '' })
+      publishedKey({ category: 'landscape', slug: 'river bend', hash: 'a1b2c3d4', suffix: '' })
     ).toThrow(/a-z0-9/);
     expect(() =>
-      publishedKey({ category: 'nature', slug: '../etc', hash: 'a1b2c3d4', suffix: '' })
+      publishedKey({ category: 'landscape', slug: '../etc', hash: 'a1b2c3d4', suffix: '' })
     ).toThrow(/a-z0-9/);
   });
 
   it('refuses a suffix that is not one of the four variants', () => {
     expect(() =>
-      publishedKey({ category: 'nature', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '-xl' })
+      publishedKey({ category: 'landscape', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '-xl' })
     ).toThrow(/suffix/i);
   });
 
   it('publishedUrl parses to an origin EXACTLY equal to IMAGE_ORIGIN', () => {
-    const url = publishedUrl('photos/nature/riverbend-a1b2c3d4-lg.webp');
+    const url = publishedUrl('photos/landscape/riverbend-a1b2c3d4-lg.webp');
     // Origin equality — the same comparison PhotoSchema's remoteUrl refinement makes. A
     // startsWith is defeated by https://HOST.evil.test/ and https://HOST@evil.test/.
     expect(new URL(url).origin).toBe(IMAGE_ORIGIN);
-    expect(new URL(url).pathname).toBe('/photos/nature/riverbend-a1b2c3d4-lg.webp');
+    expect(new URL(url).pathname).toBe('/photos/landscape/riverbend-a1b2c3d4-lg.webp');
   });
 
   it('publishedUrl refuses a key that is not a published key', () => {
@@ -329,21 +329,21 @@ describe('slugFromPublishedKey is the inverse of publishedKey', () => {
     'hawamahal-daytime-2024',
     '40-4-boats',
     'pano-lg', // a slug that ENDS in a variant suffix
-    'nature-deadbeef', // a slug that ends in something hash-shaped
+    'landscape-deadbeef', // a slug that ends in something hash-shaped
     'a', // one character
   ] as const;
 
   for (const slug of slugs) {
     for (const suffix of suffixes) {
       it(`round-trips ${slug || '(empty)'} with suffix "${suffix}"`, () => {
-        const key = publishedKey({ category: 'nature', slug, hash: 'a1b2c3d4', suffix });
+        const key = publishedKey({ category: 'landscape', slug, hash: 'a1b2c3d4', suffix });
         expect(slugFromPublishedKey(key)).toBe(slug);
       });
     }
   }
 
   it('refuses a key it cannot parse rather than returning a wrong slug', () => {
-    expect(() => slugFromPublishedKey('photos/nature/riverbend.webp')).toThrow(/published key/);
+    expect(() => slugFromPublishedKey('photos/landscape/riverbend.webp')).toThrow(/published key/);
     expect(() => slugFromPublishedKey('temp/riverbend.jpg')).toThrow(/published key/);
   });
 });
@@ -551,10 +551,10 @@ describe('assertStagingKey (threat T-04-04: attacker-influenced R2 object path)'
 
 describe('photoIdFor', () => {
   it('is category + "-" + slug and satisfies the schema slug grammar', () => {
-    expect(photoIdFor({ category: 'nature', slug: 'riverbend' })).toBe('nature-riverbend');
+    expect(photoIdFor({ category: 'landscape', slug: 'riverbend' })).toBe('landscape-riverbend');
     expect(PHOTO_ID_SEPARATOR).toBe('-');
     // Re-implemented from src/schemas/photo.ts's SLUG, not imported.
-    expect(photoIdFor({ category: 'nature', slug: 'river-bend-2' })).toMatch(/^[a-z0-9-]+$/);
+    expect(photoIdFor({ category: 'landscape', slug: 'river-bend-2' })).toMatch(/^[a-z0-9-]+$/);
   });
 
   it('agrees with every existing record id, which is the OLD era read forwards', () => {
@@ -571,7 +571,7 @@ describe('photoIdFor', () => {
 
   it('refuses a category or slug outside the grammar rather than joining them anyway', () => {
     expect(() => photoIdFor({ category: 'Nature', slug: 'riverbend' })).toThrow(/a-z0-9/);
-    expect(() => photoIdFor({ category: 'nature', slug: 'river bend' })).toThrow(/a-z0-9/);
+    expect(() => photoIdFor({ category: 'landscape', slug: 'river bend' })).toThrow(/a-z0-9/);
   });
 });
 

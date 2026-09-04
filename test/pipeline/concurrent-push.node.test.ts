@@ -297,7 +297,7 @@ function seedRecords(count: number): Record_[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `seed-${index + 1}`,
     title: `Seed ${index + 1}`,
-    category: 'abstract',
+    category: 'architecture',
     order: index + 1,
     categoryOrder: index + 1,
   }));
@@ -365,7 +365,7 @@ function humanEdits(topology: Topology, id: string): { sha: string; manifest: Re
   manifest.push({
     id,
     title: `Human ${id}`,
-    category: 'abstract',
+    category: 'architecture',
     order: manifest.length + 1,
     categoryOrder: manifest.length + 1,
   });
@@ -385,7 +385,7 @@ function stagePipelineRecord(
   manifest.push({
     id,
     title: `Pipeline ${id}`,
-    category: 'nature',
+    category: 'landscape',
     order: manifest.length + 1,
     categoryOrder: 1,
   });
@@ -601,7 +601,7 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
           manifest.push({
             id: 'pipeline-contended',
             title: 'Pipeline contended',
-            category: 'nature',
+            category: 'landscape',
             order: manifest.length + 1,
             categoryOrder: 1,
           });
@@ -658,7 +658,7 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
           manifest.push({
             id: 'pipeline-newline',
             title: 'Pipeline newline',
-            category: 'nature',
+            category: 'landscape',
             order: manifest.length + 1,
             categoryOrder: 1,
           });
@@ -746,7 +746,7 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
           manifest.push({
             id: 'pipeline-first',
             title: 'A',
-            category: 'nature',
+            category: 'landscape',
             order: manifest.length + 1,
             categoryOrder: 1,
           });
@@ -860,7 +860,7 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
             manifest.push({
               id: 'pipeline-doomed',
               title: 'D',
-              category: 'nature',
+              category: 'landscape',
               order: manifest.length + 1,
               categoryOrder: 1,
             });

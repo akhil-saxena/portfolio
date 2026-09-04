@@ -466,7 +466,7 @@ export async function getStagedObject(key) {
     }
     if (!result.ok) {
       throw new R2Error(
-        `r2: reading ${key} failed (wrangler exit ${result.code}) — ` + summarise(result),
+        `r2: reading ${key} failed (wrangler exit ${result.code}) — ${summarise(result)}`,
         {
           key,
           code: result.code,
@@ -551,6 +551,118 @@ export function putVariant(descriptor) {
  * @param {string} key
  * @returns {Promise<{ key: string, deleted: boolean }>}
  */
+/**
+ * Any object under the published prefix — `photos/<dir>/<name>.webp` — with NO claim about the
+ * name's shape.
+ *
+ * ================================================================================================
+ * WHY THE READ AND DELETE GUARDS ARE WIDER THAN THE WRITE GUARD, DELIBERATELY
+ * ================================================================================================
+ *
+ * `putVariant` runs `parsePublishedKey`, which requires
+ * `photos/<category>/<slug>-<hash8><suffix>.webp`. That is right for a WRITE: the only keys this
+ * repository should ever create are ones `publishedKey()` could have produced.
+ *
+ * It is wrong for a read, because MEASURED against the committed manifest, 156 OF THE 160 LIVE
+ * OBJECTS DO NOT MATCH IT. The corpus predates the content-hashed scheme — only one photograph has
+ * ever been through the current pipeline — so the live bucket is almost entirely
+ * `photos/abstract/intothemist.webp`-shaped. A migration that could not READ those keys could not
+ * migrate them, and guarding the read with `parsePublishedKey` would have failed on 97.5% of the
+ * corpus while looking like the careful choice.
+ *
+ * So: reads and deletes accept anything under the prefix; writes stay canonical. The asymmetry is
+ * the migration's whole direction of travel — legacy in, canonical out — and it closes on its own
+ * the day the last legacy key is swept.
+ */
+const UNDER_PUBLISHED_PREFIX_RE = /^photos\/[a-z][a-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*\.webp$/;
+
+function assertUnderPublishedPrefix(key) {
+  if (typeof key !== 'string' || !UNDER_PUBLISHED_PREFIX_RE.test(key)) {
+    throw new R2Error(
+      `r2: ${JSON.stringify(key)} is not an object under the published prefix. It must match ` +
+        `${UNDER_PUBLISHED_PREFIX_RE.source}. This guard is deliberately wider than ` +
+        `parsePublishedKey — see its note — but it is still a guard: nothing outside photos/ and ` +
+        `nothing that is not a .webp can be read or deleted through this module.`,
+      { key, code: 0 }
+    );
+  }
+}
+
+/**
+ * Read an object under the published prefix — the read half of a key migration.
+ *
+ * ================================================================================================
+ * WHY THIS EXISTS, AND WHY IT IS NOT `getStagedObject` WITH A DIFFERENT GUARD
+ * ================================================================================================
+ *
+ * Until now this module could read `temp/*` and write `photos/*` and nothing else, because that is
+ * the whole shape of the publish pipeline: a once-only staging key in, a content-addressed
+ * published key out. A migration needs the other two corners — read a published object, delete a
+ * published object — and giving them their own names keeps the asymmetry visible rather than
+ * loosening the guard on the two functions the pipeline uses.
+ *
+ * `assertUnderPublishedPrefix` IS THE GUARD — wider than `putVariant`'s on purpose, and the note
+ * above it says why. It still refuses a staging key, a bare filename, a path outside `photos/`, and
+ * anything that is not a `.webp`.
+ *
+ * @param {string} key  any object under `photos/`; validated by `assertUnderPublishedPrefix`
+ * @returns {Promise<Uint8Array | null>}  null when the object is not present
+ */
+export async function getPublishedObject(key) {
+  assertUnderPublishedPrefix(key);
+
+  const scratch = mkdtempSync(join(tmpdir(), 'gsd-r2-getpub-'));
+  const file = join(scratch, 'published.bin');
+  try {
+    const result = await attempt(wranglerArgv('get', key, ['--file', file]), key, 'get');
+    if (result.notFound) {
+      log(`get ${key}: not present`);
+      return null;
+    }
+    if (!result.ok) {
+      throw new R2Error(
+        `r2: reading ${key} failed (wrangler exit ${result.code}) — ${summarise(result)}`,
+        { key, code: result.code, notFound: false }
+      );
+    }
+    const bytes = new Uint8Array(readFileSync(file));
+    log(`get ${key}: ${bytes.length} byte(s)`);
+    return bytes;
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Delete a PUBLISHED object — the last step of a key migration, and the only destructive call in
+ * this module that is not spending a once-only staging token.
+ *
+ * IDEMPOTENT, like `deleteStagedObject`: deleting a key that is already gone is success, because a
+ * re-run after a completed migration must exit cleanly.
+ *
+ * THE CALLER MUST HAVE VERIFIED THE COPY FIRST. Nothing here can check that, which is exactly why
+ * it is said out loud: `scripts/migrate-photo-keys.mjs` reads the new object back and compares its
+ * length to the source before it calls this, and refuses to delete on any mismatch.
+ *
+ * @param {string} key  any object under `photos/`; validated by `assertUnderPublishedPrefix`
+ * @returns {Promise<{ key: string, deleted: boolean }>}
+ */
+export function deletePublishedObject(key) {
+  assertUnderPublishedPrefix(key);
+
+  return serialisePerKey(key, async () => {
+    const result = await attempt(wranglerArgv('delete', key), key, 'delete');
+    if (!result.ok && !result.notFound) {
+      throw new R2Error(
+        `r2: deleting ${key} failed (wrangler exit ${result.code}) — ${summarise(result)}`,
+        { key, code: result.code, notFound: false }
+      );
+    }
+    log(`delete ${key}: ${result.notFound ? 'already absent' : 'removed'}`);
+    return { key, deleted: !result.notFound };
+  });
+}
+
 export function deleteStagedObject(key) {
   assertStagingKey(key);
 

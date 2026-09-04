@@ -61,7 +61,13 @@ import type { Photo } from '../../../src/schemas';
 
 /** `photos/<category>/<name>` — the path shape every committed record uses. */
 const SLUG = 'fortiethproof';
-const CATEGORY = 'nature';
+/*
+ * `landscape`, not `nature`. The taxonomy was re-authored from seven categories to five — Akhil:
+ * *"5 is better"* — and `nature` was one of the four retired. A fixture naming a category the
+ * config no longer declares is refused by the pipeline's own validation, which is how it was found:
+ * every one of `partial-failure.node.test.ts`'s ten cases failed at the same line.
+ */
+const CATEGORY = 'landscape';
 
 /**
  * A genuine 1×1 lossless WebP. Verified decodable rather than assumed — see the header.

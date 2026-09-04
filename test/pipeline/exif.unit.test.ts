@@ -217,7 +217,7 @@ describe('no-exif.jpg yields six nulls, and the reader is proven to have run', (
   it('carries the same absence through deriveAssets, on real bytes', async () => {
     const assets = await deriveAssets({
       bytes: BARE,
-      category: 'nature',
+      category: 'landscape',
       slug: 'bare',
       ingestionDate: INGESTION_DATE,
     });
@@ -384,7 +384,7 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
       .toBuffer();
     const assets = await deriveAssets({
       bytes: withDate,
-      category: 'nature',
+      category: 'landscape',
       slug: 'dated',
       ingestionDate: INGESTION_DATE,
     });
@@ -395,7 +395,7 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
   it('falls back through deriveAssets when the source has no EXIF at all', async () => {
     const assets = await deriveAssets({
       bytes: BARE,
-      category: 'nature',
+      category: 'landscape',
       slug: 'undated',
       ingestionDate: INGESTION_DATE,
     });
@@ -514,7 +514,7 @@ describe('OD-9 option A · no emitted upload descriptor is under `private/`', ()
   it('emits descriptors at all, THEN emits none under that prefix', async () => {
     const assets = await deriveAssets({
       bytes: BARE,
-      category: 'nature',
+      category: 'landscape',
       slug: 'od-nine',
       ingestionDate: INGESTION_DATE,
     });

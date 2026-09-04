@@ -139,6 +139,13 @@ const isAbsent = (cell: string) => cell === '' || cell === OPT_MARKER || cell ==
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
 const manifest: Photo[] = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
+
+/** The declared category ids, read from the config rather than counted by hand. */
+const SITE_CATEGORY_IDS: string[] = (
+  JSON.parse(readFileSync(`${REPO_ROOT}data/site_config.json`, 'utf8')) as {
+    categories: { id: string }[];
+  }
+).categories.map((c) => c.id);
 const rows = parseBrief(readFileSync(BRIEF_PATH, 'utf8'));
 const rowById = new Map(rows.map((r) => [r.id, r]));
 
@@ -151,8 +158,49 @@ const rowById = new Map(rows.map((r) => [r.id, r]));
  */
 const COHORT: ReadonlySet<string> = new Set(rows.map((r) => r.id));
 
+/**
+ * ================================================================================================
+ * 🔴 THE JOIN IS BY SLUG, NOT BY ID, AND THE BRIEF IS NOT ALLOWED TO BE EDITED TO FIX THAT
+ * ================================================================================================
+ *
+ * Every record's `id` changed. The taxonomy was re-authored from seven categories to five — Akhil,
+ * after a pass over all forty photographs: *"5 is better"* — and because an id is
+ * `category + "-" + slug`, moving a photograph between sections RENAMES it:
+ * `nature-acrossthetrees` became `landscape-acrossthetrees`.
+ *
+ * `00-PHOTO-CONTENT.md` is a FROZEN, DATED planning document under `.planning/phases/00-*`. Its
+ * whole evidential value is that it is the artefact Akhil reviewed on 2026-08-23; editing its ids
+ * to match today's manifest would destroy exactly the property this file rests on. So the brief
+ * keeps its ids and the JOIN moves.
+ *
+ * THE SLUG IS THE STABLE HALF. It is the photograph's identity — the object key in R2 has not moved
+ * either — while the prefix is editorial and has now changed once. Joining on it keeps the claim
+ * this file exists to make (every reviewed `alt` survived byte for byte) and makes that claim
+ * survive the NEXT re-categorisation too.
+ *
+ * IT IS STILL NOT DERIVED FROM THE MANIFEST. `COHORT` is the brief's own id set, unchanged; the map
+ * below only says which manifest record each brief row is ABOUT. A row whose slug matches nothing
+ * still fails, which is the bijection assertion below.
+ */
+const slugOf = (id: string, category?: string): string =>
+  category !== undefined && id.startsWith(`${category}-`) ? id.slice(category.length + 1) : id;
+
+/** slug → the manifest record that carries it. Slugs are unique across the corpus; asserted below. */
+const bySlug = new Map(manifest.map((p) => [slugOf(p.id, p.category), p]));
+
+/** True when a manifest record is one of the thirty-nine the frozen brief described. */
+const inCohort = (p: Photo): boolean => briefSlugs.has(slugOf(p.id, p.category));
+
+/** The manifest record a brief row describes, matched on the slug both sides share. */
+const recordFor = (rowId: string): Photo | undefined => {
+  // The brief's ids carry a RETIRED prefix, so the slug is whatever follows the first hyphen.
+  const slug = rowId.slice(rowId.indexOf('-') + 1);
+  return bySlug.get(slug);
+};
+
 /** Manifest ids the frozen brief never described — the pipeline's output, and out of every COHORT claim. */
-const outOfCohortIds = (): string[] => manifest.filter((p) => !COHORT.has(p.id)).map((p) => p.id);
+const briefSlugs = new Set([...COHORT].map((id) => id.slice(id.indexOf('-') + 1)));
+const outOfCohortIds = (): string[] => manifest.filter((p) => !inCohort(p)).map((p) => p.id);
 
 /**
  * Print a line that a PASSING run actually shows. `process.stdout.write`, not `console.log`.
@@ -190,15 +238,14 @@ describe('the merge read something', () => {
   });
 
   it('has a manifest record for every brief row, and names the records outside the cohort', () => {
-    const manifestIds = new Set(manifest.map((p) => p.id));
-
     // COHORT BIJECTION, ONE DIRECTION. A brief row with no manifest record is a reviewed
-    // photograph that was lost, which is a failure in any phase.
-    expect(rows.filter((r) => !manifestIds.has(r.id)).map((r) => r.id)).toEqual([]);
+    // photograph that was lost, which is a failure in any phase. Matched on the SLUG, because the
+    // brief's ids carry retired category prefixes — see `recordFor`.
+    expect(rows.filter((r) => recordFor(r.id) === undefined).map((r) => r.id)).toEqual([]);
 
     // …and the same claim stated on the manifest side, so a duplicate id cannot satisfy the
     // direction above while the manifest holds two records for one brief row.
-    expect(manifest.filter((p) => COHORT.has(p.id))).toHaveLength(COHORT.size);
+    expect(manifest.filter(inCohort)).toHaveLength(COHORT.size);
 
     // THE REVERSE DIRECTION IS REPORTED, NOT FAILED. Phase 4's pipeline appends records the frozen
     // brief never described; that is the feature, not a defect. The partition identity below is
@@ -222,7 +269,7 @@ describe('alt survived the crossing byte for byte', () => {
     // without losing a single character of what it checked.
     let compared = 0;
     for (const row of rows) {
-      const photo = manifest.find((p) => p.id === row.id);
+      const photo = recordFor(row.id);
       expect(photo, `no manifest record for cohort id ${row.id}`).toBeDefined();
       // toBe on strings is === : no normalisation, no trim, no case folding. An en dash that
       // became a hyphen, or a curly apostrophe that became straight, fails here.
@@ -267,11 +314,11 @@ describe('place is present exactly where the brief filled it, and ABSENT elsewhe
     const expected = rows.filter((r) => !isAbsent(r.place));
     expect(expected).toHaveLength(EXPECTED_PLACES); // the brief itself still says 16
     for (const row of expected) {
-      const photo = manifest.find((p) => p.id === row.id);
+      const photo = recordFor(row.id);
       expect(photo, `no manifest record for ${row.id}`).toBeDefined();
       expect(photo?.place, `place mismatch on ${row.id}`).toBe(row.place);
     }
-    expect(manifest.filter((p) => COHORT.has(p.id) && 'place' in p)).toHaveLength(EXPECTED_PLACES);
+    expect(manifest.filter((p) => inCohort(p) && 'place' in p)).toHaveLength(EXPECTED_PLACES);
   });
 
   it('gives the remaining cohort records NO place key at all — not an empty string', () => {
@@ -424,7 +471,13 @@ describe('categoryOrder is dense and unique inside every category', () => {
       group.push(photo);
       byCategory.set(photo.category, group);
     }
-    expect(byCategory.size).toBe(7); // the seven real categories, per OD-2
+    /*
+     * DERIVED FROM THE CONFIG. This read `7` — "the seven real categories, per OD-2" — and the
+     * taxonomy is five. The claim is that every category the CONFIG declares is ranked 1…n, so the
+     * config is where the count belongs; a literal here restates a number owned by another file.
+     */
+    expect(byCategory.size).toBe(SITE_CATEGORY_IDS.length);
+    expect(byCategory.size).toBeGreaterThan(0);
     let counted = 0;
     for (const [category, group] of byCategory) {
       const ranks = group.map((p) => p.categoryOrder as number).sort((a, b) => a - b);
@@ -504,12 +557,19 @@ describe('categoryOrder agrees with the global order it was derived from', () =>
     // real id against `undefined` and make a true claim about 39 records unfalsifiable at 40.
     const byCategory = new Map<string, Photo[]>();
     for (const photo of manifest) {
-      if (!COHORT.has(photo.id)) continue;
+      if (!inCohort(photo)) continue; // matched on the slug — the brief's ids are pre-re-author
       const group = byCategory.get(photo.category) ?? [];
       group.push(photo);
       byCategory.set(photo.category, group);
     }
-    expect(byCategory.size).toBe(7); // the seven real categories, per OD-2 — all present in cohort
+    /*
+     * DERIVED. This read `7` and the taxonomy is five now; worse, it was the COHORT's category
+     * count, and the cohort spans whatever sections its thirty-nine photographs happen to occupy
+     * TODAY — three of the five, as it turns out, because the re-author concentrated them. So the
+     * claim cannot be a number at all: it is that every section the cohort touches is ranked 1…n.
+     */
+    expect(byCategory.size).toBeGreaterThan(0);
+    expect(byCategory.size).toBeLessThanOrEqual(SITE_CATEGORY_IDS.length);
     let compared = 0;
     for (const [category, group] of byCategory) {
       const byRank = [...group]
@@ -569,7 +629,9 @@ describe('OD-5: focalPoint is added to the schema, not to the data', () => {
     // legitimately carry a crop — Phase 7's focal-marker editor exists to author exactly that — so
     // scoping to the cohort is what keeps this a claim about the migration rather than a ban on the
     // field. The whole-manifest half of the OD-5 claim is the next `it`, which stays unscoped.
-    const cohortRecords = manifest.filter((p) => COHORT.has(p.id));
+    // Matched on the slug: `COHORT.has(p.id)` compared a post-re-author id against pre-re-author
+    // ones and silently found 21 of 39, which a length assertion caught and a filter would not have.
+    const cohortRecords = manifest.filter(inCohort);
     const carriers = cohortRecords.filter((p) => 'focalPoint' in p).map((p) => p.id);
     expect(carriers).toEqual([]);
     // ANTI-VACUITY: there are COHORT.size records to check, and they were all found.

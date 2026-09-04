@@ -97,9 +97,9 @@ const contentSet = (photos: unknown) => ({
  * The inputs and the derived assets — written out, never imported from the producer.
  * ========================================================================================== */
 
-const CATEGORY = 'nature';
+const CATEGORY = 'landscape';
 const SLUG = 'pipelineproof';
-const ID = 'nature-pipelineproof';
+const ID = 'landscape-pipelineproof';
 const TITLE = 'Pipeline Proof';
 const ALT =
   'A narrow footbridge crosses a slow river while mist gathers under the far bank at first light.';
@@ -452,7 +452,7 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
 
     const interloper = {
       ...inserted,
-      id: 'nature-interloper',
+      id: 'landscape-interloper',
       order: inserted.order + 1,
       categoryOrder: inserted.categoryOrder + 1,
     };
@@ -463,7 +463,7 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     expect(third.length).toBe(between.length);
     expect(find(third, ID).order).toBe(inserted.order);
     expect(find(third, ID).categoryOrder).toBe(inserted.categoryOrder);
-    expect(find(third, 'nature-interloper').order).toBe(interloper.order);
+    expect(find(third, 'landscape-interloper').order).toBe(interloper.order);
   });
 
   it('the second run DOES update the urls, the hash, the dimensions and the exif', () => {
@@ -497,7 +497,7 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     const inserted = find(first, ID);
     const interloper = {
       ...inserted,
-      id: 'nature-interloper',
+      id: 'landscape-interloper',
       order: inserted.order + 1,
       categoryOrder: inserted.categoryOrder + 1,
     };
@@ -580,15 +580,15 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const inserted = find(first, ID);
 
-    const moved = build('v2', first, { category: 'abstract' }) as Photo;
-    expect(moved.id).toBe('abstract-pipelineproof');
+    const moved = build('v2', first, { category: 'architecture' }) as Photo;
+    expect(moved.id).toBe('architecture-pipelineproof');
 
     const second = upsertRecord(first, moved) as Photo[];
     expect(second.length).toBe(first.length + 1);
     expect(find(second, ID).order).toBe(inserted.order);
     expect(find(second, ID).categoryOrder).toBe(inserted.categoryOrder);
-    expect(find(second, 'abstract-pipelineproof').categoryOrder).toBe(
-      COMMITTED.filter((photo) => photo.category === 'abstract').reduce(
+    expect(find(second, 'architecture-pipelineproof').categoryOrder).toBe(
+      COMMITTED.filter((photo) => photo.category === 'architecture').reduce(
         (best, photo) => Math.max(best, photo.categoryOrder),
         0
       ) + 1
@@ -601,7 +601,7 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
     // in the wrong gallery. RI-6 would eventually report the collision; this names the cause.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const corrupted = first.map((photo) =>
-      photo.id === ID ? { ...photo, category: 'abstract' } : photo
+      photo.id === ID ? { ...photo, category: 'architecture' } : photo
     );
     expect(() => upsertRecord(corrupted, build('v2', first))).toThrow(/disagrees with itself/);
   });

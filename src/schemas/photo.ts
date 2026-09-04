@@ -141,7 +141,7 @@ export const PhotoUrlsSchema = z.strictObject({
 } as { [K in (typeof REMOTE_URL_KEYS)[number]]: typeof remoteUrl } & { thumb: typeof thumbUri });
 
 /**
- * EXIF is present on all 39 records with NULLABLE fields — not optional. `product-peppers` has all
+ * EXIF is present on all 39 records with NULLABLE fields — not optional. `still-life-peppers` has all
  * six null, `architecture-redbuilding` five of six, and `lens` is null on 11. A schema declaring
  * these optional-but-complete would reject 11 real records; one declaring the object optional
  * would let a future record ship with no EXIF block at all.
@@ -159,7 +159,7 @@ export const PhotoExifSchema = z.strictObject({
  * `dimensions` IS THE INTRINSIC SIZE OF THE SOURCE PHOTOGRAPH. (OD-11, decided 2026-08-26.)
  *
  * It is NOT the size of `urls.original`, and the difference is not theoretical — it is already
- * true of the committed data. MEASURED: `nature-fairwayreflections` is `4608x3072` here while
+ * true of the committed data. MEASURED: `landscape-fairwayreflections` is `4608x3072` here while
  * `urls.original` serves `2000x1333`, because the pipeline caps the largest variant at 2000px.
  * Two other records differ the same way. The aspect ratios agree to within 0.03%.
  *

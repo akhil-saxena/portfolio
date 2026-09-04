@@ -10,7 +10,7 @@
  *    nothing importing `getCollection` anywhere. `astro build` exited **1** and emitted no
  *    `dist/`, naming the collection, the record by its id, and the field:
  *
- *        [InvalidContentEntryDataError] photos → nature-hillsandgreens data does not match
+ *        [InvalidContentEntryDataError] photos → landscape-hillsandgreens data does not match
  *        collection schema.  order**: **order: Expected type `"number"`, received `"string"`
  *
  *    Content sync runs before the build regardless of whether a page reads a collection, which is

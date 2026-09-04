@@ -105,12 +105,12 @@ const BRANCH = 'main';
  * characters, not the title, not the file name, no role prefix, no placeholder marker.
  */
 const TEMP_KEY = 'temp/partialfailure.jpg';
-const CATEGORY = 'nature';
+const CATEGORY = 'landscape';
 const TITLE = 'Reeds At First Light';
 const ALT =
   'Backlit reeds lean across a still pond, their seed heads catching the first low sun of the ' +
   'morning while the far bank stays in shadow.';
-const EXPECTED_ID = 'nature-partialfailure';
+const EXPECTED_ID = 'landscape-partialfailure';
 
 type Sandbox = {
   root: string;
@@ -305,6 +305,29 @@ function overlayWorkingTree(work: string): void {
   );
 }
 
+/**
+ * `git status --porcelain` for `data/`, in the sandbox.
+ *
+ * 🔴 WHY THE ASSERTIONS COMPARE IT INSTEAD OF REQUIRING IT EMPTY. Three cases below used to read
+ * `expect(git(work, ['status','--porcelain','--','data'])).toBe('')`, and that is only the same
+ * claim when the AUTHOR's tree is clean. `overlayWorkingTree` above deliberately copies every
+ * tracked-but-modified file — including `data/*.json` — onto the clone, so a sandbox built while
+ * the manifest is edited starts dirty by design. MEASURED: the three data files carrying the
+ * category re-author made cases 1 and 3 fail with `expected 'M data/home_config.json…' to be ''`,
+ * on a pipeline that had done nothing wrong.
+ *
+ * The claim these cases make is "THE RUN changed nothing", not "the tree is pristine". Snapshotting
+ * before and comparing after says exactly that, and says it on a dirty tree too.
+ *
+ * `makeSandbox` now COMMITS the overlay, so the base is in fact clean again and both forms would
+ * pass today. The comparison form stays: it is the claim these cases actually make, it cannot be
+ * quietly falsified by whatever the sandbox's base happens to be, and the empty-string form has now
+ * broken once for a reason that had nothing to do with the pipeline.
+ */
+function dataStatus(work: string): string {
+  return git(work, ['status', '--porcelain', '--', 'data']);
+}
+
 function makeSandbox(): Sandbox {
   const root = mkdtempSync(join(tmpdir(), 'gsd-04-09-'));
   sandboxes.push(root);
@@ -353,6 +376,37 @@ function makeSandbox(): Sandbox {
 
   symlinkSync(join(REPO_ROOT, 'node_modules'), join(work, 'node_modules'), 'dir');
   overlayWorkingTree(work);
+
+  /*
+   * 🔴 COMMIT THE OVERLAY, AND PUSH IT, SO THE SANDBOX'S HEAD AGREES WITH ITS WORKING TREE.
+   *
+   * Without this the clone carries HEAD's `data/` while the overlay above has replaced the FILES
+   * with the author's edited ones — a repository that disagrees with itself. Two cases read the
+   * committed side (`git show <branch>:<manifest>`, and a rival that commits on top of it) and both
+   * broke as soon as the manifest was edited and not committed:
+   *
+   *   case 6  exit 5 GATE_REJECTED instead of 8 PUBLISH_CONFLICT — the job re-derived against the
+   *           rival's manifest, which came from HEAD's forty legacy ids, while its own candidate was
+   *           built from the working tree's re-authored ones. The gate was right to refuse the mix;
+   *           the SANDBOX was wrong to be able to produce it.
+   *   case 6b `expected '…"id": "abstract-intothemist"…' to be '…"id": "architecture-intothemist"…'`
+   *           — comparing branch bytes against working-tree bytes and calling the difference a
+   *           publish.
+   *
+   * Committing the overlay is the fix rather than relaxing the assertions, because "nothing of ours
+   * was committed" is exactly the claim those cases exist to make, and it can only be checked
+   * against a base that both sides share. It also makes the suite say what it always meant to: the
+   * pipeline is tested against the code AND the data in front of the author.
+   */
+  git(work, ['add', '-A', '--', 'data', 'scripts', 'src', '.github']);
+  const overlayed = git(work, ['status', '--porcelain', '--']);
+  if (overlayed.length > 0) {
+    git(work, ['commit', '--no-verify', '-m', 'sandbox: the working tree under test']);
+    git(work, ['push', '--no-verify', 'origin', `HEAD:${BRANCH}`]);
+    process.stdout.write('[partial-failure] sandbox base: overlay committed and pushed\n');
+  } else {
+    process.stdout.write('[partial-failure] sandbox base: clean tree, nothing to commit\n');
+  }
 
   // The two substitutions. The real verifier is moved aside rather than deleted, because the shim
   // imports its floors back out of it.
@@ -565,6 +619,7 @@ describe('the composed pipeline', () => {
     patchState(sandbox, { injection: { throwAt: 'get' } });
     const before = manifestBytes(sandbox);
     const tipBefore = tipOf(sandbox);
+    const statusBefore = dataStatus(sandbox.work);
 
     const run = runJob(sandbox);
     report('case 1 step-2 throw', sandbox, run, tipBefore);
@@ -574,7 +629,7 @@ describe('the composed pipeline', () => {
     expect(run.output).toContain('OUTCOME=STAGED_READ_FAILED');
     expect(opsOf(state, 'inject').map((e) => e.at)).toEqual(['get']); // it FIRED
     expect(manifestBytes(sandbox)).toBe(before);
-    expect(git(sandbox.work, ['status', '--porcelain', '--', 'data'])).toBe('');
+    expect(dataStatus(sandbox.work)).toBe(statusBefore);
     expect(opsOf(state, 'put')).toHaveLength(0);
     expect(opsOf(state, 'delete')).toHaveLength(0);
     expect(tipOf(sandbox)).toBe(tipBefore);
@@ -626,6 +681,7 @@ describe('the composed pipeline', () => {
 
     const before = manifestBytes(sandbox);
     const tipBefore = tipOf(sandbox);
+    const statusBefore = dataStatus(sandbox.work);
     const run = runJob(sandbox);
     report('case 3 gate rejection', sandbox, run, tipBefore);
     const state = readState(sandbox);
@@ -650,9 +706,7 @@ describe('the composed pipeline', () => {
     expect(run.output).toMatch(new RegExp(`checked: ${censusCase3} photo\\(s\\)`));
 
     expect(manifestBytes(sandbox)).toBe(before);
-    expect(git(sandbox.work, ['status', '--porcelain', '--', 'data/portfolio_images.json'])).toBe(
-      ''
-    );
+    expect(dataStatus(sandbox.work)).toBe(statusBefore);
     expect(opsOf(state, 'put')).toHaveLength(0);
     expect(opsOf(state, 'delete')).toHaveLength(0);
     expect(tipOf(sandbox)).toBe(tipBefore);
@@ -749,6 +803,7 @@ describe('the composed pipeline', () => {
     chmodSync(join(sandbox.hooks, 'pre-commit'), 0o755);
 
     const before = manifestBytes(sandbox);
+    const statusBefore6 = dataStatus(sandbox.work);
     const run = runJob(sandbox);
     const state = readState(sandbox);
     process.stdout.write(
@@ -781,7 +836,7 @@ describe('the composed pipeline', () => {
     // the manifest on the branch is untouched, and the checkout is not left corrupt
     const originManifest = git(sandbox.origin, ['show', `${BRANCH}:${MANIFEST}`]);
     expect(`${originManifest}\n`).toBe(before);
-    expect(git(sandbox.work, ['status', '--porcelain', '--', 'data'])).toBe('');
+    expect(dataStatus(sandbox.work)).toBe(statusBefore6);
     const records = manifestRecords(sandbox);
     expect(records.filter((r) => r.id === EXPECTED_ID).length).toBeLessThanOrEqual(1);
   });

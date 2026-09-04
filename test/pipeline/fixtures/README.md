@@ -53,7 +53,7 @@ count 39
 {"camera":1,"lens":11,"aperture":2,"shutter":2,"iso":2,"focalLength":2}
 ```
 
-Agrees with the research exactly. The single `camera`-null record is `product-peppers`, which is
+Agrees with the research exactly. The single `camera`-null record is `still-life-peppers`, which is
 also the **only** record with all six fields null — so the "one record with every field null"
 the plan asked to probe and the "camera null on 1" of the census are the same record, not two.
 
@@ -98,9 +98,9 @@ Full per-record output is in **`exif-differential.txt`** (39 rows). Every row is
 only respect that matters:
 
 ```
-abstract-intothemist  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:28406]     committed-non-null=6/6
+architecture-intothemist  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:28406]     committed-non-null=6/6
 architecture-redbuilding  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:329024]  committed-non-null=1/6
-product-peppers  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:83082]  committed-non-null=0/6
+still-life-peppers  0/6  sharp.exif=ABSENT  riff-EXIF-chunk=ABSENT  chunks=[VP8:83082]  committed-non-null=0/6
 ```
 
 - **39/39 fetched 200 `image/webp`.** Zero 404s, so this is a real absence and not an absent file.
@@ -124,9 +124,9 @@ unwatermarked masters. Three were read, **read-only, with GET, and nothing was w
 re-uploaded** (threat `T-04-09`; the exposure is pre-existing and **deferred by Akhil to Phase 8**).
 
 ```
-abstract-intothemist  private  200 image/webp  bytes=30834   2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
-abstract-watertexture private  200 image/webp  bytes=499818  2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
-product-peppers       private  200 image/webp  bytes=117196  2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
+architecture-intothemist  private  200 image/webp  bytes=30834   2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
+architecture-watertexture private  200 image/webp  bytes=499818  2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
+still-life-peppers       private  200 image/webp  bytes=117196  2000x1333  exif=ABSENT  xmp=ABSENT  icc=ABSENT
 ```
 
 Same encoder, same result. The masters are "clean" of the watermark, not of stripping.

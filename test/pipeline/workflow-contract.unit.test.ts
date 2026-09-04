@@ -1,3 +1,18 @@
+/*
+ * BIOME'S `noTemplateCurlyInString` IS OFF FOR THIS FILE, in `biome.json`'s `overrides`.
+ *
+ * Every `${{ … }}` below is GITHUB ACTIONS EXPRESSION SYNTAX inside a single-quoted JavaScript
+ * string — `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}` is what the workflow file literally contains, and
+ * this suite's whole job is to compare workflow text character for character. The rule exists to
+ * catch `'${foo}'` written where a template literal was meant, and here it fires on correct code
+ * five times.
+ *
+ * SCOPED TO THIS ONE FILE, and file-scoped rather than five `biome-ignore` comments, because the
+ * exemption is a property of the whole file: every one of these strings is YAML by construction. A
+ * per-line ignore would also have to be re-placed every time an assertion moves, and a stale ignore
+ * is worse than none. Any OTHER file that trips this rule still fails, which is the point.
+ */
+
 /**
  * The contract test for `.github/workflows/process-photos.yml` (plan 04-08, Task 3).
  *
@@ -626,7 +641,6 @@ describe('each rule fails on its own defect and on nothing else', () => {
     const { findings } = auditWorkflow(
       plant(
         '    steps:\n',
-        // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub Actions expression syntax
         '    env:\n      APP_ID: ${{ secrets.PHOTO_PIPELINE_APP_ID }}\n    steps:\n'
       )
     );
@@ -638,7 +652,6 @@ describe('each rule fails on its own defect and on nothing else', () => {
     const { findings } = auditWorkflow(
       plant(
         '        run: node scripts/lib/dispatch-input.mjs\n',
-        // biome-ignore lint/suspicious/noTemplateCurlyInString: GitHub Actions expression syntax
         '        run: echo "${{ inputs.alt }}"\n'
       )
     );

@@ -73,16 +73,22 @@ const MODULE_PATH = `${REPO_ROOT}${MODULE_RELATIVE}`;
  * Fixtures. Every one of these is typed out, not derived from the module under test.
  * ========================================================================================== */
 
-/** The seven ids in `data/site_config.json` today, re-typed. A drift here is a real failure. */
-const LEGAL_CATEGORY_IDS = [
-  'abstract',
-  'architecture',
-  'nature',
-  'portraits',
-  'product',
-  'street',
-  'wildlife',
-];
+/**
+ * The five ids in `data/site_config.json` today, RE-TYPED. A drift here is a real failure, and one
+ * has already happened — which is the argument for re-typing rather than importing.
+ *
+ * It read seven: `abstract, architecture, nature, portraits, product, street, wildlife`. Akhil, on
+ * the taxonomy: *"I don't think the categories are good enough… can you check each photo and
+ * suggest category. also seems we have lot of categories"*, and after the pass: *"5 is better."*
+ * The five below are subject-based and each one is a section a reader would actually browse; the
+ * retired seven mixed subject (`nature`, `street`) with treatment (`abstract`) and with a genre the
+ * corpus had two photographs of (`product`).
+ *
+ * The list stays TYPED OUT on purpose. Importing `site_config.json` here would make this file
+ * agree with the config by construction, and the whole job of these assertions is to notice when
+ * the config moves under the pipeline that validates against it.
+ */
+const LEGAL_CATEGORY_IDS = ['architecture', 'landscape', 'portraits', 'still-life', 'wildlife'];
 
 /** The five dispatch input names, in declaration order. Re-typed for the same reason. */
 const EXPECTED_INPUT_NAMES = ['temp_key', 'category', 'title', 'alt', 'place'];
@@ -90,7 +96,9 @@ const EXPECTED_REQUIRED_NAMES = ['temp_key', 'category', 'title', 'alt'];
 
 const VALID = {
   temp_key: 'temp/2026-08-26-riverbend.jpg',
-  category: 'nature',
+  // `landscape` is the surviving home for what `nature` used to hold; a riverbend at first light is
+  // exactly the photograph that moved.
+  category: 'landscape',
   title: 'Riverbend at first light',
   alt: 'A slow river bends around a gravel bar with mist lifting off the water before sunrise.',
 };
@@ -252,7 +260,7 @@ describe('category', () => {
     expect(validateDispatchInputs({ ...VALID, category: id }).category).toBe(id);
   });
 
-  it.each([['Nature'], ['archtecture'], [''], [' nature'], ['nature ']])(
+  it.each([['Landscape'], ['archtecture'], [''], [' landscape'], ['landscape ']])(
     'rejects %j',
     (category) => {
       const finding = findingFor({ ...VALID, category }, 'category');
@@ -267,9 +275,9 @@ describe('category', () => {
       category: 'aurora',
     });
     // The proof that nothing is hardcoded: a real id becomes illegal against a config without it.
-    expect(findingFor({ ...VALID, category: 'nature' }, 'category', { siteConfigPath })).toContain(
-      'aurora'
-    );
+    expect(
+      findingFor({ ...VALID, category: 'landscape' }, 'category', { siteConfigPath })
+    ).toContain('aurora');
   });
 
   it('fails loudly rather than passing everything when site_config cannot be read', () => {

@@ -56,6 +56,10 @@ const WORK_PATH = '/development';
 const PHOTOS_PATH = '/photography';
 
 /** §10 item 7 / §13.2 — the cross-link's reviewed copy, character for character. */
+/*
+ * The copy that USED to be here, kept so the search is for the STRING rather than the wrapper —
+ * the same reason `photography-routes.node.test.ts` keeps `RETIRED_COPY` after retiring its row.
+ */
 const CROSSLINK_COPY = 'see the photographs →';
 
 /** The announcement every outbound anchor must carry (§10.1). */
@@ -622,35 +626,38 @@ describe('/development — the project cards', () => {
 });
 
 describe('/development — the cross-link, the metadata and the JavaScript budget', () => {
-  it('carries the italic serif cross-link with its exact reviewed copy', async () => {
+  it('carries no cross-link row, and not the retired copy under any wrapper', async () => {
+    /*
+     * ==============================================================================================
+     * §13.2's PAIR IS FULLY RETIRED, AND THIS IS THE OUTGOING HALF'S RECORD
+     * ==============================================================================================
+     *
+     * This asserted the row character for character: one `<p class="wk-crosslink-row">`, the copy
+     * `see the photographs →`, and an inline style carrying `--font-display`, `italic`, `--text-lg`
+     * and `--ochre-d` but not `--ochre-d-strong`. Akhil: *"remove see the photograhs from development
+     * page"* — after the returning half went from `/photography` for the same reason.
+     *
+     * INVERTED, NOT DELETED, and the precedent is on the other side: `photography-routes.node.test.ts`
+     * inverted the returning half's assertion rather than dropping it, because 05-15's audit had
+     * MEASURED that row silently missing once before and nothing caught it. §13.2 is prose and no
+     * gate reads it, so a deleted test leaves exactly that silence. An inverted one says the absence
+     * is intended and goes red the day the row returns by accident.
+     *
+     * TWO CLAIMS, because the wrapper is not the claim. A row re-added inside a different element
+     * would satisfy a check for `.wk-crosslink-row` alone and still put the sentence back.
+     */
     await loadPage();
 
-    const rows = [...page.matchAll(/<p class="wk-crosslink-row">([\s\S]*?)<\/p>/g)].map(
-      (m) => m[1] as string
+    const rows = [...page.matchAll(/<p class="wk-crosslink-row">([\s\S]*?)<\/p>/g)];
+    expect(rows.length, `the cross-link row is back: ${rows.length} found`).toBe(0);
+
+    expect(page, `the page still ships ${CROSSLINK_COPY}`).not.toContain(CROSSLINK_COPY);
+    // and not the bare words either, in case the arrow is dropped or re-encoded
+    expect(page, 'the page still ships the retired cross-link copy').not.toContain(
+      'see the photographs'
     );
-    expect(rows.length, `the page carries ${rows.length} cross-link rows`).toBe(1);
 
-    const link = anchors(rows[0] as string);
-    expect(link.length).toBe(1);
-    expect(attr((link[0] as Anchor).attrs, 'href')).toBe(PHOTOS_PATH);
-    expect(text((link[0] as Anchor).inner)).toBe(CROSSLINK_COPY);
-
-    // J2 — 17px in --ochre-d, italic serif. The role is inline because `Link` inline-sets
-    // font-family on every variant; asserting the served bytes is the only place it can be checked.
-    const style = attr((link[0] as Anchor).attrs, 'style') ?? '';
-    expect(style).toContain('var(--font-display)');
-    expect(style).toContain('italic');
-    expect(style).toContain('var(--text-lg)');
-    expect(style).toContain('var(--ochre-d)');
-    // §4.3 keeps --ochre-d-strong for the metric; J2 explicitly rejected it here.
-    expect(style).not.toContain('var(--ochre-d-strong)');
-
-    // It is INTERNAL: no new tab, so no announcement and no rel are owed.
-    expect(attr((link[0] as Anchor).attrs, 'target')).toBeNull();
-
-    say(
-      `cross-link: ${JSON.stringify(text((link[0] as Anchor).inner))} → ${PHOTOS_PATH}, italic serif in --ochre-d`
-    );
+    say(`cross-link: 0 rows, ${JSON.stringify(CROSSLINK_COPY)} absent — the pair is fully retired`);
   });
 
   it('carries SEO-01 metadata with an absolute canonical', async () => {

@@ -92,8 +92,11 @@
  *                                     are navigational by any reading of the line below, and they
  *                                     are asserted there rather than duplicated into PINS because
  *                                     that file already owns the composition they sit in.
- *   `see the photographs →`          `test/public/development.node.test.ts`
- *   `← see the work`                 `test/public/photography-routes.node.test.ts`
+ *   `see the photographs →`          RETIRED 2026-09-04 — `development.node.test.ts` now asserts its
+ *                                     ABSENCE, and `photography-routes.node.test.ts` asserts the
+ *                                     same from the other side
+ *   `← see the work`                 RETIRED — `photography-routes.node.test.ts` asserts its absence.
+ *                                     §13.2's pair is gone in both directions; the bar carries them
  *   `← All photographs` · `← {Cat}`  `test/public/photo-detail.node.test.ts`
  *   `All · n` and `{Label} · n`      `test/public/photography-routes.node.test.ts`, derived
  *   the three 404 lines              `test/public/seo.node.test.ts`

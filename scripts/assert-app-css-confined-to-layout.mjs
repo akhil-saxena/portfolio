@@ -609,17 +609,20 @@ const DEBTS = [
  * The one identifier permitted as an inline `style={…}` value, and the module it must come from.
  * The object literal is READ AND CHECKED by the same rules, so this is a pointer, not a pardon.
  */
-const OPAQUE_STYLE_SOURCES = new Map([
-  [
-    'CROSSLINK_TYPE',
-    {
-      file: 'src/lib/crosslink.ts',
-      reason:
-        'the italic serif cross-link type, shared by /development and /photography so the two cannot drift. ' +
-        'Its object literal is parsed and every value checked below.',
-    },
-  ],
-]);
+/*
+ * EMPTY, AND THAT IS THE CORRECT STATE TODAY — not an oversight to fill in.
+ *
+ * Its one entry was `CROSSLINK_TYPE`, the italic-serif type role shared by §13.2's two cross-link
+ * rows. Both rows are retired and `src/lib/crosslink.ts` is deleted, so the entry pointed at a file
+ * that no longer exists for an identifier no file uses. A register entry that resolves to nothing is
+ * an exemption nobody is checking — this gate says so itself, forty lines down, about exactly this
+ * failure mode.
+ *
+ * The MECHANISM stays wired: `style={IDENT}` is still refused unless registered, and a registered
+ * identifier is still READ and every value in it judged. An empty map means every opaque inline
+ * style is currently refused, which is the strictest position and the right default.
+ */
+const OPAQUE_STYLE_SOURCES = new Map([]);
 
 /* ---------------------------------------------------------------------------------------------
  * 4. Value inspection

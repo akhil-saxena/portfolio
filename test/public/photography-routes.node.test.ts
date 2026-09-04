@@ -599,11 +599,13 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
   });
 });
 
-/* ══ §13.2 — THE RETURNING HALF IS RETIRED, AND THIS IS THE RECORD ═════════════════════════════
+/* ══ §13.2 — BOTH HALVES ARE RETIRED, AND THIS IS THE RECORD ═══════════════════════════════════
  *
- * `/development` still ships *see the photographs →* and `test/public/development.node.test.ts`
- * still asserts it character for character. §13.2's OTHER row — *← see the work* on `/photography`
- * — is gone. Akhil: *"remvoe ← see the work from photographs page."*
+ * `← see the work` went from `/photography` first — Akhil: *"remvoe ← see the work from photographs
+ * page."* Then the outgoing half went from `/development`: *"remove see the photograhs from
+ * development page."* `test/public/development.node.test.ts` asserts that side's absence; the last
+ * case in this block asserts it from here as well, because a pair checked from one end only cannot
+ * distinguish a retirement from a break.
  *
  * IT WAS A SPEC ROW BEING RETIRED, NOT A LINE BEING TIDIED AWAY, which is why the assertion is
  * inverted rather than deleted. §13.2 is prose and no gate reads it; 05-15's audit had already
@@ -650,16 +652,32 @@ describe('§13.2’s returning cross-link is retired — no route under /photogr
     report(`"${RETIRED_COPY}" appears on none of the ${ROUTES.length} routes`);
   });
 
-  it('leaves the OUTGOING half alone — /development still points here', async () => {
+  it('and the OUTGOING half is retired too — /development carries no row either', async () => {
     /*
-     * THE PAIR IS ONE-DIRECTIONAL NOW, and that is a decision rather than a symmetry bug. Asserted
-     * from this side too, because "we removed the return link" and "we broke the cross-link" look
-     * identical from `/photography` alone.
+     * THIS ASSERTION HAS FLIPPED, and the flip is the whole history of §13.2 in one test.
+     *
+     * It read `expect(html).toContain('see the photographs')` — the pair was one-directional by
+     * choice, and this checked from `/photography` that the surviving half survived, because "we
+     * removed the return link" and "we broke the cross-link" look identical from one side alone.
+     * Akhil then removed the other half as well: *"remove see the photograhs from development page."*
+     *
+     * SO THE PAIR IS GONE, AND IT IS STILL CHECKED FROM BOTH SIDES. Kept here rather than left to
+     * `development.node.test.ts` for the reason the original gave: a claim about a PAIR that is only
+     * ever asserted from one end cannot tell a deliberate retirement from a broken link.
+     *
+     * THE BAR IS WHAT REPLACED IT — both routes are its items and the current one is marked, which
+     * is what made these rows editorial rather than structural.
      */
     const response = await fetch(`${previewBaseUrl}/development/`);
     expect(response.status).toBe(200);
     const html = decode(await response.text());
-    expect(html).toContain('see the photographs');
-    report('/development still carries its outgoing half — the pair is one-directional by choice');
+    expect(html, '/development still ships the outgoing cross-link copy').not.toContain(
+      'see the photographs'
+    );
+    expect(
+      [...html.matchAll(/<p class="wk-crosslink-row">/g)],
+      '/development still ships a cross-link row'
+    ).toHaveLength(0);
+    report('/development carries neither row nor copy — §13.2\u2019s pair is fully retired');
   });
 });

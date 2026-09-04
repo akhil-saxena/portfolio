@@ -393,15 +393,12 @@
 /* ── 7. The cross-link (§10 item 7) ─────────────────────────────────────────────────────────── */
 
 /*
- * Layout only. The type role travels with the element as an inline style object declared in
- * `work.astro` — see the comment there: `Link` inline-sets `font-family` on every variant, so a
- * serif link cannot be expressed from this file at all, and splitting one role across two files
- * would leave half of it invisible to whoever reads the other half.
+ * `.wk-crosslink-row` IS DELETED with §13.2's rows. It laid out the italic serif cross-link — the
+ * type role itself lived in `src/lib/crosslink.ts` as an inline object, because `Link` inline-sets
+ * `font-family` on every variant and a serif link was therefore unreachable from this file. Both
+ * halves are gone together, which is the point: half a role left behind is invisible to whoever
+ * reads the other half.
  */
-.wk-crosslink-row {
-  margin: var(--space-12) 0 0;
-  text-align: right;
-}
 
 /*
  * ================================================================================================

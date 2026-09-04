@@ -99,8 +99,8 @@
 import { Card } from '@akhil-saxena/design-system/components/Card';
 import { Chip } from '@akhil-saxena/design-system/components/Chip';
 import { Link } from '@akhil-saxena/design-system/components/Link';
-import { StatusPill } from '@akhil-saxena/design-system/components/StatusPill';
 import type { Project } from '../../schemas';
+import SocialIcons from './SocialIcons.astro';
 
 interface Props {
   project: Project;
@@ -110,39 +110,135 @@ interface Props {
 
 const { project, description } = Astro.props;
 
-/**
- * §10.2's mapping, and the only thing on this page that is not derivable from the data.
+/*
+ * ================================================================================================
+ * NO STATUS PILL, AND `status` STAYS IN THE SCHEMA
+ * ================================================================================================
  *
- * The record is typed by the `status` union, so adding a fourth value to `ProjectSchema` is a
- * TypeScript error here rather than an unmapped tone at runtime — which is the failure mode worth
- * catching, because an unmapped tone renders a pill with no fill and no marker and looks like a
- * styling bug three files away.
- */
-const STATUS_TONE = {
-  live: 'success',
-  maintained: 'muted',
-  archived: 'secondary',
-} as const satisfies Record<Project['status'], 'success' | 'muted' | 'secondary'>;
-
-/**
- * The label IS the stored status, capitalised — not a second copy of it.
+ * Akhil: *"remove pils for maintained/live etc."*
  *
- * §10.2 writes the three labels out as `Live` / `Maintained` / `Archived`, which are exactly the
- * three enum values with an initial capital. Typing them again would be a hand-maintained copy of
- * data, which §13.3 is about; deriving them means a schema change cannot leave a stale label.
+ * WHAT WENT IS THE RENDERING, NOT THE FIELD. `status` is still REQUIRED on every project and is
+ * still the only place currency lives (§13.1 rule 4) — Home's Act 2 and any future case-study page
+ * read the same field, and a record that has stopped saying whether a thing is alive is a worse
+ * record whatever this card draws. So `ProjectSchema` is untouched; only the pill, its tone map and
+ * its derived label are gone from here.
+ *
+ * The pill was carrying less than it cost. Four of five projects read `Maintained`, so the column of
+ * pills said "Maintained, Maintained, Maintained, Live" — a distinction between two states drawn
+ * five times, ranged right where the eye lands first, in the one place on the card that competes
+ * with the project's own name. The `Live` ones already announce it: Cairn and the design system are
+ * the two cards with a globe in the dock, and a link to a running site is a stronger statement of
+ * "this is live" than the word is.
+ *
+ * D-45 (StatusPill's unmapped-tone fallback) is now unreferenced by this page. It stays FILED: the
+ * finding is about the component, not about this consumer, and the next page to use a pill inherits
+ * it.
  */
-const statusLabel = project.status.charAt(0).toUpperCase() + project.status.slice(1);
 
 /**
  * The announcement §10.1 requires, in one place so the anchors cannot drift apart.
- * `.ds-visually-hidden` is the design system's own utility (`primitives.css`) — measured present,
- * `clip-path: inset(50%)` on a 1px box, which is the current recommended form. No app rule is
- * written for it, so QUAL-03's layout allowance is not spent here.
+ *
+ * `.ds-visually-hidden` is the design system's own utility (`primitives.css`), so the string is
+ * announced and never painted. Declared ONCE and used by the title link and by every badge's
+ * `aria-label`, because two copies of an announcement drift and a drifted one is worse than none.
  */
 const NEW_TAB = '(opens in a new tab)';
+
+/**
+ * The project's own artwork, and the two fields are NOT interchangeable.
+ *
+ * `icon` is STORE ARTWORK — an opaque square that looks the same on any ground, so one path is the
+ * whole answer. `mark` is a THEME-AWARE PAIR for a knock-out mark whose cut-outs show the ground
+ * through them, so it needs one file per theme and both are rendered with CSS choosing.
+ *
+ * Both are read here rather than in the template so the template asks one question per element. A
+ * record carries at most one of them (measured across all five: three have `icon`, one has `mark`,
+ * one has neither), but nothing in the schema enforces that and this does not assume it.
+ */
+const iconSrc = project.icon;
+const mark = project.mark ?? null;
+
+/*
+ * ================================================================================================
+ * `hostLabel` IS GONE, AND ITS JOB MOVED INTO THE DATA
+ * ================================================================================================
+ *
+ * It derived a host from `project.href` for the one card with no icon, and the footer row now prints
+ * `badge.label` for any badge whose icon is a globe instead. THAT IS A BETTER SOURCE, not just a
+ * different one: a derived host is whatever the URL happens to say (`design-system-ed1.pages.dev`),
+ * where a label is what Akhil decided the destination should be CALLED. The derivation was kept
+ * through two arrangements "in case the dock loses its outbound mark"; it has now been replaced
+ * rather than displaced, so it goes.
+ */
+
+
+/*
+ * ================================================================================================
+ * THE LIVE-COMPONENT STRIP IS GONE
+ * ================================================================================================
+ *
+ * Akhil: *"in ds card, remove additional cip/statuspill, button, link etc."*
+ *
+ * It rendered a Chip, a StatusPill, a Button and a Link out of the installed package, on the theory
+ * that the evidence and the thing it is evidence for should be the same objects. The theory was
+ * sound and the RENDER was the problem: in a 420px two-up card the four specimens wrapped over
+ * three ragged lines with `Link` stranded alone, and two of the four — `Button` and `Link` as
+ * `as="span"` — read as unstyled text beside two real chips rather than as specimens. It also made
+ * that one card the tallest in the grid, which set the matched height for all four.
+ *
+ * THE ARGUMENT MOVES TO ITS OWN PAGE. `/development/design-system` is where a component library can
+ * be shown at the size a component library needs, and a strip of four atoms in a card was always a
+ * trailer for it. `evidence` comes out of the schema and the data with this, because a field no
+ * renderer reads is a field that drifts.
+ */
 ---
 
 <Card className="wk-card" variant="glass" padding="lg" hover>
+  {
+    /*
+     * THE MARK IS A SIBLING OF THE HEAD, NOT A CHILD OF THE TITLE.
+     *
+     * It used to live inside the `<h3>`, which was right for a card — icon and name on one line —
+     * and wrong for a ruled row, where the mark has a column of its own. The row layout reached it
+     * with `display: contents` on the head AND the title, promoting grandchildren to grid items,
+     * and that worked until it did not: with three columns sharing row tracks the status pill was
+     * MEASURED 54 to 92px below the title, sized by whatever sat beside it in the body column.
+     *
+     * Hoisting the mark makes each column exactly one box — mark, head, body — so no two columns
+     * share a row track and neither can push the other around. It also deletes both `display:
+     * contents` rules, which were the clever part and are not missed.
+     *
+     * `alt=""` ON EVERY ONE: the link in the head names the project, and a mark announced as well
+     * would make every row read its name twice. The `width`/`height` attributes give the browser
+     * the RATIO before the file arrives, which is what stops the row reflowing as marks load.
+     */
+  }
+  {iconSrc !== null && (
+    <img class="wk-card-icon" src={iconSrc} alt="" width="30" height="30" loading="lazy" decoding="async" />
+  )}
+  {mark !== null && (
+    <>
+      <img
+        class="wk-card-icon wk-card-mark wk-card-mark-dark"
+        src={mark.dark}
+        alt=""
+        width="30"
+        height="30"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        class="wk-card-icon wk-card-mark wk-card-mark-light"
+        src={mark.light}
+        alt=""
+        width="30"
+        height="30"
+        loading="lazy"
+        decoding="async"
+      />
+    </>
+  )}
+
   <div class="wk-card-head">
     <h3 class="wk-card-title">
       <Link
@@ -157,35 +253,152 @@ const NEW_TAB = '(opens in a new tab)';
         {project.title}<span class="ds-visually-hidden"> {NEW_TAB}</span>
       </Link>
     </h3>
-    <StatusPill tone={STATUS_TONE[project.status]} label={statusLabel} />
+    {
+      /*
+       * ============================================================================================
+       * THE OUTBOUND ARROW, WHICH APPEARS ON HOVER AND IS `aria-hidden` ALWAYS
+       * ============================================================================================
+       *
+       * Akhil: *"when i hover on a card, i want a arrow on the top roight signifying that it
+       * redirects to something the arrow can be hidden otherwise."*
+       *
+       * IT SITS WHERE THE STATUS PILL SAT, which is why the head still reads as a row: `.wk-card-head`
+       * is `space-between` with the title left, and taking the pill out left that slot empty. So this
+       * is not a new element in a new place — it is a better tenant for a slot the page already had.
+       *
+       * `aria-hidden`, AND THAT IS NOT AN OVERSIGHT. The title link already carries
+       * `.ds-visually-hidden` "(opens in a new tab)" — see `NEW_TAB` above, which exists so every
+       * outbound anchor announces itself exactly once. A screen reader hearing this arrow too would
+       * hear the same fact twice per card. The arrow is a POINTER affordance for a fact the
+       * non-visual path already states, which is the definition of decorative.
+       *
+       * IT IS NOT A LINK. Wrapping it in an anchor would add a sixth outbound anchor per card and a
+       * second tab stop going exactly where the title already goes — `development.node.test.ts`
+       * counts one per card plus one per badge and would fail, correctly. It is a glyph inside the
+       * head, and the card's own stretched title link is what a click on it hits.
+       */
+    }
+    <span class="wk-card-go" aria-hidden="true">
+      <SocialIcons icon="arrow-up-right" size={14} />
+    </span>
   </div>
 
-  <p class="wk-card-desc">{description}</p>
+  {
+    /*
+     * THE BODY IS ONE BOX, AND IT HAS TO BE.
+     *
+     * The ruled-row layout puts the mark in column 1, the name and its status in column 2 and this
+     * in column 3. Placed as six separate grid items they shared ROW TRACKS with the name column —
+     * MEASURED: the status pill landed 80px below the title, dragged down because row 2 was sized
+     * by `cairn.co.in` sitting beside it in the next column. Two columns that must not affect each
+     * other's vertical rhythm cannot be in the same row tracks, and no amount of CSS fixes that
+     * from outside: it needs a box.
+     *
+     * It is also simpler. One `grid-column` on the wrapper replaces six, and the stack inside is a
+     * flex column with one gap instead of six explicit `grid-row` numbers that had to be renumbered
+     * whenever a card gained a line.
+     */
+  }
+  {
+    /*
+     * ================================================================================================
+     * THE DESTINATIONS ARE MARKS DOCKED UNDER THE PROJECT'S OWN MARK
+     * ================================================================================================
+     *
+     * `Final Split Variations.html`, treatment A: a small row of store marks beneath each project
+     * icon, in place of the text badges. Akhil: *"build a."*
+     *
+     * WHAT IT REPLACES: `Play Store   GitHub` as two underlined words in the card's body. Those had
+     * to sit at the end of the description column, so a reader scanning the left edge for "where can
+     * I get this" found the answer in a different place on every card, at the mercy of how long the
+     * description ran. Docked under the mark they are always in the same place.
+     *
+     * THE ACCESSIBLE NAME IS THE BADGE'S LABEL, NOT THE MARK. Each is a real anchor with
+     * `aria-label` — `Play Store (opens in a new tab)` — because a link whose only content is an
+     * `aria-hidden` glyph is a link with no name. `title` is set too, so a sighted mouse user gets
+     * the same word on hover that a screen-reader user hears.
+     *
+     * `.wk-marks` LIVES IN THE MARK'S GRID COLUMN, which is what makes "docked" true rather than
+     * approximate — see `development.css`.
+     */
+  }
 
-  <ul class="wk-tags">
+  <div class="wk-card-body">
+    <p class="wk-card-desc">{description}</p>
+  </div>
+
+  {
+    /*
+     * ============================================================================================
+     * THE FOOTER ROW — CHIPS LEFT, DESTINATION MARKS RIGHT, ON ONE LINE
+     * ============================================================================================
+     *
+     * Akhil: *"for hued/momentum, etc, keep the placement for icons in smae line as pills."*
+     *
+     * The marks used to be docked in the card's grid under the project's own icon, and then pinned
+     * absolutely to the bottom-right corner. Both put them on their OWN line, which cost a card ~24px
+     * of height and left the chips row half empty beside them. One row carrying both is the same
+     * information in one band: what it is built with on the left, where to get it on the right.
+     *
+     * IT IS A BOX, NOT TWO GRID CELLS. Two separate grid items on the same row would share a row
+     * track with each other — the exact failure the three-block card was restructured to escape (see
+     * the mark comment above: a status pill measured 54 to 92px away from its own title). A flex row
+     * with `space-between` cannot do that: the marks are laid out against the chips and nothing else.
+     *
+     * `wk-card-foot` IS RENDERED EVEN WITH NO MARKS. Every project stores at least one badge
+     * (`badges: z.array(BadgeSchema).min(1)`), so the right-hand side is never empty today; the row
+     * exists unconditionally so a schema relaxation degrades to a left-aligned chip row rather than
+     * to a missing element the stylesheet still targets.
+     */
+  }
+  <div class="wk-card-foot">
+    <ul class="wk-tags">
+      {
+        /* `Chip` is WRAPPED rather than given a `className`. §4.6c records the atom hook being
+          clobbered by a consumer class; it CONCATENATES in the installed 2.0.0-beta.1 (measured), so
+          the record is stale — but wrapping costs one element and cannot regress either way. */
+      }
+      {project.tech.map((tech) => <li><Chip>{tech}</Chip></li>)}
+    </ul>
+
     {
-      /* `Chip` is WRAPPED rather than given a `className`. §4.6c records the atom hook being
-        clobbered by a consumer class; it CONCATENATES in the installed 2.0.0-beta.1 (measured), so
-        the record is stale — but wrapping costs one element and cannot regress either way. */
+      /*
+       * ============================================================================================
+       * A MARK IS A GLYPH, EXCEPT WHEN THE DESTINATION IS THE PRODUCT ITSELF
+       * ============================================================================================
+       *
+       * Akhil: *"for cairn, write cairn.co.in with/without icon instead of just icon."*
+       *
+       * A Play Store triangle and the GitHub cat are UNIVERSAL — the glyph alone says where the link
+       * goes, and a label beside it would be repeating the picture in words. A globe is not: it says
+       * "a website" and nothing about which one, so on the one card whose destination is its own
+       * running site the glyph was the least informative mark on the page. `cairn.co.in` says both
+       * things at once.
+       *
+       * THE RULE IS ON THE ICON, NOT ON THE PROJECT ID. `badge.icon === 'globe'` means "this
+       * destination has no recognisable mark of its own", which is the actual condition — an
+       * `id === 'cairn'` branch would be right today and wrong the moment a second project ships a
+       * site of its own. The label comes from the badge's own `label`, so the text is data.
+       */
     }
-    {project.tech.map((tech) => <li><Chip>{tech}</Chip></li>)}
-  </ul>
-
-  <ul class="wk-badges">
-    {
-      project.badges.map((badge) => (
+    <ul class="wk-marks">
+      {project.badges.map((badge) => (
         <li>
-          <Link
-            className="wk-badge"
+          <a
+            class:list={['wk-mark-link', { 'wk-mark-named': badge.icon === 'globe' }]}
             href={badge.href}
-            variant="default"
+            aria-label={`${badge.label} ${NEW_TAB}`}
+            title={badge.label}
             target="_blank"
             rel="noopener noreferrer"
           >
-            {badge.label}<span class="ds-visually-hidden"> {NEW_TAB}</span>
-          </Link>
+            <SocialIcons icon={badge.icon} size={16} />
+            {badge.icon === 'globe' && <span class="wk-mark-label">{badge.label}</span>}
+          </a>
         </li>
-      ))
-    }
-  </ul>
+      ))}
+    </ul>
+  </div>
+
+
 </Card>

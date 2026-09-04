@@ -54,7 +54,12 @@ const MONTH_NAMES = [
 ] as const;
 
 /** U+2013 EN DASH. Written as an escape on purpose — see note 3 in the header. */
-const EN_DASH = '\u2013';
+/**
+ * EXPORTED, because a second module needs a range separator and re-typing `–` would be a second
+ * decision that looks identical until one of them changes. `IdentityRail` spells year-only ranges
+ * with it; `formatPeriod` below spells month ranges. One character, one definition.
+ */
+export const EN_DASH = '\u2013';
 
 /** The separator as it appears between the two halves: space, en dash, space. */
 const SEPARATOR = ` ${EN_DASH} `;

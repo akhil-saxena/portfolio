@@ -39,15 +39,13 @@
  * §5.2 permits by name. The suite asserts all of that against the served bytes.
  */
 
-import { Link } from '@akhil-saxena/design-system/components/Link';
 import { getCollection } from 'astro:content';
 import rawProjects from '../../data/projects.json';
 import PublicLayout from '../layouts/PublicLayout.astro';
-import EmploymentBand from '../components/public/EmploymentBand.astro';
+import IdentityRail from '../components/public/IdentityRail.astro';
 import ProjectCard from '../components/public/ProjectCard.astro';
 import Seo from '../components/public/Seo.astro';
 import { resume } from '../lib/content';
-import { CROSSLINK_TYPE } from '../lib/crosslink';
 import { resolveDsTokens } from '../lib/ds-component-count';
 import '../styles/development.css';
 
@@ -126,97 +124,167 @@ const cards = projects.map((project) => ({
  */
 for (const project of projects) resolveDsTokens(project.oneLiner);
 
-/**
- * The count in §10 item 5's line is DERIVED and spelled, and above this range it THROWS.
+/*
+ * 🔴 THE COUNT LINE IS GONE. Akhil: *"remove text - five, shipped on my own."*
  *
- * §13.3: no hand-maintained copy of a count may exist. 04-09 turned `main` red by writing one after
- * 04-01 had re-scoped fifteen records, and `data/projects.json` is content Akhil edits.
+ * It read `five, shipped on my own` and before that `five — shipped on my own`. Two things were
+ * wrong with it and only one was the dash: the count is visible — there are five cards directly
+ * beneath it — so the line spent a whole row of the section rule telling the reader something they
+ * could see, and `shipped on my own` is the subtitle's claim made a second time nine lines later.
  *
- * It throws rather than falling back to digits because the fallback is the dangerous branch: a
- * silent `13 — SHIPPED ON MY OWN` set in Playfair and mono is a defect nobody notices, while a
- * refused build is a five-minute edit to this array. The word list stops at twelve because that is
- * where "a few projects, shipped on my own" stops being the sentence this line is part of.
+ * `spellCount` AND ITS WORD TABLE WENT WITH IT. They were local to this file and existed for this
+ * one line: twelve spelled numerals and a `RangeError` whose message explains why falling back to
+ * digits would be the dangerous branch. All of it was machinery for a sentence that is no longer
+ * rendered, and §13.3's rule that no count may be a hand-maintained literal is unaffected — there
+ * is no count on this page to be one.
  */
-const SPELLED_COUNT = [
-  'one',
-  'two',
-  'three',
-  'four',
-  'five',
-  'six',
-  'seven',
-  'eight',
-  'nine',
-  'ten',
-  'eleven',
-  'twelve',
-] as const;
-
-function spellCount(n: number): string {
-  if (!Number.isInteger(n) || n < 1 || n > SPELLED_COUNT.length) {
-    throw new RangeError(
-      `work.astro: spellCount(${n}) - the projects count line spells 1 to ${SPELLED_COUNT.length} ` +
-        'in words and refuses anything outside that range. Falling back to digits would ship ' +
-        'a bare numeral in a Playfair-and-mono line where nobody would notice it. Extend ' +
-        'SPELLED_COUNT, or reword the line.',
-    );
-  }
-  return SPELLED_COUNT[n - 1] as string;
-}
-
-/** §10 item 5's reviewed line. The number is derived; the rest is the reviewed copy. */
-const projectCountLine = `${spellCount(cards.length)} — shipped on my own`;
 ---
 
+{
+  /*
+   * 🔴 `chrome` IS GONE FROM THIS CALL, so the shell draws its bar and its footer here exactly as it
+   * does on the other nine routes. Akhil: *"keep header same as in all other pages, footer too. Not
+   * customised for this page."*
+   *
+   * THAT ENDS TREATMENT A's ONE REAL COST. A's rail owned the identity, which meant this route had
+   * its own wordmark, its own contact row and a theme toggle in a place no other page puts it — a
+   * hole in the shell contract that `PublicLayout`'s `chrome` prop still documents, and which no
+   * route now opens. `chrome: 'rail'` stays supported and unused: it is one word to re-enable and
+   * the note beside it is the argument against doing so.
+   *
+   * `Development`, not `Work`, in the title — and a middle dot rather than an em dash. The route,
+   * the nav label and the `<h1>` all said development after commit cceb99e renamed them; this string
+   * was the last place still calling it Work, and it is the string a search result shows. A comment
+   * cannot sit between a component's attributes, which is what broke the build when it did.
+   */
+}
 <PublicLayout mainClass="pub-max-work wk-page">
   <Seo
     slot="head"
-    title="Work — Akhil Saxena"
-    description="Products shipped on my own — a component system and a few apps — alongside frontend engineering at Brevo."
+    title="Development · Akhil Saxena"
+    description="Products shipped on my own, alongside frontend engineering at Brevo."
     canonical={WORK_PATH}
   />
 
-  <header class="wk-header">
-    {
-      /* §4.3 item 1: the full stop is the FIRST of the six elements the accent is reserved for,
-        and it is the stop alone — the heading takes the ink ramp. A span, not a coloured `h1`. */
-    }
-    <h1 class="wk-title">Things I design and build<span class="wk-stop">.</span></h1>
-    <p class="wk-lede">
-      Products shipped on my own — a component system and a few apps — alongside frontend
-      engineering at Brevo.
-    </p>
-  </header>
-
-  <section class="wk-section">
-    <div class="wk-section-head">
-      <h2 class="wk-eyebrow">Professional experience</h2>
-    </div>
-    <EmploymentBand entries={resume.experience} />
-  </section>
-
-  <section class="wk-section">
-    <div class="wk-section-head">
-      <h2 class="wk-eyebrow">Projects</h2>
-      <p class="wk-count">{projectCountLine}</p>
-    </div>
-    <div class="wk-grid">
-      {
-        cards.map(({ project, description }) => (
-          <ProjectCard project={project} description={description} />
-        ))
-      }
-    </div>
-  </section>
-
   {
-    /* §10 item 7 · §13.2 — the italic serif cross-link, right-aligned above the footer. It is an
-      INTERNAL destination, so it carries no `target` and no `rel`: the new-tab announcement and the
-      tabnabbing guard belong to the thirteen outbound anchors in the grid and to nothing else. */
+    /*
+     * ================================================================================================
+     * THE SPLIT: A RAIL THAT OWNS THE IDENTITY, AND A COLUMN THAT OWNS THE WORK
+     * ================================================================================================
+     *
+     * `Split Page Refinements.html` treatment A, asked for by name. The rail takes the wordmark, the
+     * headline, the intro, the experience and the contact row; this column takes the nav, the
+     * projects and the cross-link. `chrome="rail"` on the layout above is what stops the shell
+     * drawing a bar and a footer that would now be duplicates — see that prop's own note for what
+     * it costs.
+     *
+     * `EmploymentBand` IS NO LONGER RENDERED HERE. Its full-width rows with a metric ranged right
+     * cannot fit a 420px rail, so `IdentityRail` renders the same `resume.experience` as a dated
+     * timeline. The band is still the arrangement `/resume` uses and is untouched.
+     *
+     * THE HEADLINE IS PASSED INTO THE RAIL AS A SLOT rather than moved into it. The `<h1>` is the
+     * page's, not the rail's: a component that renders another page's `<h1>` decides that page's
+     * document outline, and the next route that wants a rail would inherit this one's heading.
+     */
   }
-  <p class="wk-crosslink-row">
-    <Link className="wk-crosslink" href={PHOTOS_PATH} variant="quiet" style={CROSSLINK_TYPE}>
-      see the photographs →
-    </Link>
-  </p>
+  {
+    /*
+     * ================================================================================================
+     * TREATMENT A: THE RAIL OWNS THE IDENTITY, THE COLUMN OWNS THE WORK
+     * ================================================================================================
+     *
+     * `Final Split Variations.html` A, chosen over B: *"build a."* The rail takes the wordmark, the
+     * headline, the intro, the experience and the contact row; this column takes the nav, the
+     * projects and nothing else. `chrome="rail"` stops the shell drawing a bar and a footer that
+     * would now be second copies — that prop carries the full cost, including the one that matters:
+     * the theme toggle is no longer where it is on the other nine routes.
+     *
+     * THE HEADLINE IS A SLOT, NOT MOVED INTO THE RAIL. The `<h1>` is this page's — a component that
+     * renders another page's heading decides that page's document outline, and the next route that
+     * wants a rail would inherit this one's.
+     */
+  }
+  {
+    /*
+     * ================================================================================================
+     * THE HEADLINE SITS IN THE EXPERIENCE COLUMN, AND THE SHELL STILL OWNS THE CHROME
+     * ================================================================================================
+     *
+     * Akhil: *"i like the split section better when title/subtitle is only on experience section."*
+     *
+     * So this is neither of the two arrangements built before it. Treatment A put the headline in the
+     * rail AND took the bar and footer off the route; the shared-header version spanned the headline
+     * full width and gave the chrome back. This keeps the chrome shared — `PublicLayout` is called
+     * with no `chrome` prop, so the bar and footer are the same ones the other nine routes draw — and
+     * puts the headline in the rail, where it reads as that column's own opening rather than as a
+     * banner over both.
+     *
+     * IT IS A SLOT, NOT MARKUP MOVED INTO THE COMPONENT. The `<h1>` is this page's: a component that
+     * renders another page's heading decides that page's document outline, and the next route to want
+     * a rail would inherit this one's. `IdentityRail` renders the slot if it is given one.
+     *
+     * `owns="experience"` STILL, because the two things it controls — the wordmark and the contact row
+     * — are the shell's on this route. The rail carries the headline and the timeline and nothing that
+     * exists twice on the page.
+     */
+  }
+  <div class="wk-split">
+    <IdentityRail
+      entries={resume.experience}
+      crossLink={{ href: PHOTOS_PATH, label: 'photography →' }}
+      owns="experience"
+    >
+      <header class="wk-header" slot="headline">
+        {
+          /* §4.3 item 1: the full stop is the FIRST of the six elements the accent is reserved for,
+            and it is the stop alone — the heading takes the ink ramp. A span, not a coloured `h1`. */
+        }
+        <h1 class="wk-title">Things I design and build<span class="wk-stop">.</span></h1>
+        {
+          /*
+           * ================================================================================================
+           * THE SUB-PARAGRAPH IS GONE, BECAUSE THE ROW BELOW IT ALREADY SAID IT
+           * ================================================================================================
+           *
+           * Akhil: *"is subtitle necessary? we're having experience and brevo name just below this."*
+           *
+           * MEASURED, and he is right — it was a restatement in both halves. It read "Products shipped on
+           * my own, alongside frontend engineering at Brevo", and the two things it claimed are the two
+           * things the column then shows:
+           *
+           *   "shipped on my own"                → the five cards to its right, each with its own store mark
+           *   "frontend engineering at Brevo"    → EXPERIENCE, first row: Brevo, Senior Software Engineer,
+           *                                        2023 — NOW, about 120px underneath it
+           *
+           * A lede that survives only until the reader's eye travels 120px is not context, it is a caption
+           * for content that captions itself, and it cost the rail three lines at 768px where the column is
+           * 250px wide.
+           *
+           * IT SURVIVES AS THE `description`, up at the `PublicLayout` call. That is the one place the
+           * sentence is doing work the page cannot do for itself — a search result and a shared link have no
+           * timeline underneath them to read instead. So the copy is not deleted, it is moved to where it is
+           * the only thing there is.
+           *
+           * `.wk-lede` STAYS IN THE STYLESHEET: `/photography` uses it. Removing it here removes a call
+           * site, not a rule.
+           */
+        }
+      </header>
+    </IdentityRail>
+
+    <div class="wk-main">
+      <section class="wk-section">
+        <div class="wk-section-head">
+          <h2 class="wk-eyebrow">Projects</h2>
+        </div>
+        <div class="wk-grid">
+          {
+            cards.map(({ project, description }) => (
+              <ProjectCard project={project} description={description} />
+            ))
+          }
+        </div>
+      </section>
+    </div>
+  </div>
 </PublicLayout>

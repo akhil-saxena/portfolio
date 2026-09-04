@@ -1,0 +1,285 @@
+---
+/**
+ * The left rail: the page's whole identity — name, headline, intro, experience, contact.
+ *
+ * ================================================================================================
+ * WHAT THIS COMPONENT IS, AND WHY IT IS ONE
+ * ================================================================================================
+ *
+ * `Split Page Refinements.html` treatment A: *"Rail owns identity end-to-end: name, intro,
+ * experience, contact — no top header at all."* Akhil: *"build the first one from this."*
+ *
+ * It is a component rather than markup inside `development.astro` because everything in it is the
+ * SHELL's job on every other route — the wordmark, the social marks, the copyright. Keeping it in
+ * one file is what makes the divergence auditable: there is exactly one place that renders a second
+ * wordmark, and it is named after the reason.
+ *
+ * ================================================================================================
+ * THE EXPERIENCE TIMELINE IS THE SAME DATA THE BAND RENDERS, IN A DIFFERENT SHAPE
+ * ================================================================================================
+ *
+ * `EmploymentBand` renders `resume.experience` as full-width rows with a metric ranged right. The
+ * rail is 420px wide, so the metric has nowhere to go and the roles stack as a dated timeline
+ * instead — which is what A draws.
+ *
+ * 🔴 THE METRICS ARE LOST IN THIS ARRANGEMENT, and that is the one thing about A worth arguing
+ * over. `+15% CONVERSION`, `4K+ FRANCHISES` and `6× FASTER PIPELINES` are the strongest content in
+ * that section and appear nowhere else on the site — the résumé carries the bullets they were drawn
+ * from, not the figures. A shows year ranges in their place, which the résumé does carry. They are
+ * kept in the DOM under the role, at `--text-2xs`, rather than dropped: the rail has the vertical
+ * room and the alternative is deleting the only numbers on the page to match a prototype.
+ */
+
+import { Link } from '@akhil-saxena/design-system/components/Link';
+
+import homeConfig from '../../../data/home_config.json';
+import type { ExperienceEntry } from '../../schemas';
+import { EN_DASH } from '../../lib/period';
+import SocialIcons from './SocialIcons.astro';
+
+interface Props {
+  readonly entries: ReadonlyArray<ExperienceEntry>;
+  /** The route this rail is on, so the cross-link never points at the page it is on. */
+  readonly crossLink: { readonly href: string; readonly label: string };
+  /**
+   * WHAT THE RAIL OWNS, and it is two different pages.
+   *
+   * `identity` is treatment A: the rail takes the wordmark, the headline, the intro, the experience
+   * and the contact row, and the shell draws no bar and no footer. `experience` is the arrangement
+   * Akhil asked to see next — *"shouldn't the header and the title and the subtext be common? And
+   * after that, experience and projects split into two different sections"* — where the shell keeps
+   * its bar and footer, the headline spans the full width above the split, and the rail is reduced
+   * to the one section it is beside.
+   *
+   * IT IS A PROP RATHER THAN TWO COMPONENTS because the experience timeline is identical in both and
+   * is the only thing in here with any logic. Two components would mean two copies of the year
+   * derivation and the current-role marking, which is how they drift.
+   */
+  readonly owns?: 'identity' | 'experience';
+}
+
+const { entries, crossLink, owns = 'identity' } = Astro.props;
+const ownsIdentity = owns === 'identity';
+
+/*
+ * ================================================================================================
+ * THE HEADLINE IS DECIDED BY WHETHER THE PAGE PASSES ONE, NOT BY A THIRD ENUM MEMBER
+ * ================================================================================================
+ *
+ * Akhil: *"i like the split section better when title/subtitle is only on experience section."* So
+ * the rail holds the headline again — but the shell still draws the bar and the footer, which it did
+ * not in treatment A. That is a THIRD combination, and `owns` was a two-member enum.
+ *
+ * What varies is really two independent things:
+ *
+ *   the brand and the contact row  — only when the SHELL draws neither, i.e. `chrome="rail"`
+ *   the headline                   — whenever the page decides this column should carry it
+ *
+ * So `owns` keeps the first and the slot answers the second: a page that passes a `headline` gets
+ * one rendered, a page that does not, does not. Adding `owns="headline"` would have made three
+ * members for two booleans, with the fourth combination unrepresentable and nothing saying why.
+ *
+ * `Astro.slots.has` IS THE TEST, not a prop the page also has to remember to set. A page that passes
+ * a headline and forgets the flag would render nothing and look like a slot bug.
+ */
+const hasHeadline = Astro.slots.has('headline');
+
+/**
+ * AN EN DASH, IMPORTED, NOT AN EM DASH AND NOT A LITERAL.
+ *
+ * Akhil: *"also, no em dashes."* This function spelled `2023 — now` with one, three times in the
+ * rail, which was the only place on the page still doing it after the subtitle and the count line
+ * were fixed.
+ *
+ * `EN_DASH` comes from `src/lib/period.ts`, which is the module that already owns range formatting
+ * for this site — `formatPeriod` renders `Jul 2023 – Present` from the same character. A range takes
+ * an en dash by typographic convention and the site had already decided that; re-typing `–` here
+ * would be a second decision that looks identical until one of them changes.
+ */
+const YEAR_SEPARATOR = ` ${EN_DASH} `;
+
+/**
+ * `2023 – now` / `2022 – 2023`: years only, which is what the rail has room for.
+ *
+ * DERIVED FROM THE STORED FIELDS, never from a `period` string. `resume.json` holds
+ * `startYear` / `endYear` / `isPresent` as separate values precisely so a renderer can choose its
+ * own precision — `EmploymentBand` spells the month, this spells the year, and neither parses the
+ * other's output.
+ */
+const yearsOf = (entry: ExperienceEntry): string =>
+  entry.isPresent
+    ? `${entry.startYear}${YEAR_SEPARATOR}now`
+    : `${entry.startYear}${YEAR_SEPARATOR}${entry.endYear}`;
+
+const roles = entries.map((entry) => ({ entry, years: yearsOf(entry) }));
+---
+
+<aside class="wk-rail">
+  {
+    /* THE SECOND WORDMARK ON THE SITE, and the only one outside the shell. It is a link to `/` for
+      the same reason the bar's is: a name at the top left of a page is where every reader clicks
+      to get home, and one that does nothing is a broken affordance rather than a typographic
+      flourish. */
+  }
+  {
+    ownsIdentity && (
+      <Link
+        href="/"
+        variant="quiet"
+        className="wk-rail-brand"
+        style={{ fontFamily: 'var(--font-serif)' }}
+      >
+        {homeConfig.title}
+      </Link>
+    )
+  }
+  {hasHeadline && <slot name="headline" />}
+
+  <div class:list={["wk-rail-head", { "is-first": !ownsIdentity && !hasHeadline }]}>
+    <h2 class="wk-eyebrow">Experience</h2>
+    {
+      /* The résumé, from the one place that owes it a link on this page. Akhil's prototype puts it
+        here on the section rule; the nav decision from the 60px-gap round keeps it out of the bar,
+        so this does not reopen that. */
+    }
+    {
+      /*
+       * THE PDF, WITH A DOWN ARROW. Akhil: *"for resume, add down arrow."*
+       *
+       * IT POINTS AT THE FILE, NOT THE PAGE, and that pairing is the whole reason the arrow is
+       * legible: a downward arrow beside a link to an HTML page promises a download and delivers a
+       * navigation. `public/resume.pdf` ships in this repository, so the promise is keepable.
+       *
+       * `/resume` DOES NOT LOSE ITS ONLY WAY IN: Home's Act 2 links to it, which is where the nav
+       * decision from the 60px-gap round put the résumé when it kept the bar to two items.
+       *
+       * `download` IS DELIBERATELY ABSENT. With it the browser always saves; without it, a browser
+       * that can preview a PDF previews it and one that cannot saves it anyway. The reader's own
+       * setting is a better judge of what they wanted than this attribute is.
+       */
+    }
+    <Link href="/resume.pdf" variant="quiet" className="wk-rail-resume">
+      {
+        /*
+         * ==========================================================================================
+         * "(PDF)" IS PART OF THE LABEL, AND THE ARROW IS IN A DISC
+         * ==========================================================================================
+         *
+         * Akhil: *"Middle ground: text link + downward arrow in a small 24px circle outline that fills
+         * on hover — signals 'download' without the capsule bulk. Also: say what they get — RESUME
+         * (PDF) ↓."*
+         *
+         * ── THE WORD, NOT THE MARK, IS WHAT ACTUALLY PROMISES A FILE ──────────────────────────────
+         *
+         * A downward arrow is ambiguous on its own: it means "scroll", "expand" and "download"
+         * depending on where it sits, and a reader who guesses wrong clicks a nav item and gets a
+         * 400KB file. `(PDF)` removes the guess, and it does it for the NON-VISUAL reader too — the
+         * accessible name is now "Resume (PDF)", where before it was "Resume" plus a decorative arrow
+         * that announced nothing. That is the half of this change that a screen reader can hear.
+         *
+         * `Resume`, UNACCENTED. Akhil: *"use english resume, not accented."* The accented `Résumé` was
+         * the French loanword spelling; the English one is the same word without the diacritics, and
+         * it is also the spelling every ATS and recruiter search box uses. The stylesheet uppercases
+         * the label, so what renders is `RESUME (PDF)`.
+         *
+         * ── THE DISC IS A SPAN, NOT A SECOND LINK ─────────────────────────────────────────────────
+         *
+         * It sits INSIDE the anchor, so the whole thing — word, brackets and disc — is one target and
+         * one tab stop. A separately clickable circle would be a second control going to the same
+         * file, and the reader would have to discover that they are the same thing.
+         *
+         * `aria-hidden` on the svg for the reason above: `(PDF)` now carries what the arrow was
+         * gesturing at, so announcing it would be a third telling of the same fact.
+         */
+      }
+      Resume (PDF)
+      <span class="wk-rail-resume-disc">
+        <svg
+          class="wk-rail-resume-arrow"
+          width="10"
+          height="10"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M12 4v14" />
+          <path d="M6 12l6 6 6-6" />
+        </svg>
+      </span>
+    </Link>
+  </div>
+
+  <ol class="wk-timeline">
+    {
+      roles.map(({ entry, years }, index) => (
+        <li class={index === 0 ? 'wk-role-item is-current' : 'wk-role-item'}>
+          {
+            /* `aria-hidden` — the dot says "this is the current role" to a sighted reader and the
+              markup says it with `is-current` plus the years reading "now". A decorative span
+              announced as nothing is correct; announced as "bullet" it would be noise. */
+          }
+          <span class="wk-role-dot" aria-hidden="true"></span>
+          <h3 class="wk-role-company">{entry.company}</h3>
+          <p class="wk-role-title">{entry.role}</p>
+          <p class="wk-role-years">{years}</p>
+          {
+            /*
+             * 🔴 THE METRIC IS NOT RENDERED HERE. Akhil: *"remove or reposition +15%, 4k+ franchises,
+             * etc in experience section."*
+             *
+             * I had argued for keeping it — `+15% CONVERSION`, `4K+ FRANCHISES`, `6× FASTER
+             * PIPELINES` are the only figures on the page and the rail had the vertical room. In a
+             * 250-to-380px column they are a FOURTH mono line under each role, beneath the years
+             * that already sit in the same face at the same size, and two mono lines in a row read
+             * as one wrapped line rather than as two facts.
+             *
+             * WHERE THEY GO INSTEAD, and this is the part worth checking before it ships:
+             * `entry.metric` is still required by `ExperienceEntrySchema`, so the data is intact and
+             * validated. `EmploymentBand.astro` — the full-width rows that ranged each metric right
+             * — is the renderer built for them and is now imported by nothing. So the figures are on
+             * the site in the SCHEMA and on the page NOWHERE, which is a content decision, not a
+             * layout one: either `/resume` renders the band, or the metrics are retired from the
+             * public site and live only in the résumé's bullets.
+             */
+          }
+        </li>
+      ))
+    }
+  </ol>
+
+  {
+    ownsIdentity && (
+    <div class="wk-rail-foot">
+      {
+        /* `SocialIcons`, NOT hand-rolled marks. A draws these as text links; the shipped footer draws
+          them as marks and Akhil asked for that footer by name — *"original default footer use"*. Two
+          implementations of one contact row is the duplication the shared footer exists to prevent, so
+          the rail composes the same component the footer does. */
+      }
+      <div class="wk-rail-social">
+        {
+          homeConfig.socialLinks.map((link) => {
+            const external = !link.url.startsWith('mailto:');
+            return (
+              <a
+                class="pub-social-link"
+                href={link.url}
+                aria-label={link.label}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
+              >
+                <SocialIcons icon={link.icon} />
+              </a>
+            );
+          })
+        }
+      </div>
+      <Link href={crossLink.href} variant="quiet" className="wk-rail-cross">{crossLink.label}</Link>
+    </div>
+    )
+  }
+</aside>

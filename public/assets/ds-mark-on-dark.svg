@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- The design system's own masthead mark, beside "@akhil-saxena/design-system":
+       a rounded square outline holding an amber square. Geometry scaled from
+       `.dsov .mark` in design-system/src/OverviewPage.tsx (22px box, 6px radius,
+       1.5px border, 7px inner square at 2px radius) to this 64-unit box.
+       The stroke is CENTRED on the path, so the rect is inset by half of it and its
+       radius reduced to match — otherwise the outline would be clipped by the viewBox. -->
+  <rect x="2.18" y="2.18" width="59.64" height="59.64" rx="15.27"
+        fill="none" stroke="#FAFAF7" stroke-width="4.36"></rect>
+  <rect x="21.82" y="21.82" width="20.36" height="20.36" rx="5.82"
+        fill="#F59E0B"></rect>
+</svg>

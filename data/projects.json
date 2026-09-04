@@ -8,22 +8,24 @@
     },
     "status": "live",
     "oneLiner": "A job application tracker with no streaks, no cohort comparisons and no confetti anywhere in it.",
-    "description": "A job application tracker for a search that runs long, where restraint is the product. Its forever-no list rules out streaks, comparisons and resume scoring, and it runs on Cloudflare's free tier.",
+    "description": "Job hunting is already stressful. Cairn keeps track of where you've applied, what comes next, and what still needs attention, without turning the process into a game.",
     "tech": [
-      "Astro",
       "React",
-      "TypeScript",
-      "Cloudflare"
+      "TypeScript"
     ],
     "icon": null,
     "href": "https://cairn.co.in",
     "badges": [
       {
-        "label": "Live",
+        "label": "cairn.co.in",
         "href": "https://cairn.co.in",
-        "icon": "arrow-up-right"
+        "icon": "globe"
       }
-    ]
+    ],
+    "mark": {
+      "dark": "/assets/cairn-mark-on-dark.svg",
+      "light": "/assets/cairn-mark-on-light.svg"
+    }
   },
   {
     "id": "hued",
@@ -34,10 +36,9 @@
     },
     "status": "maintained",
     "oneLiner": "Turns your camera roll into the colours you actually lived in, with no network permission.",
-    "description": "Turns your camera roll into the colours you actually lived in, by week, month or year. Palettes are clustered in CIELAB so perceptually close shades merge, and it requests no network permission.",
+    "description": "Your camera roll is a diary in colour. hued turns a month of photos into a palette that reveals the moods, places, and moments that defined it.",
     "tech": [
-      "Kotlin",
-      "CIELAB"
+      "Kotlin"
     ],
     "icon": "/assets/hued-icon.png",
     "href": "https://play.google.com/store/apps/details?id=app.hued",
@@ -63,10 +64,9 @@
     },
     "status": "maintained",
     "oneLiner": "Breaks a long goal into a number for today, recomputed in a pure-Kotlin engine layer.",
-    "description": "Breaks a long-term goal into a number for today, and recalculates it when you fall behind. The target, streak and milestone maths sits in a pure-Kotlin engine layer with no Android imports.",
+    "description": "Turn a long-term goal into today's task. Momentum calculates the pace you need, adapts when you miss days, and keeps progress realistic instead of perfect.",
     "tech": [
-      "Kotlin",
-      "Material 3"
+      "Kotlin"
     ],
     "icon": "/assets/momentum-icon.png",
     "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
@@ -92,11 +92,9 @@
     },
     "status": "maintained",
     "oneLiner": "Right-click any time on a page and read it in your own zone, CST and IST disambiguated.",
-    "description": "Right-click any time written on a page and read it in your own zone. It disambiguates CST, IST and BST from surrounding context, and follows the current DST state rather than a cached offset.",
+    "description": "Convert times across time zones directly from any webpage. Highlight a time, right-click, and instantly see it in your local zone.",
     "tech": [
-      "JavaScript",
-      "Chrome APIs",
-      "NLP"
+      "JavaScript"
     ],
     "icon": "/assets/timeshift-icon.png",
     "href": "https://chromewebstore.google.com/detail/timeshift-global-timezone/bnghkolhekleahihlmpjniedgedjphel",
@@ -121,21 +119,29 @@
       "icon": "code"
     },
     "status": "live",
-    "oneLiner": "Accessible React primitives with semantic tokens — {{ds.componentCount}} components, and this page is built on them.",
-    "description": "A React component library where one token change lands across every screen at once. {{ds.componentCount}} components in {{ds.categoryCount}} categories, and this site is built entirely out of them.",
+    "oneLiner": "Accessible React primitives with semantic tokens: {{ds.componentCount}} components, and this page is built on them.",
+    "description": "A React component library that makes it easy to build consistent interfaces. {{ds.componentCount}} accessible components across {{ds.categoryCount}} categories with built-in theming.",
     "tech": [
       "React",
-      "TypeScript",
-      "CSS"
+      "TypeScript"
     ],
     "icon": null,
     "href": "https://design-system-ed1.pages.dev",
     "badges": [
       {
+        "label": "Storybook",
+        "href": "https://design-system-ed1.pages.dev",
+        "icon": "globe"
+      },
+      {
         "label": "GitHub",
         "href": "https://github.com/akhil-saxena/design-system",
         "icon": "github"
       }
-    ]
+    ],
+    "mark": {
+      "dark": "/assets/ds-mark-on-dark.svg",
+      "light": "/assets/ds-mark-on-light.svg"
+    }
   }
 ]

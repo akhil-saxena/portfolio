@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <mask id="m">
+      <rect width="64" height="64" rx="16" fill="white"></rect>
+      <ellipse cx="32" cy="50" rx="19" ry="5" fill="black"></ellipse>
+      <ellipse cx="32" cy="38.8" rx="14" ry="4.2" fill="black"></ellipse>
+      <ellipse cx="32" cy="29.2" rx="9" ry="3.4" fill="black"></ellipse>
+      <circle cx="32" cy="21" r="2.8" fill="black"></circle>
+    </mask>
+  </defs>
+  <g mask="url(#m)"><rect width="64" height="64" rx="16" fill="#1F1B17"></rect></g>
+  <circle cx="32" cy="21" r="2.8" fill="#F59E0B"></circle>
+</svg>

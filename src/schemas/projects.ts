@@ -109,6 +109,37 @@ export const ProjectSchema = z.strictObject({
   tech: z.array(z.string().min(1)).min(1),
   // Nullable, NOT optional: two of the five carry an explicit null.
   icon: z.string().min(1).nullable(),
+
+  /**
+   * A THEME-AWARE BRAND MARK, and why it is not `icon`.
+   *
+   * `icon` holds STORE ARTWORK: `/assets/{hued,momentum,timeshift}-icon.png`, opaque squares that
+   * look the same on any ground because an app icon has to. One path is the whole answer.
+   *
+   * Cairn's mark is not that. Taken from `cairn/public/brand/`, it is a KNOCK-OUT — a filled rounded
+   * square with the cairn's stones cut out of it, so the stones show whatever is behind them. The
+   * repository ships four variants for exactly that reason, and two of them are a ground pair:
+   *
+   *     icon-on-dark.svg   cream #FAFAF7 square — for a dark ground
+   *     icon-on-light.svg  ink   #1F1B17 square — for a light ground
+   *
+   * Either one alone is wrong in the other theme: the cream square disappears on a near-white page.
+   * A single path cannot express that, so the pair is its own field rather than a convention smuggled
+   * into `icon`'s string — a `-dark`/`-light` filename swap done in code is a naming rule nothing
+   * checks, and it would break silently the first time a mark is exported under another name.
+   *
+   * IT ALSO LEAVES `icon` UNTOUCHED, which matters: `resume-structure.unit.test.ts` pins these five
+   * records byte-identical to the revision they were moved from, and `icon` is one of the eight keys
+   * it compares. Adding a field is a change that can be NAMED there (`POST_MOVE_KEYS`); editing one
+   * of the eight would be a change to the thing being proved.
+   */
+  mark: z
+    .strictObject({
+      dark: z.string().min(1),
+      light: z.string().min(1),
+    })
+    .optional(),
+
   href: z.url(),
   badges: z.array(BadgeSchema).min(1),
 });

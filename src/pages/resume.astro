@@ -187,14 +187,14 @@ const emailAddresses = home.socialLinks
   .map((link) => link.url.slice(MAILTO.length));
 
 const description = current
-  ? `${home.title}'s résumé — ${current.role} at ${current.company}. Experience, skills and education, with the PDF.`
-  : `${home.title}'s résumé — experience, skills and education, with the PDF.`;
+  ? `${home.title}'s resume — ${current.role} at ${current.company}. Experience, skills and education, with the PDF.`
+  : `${home.title}'s resume — experience, skills and education, with the PDF.`;
 ---
 
 <PublicLayout mainClass="pub-max-band rs-page">
   <Seo
     slot="head"
-    title={`Résumé — ${home.title}`}
+    title={`Resume — ${home.title}`}
     description={description}
     canonical={RESUME_PATH}
   />

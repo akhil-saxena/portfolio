@@ -1,185 +1,26 @@
-/*
- * `/development` — the page's own layout and type roles. Plan 05-09.
- *
- * ================================================================================================
- * WHAT MAY LIVE IN THIS FILE
- * ================================================================================================
- *
- * Layout and the §3.1 type roles, and nothing that the design system already owns. QUAL-03 permits
- * app CSS for layout; every colour below is a token read from the monochrome theme, and not one
- * literal colour value appears in this file. The vivid amber marker step of the ramp appears
- * nowhere: it is the same literal in both modes and measures 3.11 / 3.19 / 2.96 in light, failing
- * AA as text on every surface (§4.2), so it is a marker and never text. Its token name is not
- * written out even in this comment, because the task's own criterion is a plain grep for that
- * token name over this file, and a grep cannot tell prose from a declaration — MEASURED: it fired
- * on this sentence in its first form, twice. That is the loud-and-fixable failure direction, so
- * the check is left exactly as it is and the prose moved instead.
- *
- * ================================================================================================
- * THE SPECIFICITY PRE-FLIGHT, WHICH IS NOT OPTIONAL ON THIS PROJECT
- * ================================================================================================
- *
- * STATE.md records this as a three-for-three defect class: *"a CSS rule losing silently to an
- * existing rule declared lower in `primitives.css`… tie on specificity means source order decides,
- * and jsdom cannot see it."* Two rules on this page overlap rules the design system already ships,
- * and each was GREPPED for before it was written. The arithmetic is stated at each site rather
- * than inferred, because the failure mode is a page that looks plausible and a suite that is green.
- *
- *   primitives.css:1133  .ds-atom-card[data-variant="glass"]              (0,2,0)  border: --rule
- *   primitives.css:7126  .ds-atom-card[data-hover="elevate"]:hover        (0,3,0)  border: rgba(...)
- *   primitives.css:7130  .dark .ds-atom-card[data-hover="elevate"]:hover  (0,4,0)  border: --ink-4
- *
- * ================================================================================================
- * THE THREE-RUNG GRID, AND WHY ITS BREAKPOINTS ARE WRITTEN HERE
- * ================================================================================================
- *
- * §10 item 6 asks for one column at classes 1–2, two at 3–4 and three at 5–6 — the same three
- * widths the shell's gutter ladder steps at, so the page and the shell never disagree about which
- * class they are in. Those widths are `BREAKPOINTS` in `src/lib/layout-ladder.ts`.
- *
- * A CSS media query cannot read a custom property, let alone a TypeScript constant, so the two
- * numbers below are the SECOND copy — exactly the situation `src/styles/public-shell.css` is in,
- * and it is resolved the same way: `test/public/development.node.test.ts` reads the SERVED stylesheet and
- * compares each `.wk-grid` media query against `BREAKPOINTS` at test time. A divergence is a red
- * test rather than a silent disagreement, which is the most CSS can be given here.
- */
-
-/* ── 1. The page column ─────────────────────────────────────────────────────────────────────── */
-
-/*
- * The page maximum is `.pub-max-work` (1280px), applied in `work.astro` through the layout's
- * `mainClass` — NOT a number in this file. It is `PAGE_MAX.work` in `src/lib/layout-ladder.ts` and
- * one of the four rules `scripts/assert-gutter-ladder.mjs` checks against that record.
- */
 .wk-page {
   display: block;
   padding-bottom: var(--space-16);
 }
 
-/* ── 2. The header ──────────────────────────────────────────────────────────────────────────── */
-
 .wk-header {
   margin-bottom: var(--space-12);
 }
 
-/*
- * §3.1 "Page header — Work, Photos": Playfair `--text-4xl` 44 / 700 / `--lh-snug` / `--ls-tighter`.
- *
- * 44 AND NOT 52. J1 was CONFIRMED at 44 on 2026-08-19 — Playfair's larger x-height and heavier
- * stems already carry the weight the handoff got from Newsreader at 52. `--text-4xl-plus` (52)
- * ships in the scale and this page does not use it.
- */
 .wk-title {
-  /*
-   * ================================================================================================
-   * THE HALF-LEADING ABOVE THE FIRST LINE IS PULLED BACK, SO THE INK ALIGNS WITH `Photographs`
-   * ================================================================================================
-   *
-   * Akhil: *"The place where photographs sit on title on /photography should be the same place the
-   * Thinsg word should sit on /development page."*
-   *
-   * MEASURED, and the boxes were ALREADY aligned — both `<h1>`s sit at left 80, top 88, 24px under
-   * the bar. The mismatch is inside the box:
-   *
-   *     /photography   line-height --lh-tight  (41.36px)   first line's ink starts 7px ABOVE box top
-   *     /development   line-height --lh-normal (66px)      first line's ink starts 5px BELOW box top
-   *
-   * 12px apart. A line box taller than its glyphs distributes the surplus as HALF-LEADING, half above
-   * the first line and half below the last — so the looser leading this heading needs pushes its
-   * first line down, and the tighter leading on the one-word title pulls its line up.
-   *
-   * BOTH LEADINGS ARE CORRECT AND NEITHER MOVES. `--lh-normal` is here because Akhil asked for it —
-   * *"increase line spacing in Things I design and build"* — and this heading wraps to four lines in
-   * a 30% rail, where `--lh-tight` was cramped. `Photographs` is one word and never wraps. The fix
-   * is to cancel the half-leading ABOVE the first line without touching the space BETWEEN lines.
-   *
-   * DERIVED FROM THE TWO TOKENS RATHER THAN TYPED AS -12px. Both are unitless multipliers, so the
-   * difference in half-leading is `(tight - normal) / 2` em — which scales with the font size and
-   * follows either token if it is ever re-tuned. A literal would be correct today at 44px and wrong
-   * at the next rung.
-   *
-   * `margin-block-start`, NOT `position: relative` + `top`: the heading is in flow above the rail's
-   * timeline, and shifting it visually while it still occupied the old height would leave a 12px gap
-   * under it. This moves the box.
-   */
   margin: calc((var(--lh-tight) - var(--lh-normal)) / 2 * 1em) 0 0;
   font-family: var(--font-display);
   font-size: var(--text-4xl);
-  /*
-   * `--weight-regular` (400), down from `--weight-bold` (700). Akhil: *"reduce weight for headings,
-   * photographs, things I design and build both."*
-   *
-   * 400 IS THE ONLY LIGHTER WEIGHT THAT EXISTS HERE, and that is a property of the typeface rather
-   * than a choice. Libre Baskerville ships Regular, Regular Italic and Bold and nothing between —
-   * `src/styles/design-system.css` imports exactly `latin-400`, `latin-400-italic` and `latin-700`.
-   * Asking for `--weight-medium` (500) or `--weight-semibold` (600) would hand the browser a weight
-   * it does not have and get a SYNTHESISED face: a 400 outline mechanically emboldened, which on a
-   * text serif at 44px shows as thickened joins and filled counters. So the scale between 400 and
-   * 700 is unusable for this family, and 400 is the answer to "lighter".
-   */
   font-weight: var(--weight-regular);
-  /*
-   * `--lh-normal` (1.5), up from `--lh-snug` (1.08). Akhil: *"increase line spacing in Things I design
-   * and build."*
-   *
-   * MEASURED, tokens.css: the leading ramp is --lh-tight 0.94, --lh-snug 1.08, --lh-normal 1.5,
-   * --lh-relaxed 1.55. There is NOTHING BETWEEN 1.08 AND 1.5 — the ramp steps straight from a display
-   * leading to a body leading — so "a bit more than 1.08" is not a value this stylesheet can point at.
-   * `calc(var(--lh-snug) * 1.2)` would originate the 1.2 in app CSS, which is exactly what
-   * `gate:app-css` classifies `line-height` as TOKENISED to prevent, and it would put a display
-   * leading in a file that cannot be re-tuned from the theme.
-   *
-   * So this takes the rung that exists. FILED UPSTREAM AS D-36: the ramp has no display rung between
-   * 1.08 and 1.5, and a 44px serif heading is the case that needs one (~1.2). Until it lands, 1.5 is
-   * the honest answer and reads loose rather than cramped, which is the direction asked for.
-   */
   line-height: var(--lh-normal);
-  /*
-   * ================================================================================================
-   * `normal` — THE FONT'S OWN KERNING, BECAUSE EVERY TRACKED-IN RUNG STILL COLLIDES
-   * ================================================================================================
-   *
-   * Akhil: *"i dont want letters to touch each other, for titles"*, then, after the first fix:
-   * *"on hero. i still see akh and ax touching."*
-   *
-   * MEASURED, not judged by eye. "Akhil Saxena" was rendered at 8x device scale at five tracking
-   * values and the bitmap scanned column by column: a column with no ink is a real gap between
-   * glyphs, so ELEVEN letters should give ELEVEN separate ink clusters. Anything fewer is a touch.
-   *
-   *     --ls-tighter  -0.038em    6 clusters   five pairs fused
-   *     --ls-tight    -0.024em    9 clusters   `Ak`, `kh` and `ax` still fused  <- the first fix
-   *     --ls-base     -0.005em   10 clusters   one still fused
-   *     normal         0         11 clusters   every glyph separate
-   *
-   * So the first fix was measurably not enough, and `--ls-base` — the loosest rung below
-   * `--ls-wide` — is still not enough. THE RAMP HAS NOWHERE ELSE TO GO: `--ls-wide` is +0.1em,
-   * which at 44px is +4.4px a pair and reads as a spaced-out logo rather than a title. There is no
-   * rung between -0.005em and +0.1em.
-   *
-   * `normal` IS NOT A LITERAL AND IT IS NOT A DODGE. `gate:app-css` lists it in HANDOVER_KEYWORDS —
-   * "values that DEFER a decision rather than making one" — and deferring is exactly right here:
-   * it hands spacing back to Libre Baskerville's own kerning pairs, and the type designer is the
-   * authority on whether `A` and `k` collide. Tracking a display serif in was the decision that
-   * caused this; not tracking it is not a second decision.
-   *
-   * FILED AS D-38: the tracking ramp has no rung at or just above 0, so a display face that needs
-   * its natural fit has to reach for a keyword. Same shape as D-36 on the leading ramp.
-   */
   letter-spacing: normal;
   color: var(--ink);
 }
 
-/* §4.3 item 1 — the accent, on the full stop and on nothing else in this heading. */
 .wk-stop {
   color: var(--ochre-d);
 }
 
-/*
- * §3.1 "Body — one-liner, tagline, sub-paragraph": DM Sans `--text-base` 13 / relaxed.
- * §10 item 2 caps it at 480px. That is a copy measure rather than a layout maximum, so it is not
- * in `PAGE_MAX` and is not gated — `layout-ladder.ts` says at the point the number would have gone
- * that a px-valued record is for page maxima, and 480px here is the width of one sentence.
- */
 .wk-lede {
   max-width: min(480px, 100%);
   margin: var(--space-4) 0 0;
@@ -190,18 +31,10 @@
   color: var(--ink-3);
 }
 
-/* ── 3. Sections and the mono eyebrow ───────────────────────────────────────────────────────── */
-
 .wk-section {
   margin-top: var(--space-12);
 }
 
-/*
- * The rule under a section's heading row. §10 item 5 puts the `PROJECTS` eyebrow and the derived
- * count line on ONE line with the count right-aligned, so the rule belongs to the row rather than
- * to the heading — one declaration serves both sections and the experience band's heading, which
- * has no count beside it, keeps exactly the same rule and spacing.
- */
 .wk-section-head {
   display: flex;
   flex-wrap: wrap;
@@ -213,17 +46,6 @@
   border-bottom: 1px solid var(--rule);
 }
 
-/*
- * §3.1 "Eyebrow · metric · counter": IBM Plex Mono `--text-xs` 11 / 500 / `--ls-wide`.
- *
- * It is an `<h2>` and not the design system's `Eyebrow`, and that is a MEASURED constraint rather
- * than a preference: `EyebrowProps extends HTMLAttributes<HTMLSpanElement>` with `size`, `color`
- * and `tone` and no `as` prop, so it cannot carry heading semantics and the page would lose its
- * outline. `/resume` reached the same conclusion for the same reason in 05-10. Recorded upstream.
- *
- * The count line takes the same role — §3.1 lists "eyebrow · metric · counter" as ONE row, so they
- * share one declaration rather than two that agree today.
- */
 .wk-eyebrow,
 .wk-count {
   margin: 0;
@@ -240,32 +62,6 @@
   text-align: right;
 }
 
-/*
- * ── 4. The employment band is DELETED ────────────────────────────────────────────────────────
- *
- * `EmploymentBand.astro` rendered `resume.experience` as full-width hairline-separated rows with a
- * metric ranged right, capped at `PAGE_MAX.band`. The split redesign replaced it with the rail's
- * TIMELINE and left the component importable by nothing — so `.wk-band`, `.wk-row`, `.wk-identity`,
- * `.wk-company`, `.wk-role`, `.wk-metric` and `.wk-metric-value` styled markup that no page emitted.
- *
- * Removed with the component rather than left "in case": dead selectors are the cheapest thing in a
- * stylesheet to keep and the most expensive to read past, and `git log` holds them if the band is
- * ever wanted back. `.wk-count` stayed — it sits above this section and its own line is retired
- * separately.
- */
-
-/* ── 5. The project grid (§10 item 6) ───────────────────────────────────────────────────────── */
-
-/*
- * One column at classes 1–2, two at 3–4, three at 5–6 — the same three widths the shell's gutter
- * ladder steps at, so the page and the shell never disagree about which class they are in. See the
- * file header for why these two numbers are written here and how they are held to
- * `BREAKPOINTS` in `src/lib/layout-ladder.ts`.
- *
- * `minmax(0, 1fr)` and not `1fr`: a grid item's default `min-width: auto` is its content's
- * min-content width, so a long unbroken token in a description would push the column wider than
- * its track and overflow the page — the R-6 horizontal-scroll failure the ladder exists to close.
- */
 .wk-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -284,18 +80,6 @@
   }
 }
 
-/* ── 6. One project card (§10.3) ────────────────────────────────────────────────────────────── */
-
-/*
- * `Card` CONCATENATES `className` and no longer inlines `display` (MEASURED against the installed
- * build: it renders `class="ds-atom-card wk-card"`), so this rule applies and `.wk-tags`'s
- * `margin-top: auto` bottom-aligns the tech chips as designed. Both were broken in Phase 0 and both
- * were CONSUMER errors — `class` instead of `className` — rather than component defects;
- * `scripts/assert-ds-import-contract.mjs` [DS-CLASS] now makes that class of error a build failure.
- *
- * `position: relative` is what the stretched title link is stretched against. `height: 100%` makes
- * every card in a grid row the same height, so the chips of adjacent cards line up.
- */
 .wk-card {
   position: relative;
   display: flex;
@@ -304,31 +88,10 @@
   height: 100%;
 }
 
-/*
- * §4.4 rule 1 — ON DARK A CARD'S BOUNDARY IS ITS BORDER, NOT ITS FILL.
- * `--cream-2` over `--cream` in dark is a ~1.1:1 delta, so the fill draws nothing and the border
- * has to carry the edge: `--wire` (3.78 / 3.48 / 3.23 — clears the 3:1 non-text floor) and not
- * `--rule` (1.36 / 1.25 / 1.16, which is a hairline for separating rows, not for bounding a box).
- *
- * SPECIFICITY, stated because a tie here is invisible: this is (0,4,0) against
- * `primitives.css:1133 .ds-atom-card[data-variant="glass"]` at (0,2,0). It wins on specificity, so
- * it does not depend on which stylesheet the bundler emits first — which is the exact defect class
- * STATE.md records three consecutive plans hitting in Phase 1.
- */
 .dark .wk-grid .wk-card[data-variant="glass"] {
   border-color: var(--wire);
 }
 
-/*
- * §4.3 item 5 — the card hover border is the accent, and it is one of only six elements that may
- * be. `:focus-within` carries the same paint for a keyboard user, because the affordance is about
- * "this card is the one you are on" and not about the mouse.
- *
- * SPECIFICITY: the light pair is (0,4,0) against `primitives.css:7126` (0,3,0); the dark pair is
- * (0,5,0) against `primitives.css:7130 .dark .ds-atom-card[data-hover="elevate"]:hover` at (0,4,0),
- * which paints `--ink-4` and would otherwise win the tie by source order. Both were grepped for
- * before this rule was written.
- */
 .wk-grid .wk-card[data-hover="elevate"]:hover,
 .wk-grid .wk-card[data-hover="elevate"]:focus-within,
 .dark .wk-grid .wk-card[data-hover="elevate"]:hover,
@@ -336,16 +99,6 @@
   border-color: var(--ochre-d);
 }
 
-/*
- * §12.2 (PUB-13) — the card hover border transition is inside the no-preference query.
- *
- * 🔴 AND THE `reduce` BLOCK IS LOAD-BEARING, NOT BELT-AND-BRACES. The design system declares
- * `transition: box-shadow 0.15s, border-color 0.15s` on `.ds-atom-card[data-hover="elevate"]`
- * (`primitives.css:7124`) OUTSIDE any motion query, so declaring this page's transition inside
- * `no-preference` does not remove the animation under `reduce` — the component's own would still
- * run. Both blocks are (0,4,0) and beat it. Reported upstream; the local reset is here because
- * PUB-13 is this site's requirement and a colour transition is the smallest possible instance of it.
- */
 @media (prefers-reduced-motion: no-preference) {
   .wk-page .wk-grid .wk-card[data-hover="elevate"] {
     transition:
@@ -367,7 +120,6 @@
   gap: var(--space-4);
 }
 
-/* §3.1 "Project / card / photo title": Playfair `--text-xl` 22 / 700 / `--lh-snug` / `--ls-tight`. */
 .wk-card-title {
   min-width: 0;
   margin: 0;
@@ -379,35 +131,12 @@
   color: var(--ink);
 }
 
-/*
- * THE STRETCHED LINK. See `ProjectCard.astro`'s header for the accessibility reasoning and for the
- * text-selection tradeoff this accepts. The overlay is transparent and carries no `z-index`, so the
- * badge row — which is positioned and later in the DOM — paints and receives pointer events above
- * it without either needing a stacking-context number nobody would remember to maintain.
- */
 .wk-card-link::after {
   position: absolute;
   inset: 0;
   content: "";
 }
 
-/* §3.1 "Body — card description, résumé bullet": DM Sans `--text-md` 15 / relaxed. */
-/*
- * `--text-base` (13px), DOWN FROM `--text-md` (15). Akhil: *"text in desc in cards to be smaller."*
- *
- * §3.1 assigned `--text-md` to "card description, résumé bullet" when a card was a third of a page
- * wide and its description was one line. It is now the largest body text on the page, at the same
- * size as the résumé's prose, inside a 420px card whose title is a 17px serif — so the description
- * was competing with the name above it instead of sitting under it.
- *
- * 13px KEEPS `--lh-relaxed`. The temptation at a smaller size is to tighten the leading to claw back
- * height; at 13/1.55 the line box is 20px against 23px before, which already returns 3px a line, and
- * tightening as well would make a three-line paragraph in a matched-height card read as a block
- * rather than as sentences. The height that comes back is a side effect, not the goal.
- *
- * THE 58ch MEASURE BELOW IS UNAFFECTED: `ch` is relative to the font size, so the measure follows
- * the type down instead of having to be re-derived.
- */
 .wk-card-desc {
   margin: 0;
   font-family: var(--font-body);
@@ -417,11 +146,6 @@
   color: var(--ink-3);
 }
 
-/*
- * `margin-top: auto` is what bottom-aligns the chip row inside the flex column, and it carries the
- * badge row with it because the badges follow in source order. §10.3 names this behaviour as the
- * thing the `class`→`className` fix restored.
- */
 .wk-tags {
   display: flex;
   flex-wrap: wrap;
@@ -431,13 +155,6 @@
   list-style: none;
 }
 
-/*
- * §3.1 "Footer / meta": DM Sans `--text-sm` 12.5. The size is declared on the list and inherited by
- * the anchors — the design system's `Link` resets `font: inherit` and inline-sets only
- * `font-family`, which already resolves to DM Sans, so no override is needed here at all.
- *
- * `position: relative` lifts the row above the stretched card link so the badges stay clickable.
- */
 .wk-badges {
   position: relative;
   display: flex;
@@ -453,83 +170,21 @@
   white-space: nowrap;
 }
 
-/* ── 7. The cross-link (§10 item 7) ─────────────────────────────────────────────────────────── */
-
-/*
- * `.wk-crosslink-row` IS DELETED with §13.2's rows. It laid out the italic serif cross-link — the
- * type role itself lived in `src/lib/crosslink.ts` as an inline object, because `Link` inline-sets
- * `font-family` on every variant and a serif link was therefore unreachable from this file. Both
- * halves are gone together, which is the point: half a role left behind is invisible to whoever
- * reads the other half.
- */
-
-/*
- * ================================================================================================
- * THE EVIDENCE EACH CARD CARRIES
- * ================================================================================================
- *
- * `ProjectCard.astro`'s frontmatter decides WHICH evidence a project has; this decides how it sits.
- * The three treatments never co-occur — an icon suppresses the host line — so nothing here has to
- * arbitrate between two of them in one card.
- */
-
-/*
- * 30px, WHICH IS THE TITLE'S OWN CAP HEIGHT AND NOT A ROUND NUMBER PICKED FOR ICONS. The card title
- * renders at 30px line box; an icon taller than that pushes the status pill's row and makes the two
- * cards beside it disagree about where their titles sit. `flex: none` because a shrinking icon is a
- * squashed logo.
- */
 .wk-card-icon {
   flex: none;
   width: 30px;
   height: 30px;
   object-fit: cover;
 
-  /*
-   * ================================================================================================
-   * `--radius-lg`, AND THE NUMBER COMES FROM THE OTHER THREE MARKS
-   * ================================================================================================
-   *
-   * Akhil: *"for hued, keep rounder corners in icon, like other icons."* MEASURED — the corner
-   * radius each mark carries in its own artwork, read off the alpha channel:
-   *
-   *     hued        192px source    0.0%  — a HARD SQUARE, opaque to the corner pixel
-   *     momentum    512px source   19.9%
-   *     timeshift   128px source   18.0%
-   *     cairn (SVG) rx 16 / 64     25.0%
-   *
-   * So hued is the only one with no curve of its own, and this rule was giving all four
-   * `--radius-sm` — 4px at 56px, or 7% — which is invisible on the three that already curve and
-   * leaves hued looking like the square it is.
-   *
-   * `--radius-lg` is 12px, 21.4% at 56px, which sits inside the 18–25% the other three occupy.
-   *
-   * IT CLIPS NOTHING VISIBLE ON THE OTHER THREE. A CSS radius only cuts artwork where it exceeds
-   * the baked one, and 12px against momentum's 11.2px and timeshift's 10.1px is a fraction of a
-   * pixel of arc — verified by rendering. Cairn's mark is excluded outright: it draws its own 25%
-   * and `.wk-card-mark` sets `border-radius: 0`, because rounding a rounded SVG clips its corners.
-   *
-   * THE RUNG I WANTED IS 10px AND DOES NOT EXIST — the mean of the three measurements is 11.8px,
-   * and `--radius-*` is 4 / 8 / 12 / 16 / 999. That is D-20 again, the same gap the masonry tile
-   * hit. Taking `--radius-lg` rather than writing `11px` keeps this a handover instead of a fifth
-   * literal, and D-20 already records the ask upstream.
-   */
   border-radius: var(--radius-lg);
 }
 
-/* The title becomes a row so the icon and the name share a baseline box rather than the icon
-   sitting on the text baseline, where a square mark reads as sunk. */
 .wk-card-title {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
-/*
- * THE HOST, IN THE MONO FACE, because it is an address rather than prose — the same reason the
- * experience metrics and the count line use it. `--ink-4` puts it below the description in the
- * card's order of attention: it is corroboration, not content.
- */
 .wk-card-host {
   margin: var(--space-3) 0 0;
   font-family: var(--font-mono);
@@ -538,14 +193,6 @@
   letter-spacing: var(--ls-wide);
 }
 
-/*
- * THE MARK'S GROUND PAIR. Both are in the document and CSS shows one — decided by `.dark` on
- * `<html>`, which the shell's inline script sets before the first paint, so there is no frame in
- * which the wrong ground is visible.
- *
- * `display: none` rather than `visibility` or an opacity: a hidden-but-laid-out image would take
- * its 30px of the title row and push the name sideways by the width of the variant nobody sees.
- */
 .wk-card-mark {
   display: none;
 }
@@ -562,23 +209,10 @@
   display: inline-flex;
 }
 
-/*
- * NO `border-radius` ON A MARK. `.wk-card-icon` rounds store artwork because a Play Store icon is
- * delivered as a full-bleed square and needs the corner. This mark draws its OWN 16-unit radius
- * inside a 64-unit viewBox — measured in the source — so rounding it again would clip its corners.
- */
 .wk-card-mark {
   border-radius: 0;
 }
 
-/*
- * THE MARK'S GROUND PAIR. Both are in the document and CSS shows one — decided by `.dark` on
- * `<html>`, which the shell's inline script sets before the first paint, so there is no frame in
- * which the wrong ground is visible.
- *
- * `display: none` rather than `visibility` or an opacity: a hidden-but-laid-out image would take
- * its 30px of the title row and push the name sideways by the width of the variant nobody sees.
- */
 .wk-card-mark {
   display: none;
 }
@@ -595,33 +229,9 @@
   display: inline-flex;
 }
 
-/*
- * NO `border-radius` ON A MARK. `.wk-card-icon` rounds store artwork because a Play Store icon is
- * delivered as a full-bleed square and needs the corner. This mark draws its OWN 16-unit radius
- * inside a 64-unit viewBox — measured in the source — so rounding it again would clip its corners.
- */
 .wk-card-mark {
   border-radius: 0;
 }
-
-/*
- * ================================================================================================
- * 🟠 EXPLORATORY — THE SPLIT PAGE (A). NOT FINAL.
- * ================================================================================================
- *
- * `Split Page Refinements.html` treatment A: a 420px identity rail beside the work. The rail owns
- * the wordmark, the headline, the intro, the experience and the contact row; the column owns the
- * nav, the projects and the cross-link. `chrome="rail"` on `PublicLayout` suppresses the shell's
- * bar and footer, which would otherwise be duplicates — that prop's note carries the cost.
- *
- * 420px IS THE PROTOTYPE'S NUMBER AND IT SURVIVES A CHECK. The rail holds a 42px headline; at 420
- * minus its 56/44 padding that is 320px of measure, which is 7 to 8 words a line for the serif at
- * that size. Narrower and the headline breaks to five lines; wider and the work column drops below
- * the 58ch the descriptions are set to.
- *
- * ONE COLUMN BELOW 1024. A rail is a rail only when there is something beside it; stacked, it is
- * just the top of the page, which is what it becomes.
- */
 
 .wk-split {
   display: grid;
@@ -634,10 +244,6 @@
   padding-block: var(--space-8);
 }
 
-/*
- * THE BRAND, AT THE BAR'S OWN SIZE AND INK. `--text-lg` and full `--ink` are what
- * `.pub-bar .pub-logo` uses; the rail is a different place on the page, not a different brand.
- */
 .wk-rail-brand {
   align-self: flex-start;
   font-size: var(--text-lg);
@@ -659,31 +265,6 @@
   border-block-end: 1px solid var(--rule);
 }
 
-/*
- * ================================================================================================
- * THE RÉSUMÉ LINK IS A HEADER NAV ITEM, NOT AN UNDERLINED LINK
- * ================================================================================================
- *
- * Akhil: *"resume + arrow shouldnt underline, but be like heder buttons."*
- *
- * So it takes the bar's contract exactly: quiet at rest, `--ink` on hover, and NO UNDERLINE in
- * either state. Two changes to get there.
- *
- * The base `color: var(--ink)` came off. It was the brightest ink on the page, which left a hover
- * state nowhere to go — "like header buttons" requires the rest state to be quieter than the hover
- * one, and the `quiet` variant's own colour already is. So this rule now sets only the mono type
- * and lets the component's colour stand, the way `.pub-nav-link` does.
- *
- * 🔴 THE :hover RULE IS AT (0,4,0) ON PURPOSE. `quiet` adds `text-decoration: underline` on hover
- * from `.ds-atom-link[data-variant="quiet"]:hover`, which is (0,3,0). An override without the
- * attribute selector TIES and then loses on source order, because the design system's stylesheet is
- * imported first. This is the SIXTH time that tie has cost this project a fix that looked landed and
- * was not — nav links, the wordmark, the skip link, the toggle, the card title, and now this — so
- * the attribute is written in rather than trusted to specificity that happens to work today.
- *
- * `:focus-visible` gets the same treatment, or a keyboard reader sees the underline the pointer
- * reader was spared. The focus RING still draws; it is `box-shadow`, not `text-decoration`.
- */
 .wk-rail-resume {
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
@@ -691,71 +272,12 @@
   text-transform: uppercase;
 }
 
-/*
- * ================================================================================================
- * A 24px DISC THAT FILLS ON HOVER, NOT A CAPSULE AROUND THE WHOLE LABEL
- * ================================================================================================
- *
- * Akhil: *"Middle ground: text link + downward arrow in a small 24px circle outline that fills on
- * hover — signals 'download' without the capsule bulk."*
- *
- * WHAT THIS REPLACED was a pill outline drawn around the entire label. It worked and it was heavy:
- * a 74px capsule appearing in the rail's header made the résumé link the loudest thing in a column
- * whose job is the timeline. The disc localises the affordance to the mark — the part that is
- * actually making the download promise — and leaves the word as type.
- *
- * `--space-6` IS 24px, so the size Akhil named is a token rather than a literal.
- *
- * 🔴 THE FILL IS A BACKGROUND SWAP PLUS A COLOUR INVERSION, AND BOTH HALVES ARE REQUIRED. Filling
- * the disc with `--ink` without also flipping the arrow to `--bg` leaves ink-on-ink: the arrow does
- * not disappear gracefully, it disappears completely, and the control reads as a solid dot. The
- * inversion is what keeps the glyph legible through the transition.
- *
- * 🔴 NO LAYOUT MOVES BETWEEN THE STATES. The border is on the rest state at `--wire` and only its
- * colour and the background change — nothing appears that was not already occupying space. This is
- * the lesson the capsule taught: its first version put `padding` and `border` on `:hover` and shoved
- * `EXPERIENCE` sideways the moment the pointer arrived.
- *
- * ── WHY THE HEAD'S `align-items` STILL WORKS ──────────────────────────────────────────────────
- *
- * `.wk-rail-head` aligns its children on the BASELINE, and this link is now 24px tall against a
- * 9.5px eyebrow. Baseline alignment uses the link's own text baseline — the label's, not the disc's
- * — so `EXPERIENCE` and `RÉSUMÉ (PDF)` still sit on one line and the disc hangs off it. Measured
- * below rather than assumed, because a flex item with no text would have contributed its bottom
- * margin edge instead and dropped the whole row.
- */
 .wk-rail-resume-disc {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  /*
-   * 🔴 `border-box`, OR THE DISC IS 26px AND NOT THE 24 AKHIL ASKED FOR. Measured at 26x26 on the
-   * first render: nothing in the design system's reset sets `box-sizing` on an arbitrary span, so
-   * `width` was the CONTENT box and the 1px border sat outside it on each side. Stated here rather
-   * than fixed by writing 22px, because 22 would be a number that only makes sense if you know about
-   * the border, and it would go wrong the day the border thickens.
-   */
   box-sizing: border-box;
-  /*
-   * `--space-4` (16px), TWO RUNGS BELOW THE 24 THAT WAS ASKED FOR, and both steps down were called
-   * for on sight: *"download button is too large for download"*, then *"smaller download button."*
-   *
-   * MEASURED against what it sits beside — the label is `--text-2xs` at 9.5px in a 12px line box:
-   *
-   *     24px   twice the height of its own line; the widest thing in the rail's header
-   *     20px   still 1.7x the line box
-   *     16px   1.3x, so the disc sits inside the label's own band
-   *
-   * 16px is where it stops being a button parked at the end of a line and becomes punctuation on it.
-   * It is also `--space-4`, the same rung the destination marks use for their glyph box, so the two
-   * circular affordances on this page are now the same size rather than nearly so.
-   *
-   * The 10px arrow is unchanged. At 16px with a 1px border the inner box is 14px, leaving 2px around
-   * the glyph — but the arrow's VISIBLE ink is 5.8px of its 10px viewBox (y 4 to 18 of 24), so the
-   * real clearance from ring to stroke is about 4px. Shrinking the arrow too would have made the ink
-   * sub-4px and lost the arrowhead.
-   */
   width: var(--space-4);
   height: var(--space-4);
   border: 1px solid var(--wire);
@@ -782,44 +304,6 @@
   }
 }
 
-/*
- * ================================================================================================
- * THE TIMELINE — ONE CONNECTOR PER GAP, NOT ONE RULE DOWN THE LIST
- * ================================================================================================
- *
- * Akhil: *"the timeline is not aligned clearly. also, extends beyond the first maq software, it
- * should end there."* Both were real and they had DIFFERENT causes.
- *
- * ── THE HORIZONTAL MISS: 1.5px ────────────────────────────────────────────────────────────────
- *
- * MEASURED against the old numbers, in the list's own coordinates (the `<ol>` pads 24px left, so an
- * item's box starts at x=24):
- *
- *     dot    left: calc(-1 * var(--space-6) + 1px)  ->  x = 1 .. 9    centre x = 5.0
- *     rule   left: 3px                              ->  x = 3 .. 4    centre x = 3.5
- *
- * A pixel and a half. Too small to look like a bug and too large to look deliberate, which is
- * exactly why it read as "not aligned clearly" rather than as an obvious break. The dot now sits at
- * a round `-1 * var(--space-6)` and the line is placed FROM the dot rather than beside it:
- * dot's left edge, plus half the dot (`--space-2` is 8, so `--space-1` is half of it), minus half
- * the line's own 1px. The arithmetic is in the declaration so the next person to move the dot moves
- * the line with it.
- *
- * ── THE VERTICAL OVERSHOOT: THE RULE WAS ON THE LIST ──────────────────────────────────────────
- *
- * `inset-block: var(--space-6)` insets 24px from the list's top and bottom, and a dot's centre is
- * 28px into its own item (`--space-6` top offset plus half the dot). Those two numbers agree only
- * by accident at the top, and at the bottom the list's last 24px is the last item's `padding-block`
- * plus its years line — so the rule ran PAST MAQ Software's dot and stopped in the middle of
- * nothing. The old comment claimed it stopped at the last dot; it did not, and the comment is what
- * made the bug survive a reading.
- *
- * A rule drawn on the list can only guess where the last dot is. A connector drawn PER GAP cannot
- * be wrong: each item except the last draws a line from its own dot's centre to the next item's
- * dot's centre, `bottom: -28px` being exactly "28px into the item below me". The last item draws
- * nothing, so the timeline ends AT the last dot by construction, at any number of roles and any
- * item height.
- */
 .wk-timeline {
   margin: 0;
   padding: 0 0 0 var(--space-6);
@@ -833,11 +317,8 @@
 
 .wk-role-item:not(:last-child)::before {
   position: absolute;
-  /* the dot's centre: its top offset plus half of its 8px */
   top: calc(var(--space-6) + var(--space-1));
-  /* the NEXT dot's centre, which is the same distance into the item below this one */
   bottom: calc(-1 * (var(--space-6) + var(--space-1)));
-  /* the dot's left edge, plus half the dot, minus half this 1px line */
   left: calc(-1 * var(--space-6) + var(--space-1) - 0.5px);
   width: 1px;
   background: var(--rule);
@@ -854,39 +335,6 @@
   background: var(--ink-4);
 }
 
-/*
- * ================================================================================================
- * THE CURRENT ROLE IS MARKED BY A RING, NOT BY COLOUR
- * ================================================================================================
- *
- * Akhil: *"In experience section. dont have green dot for Brevo nor green text ... keep it black dot
- * only, maybe add a outline circle with 1px spacing."*
- *
- * WHAT WENT: `--green` on the dot AND on the years line. It was a design-system token rather than a
- * literal, and it came from the approved prototype's `#3d7a4e` — but it was the only chromatic
- * accent left on a monochrome page, and it said "current" twice on one row.
- *
- * ONE SIGNAL, NOT TWO. The years line goes back to `--ink-4`, the same as every other role's, so the
- * ring is the only thing marking the current entry. Two markers for one fact is what made the green
- * loud: remove the colour and keep both, and the page still says it twice.
- *
- * ── THE RING IS THE FOCUS-RING TECHNIQUE, REUSED ──────────────────────────────────────────────
- *
- * `0 0 0 2px var(--bg)` then `0 0 0 3px var(--ink-4)`: the inner band is painted in the PAGE'S OWN
- * COLOUR, so it reads as a gap rather than as a second ring, and the outer band is the visible
- * outline. Exactly the construction `--focus-ring` uses in `public-shell.css`, for the same reason —
- * a hairline held off an element's edge reads as a ring, and one touching it reads as a border that
- * thickened.
- *
- * `box-shadow` AND NOT `outline` + `outline-offset`, which would also work: the dot sits on the
- * connector line drawn by `.wk-role-item::before`, and a shadow paints in the same layer as the
- * dot's own background while an outline is drawn over everything — including the line, which should
- * pass behind.
- *
- * THREE MARKERS WERE RENDERED AND COMPARED at 4x before this one. Making every dot identical lost
- * the signal completely: Brevo became indistinguishable from the two roles below it. Brightening the
- * current dot to `--ink` alone was visible but weak at 8px. The ring is the one that reads at size.
- */
 .wk-role-item.is-current .wk-role-dot {
   background: var(--ink);
   box-shadow:
@@ -918,8 +366,6 @@
   color: var(--ink-4);
 }
 
-/* `margin-block-start: auto` pins the contact row to the bottom of the rail, which is what makes it
-   read as the rail's footer rather than as the end of the timeline. */
 .wk-rail-foot {
   display: flex;
   flex-direction: column;
@@ -941,7 +387,6 @@
   color: var(--ink-3);
 }
 
-/* The nav row the AppBar used to draw, ranged right above the work. */
 .wk-nav-rail {
   display: flex;
   align-items: center;
@@ -957,21 +402,6 @@
 
 @media (min-width: 1024px) {
   .wk-split {
-    /*
-     * 🔴 30 / 70, AS A RATIO — NOT 420px.
-     *
-     * Akhil: *"This makes the left section too wide … I wanted it to be more like thirty percent of
-     * the page and the seventy percent to be the project side."*
-     *
-     * MEASURED, the fixed 420px was 32.8% of the 1280 page max and 29% at 1440 — so it drifted with
-     * the viewport, and at 1024 it left the work column 508px, which crushed the cards and ran the
-     * page to 3544px, two and a half times its height at 1440. A ratio holds at every width, which
-     * is what "thirty percent" actually asks for.
-     *
-     * `minmax(0, …)` ON BOTH TRACKS. Without it an `fr` track's floor is `auto`, so a long unbroken
-     * string in either column can push the track past its share and overflow the page — the failure
-     * mode is a horizontal scrollbar on a grid that looks correct in the stylesheet.
-     */
     grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
     gap: 0;
   }
@@ -986,100 +416,22 @@
   }
 }
 
-/*
- * ================================================================================================
- * THE PROJECTS ARE CARDS AGAIN — ROUNDED, BORDERED, ONE PER ROW IN THE WORK COLUMN
- * ================================================================================================
- *
- * Akhil, on the ruled rows: *"the overstate for those cards are not great. What if we have the
- * roundel corners, and they are actual cards?"* So the box comes back.
- *
- * IT COMES BACK BY DELETING, NOT BY ADDING. The `border: 0; background: none; border-radius: 0`
- * that unboxed them is gone, and with it the whole ruled-row block — so the card's edge, its glass
- * fill, its 12px radius and its hover are the design system's `Card` again, untouched. There is no
- * app rule anywhere that draws this box. That is the point: the ruled rows had to override four
- * properties of a component to hide it, and four overrides is what a wrong direction looks like.
- *
- * ONE PER ROW, NOT A GRID. The work column is ~70% of the page now, which is 640px at 1280 — enough
- * for one card with a 58ch description and not enough for two. The five-cards-in-a-three-up-grid
- * problem (an empty sixth cell) cannot come back in a single column.
- *
- * WHAT SURVIVED THE EXPLORATION: the mark in its own column, the head as a row with the status
- * ranged right, and the body as one box. That structure is what made the row layout work and it is
- * what makes a wide card work — the three-block card (`head` / `body` / the mark beside them) is
- * the shape, and only its container changed.
- */
-
-/*
- * A ONE-COLUMN GRID, NOT A FLEX COLUMN, and the two are equivalent for a single stack — but only
- * grid can be turned into the two-up by the container query at the end of this file. This was
- * `display: flex; flex-direction: column`, and leaving it that way made the container query's
- * `grid-template-columns` INERT: it matched, it applied, and nothing moved, because a flex container
- * has no column tracks. Caught by measuring the landed page and finding 860px cards where the
- * preview had 420px ones.
- */
 .wk-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-5);
 }
 
-/*
- * ================================================================================================
- * ONE CARD GEOMETRY, WIDE OR NARROW
- * ================================================================================================
- *
- * Akhil: *"cairn is not having the icon alignec in correct place, ike other cards."*
- *
- * MEASURED, and it was two divergences at once. The lead card kept `--space-14` (56px) for its mark
- * while the two-up cards had been tightened to `--space-10` (40px), so Cairn's title started 16px
- * further right than every other title on the page. And the lead card's BODY still sat in column 2,
- * so its description was indented past its own icon while the narrow cards' ran the full width — the
- * two cards disagreed about where a paragraph starts.
- *
- * The fix deletes the divergence rather than adding a third case: 40px marks and a full-width body
- * for EVERY card. The container query at the end of this file now changes only the GRID — one column
- * or two, and which card spans — and nothing about a card's insides, which is the smaller thing for
- * it to be responsible for.
- */
-/*
- * ================================================================================================
- * THREE NAMED ROWS, SO EVERY CARD PUTS EVERY ELEMENT AT THE SAME HEIGHT
- * ================================================================================================
- *
- * Akhil: *"for cards, the placements of elements shopuld be fixed. even pills, even icons."*
- *
- * The rows were implicit and all `auto`, so each one sized to its own content and the footer landed
- * directly under however many lines of description that card happened to have. With the four cards
- * forced to one height that meant the chips and the store marks sat at four DIFFERENT heights inside
- * four identical boxes — the layout looked aligned and its contents did not.
- *
- * `min-content 1fr min-content` fixes it at the track level rather than with offsets: the head takes
- * what it needs at the TOP, the footer takes what it needs at the BOTTOM, and the description row
- * absorbs every pixel of slack in between. So a two-line card and a four-line card put their chips
- * on the same line, and the slack shows up as air under the prose where it belongs.
- *
- * THIS IS WHY `align-content: start` CAME OFF THE TWO-UP CARDS. It packed all three rows to the top
- * and left the slack below the footer, which is the arrangement that produced the complaint. The
- * `1fr` row now does that job, and it does it in the middle instead of at the end.
- */
 .wk-card {
   display: grid;
   grid-template-columns: var(--space-10) minmax(0, 1fr);
   grid-template-rows: min-content 1fr min-content;
   column-gap: var(--space-4);
-  /*
-   * `--space-3`, DOWN FROM `--space-4`. Akhil: *"the cards feel too much whitespace."* The card had
-   * four internal gaps at 16px between four blocks of one to three lines each, so the air between
-   * the lines outweighed the lines. 12px still separates them; 16px was spacing them apart.
-   */
   row-gap: var(--space-3);
   align-items: start;
   height: auto;
 }
 
-/* The mark sits beside the head, on its first row — not spanning, because a card's body starts
-   under the title rather than beside the mark. */
 .wk-card-icon,
 .wk-card-mark {
   grid-column: 1;
@@ -1088,32 +440,13 @@
   height: var(--space-10);
 }
 
-/*
- * THE HEAD IS A ROW AGAIN — title left, status ranged right. In the 420px rail exploration it had
- * to stack; a 640px card has room for both on one line, which is where a status belongs: beside
- * the thing whose status it is.
- */
 .wk-card-head {
   grid-column: 2;
   grid-row: 1;
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  /* 40px, matching the mark beside it, so the title's optical centre is the mark's centre. */
   min-height: var(--space-10);
-  /*
-   * 🔴 `min-width: 0` IS NOT COSMETIC — WITHOUT IT THE STATUS PILL LANDS ON TOP OF THE TITLE.
-   *
-   * A flex item's `min-width` defaults to `auto`, which is its content's min-content width, so an
-   * `<h3>` in a `space-between` row REFUSES TO SHRINK. When the row runs out of width the pill does
-   * not get pushed — it overlaps. MEASURED at a 297px card while exploring the two-up grid below:
-   * "Momentum" rendered as "Momen" with the pill drawn over the rest, and "TimeShift" as "TimeSh".
-   *
-   * `min-width: 0` on both makes the title the thing that gives, so the failure mode at any width
-   * too narrow for both is a title that ellipsises or wraps rather than two overlapping elements.
-   * This was latent in the single-column card too: 342px on a phone leaves 16px of clearance, so
-   * one more character of title or one longer status word reproduced it without the grid change.
-   */
   min-width: 0;
 }
 
@@ -1130,32 +463,7 @@
   max-width: 58ch;
 }
 
-/*
- * THE FOOTER ROW: chips left, destination marks right, one line. Akhil: *"for hued/momentum, etc,
- * keep the placement for icons in smae line as pills."*
- *
- * ── `center`, AND `flex-end` WAS A MEASURABLE 2px WRONG ───────────────────────────────────────
- *
- * Akhil: *"also check the vertical alignment for pills and icons/text to be in same line, weighed
- * correctly. it's a bit off in my opinion."* He was right, and it was exactly 2px on all five cards.
- *
- * MEASURED: a chip is 24px tall and a `.wk-mark-link` is 28px (`--space-7`). `flex-end` matches their
- * BOTTOM edges, so the taller box's centre — and therefore its 16px glyph, which is centred in it —
- * landed 2px above the chip's centre. Small enough to look like nothing in particular and large
- * enough to read as "off", which is what he saw.
- *
- * Centring the boxes puts the glyph's optical centre on the chip's. The 2px is not split or nudged
- * with a margin; the boxes are simply told to agree about their middles.
- *
- * ── WHY `flex-end` WAS CHOSEN, AND WHY THAT REASON IS GONE ────────────────────────────────────
- *
- * It was for a chip row that wraps to two lines: bottom-aligned, the marks stay on the LAST line
- * rather than hanging in the middle of the block. That was a real concern when cards carried three
- * and four chips. They now carry one or two — *"use just a single pill if 2nd one ids not very
- * important"* — and MEASURED, every card's chip row is exactly one line at 1440 and 1280. The
- * hypothetical two-line case no longer exists, and trading a real 2px error against it was the wrong
- * way round. If chips ever grow back, this is the line to revisit.
- */
+/* align-items: center, not flex-end: the mark row is 28px and the chip row 24px. */
 .wk-card-foot {
   grid-column: 1 / -1;
   grid-row: 3;
@@ -1169,12 +477,6 @@
   margin-top: 0;
 }
 
-/*
- * `is-first` IS FOR THE ARRANGEMENT THE RAIL IS NOT IN TODAY, and it is kept rather than deleted.
- * `IdentityRail` still supports `owns="experience"` — the shared-header arrangement, treatment B —
- * where the experience rule is the rail's first block and the `--space-10` above it would be a gap
- * under nothing. A prop with no styling is a prop that breaks silently the day it is used.
- */
 .wk-rail-head.is-first {
   margin-block-start: 0;
 }
@@ -1183,24 +485,6 @@
   padding-block-start: 0;
 }
 
-/*
- * ================================================================================================
- * THE DOCKED DESTINATION MARKS
- * ================================================================================================
- *
- * `Final Split Variations.html` A: a row of store marks under each project's own mark, replacing
- * the text badges. `ProjectCard.astro` carries why; this places them.
- *
- * ROW 2 OF COLUMN 1, directly beneath the mark, which is what makes "docked" exact rather than
- * approximate. The card's grid is `mark | content`; the marks take the cell under the mark, so they
- * land in the same place on every card no matter how long the description runs. That was the whole
- * complaint against the text badges: they sat at the end of the body, so "where can I get this"
- * moved down the card as the prose grew.
- *
- * `justify-content: center` under a 56px mark with two 15px glyphs — the row is narrower than the
- * mark, so centring is what keeps the dock visually attached to it rather than ranged to its left
- * edge and reading as a third column.
- */
 .wk-marks {
   display: flex;
   flex-shrink: 0;
@@ -1211,60 +495,9 @@
   list-style: none;
 }
 
-/*
- * A NAMED MARK IS A GLYPH PLUS ITS LABEL, AND IT IS ONE TARGET RATHER THAN TWO.
- *
- * `cairn.co.in` sits inside the SAME anchor as the globe (see `ProjectCard.astro` for why the globe
- * is the one icon that earns a label), so the pair is one hit area and one tab stop. `width: auto`
- * releases the 26px square `.wk-mark-link` sets for a glyph-only mark; the pill padding and radius
- * are what keep the released box reading as a target rather than as loose text beside an icon.
- *
- * The `aria-label` on that anchor already reads "cairn.co.in (opens in a new tab)", so the visible
- * label is a second rendering of a string the anchor announces once — which is why it needs no
- * markup of its own and no `aria` anything.
- */
-/*
- * 🔴 (0,2,0), BECAUSE `.wk-mark-link { width: var(--space-7) }` IS DECLARED BELOW THIS.
- *
- * At (0,1,0) the two rules tie and source order gives it to the 26px square, which is the wrong
- * answer for a mark with a label in it. MEASURED at (0,1,0): the anchor came out 44px wide (26 plus
- * its 16px of padding) and the globe inside it was squashed to `width: 0` by flex-shrink while
- * `cairn.co.in` overflowed the box. Doubling the class rather than reordering the file, because a
- * rule that depends on where it sits breaks the next time the file is reorganised.
- *
- * `flex: none` ON THE GLYPH for the same failure one level down: an `<svg>` is a flex item here and
- * its `width`/`height` attributes are a starting size, not a floor.
- */
 .wk-mark-link.wk-mark-named {
   width: auto;
   gap: var(--space-2);
-  /*
-   * ==============================================================================================
-   * THE GLYPH SITS IN THE SAME 26px BOX A BARE MARK GIVES IT, AND THE MATHS IS ALL TOKENS
-   * ==============================================================================================
-   *
-   * Akhil: *"placement also to march the placement for other icons."*
-   *
-   * A glyph-only `.wk-mark-link` is a `--space-7` (26px) square holding a `--space-4` (16px) glyph,
-   * so its glyph centres 13px from the anchor's left edge. The named mark has to reproduce that 13px
-   * or the row's glyphs sit on two different verticals.
-   *
-   * MEASURED, both wrong answers before this one:
-   *
-   *     padding-inline: var(--space-2)      ->  centre 15.5px   (2.5px right of a bare mark)
-   *     padding-inline: 0 var(--space-2)    ->  centre  7.5px   (6.5px LEFT — overcorrected)
-   *
-   * The leading padding has to be half the difference between the box and the glyph, which is
-   * `(26 - 16) / 2 = 5`, giving `5 + 8 = 13`. Written as that subtraction rather than as `5px`, so
-   * the two things it depends on — the mark's box and the glyph's size — cannot change without it
-   * following.
-   *
-   * 🔴 AND THAT IS WHY THE MARKS NOW RENDER AT `size={16}` RATHER THAN 15. At 15 the expression
-   * would need a bare `15px` in it, restating in CSS a number the component owns as a prop — the
-   * arithmetic would silently go wrong the day the prop changed. 16 IS `--space-4`, so every term is
-   * a token; it is also the size §the icon note already calls the page-wide one, so this makes the
-   * marks agree with the bar's glyphs instead of being 1px smaller for no reason.
-   */
   padding-inline: calc((var(--space-7) - var(--space-4)) / 2) var(--space-2);
   border-radius: var(--radius-full);
 }
@@ -1280,49 +513,14 @@
   white-space: nowrap;
 }
 
-/*
- * ================================================================================================
- * A PENDING MARK IS NOT A TARGET — AND THE DIFFERENCE HAS TO BE BEHAVIOUR, NOT COLOUR
- * ================================================================================================
- *
- * It borrows `.wk-mark-link`'s geometry so it sits on the chips' line with the live marks, but it is
- * a `<span>`: there is nothing to open. So the two things that PROMISE a target are removed — the
- * pointer cursor, and the hover brightening every real mark answers with.
- *
- * 🔴 THE COLOUR WAS GOING TO BE `--ink-5` AND THAT WAS A CONTRAST FAILURE. Reading quieter than its
- * neighbours would have said "not yet" without a word, and it does not survive measurement: on the
- * card's fill at rgb(23, 23, 26),
- *
- *     --ink-5   #68686e   3.23:1   below the 4.5:1 floor
- *     --ink-4   #a8a8ae   7.56:1   what the live marks use
- *
- * and the label is `--text-2xs` (9.5px), so 4.5:1 is the applicable floor. An earlier version of
- * this comment claimed 1.4.3's disabled-control exemption covered it. IT DOES NOT: a disabled
- * control is inert UI, and "Coming Soon" is informative TEXT that a reader has to read to learn the
- * state. Dimming the one word carrying the meaning is the wrong place to spend contrast.
- *
- * So the colour stays and the AFFORDANCE is what differs, which is the more honest signal anyway: a
- * reader learns it is not a link by it not behaving like one, and by it saying so.
- *
- * (0,2,0) — `.wk-marks` prepended — because `.wk-mark-link` sets `color` and `cursor` at (0,1,0) and
- * is declared LATER in this file. At equal specificity source order gave it the win, and the first
- * landing measured `rgb(168, 168, 174)` where it had asked for `#68686e`. Seventh time this project
- * has paid for that tie.
- */
 .wk-marks .wk-mark-pending {
   cursor: default;
 }
 
 .wk-marks .wk-mark-pending:hover {
-  /* No brightening: hover feedback on a thing that cannot be activated is a false promise. */
   color: var(--ink-4);
 }
 
-/*
- * 26px, WHICH IS BELOW THE 44px TOUCH FLOOR AND SO GETS ITS OWN TREATMENT ON A COARSE POINTER.
- * WCAG 2.5.8's AA minimum is 24x24, which 26 clears — but two 26px targets 4px apart on a phone is
- * a thumb hitting the wrong one, so the coarse-pointer block below spaces and grows them.
- */
 .wk-mark-link {
   display: inline-flex;
   align-items: center;
@@ -1356,32 +554,6 @@
   }
 }
 
-/*
- * ================================================================================================
- * THE TABLET KEEPS THE SPLIT — 250px OF RAIL, NOT A STACK
- * ================================================================================================
- *
- * `Final Split Variations.html` ships a 768 frame explicitly labelled *"split kept, rail narrows to
- * 250"*, and a 390 frame where it stacks. So the stack point is between them, not at 1024 where the
- * first build put it.
- *
- * 673 IS THE RUNG, and it is the ladder's — the same one the filter rail and the nav's words use. It
- * is 95px below the prototype's 768 frame, which is the direction with the margin: a 768 tablet gets
- * the split it was drawn for, and the widths between 673 and 768 get it slightly tighter rather
- * than a layout the design never shows.
- *
- * 250px FIXED, NOT 30%, BETWEEN 673 AND 1024. At 768 a 30% rail is 230px and at 673 it is 202px,
- * which is under the 42px headline's own two-word measure — the name breaks to five lines. A fixed
- * 250 holds the headline together and lets the work column take the remainder; the ratio takes over
- * at 1024, where 30% is 307px and finally wider than the floor.
- */
-/*
- * BOUNDED AT BOTH ENDS, AND THAT IS A CORRECTION. Written as a bare `min-width: 673px` this block
- * sits AFTER the 1024 one in the file, so at 1280 both matched, they tied on specificity, and source
- * order handed the 250px rail the win over the 30/70 ratio — the ratio Akhil asked for, silently
- * undone by where I appended the rule. A `max-width` makes the two blocks disjoint, so neither
- * depends on which was written first.
- */
 @media (min-width: 673px) and (max-width: 1023px) {
   .wk-split {
     grid-template-columns: 250px minmax(0, 1fr);
@@ -1397,168 +569,33 @@
   }
 }
 
-/* The résumé's arrow sits on the text baseline rather than beside it: a 12px glyph centred against
-   an 11px mono line is what makes the pair read as one label instead of a label and an icon. */
 .wk-rail-resume {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
 }
 
-/*
- * ================================================================================================
- * THE TWO SECTIONS START ON ONE LINE
- * ================================================================================================
- *
- * Akhil: *"experience & projects sections should be in same vertical line."* MEASURED at 1440: both
- * COLUMNS began at y=220, and the rail's `EXPERIENCE` rule sat exactly there while the main
- * column's `PROJECTS` rule sat at y=268 — a 48px offset with no visible cause.
- *
- * IT WAS `.wk-section { margin-block-start: var(--space-9) }`, which is correct for what it was
- * written for: two sections STACKED down a single column, where the second needs air above it.
- * Beside each other, the same rule indents one of them for no reason. The rail's head carries no
- * such margin, so the fix is to take it off the section that is now a column rather than to add a
- * matching one to the rail — an offset cancelled by a second offset is two numbers to keep in step.
- */
 .wk-main .wk-section {
   margin-block-start: 0;
 }
 
-/*
- * THE CONTAINMENT CONTEXT THE CARD GRID SIZES AGAINST. Named, because an unnamed `inline-size`
- * context is claimed by the nearest ancestor that has one and `home.css` establishes one too — a
- * name makes the query say WHICH box it means. See the container query at the end of this file for
- * why the projects column, and not the viewport, is the width that decides the two-up.
- */
 .wk-main {
   container-type: inline-size;
   container-name: projects;
 }
 
-/*
- * ONE HAIRLINE, NOT TWO NEAR ONES. With both heads starting at y=220 their rules still landed at
- * 249 and 245 — the rail's head pads `--space-3` below its label and the section head pads
- * `--space-2`, a 4px difference that reads as a broken line rather than as two rules.
- *
- * The SECTION head is the one that moves, because its 8px is the odd number here: the rail's 12px
- * is `--space-3`, the same rung the sticky filter rail on `/photography` puts under its pills. Two
- * rules across one page should be one decision.
- */
 .wk-main .wk-section-head {
   padding-bottom: var(--space-3);
 }
 
-/*
- * ================================================================================================
- * THE CARD TITLE DOES NOT UNDERLINE ON HOVER
- * ================================================================================================
- *
- * Akhil: *"dont underline title on card on hover."* MEASURED before this — `text-decoration-line`
- * goes from `none` to `underline` while the colour does not move, so the whole hover response was
- * a rule appearing under a 20px serif name.
- *
- * IT IS THE DESIGN SYSTEM'S, NOT THIS FILE'S. `.ds-atom-link[data-variant="quiet"]:hover` sets
- * `text-decoration: underline` at (0,3,0) — that is `quiet`'s whole hover treatment, and it is
- * right for an inline link in a paragraph. On a card title it fights the border the card already
- * lights up: `.wk-card[data-hover="elevate"]:hover` moves `border-color` to `--ochre-d`, so the
- * card announces the hover as a whole and the underline announced it a second time, smaller.
- *
- * 🔴 (0,4,0), AND THE ATTRIBUTE IS WHY THIS WORKS. `.wk-card .wk-card-link:hover` is (0,3,0) and
- * TIES with the design system's rule; a tie is decided by source order, and this file has lost that
- * argument five separate times — the nav links, the wordmark, the skip link, the toggle and the
- * count line. Adding `[data-variant="quiet"]` wins on specificity instead of on import order, so a
- * future edit that drops the attribute reads identically and breaks identically. Do not "simplify"
- * the selector.
- *
- * WHAT REPLACES IT: nothing on the title, because the card is the hover target. The stretched
- * `.wk-card-link::after` covers the whole card, so a reader's pointer is on the title's link
- * wherever it is in the box — and the border lighting up is the feedback for all of it.
- */
 .wk-card .wk-card-link[data-variant="quiet"]:hover,
 .wk-card .wk-card-link[data-variant="quiet"]:focus-visible {
   text-decoration: none;
 }
 
-/*
- * THE HEADLINE IS THE RAIL'S FIRST BLOCK when the shell draws the wordmark, so the `--space-10`
- * that separated it from a brand above it would be a gap under nothing. `:first-child` rather than a
- * class, because this one IS answerable from the cascade: whether the header is first in the rail is
- * exactly what the selector asks, and the component would have to be told the same thing twice.
- */
 .wk-rail > .wk-header:first-child {
   margin-block-start: 0;
 }
-
-/*
- * ================================================================================================
- * ONE LEAD CARD ACROSS THE TOP, THE OTHER FOUR TWO-UP AND ALL THE SAME HEIGHT
- * ================================================================================================
- *
- * `Projects Column Layouts.html` N1: *"the first project as the full row with and rest of the four
- * projects as two cards in one row."* Then: *"all cards to have same height. and to be it quite
- * short. i dont want squarish cards."*
- *
- * ── A CONTAINER QUERY, NOT A MEDIA QUERY, AND FOR TWO SEPARATE REASONS ─────────────────────────
- *
- * 1. THE LADDER WOULD REDDEN. `development.node.test.ts` compares every media query on `.wk-grid`
- *    against `BREAKPOINTS`, which is DERIVED from `GUTTER_RUNGS` — 375, 673, 1024. The two-up needs
- *    a threshold near 1280 (measured below), which is not a rung, and inventing one would move the
- *    page gutter on every route to buy a card layout on one.
- *
- * 2. IT IS THE HONEST VARIABLE ANYWAY. What decides whether two cards fit is the width of the
- *    PROJECTS COLUMN, and that is the viewport minus the gutters minus the rail's 30%. Keying on the
- *    viewport would state a consequence and hide the cause: change the split to 35/65 and a viewport
- *    query keeps promising a two-up the column can no longer hold.
- *
- * 780px is the threshold, and it is measured rather than chosen. Clearance between the title's right
- * edge and the status pill's left, at the narrow card:
- *
- *     column 896px (viewport 1440)   card 420px   66px clear   every title on one line
- *     column 829px (viewport 1280)   card 386px   32px clear   every title on one line
- *     column 843px (viewport 1300)   card 393px   39px clear
- *     column 737px (viewport 1200)   card 358px   16px clear   "Design System" WRAPS TO TWO LINES
- *
- * So the floor is a column in the low 800s, and 780 is the round number under it that still leaves
- * ~30px. Below it the grid stays one column per row, which measured 614px cards at 1024 and 430px
- * at 768 — wider than any two-up could be there.
- *
- * ── HOW "EQUAL" AND "SHORT" WERE BOTH MET, WHEN THEY PULL AGAINST EACH OTHER ───────────────────
- *
- * Equal height means every card takes the TALLEST one's height, so the only way to also be short is
- * to make the tallest shorter. The lever was text width, not text size:
- *
- *     description 294px wide (mark column 56px, body in column 2)   tallest card 291 / 347
- *     description 370px wide (mark column 40px, body spans both)    tallest card 275
- *
- * Two changes bought that 76px. The mark drops from `--space-14` to `--space-10` — 40px is still
- * well clear of the 24px AA floor and reads as an app icon rather than a tile. And the body SPANS
- * BOTH COLUMNS, so the description runs the full width of the card instead of being indented past
- * an icon it does not belong to.
- *
- * THE MARKS GO ABSOLUTE, WHICH IS THE POINT OF THE WHOLE ARRANGEMENT. Docked under a 56px mark they
- * were a grid row and cost 24px + a gap of vertical height in every card. Pinned to the bottom-right
- * they cost NOTHING, and they land in the same place on all four cards — which is the property the
- * dock existed to give ("where can I get this" must not move as the prose grows). It is `position:
- * absolute` against `.wk-card`'s existing `position: relative`, the one the stretched title link is
- * already stretched against. Measured clearance from the tags' right edge: 148 / 134 / 43 / 109px at
- * 1440 and 114 / 100 / 9 / 76px at 1280 — TimeShift's three tags are the tight one, which is what
- * the `padding-inline-end` on `.wk-tags` reserves the room for.
- *
- * ── WHAT SETS 275px, AND WHAT IT COSTS ────────────────────────────────────────────────────────
- *
- * TimeShift's description at four lines. Every other card fits in less, so Momentum — two lines of
- * copy — carries ~130px of air under its tags with the marks floating at the bottom of it. THAT IS
- * THE PRICE OF EQUAL HEIGHT and it is not a bug to be styled away: uneven copy in a matched grid
- * either leaves air or truncates, and truncating reviewed copy is worse. Dropping TimeShift's final
- * clause would take all four to ~253px. That is a COPY decision and Akhil holds it — *"I'll change
- * language. so dont go on that."*
- *
- * `grid-template-rows: min-content` then `grid-auto-rows: 1fr`: row 1 is the lead card and sizes to
- * its own content (224px, unchanged); every implicit row after it is a `1fr` track, and in an
- * auto-height grid equal `1fr` tracks all resolve to the tallest's content. So the four match at
- * 420x275 (1440) and 386x275 (1280) — 1.53 and 1.41, landscape rather than the 1.11 square that
- * 386x347 was.
- */
 
 @container projects (min-width: 780px) {
   .wk-grid {
@@ -1575,111 +612,22 @@
     height: 100%;
   }
 
-  /*
-   * ==============================================================================================
-   * THE LEAD CARD FILLS ITS WIDTH: FULL-MEASURE PROSE AND A RIGHT-RANGED FOOTER
-   * ==============================================================================================
-   *
-   * Akhil: *"in cairn. the text is not occupying full line. also web icon and link is not algned to
-   * right like other cards."*
-   *
-   * ── THIS REVERSES AN EARLIER FIX, ON PURPOSE ────────────────────────────────────────────────
-   *
-   * The footer WAS left-grouped here, because with a 516px description the `cairn.co.in` mark sat
-   * about 700px from the last chip and read as stranded. That diagnosis was right about the symptom
-   * and wrong about the cause: the mark was not too far right, the PROSE was too far from the right.
-   * MEASURED before this change — description 516px inside an 860px card, so 319px of the card was
-   * empty, and the mark was the only thing out there. Fixing the measure removes the reason the mark
-   * looked abandoned, so it can range right like the other four instead.
-   *
-   * Ranged right is also the property worth having: all five marks now sit 25px from their card's
-   * right edge, so they line up down the grid whatever each card's chips measure.
-   *
-   * ── AND THE MEASURE COMES OFF, WITH A NOTE ──────────────────────────────────────────────────
-   *
-   * `.wk-card-desc` caps at `58ch`, which is inside the 45-75ch band typography holds to be
-   * comfortable. At 860px and 13px the full width is about 132 characters per line — roughly twice
-   * that band. RECORDED rather than argued: Akhil is looking at the rendered page and the empty third
-   * of the card is the louder problem. It is two lines of prose on one card, not a page of body text.
-   * If it ever reads long, `90ch` (~585px) is the middle ground and this is the one line to change.
-   */
   .wk-grid > .wk-card:first-child .wk-card-body .wk-card-desc {
     max-width: none;
   }
 }
 
-/*
- * ================================================================================================
- * 🔴 A MARK MUST BE `position: relative`, OR IT IS NOT CLICKABLE
- * ================================================================================================
- *
- * MEASURED with `document.elementFromPoint` at the centre of each mark: it returned
- * `<a class="ds-atom-link wk-card-link">` — the card TITLE — at the Play Store glyph, at the GitHub
- * glyph and at `cairn.co.in`. Every destination link on every card was unreachable by pointer.
- *
- * THE CAUSE IS THE STRETCHED TITLE. `.wk-card-link::after { position: absolute; inset: 0 }` covers
- * the whole card so a click anywhere in it opens the project — which is the intended behaviour and
- * the reason the card feels clickable. But a POSITIONED box paints above its non-positioned
- * siblings whatever their DOM order, so a `static` mark sits under that overlay and receives
- * nothing. `position: relative` puts the mark in the same class of participant, and being LATER in
- * DOM order than the head it then paints above.
- *
- * THIS PRE-DATES THE FOOTER ROW. The marks were `static` in the docked arrangement too, so the bug
- * has been live since the dock landed; it only became visible now because a Playwright hover
- * reported the title intercepting pointer events. Keyboard users were never affected — the anchors
- * are in the tab order and Enter does not hit-test — which is exactly why it survived: every
- * automated check of these links passed, because they all read the DOM rather than the paint.
- *
- * `z-index` IS DELIBERATELY ABSENT. `relative` alone is enough here (paint order settles it) and a
- * z-index would create a stacking context the focus ring then has to escape.
- */
+/* position: relative, or the stretched title link paints over every mark and none are clickable. */
 .wk-mark-link {
   position: relative;
 }
 
-/*
- * NO UNDERLINE ON A NAMED MARK. Akhil: *"instead of underlinef text live, type cairn url itself."*
- *
- * MEASURED: `text-decoration-line: underline` at rest. It is the UA default for an anchor with text
- * in it — the glyph-only marks never showed it because an `<svg>` has no text to decorate, so this
- * is a rule the mark row never needed until one mark had a label. The label is a NAME, not prose
- * with a link in it; the pill shape and the glyph beside it are what say "target".
- */
 .wk-mark-named,
 .wk-mark-named:hover,
 .wk-mark-named:focus-visible {
   text-decoration: none;
 }
 
-/*
- * ================================================================================================
- * THE OUTBOUND ARROW — IN THE CORNER, HIDDEN AT REST, ALWAYS ON WHERE THERE IS NO HOVER
- * ================================================================================================
- *
- * Akhil: *"when i hover on a card, i want a arrow on the top roight signifying that it redirects to
- * something the arrow can be hidden otherwise"*, then *"use to closer to corner of card, not aligned
- * with text."*
- *
- * `--space-3` FROM TWO EDGES, INSIDE the card's `lg` padding rather than aligned to it. As a flex
- * child of the head it was inset by that padding and centred on the title, which read as a third
- * item in the title row rather than as a property of the whole card. MEASURED before the move: 35px
- * from the top and 25px from the right, i.e. on the title's optical line.
- *
- * Absolute against `.wk-card`'s existing `position: relative` — the same one the stretched title
- * link uses — so the arrow needs no stacking of its own. It is `aria-hidden` in the markup and
- * carries no pointer target, so sitting under the title's overlay is correct here: a click on the
- * arrow should open the project, which is what the overlay already does.
- *
- * 🔴 `:focus-within` AS WELL AS `:hover`, or the arrow is pointer-only. Tabbing to a card's title
- * focuses the link inside it and the card's border already lights on `:focus-within`; an arrow that
- * ignored keyboard focus would make two halves of one affordance disagree.
- *
- * 🔴 AND `@media (hover: none)` SHOWS IT PERMANENTLY. On a touch screen `:hover` either never fires
- * or fires and STICKS after a tap, so "reveal on hover" degrades to "never appears" or "appears once
- * and stays" — and the affordance is worth MORE there, where there is no cursor change to say the
- * card is a link. Keyed on `hover: none` and not `pointer: coarse`: what breaks the reveal is the
- * absence of a hover state, not the size of the pointer, and a stylus is coarse and hovers.
- */
 .wk-card-go {
   position: absolute;
   top: var(--space-3);
@@ -1702,8 +650,6 @@
   }
 }
 
-/* The fade matches the card border's 0.25s so both halves of the hover state arrive together. This
-   transition is app-authored, so `reduce` simply omits it and the arrow appears instantly. */
 @media (prefers-reduced-motion: no-preference) {
   .wk-card-go {
     transition-property: opacity, color;

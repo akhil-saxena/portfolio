@@ -48,8 +48,8 @@
  * ================================================================================================
  */
 
-import { Eyebrow } from '@akhil-saxena/design-system/components/Eyebrow';
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
+import { Text } from '@akhil-saxena/design-system/components/Text';
 import { getCollection } from 'astro:content';
 
 import homeConfig from '../../../../data/home_config.json';
@@ -57,10 +57,9 @@ import siteConfig from '../../../../data/site_config.json';
 import { PhotoEmpty } from '../../../components/public/PhotoEmpty';
 import { PhotoFilters } from '../../../components/public/PhotoFilters';
 import PhotoGrid from '../../../components/public/PhotoGrid.astro';
-import { PhotoLightbox } from '../../../components/public/PhotoLightbox';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
-import { lightboxRecordsFor } from '../../../lib/photo-lightbox';
+import { COUNT_ID, countLineFor, GRID_ID, TITLE_ID } from '../../../lib/photo-filter';
 import '../../../styles/photography.css';
 
 /** One `{ id, label, columns }` record of `data/site_config.json`. Structural, not a rival shape. */
@@ -130,11 +129,36 @@ if (entries.length === 0) {
 const all = entries.map((entry) => entry.data);
 
 /** §7.1: a category route sorts by `categoryOrder`. MEASURED: dense 1..n inside all seven. */
-const photos = all
-  .filter((photo) => photo.category === category.id)
-  .sort((a, b) => a.categoryOrder - b.categoryOrder);
+/*
+ * EVERY PHOTOGRAPH, SORTED BY `order` — not this category's subset sorted by `categoryOrder`.
+ *
+ * The grid now renders the whole corpus on all eight routes and marks the non-matching tiles
+ * `hidden`, which is what makes the filter an attribute rather than a request. One DOM cannot hold
+ * two orders, so the eight routes have to agree on one, and `order` is the one `/photography` was
+ * already using.
+ *
+ * THAT IS SAFE BECAUSE IT WAS CHECKED. For all seven categories, sorting the members by `order` and
+ * by `categoryOrder` produces the identical sequence — so this page shows its photographs in the
+ * same curated order it always did, and the change is invisible. `gate:photo-order` fails the build
+ * the day a manifest edit makes the two disagree, rather than letting a category quietly reorder.
+ */
+const photos = [...all].sort((a, b) => a.order - b.order);
 
-const count = photos.length;
+/**
+ * WHAT THE ISLAND IS HANDED: an identity per photograph, not a record.
+ *
+ * `PhotoFilters` reads one field — `category`, for the pill group-by. Passing the records themselves
+ * serialised ten fields of forty photographs into the `props` attribute: MEASURED at 58,180 bytes,
+ * 43.8% of the built document, on every gallery route. This projection is 2,302 bytes.
+ *
+ * `id` rides along unused on purpose; see the prop's own doc comment for why an identity array is
+ * worth 2KB over a bare count map.
+ */
+const filterPhotos = photos.map((photo) => ({ id: photo.id, category: photo.category }));
+
+const inCategory = all.filter((photo) => photo.category === category.id);
+
+const count = inCategory.length;
 const total = all.length;
 const siteTitle = homeConfig.title;
 
@@ -154,7 +178,14 @@ const noun = count === 1 ? 'photograph' : 'photographs';
  * suite. It was found by the empty-category control, not by an assertion — recorded so the next
  * person writing two adjacent expressions into a `.tsx` component's children from `.astro` knows.
  */
-const countLine = `${count} ${noun}`;
+/*
+ * DERIVED from the same function the client-side switch uses, rather than composed here. Until
+ * 2026-09-02 this template spelled the sentence and `photo-filter.ts` held a second spelling for
+ * the switched view — two copies of one string, which is how a server view and a switched view
+ * drift. The composed-in-frontmatter reasoning above still holds; it is now `countLineFor` doing
+ * the composing.
+ */
+const countLine = countLineFor(category.id, count, total);
 ---
 
 <PublicLayout mainClass="pub-max-photos">
@@ -166,21 +197,70 @@ const countLine = `${count} ${noun}`;
   />
 
   <header class="ph-head">
-    <Heading level={1}>{category.label}</Heading>
-
-    {
-      /* `photos={all}` — EVERY photograph, not this category's. The rail's counts are a group-by
-        over the whole collection, and passing the filtered set would render `· 0` on every pill
-        but this one, on a page that otherwise looks completely correct. */
-    }
-    <PhotoFilters categories={siteConfig.categories} photos={all} pathname={Astro.url.pathname} />
-
-    <Eyebrow size="md">{countLine}</Eyebrow>
+    <Heading level={1} id={TITLE_ID} size="4xl" weight="regular">{category.label}</Heading>
   </header>
 
   {
+    /*
+     * THE RAIL IS A SIBLING OF THE HEADER, NOT A CHILD, AND THAT IS A CSS CONSTRAINT RATHER THAN A
+     * SEMANTIC PREFERENCE.
+     *
+     * `.ph-rail` is `position: sticky`, and a sticky box CANNOT LEAVE ITS CONTAINING BLOCK. Nested
+     * inside `<header class="ph-head">` — a box about 110px tall — it would unstick the moment the
+     * header scrolled past, which is roughly immediately. Its parent has to be the tall one, so its
+     * parent is `.pub-main`.
+     *
+     * The `<h1>` stays unpinned on purpose. Akhil, watching the whole block hop 24px and lock:
+     * *"when i scroll the photographs heading scrolls a bit up, is that needed?"* It is not — the
+     * heading repeats what the bar already says (`photography` is the current nav item), and
+     * leaving it behind gives the photographs ~40px more of the viewport while scrolling. The rail
+     * is the part worth pinning: it is a control, not a label.
+     */
+  }
+  <div class="ph-rail">
+    {
+      /* `photos` — EVERY photograph, not this category's. The rail's counts are a group-by over the
+        whole collection, and passing the filtered set would leave the island unable to filter to
+        anything but the route it is standing on.
+
+        IT IS THE SORTED ARRAY, THE SAME ONE `<PhotoGrid>` BELOW RECEIVES, and it used to be the
+        unsorted `all`. Both hold all forty, so nothing was broken — but the island's array and the
+        grid's DOM were in DIFFERENT ORDERS, and MEASURED, the island's first record on
+        `/photography/architecture` was `architecture-citypalacegate` while the grid's first tile was
+        `architecture-intothemist`. Today the island only counts, so order does not reach the page;
+        the day it reads `photos[i]` for anything positional that divergence is a defect that looks
+        like a data problem. `/photography/index.astro` was already passing the sorted array, so this
+        also makes the two gallery routes agree. */
+    }
+    <PhotoFilters
+      client:load
+      categories={siteConfig.categories}
+      photos={filterPhotos}
+      pathname={Astro.url.pathname}
+      total={total}
+      defaultColumns={siteConfig.defaultColumns}
+    />
+
+    {
+      /*
+       * `Text`, NOT `Eyebrow`, and the swap is the fix rather than a smaller size.
+       *
+       * Akhil: *"text - 40 photographs needs not be bold, reduce size, not very prominent. current
+       * taking away from existing website."* MEASURED, the `Eyebrow` was carrying FOUR prominence
+       * signals simultaneously — `font-weight: 700`, `text-transform: uppercase`,
+       * `letter-spacing: 1.1px` and `IBM Plex Mono` — at 11px. Shrinking it would have left all
+       * four; `Eyebrow` is a label component and that is the job it does correctly.
+       *
+       * `Text size="xs" tone="muted"` is 11px in the body face at normal weight, sentence case, no
+       * tracking, `--ink-3`. Same size, none of the shouting. The pills beside it are the thing on
+       * this row worth noticing.
+       */
+    }
+    <Text size="xs" tone="muted" id={COUNT_ID}>{countLine}</Text>
+  </div>
+
+  {
     /* THE EMPTY BRANCH RENDERS NO ISLAND, and that is the same decision as the grid's, not a
-      separate one. `Lightbox` requires a non-empty item array when open and `lightboxRecordsFor`
       refuses a zero-length list by name, so a category with no photographs gets §13.2's copy and
       nothing to hydrate. The island's `<PhotoGrid>` sibling is what it listens to; with neither
       present there is nothing for a delegated listener to delegate. */
@@ -190,10 +270,18 @@ const countLine = `${count} ${noun}`;
       <PhotoEmpty label={category.label} total={total} />
     ) : (
       <Fragment>
-        <PhotoGrid photos={photos} columns={category.columns} />
-        {/* See `/photography`'s copy of this comment for why `client:idle`, and why the grid is not
-          hydrated. Same island, same selector, same contract — a different sorted subset. */}
-        <PhotoLightbox client:idle items={lightboxRecordsFor(photos)} gridSelector="#ph-grid" />
+        <PhotoGrid photos={photos} columns={category.columns} activeCategory={category.id} />
+        {/*
+         * photograph as an overlay. Akhil replaced it: *"build this in place of lightbox, allow nav,
+         * scroll etc."* — the M4 photo page IS the photo view now, and every tile is already a real
+         * link to it. Removing the island removes a delegated click handler that was PREVENTING that
+         * navigation with `preventDefault()`.
+         *
+         * The filter's controller moved with it. It lived inside the lightbox island because
+         * `gate:public-js` permits one island per document; with the island gone it needs a host, and
+         * `PhotoFilters` is hydrated directly instead — same delegated listener, same contract, one
+         * island still.
+         */}
       </Fragment>
     )
   }

@@ -36,6 +36,7 @@
  */
 
 import PhotoTile from './PhotoTile.astro';
+import { GRID_CATEGORY_ATTRIBUTE, GRID_ID, isVisibleIn } from '../../lib/photo-filter';
 import { sizesFor } from '../../lib/photo-srcset';
 import type { PhotoIdentity, PhotoSources } from '../../lib/photo-srcset';
 
@@ -51,17 +52,35 @@ const EAGER_TILE_COUNT = 4;
 type GalleryPhoto = PhotoIdentity &
   PhotoSources & {
     readonly alt: string;
+    readonly title: string;
     readonly urls: Readonly<Record<string, string>>;
   };
 
 interface Props {
-  /** ALREADY SORTED by the caller — `order` on /photography, `categoryOrder` on a category route. */
+  /**
+   * EVERY photograph, on every one of the eight routes — not the route's own subset. Filtering is
+   * an attribute now rather than a request, so each document has to contain the whole corpus for
+   * there to be anything to reveal. The cost was measured before this was written: a category page
+   * goes from 7-15 KB gz to 32 KB gz, and NO extra image bytes, because a `hidden` tile's `lazy`
+   * image is never fetched.
+   *
+   * ALREADY SORTED by the caller, and now by `order` on all eight routes rather than by
+   * `categoryOrder` on seven of them. That is safe because it was CHECKED, not assumed: for every
+   * one of the seven categories, sorting its members by `order` and by `categoryOrder` yields the
+   * identical sequence, so hiding the others preserves each category's curated order exactly.
+   * `gate:photo-order` fails the build the day that stops being true.
+   */
   photos: readonly GalleryPhoto[];
   /** The category's class-5/6 column count, from `data/site_config.json`. */
   columns: number;
+  /**
+   * The route's own category, or `ALL`. Decides `data-cols`, which tiles are `hidden`, and which
+   * four are eager.
+   */
+  activeCategory: string;
 }
 
-const { photos, columns } = Astro.props;
+const { photos, columns, activeCategory } = Astro.props;
 
 /*
  * ANTI-VACUITY. A grid rendered over an empty list is a container with no children and no error,
@@ -100,16 +119,52 @@ if (photos.length === 0) {
 
 /* Computed once. See the header — and `sizesFor` refuses a column count the site does not use. */
 const sizes = sizesFor(columns);
+
+/*
+ * EAGER IS COUNTED OVER THE VISIBLE TILES, NOT OVER THE ARRAY. §7.5 loads the first four eagerly
+ * for LCP; now that all 40 ship on a category route, "first four in the array" would put all four
+ * on photographs the visitor cannot see, and every tile that IS on screen would be lazy. That is a
+ * worse LCP than before this change rather than an unchanged one — on the route family whose mobile
+ * score is already entirely LCP-bound (87 at 412x823, 05-AUDIT.md §20).
+ *
+ * So the counter advances only on tiles that are showing.
+ */
+/*
+ * NAMED, for the reason the header already records about `GalleryPhoto`: `astro check` reports the
+ * `.map` callback's parameter as implicit `any` (`ts(7006)`) when the row's shape is only inferred,
+ * so the second map below needs something to annotate against.
+ */
+type GalleryTile = {
+  readonly photo: GalleryPhoto;
+  readonly hidden: boolean;
+  readonly eager: boolean;
+  readonly index: number;
+};
+
+let eagerRemaining = EAGER_TILE_COUNT;
+const tiles: readonly GalleryTile[] = photos.map((photo: GalleryPhoto, index: number) => {
+  const hidden = !isVisibleIn(photo.category, activeCategory);
+  const eager = !hidden && eagerRemaining > 0;
+  if (eager) eagerRemaining -= 1;
+  return { photo, hidden, eager, index };
+});
 ---
 
-<div id="ph-grid" class="ph-masonry" data-cols={String(columns)}>
+<div
+  id={GRID_ID}
+  class="ph-masonry"
+  data-cols={String(columns)}
+  {...{ [GRID_CATEGORY_ATTRIBUTE]: activeCategory }}
+>
   {
-    photos.map((photo: GalleryPhoto, index: number) => (
+    tiles.map((tile: GalleryTile) => (
       <PhotoTile
-        photo={photo}
+        photo={tile.photo}
         sizes={sizes}
-        eager={index < EAGER_TILE_COUNT}
-        lightboxIndex={index}
+        eager={tile.eager}
+        hidden={tile.hidden}
+        lightboxIndex={tile.index}
+        title={tile.photo.title}
       />
     ))
   }

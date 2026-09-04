@@ -110,7 +110,7 @@
  * `#0d0d0f`, and that has been a recorded build note since the ivory-to-charcoal resolution.
  *
  * THE INSET HAIRLINE IS DARK-ONLY (§4.4 rule 2). The gallery skews dark — architecture at night,
- * `abstract-intothemist`, wildlife — so photographs need an edge on dark they did not need on
+ * `architecture-intothemist`, wildlife — so photographs need an edge on dark they did not need on
  * ivory. `--rule` and not `--wire`: a photograph is not an interactive control, so the 3:1
  * non-text-contrast floor that governs a filter pill's border does not apply to it. Reviewed and
  * PASSED at 1440 and 390 on 2026-08-22.
@@ -118,6 +118,13 @@
 
 .ph-tile {
   display: block;
+  /*
+   * THE CONTAINING BLOCK FOR `.ph-tile-caption`. Without it the caption's `position: absolute`
+   * resolves against whatever positioned ancestor it finds — MEASURED, one caption spanned far
+   * wider than its tile and sat nowhere near its bottom edge, while still fading in correctly on
+   * hover, which is the kind of half-right that looks like a styling opinion rather than a bug.
+   */
+  position: relative;
   background-color: var(--cream-2);
   background-size: cover;
   background-position: center;
@@ -139,6 +146,150 @@
  * derived from `aspect-ratio` is the circular case, and it resolves to `auto` in some engines and
  * to zero in others.
  */
+/*
+ * A FILTERED-OUT TILE, and this rule is load-bearing rather than a restatement of the UA default.
+ *
+ * `hidden` normally means `display: none`, but the UA sheet's rule is `[hidden] { display: none }`
+ * at (0,1,0) and `.ph-tile` above declares `display: block` at (0,1,0) — an author rule beats the
+ * UA sheet at ANY specificity, so without this the attribute would be inert and every photograph
+ * would show in every view. The `hidden` attribute is still what carries the state, because it also
+ * removes the tile from the accessibility tree and from tab order; this only makes it paint.
+ */
+/*
+ * THE FORTY PHOTOGRAPHS WERE FOCUSING WITH CHROME'S DEFAULT RING, and that is not a style
+ * preference — MEASURED as `outline: auto 1px rgb(0, 95, 204)`, a blue that belongs to no theme
+ * this site has, on the single most-focused control on the site. It is the same defect the footer's
+ * social links had: a hand-rolled anchor rather than a design-system component, so nothing was
+ * there to inherit a focus treatment from.
+ *
+ * Matches the shell's contract exactly — 1px held 2px off — because a tile focused between a filter
+ * pill and another tile must not announce itself differently from either.
+ */
+.ph-tile:focus-visible {
+  outline: 1px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.ph-tile[hidden] {
+  display: none;
+}
+
+/*
+ * ================================================================================================
+ * THE HOVER CAPTION — the photograph's name, over its own bottom edge
+ * ================================================================================================
+ *
+ * Akhil: *"When I hover on any image, I want to see its title on the image at the bottom as an
+ * overlay on the image."*
+ *
+ * THE COLOURS ARE `--ink` ON `--ink-inverse`, AND THAT IS THE ONLY TOKEN-ONLY ANSWER.
+ *
+ * The obvious pairing is the design system's `--scrim` — a veil made for exactly this — with white
+ * text on it. `--scrim` is `#000000a6` and does NOT flip with the theme, which is right for a veil
+ * over a photograph. The white does not exist: MEASURED, every light-looking token flips
+ * (`--cream`, `--paper`, `--paper-warm`, `--ink-inverse`, …), and there is no fixed foreground to
+ * pair with the fixed scrim. The design system hit the same wall in its own component and wrote a
+ * literal — `.ds-atom-lightbox-caption { color: #ffffff }`. `gate:app-css` refuses colour literals
+ * here, correctly, so that route is closed. FILED as D-32.
+ *
+ * `--ink` on `--ink-inverse` is the pair that INVERTS TOGETHER: measured `#f2f2f4` on `#0d0d0f` in
+ * dark, `#111114` on `#fafafb` in light. Contrast is guaranteed in both themes without a literal.
+ * The trade is that the veil follows the page rather than the medium — light mode gets a pale veil
+ * with dark type instead of the conventional dark-over-photo. That is a coherent choice, not a
+ * workaround, and D-32 is what would let it become the conventional one.
+ *
+ * A GRADIENT AND NOT A SOLID FILL, so only the last few pixels of the photograph are fully covered
+ * and the veil thins to nothing under the caption's top edge. `color-mix(in srgb, … 82%,
+ * transparent)` was tried first and `gate:app-css` refused it as a colour origination — the same
+ * two-stop `var(→ transparent)` form the sticky-header fade uses passes, does the same job, and
+ * needs no exemption.
+ */
+
+.ph-tile-caption {
+  position: absolute;
+
+  /*
+   * A SMALL PILL IN THE BOTTOM-LEFT CORNER. Eleven treatments were built and measured; Akhil chose
+   * this one.
+   *
+   * WHAT IT REPLACED, and the number is the argument: the caption was first a gradient scrim
+   * covering 20% of every tile you hover, then full-width shadowed text covering 16%. This covers
+   * **2%**. On a page whose subject is the photographs, a title that names one without veiling a
+   * fifth of it is the better trade — and bottom-left is the corner to use, because a photograph's
+   * subject sits in the upper two-thirds more often than not.
+   *
+   * `inset-inline: 0` is gone with the full-width bar: the pill is placed from two edges and sized
+   * by its own text, so `right: auto` and `top: auto` undo the stretch the previous rule relied on.
+   *
+   * IT FLIPS WITH THE THEME, and that is a known cost rather than an oversight. `--ink-inverse` is
+   * near-black in dark and near-white in light, so in light mode the pill is a brighter object than
+   * most of the photograph behind it. The alternative — `--scrim` behind `--paper-fixed`, both of
+   * which are fixed and already exist — would hold one appearance in both themes. Flagged before
+   * this shipped; the flipping pair is the one that was chosen.
+   */
+  bottom: var(--space-3);
+  left: var(--space-3);
+  top: auto;
+  right: auto;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--ink-inverse);
+  font-size: var(--text-xs);
+  color: var(--ink);
+  font-family: var(--font);
+  /*
+   * A second `font-size: var(--text-sm)` stood here, left over from the full-width caption
+   * this pill replaced. It came LATER, so it won: MEASURED, the pill rendered at 12.5px while
+   * its own rule asked for 11px. `noDuplicateProperties` is what caught it — the kind of
+   * leftover that works by accident until someone reorders the block.
+   */
+  /* The names are short; one that wraps to two lines would push the scrim up over the picture. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  /* The caption sits over the photograph, and the photograph is the link. */
+  pointer-events: none;
+}
+
+/*
+ * `:focus-visible` AND NOT JUST `:hover`. Every tile is a link and the grid is 40 of them; a
+ * keyboard reader tabbing through gets the same name a mouse reader gets. Without this the caption
+ * would be a mouse-only feature on a page whose whole content is links.
+ *
+ * NOT `:focus` — that fires on mouse-down too, so clicking a tile would flash the caption of the
+ * photograph you are leaving.
+ */
+.ph-tile:hover .ph-tile-caption,
+.ph-tile:focus-visible .ph-tile-caption {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * LONGHANDS, NOT THE SHORTHAND — `gate:app-css` refuses it, and the reason is recorded on the
+   * toggle's fade in `public-shell.css`. Same duration as every other hover on the site.
+   */
+  .ph-tile-caption {
+    transition-property: opacity;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+@media (pointer: coarse) {
+  /*
+   * NO CAPTION ON TOUCH, and it is a deletion rather than an oversight. There is no hover on a
+   * finger, so the caption could only be permanently on — forty scrims over forty photographs, on
+   * the screens with the least room for them — or shown by a tap, which is the gesture that already
+   * opens the photograph. The name is on the photograph's own page, one tap away, and in the
+   * lightbox's caption.
+   */
+  .ph-tile-caption {
+    display: none;
+  }
+}
+
 .ph-tile img {
   display: block;
   width: 100%;
@@ -155,12 +306,241 @@
  * stretched one draws a 1280px-wide capsule with eight buttons huddled at its left edge.
  */
 
+/*
+ * A GRID, NOT A COLUMN — because the count line moved onto the filter row.
+ *
+ * It used to be a third stacked row under the rail (`title` / `filters` / `40 photographs — all of
+ * them`). Akhil moved it beside the rail, right-aligned, on 2026-09-02: the header loses a whole
+ * row, which is what closes the gap between the head and the first photographs, and the count ends
+ * up on the same optical line as the control it describes.
+ *
+ * `1fr auto` rather than `auto auto`: the rail takes the space it needs and the count is pinned to
+ * the trailing edge, so the count's right edge lands on the page gutter — the same line the
+ * wordmark's left edge sits on in the bar above. MEASURED at 1280: the count ends at x1232, and
+ * 1280 - 1232 is `--pub-gutter` at that width.
+ *
+ * `align-items: center` and not `baseline`: the pills are 30px tall boxes and the count is a 9.5px
+ * line of caps, so baseline alignment would hang the text off the bottom of the row.
+ */
+/*
+ * THE TITLE. Unpinned, and it scrolls away like any heading.
+ *
+ * It used to be pinned along with the rail, as one `.ph-head` grid. Akhil noticed the symptom of
+ * that: the block sat 24px above its pin point, so it travelled 24px and locked — a hop rather than
+ * a scroll. Removing the title from the pinned set removes the hop AND gives the photographs the
+ * height back; the rail below travels the full distance to the bar, which reads as scrolling
+ * because it is.
+ */
 .ph-head {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/*
+ * NO `.ph-title` RULE, AND THE ABSENCE IS THE POINT.
+ *
+ * Akhil: *"size of `Things I design and build.` is bigger than size of heading `Photographs`.
+ * increase size of Photographs."* MEASURED across the three titled routes, it was the odd one out
+ * on THREE axes, not one:
+ *
+ *   /photography   28px   weight 900   the DS `Heading` component's own defaults
+ *   /development   44px   weight 700   `.wk-title` on a plain <h1>
+ *   /resume        44px   weight 700   `.rs-name`  on a plain <h1>
+ *
+ * A `.ph-title` rule was written first and DID NOTHING — the class landed on the element and the
+ * measurement still read 28px/900. `Heading` writes `size` and `weight` into an INLINE `style`
+ * object whenever they are numbers, and 28/900 are its defaults; an inline declaration beats any
+ * app-CSS selector short of `!important`, which `src/styles/` forbids.
+ *
+ * The component's own escape hatch is to pass TOKEN STRINGS instead of numbers: given
+ * `size="4xl"` it emits `data-size="4xl"` and stops writing `font-size` inline, letting
+ * `.ds-atom-heading[data-size="4xl"]` supply `--text-4xl` and `--lh-snug` from primitives.css.
+ * Same for `weight="bold"` and `--weight-bold`. So the fix is two props on the two gallery routes
+ * and zero lines here — and the values are the design system's rungs rather than a copy of
+ * `.wk-title`'s list that happens to agree today.
+ *
+ * The two plain-<h1> routes are the ones that should change next, not this one: they hand-roll six
+ * declarations each for what two props now express.
+ */
+
+/*
+ * THE RAIL PINS — the pills and the count, the two things worth having while scrolling 40
+ * photographs. `top: var(--pub-bar-h)` parks it under the bar, which is itself pinned at 0; that
+ * property is declared on `.pub-shell` and its header explains why the bar's height has to be
+ * composed rather than read from `--ds-appbar-h`.
+ *
+ * A SIBLING OF `.ph-head`, not a child — see the note at the markup. A sticky box cannot leave its
+ * containing block, so its parent has to be `.pub-main` and not a 110px header.
+ *
+ * `z-index: 9`, one below the bar's 10. They never overlap, so the order matters only for the bar's
+ * own fade — which is switched off for this route precisely because this block carries one. See
+ * `public-shell.css`.
+ *
+ * `background: var(--bg)` is the page's own colour, so this is invisible at rest exactly like the
+ * bar. Its only job is opacity: without it the masonry scrolls through the pills.
+ */
+.ph-rail {
+  position: sticky;
+  top: var(--pub-bar-h);
+  z-index: 9;
+  background: var(--bg);
+
+  /*
+   * IT BLEEDS INTO THE GUTTER, because a sticky cover can only hide what it is actually painted
+   * over. Akhil: *"the focus state on first image, into the mist, extends to the pills section."*
+   *
+   * MEASURED at 1280 scrolled to 320: the first tile's focus ring is drawn at x45-47 and this rail
+   * starts at x48 — the ring is in the GUTTER, three pixels outside anything the rail paints. So
+   * the photograph slid correctly under the rail's background while its ring ran on up past the
+   * pills to the wordmark. `.pub-bar` never had the problem because it is full-bleed already.
+   *
+   * WHAT THIS IS NOT: a z-index bug, and four candidate fixes were built and measured before this
+   * one. `isolation: isolate` on the tile, `z-index: 0` on the tile, `z-index: 50` on the rail, and
+   * swapping the tile's outline for a box-shadow ALL still bled — brightest pixel 243 in the pills
+   * band on every one of them, against 14 unfocused. Nothing about stacking can help when the
+   * covering box does not extend that far.
+   *
+   * The negative margin plus equal padding keeps the pills on the same left edge as the
+   * photographs — the alignment `.ph-filters`' own header records as measured to delta 0.0 — while
+   * the BACKGROUND reaches the viewport edge. The `::after` fade inherits it for free: it is
+   * `inset-inline: 0` against this box, so it now spans the bled width too.
+   */
+  margin-inline: calc(-1 * var(--pub-gutter));
+  padding-inline: var(--pub-gutter);
+
+  /*
+   * ONE COLUMN BY DEFAULT, TWO FROM 673px — mobile-first, and the narrow case is the one that
+   * needed the thought. Side by side at 390px the count takes 82px of a 342px row, leaving the
+   * pills 244px to wrap inside: MEASURED, four rows of pills with a single lonely count line
+   * floating centred beside them. Stacked, the pills get the full width and the count sits under
+   * them on its own line, left-aligned with everything else on the page.
+   *
+   * 673px is an existing rung in this stylesheet and in the shell, not a new one.
+   */
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  /* Below 673px the count is out of flow, so the rail is the pills and nothing else. */
+
+  /*
+   * PADDING, ON THE PINNED BLOCK, AND THAT IS THE WHOLE POINT — `margin-bottom` would not do it.
+   * The fade is `::after` at `top: 100%`, i.e. it starts at this element's BORDER-BOX edge. Margin
+   * sits outside that edge, so more margin moves the fade down together with the photographs and
+   * changes nothing about the gap between the pills and where the dissolve begins. Padding extends
+   * the box, so the opaque backing runs 16px past the pills and the fade starts after it.
+   */
+  padding-bottom: var(--space-4);
   margin-bottom: var(--space-8);
+}
+
+/*
+ * BOTH ITEMS ARE PLACED EXPLICITLY, and that is a fix for a measured defect rather than belt and
+ * braces. Left to auto-placement the two landed on TWO ROWS with the tracks inverted — MEASURED,
+ * `grid-template-columns` resolved to `64.89px 1103.11px` and `grid-template-rows` to
+ * `105px 34.09px`, with the count under the rail instead of beside it. `.ph-filters` carries
+ * `min-width: 0` and `overflow-x: auto` so its `1fr` track can collapse to nothing, and once it
+ * does the auto-placement algorithm has no reason to keep the pair on one line.
+ *
+ * Naming the row and the column makes the arrangement a statement instead of an outcome.
+ */
+
+.ph-filters.ds-atom-filternav.ds-atom-segmented {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#ph-count {
+  /*
+   * OFF THE SCREEN BELOW 673px, AND STILL IN THE ACCESSIBILITY TREE.
+   *
+   * Akhil: *"place 40 photographs count better, or remove in mobile fully."* Both placements were
+   * bad at 390. Beside the pills it took 82px of a 342px row and forced the pills into four
+   * wrapped rows. On its own row below them it was a lone eight-character line under a two-row
+   * block of pills, adding 30px of header to the width with the least room for it.
+   *
+   * So it is hidden — VISUALLY. `display: none` would also take it out of the accessibility tree,
+   * and the count is the one thing on the page that says how many photographs a filter just
+   * revealed; the tiles changing is that feedback for a sighted visitor and this line is that
+   * feedback for everyone else. `clip-path: inset(50%)` on a 1px box is the same technique the nav
+   * words use below the same breakpoint, and the controller keeps writing to it either way.
+   *
+   * From 673px it becomes visible on the pills' row at the trailing edge — see the media query.
+   */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (min-width: 673px) {
+  /*
+   * TWO COLUMNS, and the count returns to the pills' own row. Below this the two are stacked — see
+   * `.ph-rail`'s header for the 390px measurement that decided it.
+   */
+  .ph-rail {
+    grid-template-columns: 1fr auto;
+    column-gap: var(--space-4);
+  }
+
+  #ph-count {
+    /*
+     * INSET 8px FROM THE GUTTER, AND IT IS AN OPTICAL CORRECTION, NOT AN ALIGNMENT FIX.
+     *
+     * MEASURED before this: the count's ink right edge was 1232.0 and the widest tile's right edge
+     * was 1232.0 — delta 0.0px, geometrically exact. Akhil: *"move 40 photographs slightly left, it
+     * seems to be visually crossing the photos boundary, even when its perfectly aligned."* Both
+     * halves of that are true, and the first is caused by the second: a photograph's edge is a hard
+     * rectangle and a letter is not, so type sitting flush on the same line reads as crowding it —
+     * or crossing it, which is what he sees.
+     *
+     * `--space-2` (8px) is the smallest rung that reads as deliberate rather than as a rounding
+     * error. The trailing line stays the tiles' and the footer's; this line steps back from it.
+     *
+     * PADDING, NOT MARGIN, AND THE MARGIN VERSION SHIPPED DOING NOTHING. This rule asked for
+     * `margin-inline-end: var(--space-2)` and MEASURED `margin-inline-end: 0px` — the count line's
+     * right edge back at 1232.0 against the grid's 1232.0, exactly the flush position the rule
+     * exists to correct. `Text` writes `margin:0` into the `style` ATTRIBUTE
+     * (`font-family:var(--font);margin:0;line-height:var(--lh-relaxed)`), and an inline declaration
+     * beats every selector at any specificity.
+     *
+     * That is the same inline-style trap as `Button`'s `outline:none` — D-4 — and the same escape:
+     * find the channel the component does not write. `padding` is not inline here, and on a
+     * right-ranged block it moves the ink by exactly the same 8px.
+     */
+    padding-inline-end: var(--space-2);
+    /* Back into the layout, on the pills' row, at the trailing edge. */
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+}
+
+/*
+ * THE FADE. The page's own `--bg` extended below the pinned rail and dissolved to nothing, so a
+ * photograph scrolling up meets no edge and no second surface — there is no second colour anywhere
+ * in this mechanism.
+ *
+ * INVISIBLE AT REST, which is what keeps it free of JavaScript: the rail carries
+ * `margin-bottom: var(--space-8)` — 32px — so a 16px fade hanging under it occupies the top half of
+ * that gap and the first tile is 16px clear. Raising the fade past `--space-8` would put a wash on
+ * a photograph nobody has scrolled.
+ */
+.ph-rail::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: var(--space-4);
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  /* A click in the band belongs to the photograph beneath it. */
+  pointer-events: none;
 }
 
 /*
@@ -227,33 +607,140 @@
  * layout CSS; this is the second half of OQ-4 and it is filed with it.
  */
 
-.ph-filters {
+.ph-filters.ds-atom-filternav.ds-atom-segmented {
   max-width: 100%;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+
   /*
-   * INERT TODAY, AND SAID SO RATHER THAN CLAIMED. §8.3 calls this load-bearing: a flex item's
-   * default `min-width: auto` refuses to shrink below min-content, which once the row is `nowrap`
-   * is the sum of all eight pills. MEASURED: that automatic minimum applies on the flex CONTAINER'S
-   * MAIN AXIS, and `.ph-head` is a COLUMN — so what `.ph-filters` actually resolves is
-   * `min-height: auto`, and Chromium reports `min-width: 0px` here with or without this line. It
-   * stays because it costs nothing and because the day `.ph-head` becomes a row is the day the rail
-   * silently stops scrolling, with no symptom other than the page growing wider than the screen.
+   * THEY WRAP. THEY DO NOT SCROLL, and the scroller that was here is deleted rather than disabled.
+   *
+   * Akhil: *"if I go down to a smaller screen size, like a mobile view, I see the pills become
+   * into a scrollable container, which is not what I want. I instead want the pills to reduce in
+   * size a little bit if required, or just for them to occupy multiple rows."*
+   *
+   * It also caused the misalignment reported in the same breath — *"the filter row ends slightly
+   * after the photos end"*. MEASURED at 390: the rail, the grid and the widest tile all end at
+   * x366 exactly (delta 0.0), but the SCROLL CONTAINER clipped its content at x268, so the row of
+   * pills visibly stopped 98px short of the photographs and mid-pill. Nothing was misaligned; a
+   * clipped overflow just looked like it.
+   *
+   * Gone with it: `overflow-x: auto`, `scroll-snap-type: x proximity` on this element and
+   * `scroll-snap-align: start` on each pill — a snap axis is meaningless on a wrapped row — and
+   * `min-width: 0`, whose own comment said it was inert and kept only "because the day `.ph-head`
+   * becomes a row is the day the rail silently stops scrolling". There is no scrolling left to
+   * stop.
    */
-  min-width: 0;
+  flex-wrap: wrap;
+
   /*
-   * Chromium serialises `x proximity` as `x`, because `proximity` is the initial strictness — so a
-   * probe reading `scrollSnapType === "x"` is POSITIVE confirmation this is not `mandatory`, not a
-   * failed assertion. `mandatory` is wrong here: it would refuse to leave a pill part-scrolled,
-   * which on a rail of eight is exactly how a reader can tell there are more.
+   * THE CAPSULE IS UNDRAWN. `.ds-atom-segmented` paints a single rounded container with a border
+   * and a filled active button — one control with a selected segment. Akhil chose outlined pills
+   * instead on 2026-09-02, after the bar above became seamless: the capsule was the only boxed
+   * object left on the page, and it read as a form control on a page of photographs.
+   *
+   * Six independent pills also say the right thing about what they are. A segmented control implies
+   * a small fixed set of modes; a rail of pills implies a growing list of subjects, which is what
+   * this is — the sections were seven last week and five now.
    */
-  scroll-snap-type: x proximity;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  gap: var(--space-2);
 }
 
-.ph-filters .ds-atom-segmented-btn {
-  white-space: nowrap;
-  scroll-snap-align: start;
+/*
+ * ================================================================================================
+ * THE TOUCH PILLS COME DOWN FROM 44px TO 36px
+ * ================================================================================================
+ *
+ * Akhil: *"in mobile/tablet view, the pills have a very high height, and they interrupt/overlap
+ * header."* MEASURED with a coarse pointer, which is the only way to see this — a desktop Chrome
+ * window at 390px wide does NOT reproduce it, because the rule that causes it is gated on the
+ * POINTER, not the viewport:
+ *
+ *   primitives.css:3763  @media (pointer: coarse) { .ds-atom-segmented-btn { min-height: 44px } }
+ *
+ *   iPhone 14 (390):  pill 44px x 2 rows -> rail 112px, under a 69px bar. 181px of chrome.
+ *   iPad mini (744):  pill 44px x 1 row  -> rail 60px, and the pills outweigh the photographs.
+ *
+ * 36px, NOT 44px, AND THE TARGET IS STILL COMPLIANT. WCAG 2.5.8 Target Size (Minimum) — the AA
+ * criterion — requires 24x24 CSS px; 44px is 2.5.5, which is AAA. At 36px the pill keeps a 50%
+ * margin over the AA floor and remains larger than the 32px Material and 30px HIG both call
+ * comfortable, while two rows drop from 96px to 80px and the iPhone's chrome from 181px to 165px.
+ *
+ * WRAPPING IS NOT TOUCHED, and that is deliberate. The scroller that used to live here was deleted
+ * at Akhil's request — *"I see the pills become into a scrollable container, which is not what I
+ * want ... just for them to occupy multiple rows"* — and the fix for a tall row is a shorter row,
+ * not a hidden one. `.ph-filters`' header records why that scroller is gone; this must not
+ * reintroduce it.
+ *
+ * (0,3,0) against the design system's (0,1,0), inside the same `pointer: coarse` query so it does
+ * not touch the mouse case — where the pill is 28px and nobody has complained.
+ */
+@media (pointer: coarse) {
+  .ph-filters.ds-atom-segmented .ds-atom-segmented-btn {
+    min-height: var(--space-9);
+  }
 }
+
+.ph-filters.ds-atom-segmented .ds-atom-segmented-btn {
+  white-space: nowrap;
+
+  /*
+   * PAINT ONLY. The pill's HEIGHT, FONT-SIZE and PADDING are the component's, from `size="sm"` —
+   * see `PhotoFilters.tsx` for why the prop and not a rule here. What is left is the shape: an
+   * outlined pill instead of a segment of a capsule.
+   */
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-full);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-3);
+
+  /*
+   * PAIRED WITH THE BORDER ABOVE, not a habit. The component's `sm` rung is `height: 28px`, and it
+   * only sets `box-sizing: border-box` inside its coarse-pointer block — so on a pointer device the
+   * 1px border this rule adds sits OUTSIDE the declared height and the pill renders 30px. MEASURED
+   * both ways. Adding a border to someone else's height means owning the box model for it.
+   */
+  box-sizing: border-box;
+}
+
+/*
+ * THE ACTIVE PILL IS AN OUTLINE, NOT A FILL. `.ds-atom-segmented-btn[data-active="true"]` fills
+ * `--ink` and inverts its text — correct for a segmented control, far too loud for one pill in six
+ * on a page whose subject is photographs. Full ink on the border and the label is enough to read as
+ * selected, and it is the same "said in weight of colour" the header's current nav item uses.
+ */
+/*
+ * (0,4,0), AND EVERY CLASS IN IT IS LOAD-BEARING. The design system ships
+ * `.dark .ds-atom-segmented-btn[data-active] { color: #000 }` — a hardcoded black at (0,3,0) which
+ * assumes the active segment has `background: var(--amber)` behind it. This file removes that fill
+ * to make the pills outlined, so the black had nothing to sit on: MEASURED via
+ * `CSS.getMatchedStylesForNode`, the active pill computed `rgb(0, 0, 0)` against a `#0d0d0f` page.
+ * Invisible.
+ *
+ * A (0,3,0) override TIES with it and loses on source order, which is how it shipped. Adding
+ * `.ds-atom-segmented` — already on the same element as `.ph-filters` — takes this to (0,4,0) and
+ * settles it on specificity rather than on which stylesheet the bundler emitted last. FILED as
+ * D-33.
+ */
+.ph-filters.ds-atom-segmented .ds-atom-segmented-btn[data-active="true"] {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+/*
+ * NO 44px FLOOR HERE, AND THAT IS A DELETION RATHER THAN AN OMISSION. One was written and then
+ * removed: primitives.css already ships `@media (pointer: coarse) { .ds-atom-segmented-btn {
+ * box-sizing: border-box; min-height: 44px } }` for exactly this control, and its own comment
+ * explains the choice of `min-height` over `height` — the used height is `max(min-height, height)`,
+ * so it wins over the (0,3,0) size rule without entering a specificity contest. MEASURED at 390px
+ * with a coarse pointer: the pill is 44px tall. A second copy here would have been a rule that
+ * looked load-bearing and was inert.
+ */
 
 /*
  * The per-pill count (§8.2, §13.3). A HOOK IN THE MARKUP THAT THIS FILE DELIBERATELY DOES NOT PAINT.
@@ -283,30 +770,10 @@
 }
 
 /*
- * ================================================================================================
- * 5b. THE CROSS-LINK ROW (§13.2) — the returning half of the pair
- * ================================================================================================
- *
- * LAYOUT ONLY, and it is the mirror of `.wk-crosslink-row` in `src/styles/development.css`. The type role
- * — italic Playfair at `--text-lg` in `--ochre-d` — is NOT here and must not be: `Link` inline-sets
- * `font-family` on every variant, so a serif link is unreachable from a stylesheet without
- * `!important`. It travels with the element as `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, which is
- * the ONE declaration both `/development` and `/photography` import.
- *
- * ONE DECLARATION, AND THE ALIGNMENT IS DELIBERATELY ABSENT. `/development`'s row declares
- * `text-align: right` because the arrow points forward and sits at the right edge; this one's arrow
- * points BACK, so it belongs at the start edge — which is the initial value. `text-align: left`
- * here would be an inert declaration restating the default, and this file has already deleted one
- * declaration (`flex: 0 0 auto`) for buying nothing measurable. The mirror is recorded in this
- * comment instead, where it cannot be mistaken for a rule doing work.
- *
- * `--space-12` is `.wk-crosslink-row`'s own top margin, so the gap above the link reads the same on
- * both pages. `.ph-crosslink` is a named hook with no rule, exactly as `.wk-crosslink` is.
+ * NO `.ph-crosslink-row` RULE — the row it styled was removed on 2026-09-03 with the *← see the
+ * work* link, so the rule went with it rather than staying as dead CSS. `src/pages/photography/
+ * index.astro` records why the cross-link pair is now one-directional.
  */
-
-.ph-crosslink-row {
-  margin: var(--space-12) 0 0;
-}
 
 /*
  * ================================================================================================

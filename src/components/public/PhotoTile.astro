@@ -44,8 +44,16 @@
  * exactly the readers who cannot see them. All 40 `alt` strings are committed and reviewed, the
  * shortest measured at 83 characters. `title` is not read by this component at all — it is not even
  * in `Props`, so the mistake is unrepresentable here rather than merely discouraged.
+ *
+ * `title` IS IN `Props` NOW, AND THE INVARIANT ABOVE IS INTACT. Akhil asked for the photograph's
+ * name to appear over it on hover, so the title is rendered as a CAPTION. It is not, and must never
+ * become, the `alt`: `alt` still comes from the record's own `alt`, and the caption carries
+ * `aria-hidden="true"` so it adds nothing to the anchor's accessible name — a reader using a screen
+ * reader gets the 83-plus-character description, not the four-word name, exactly as D-24-1 requires.
+ * The two now sit three lines apart in this file, so the distinction has to be read to be broken.
  */
 
+import { TILE_CATEGORY_ATTRIBUTE } from '../../lib/photo-filter';
 import { photoHref, srcsetFor } from '../../lib/photo-srcset';
 import type { PhotoIdentity, PhotoSources } from '../../lib/photo-srcset';
 
@@ -81,9 +89,20 @@ interface Props {
    * over the WHOLE manifest and a category route renders a subset of it.
    */
   lightboxIndex: number;
+  /**
+   * Whether this photograph is outside the active category. THE SERVER DECIDES IT, so the first
+   * paint of each of the eight routes is exactly the set that route has always shown — and still
+   * is with JavaScript off, because `hidden` is markup and not script. The controller island only
+   * flips it afterwards.
+   */
+  hidden: boolean;
+  /**
+   * The photograph's name, shown over it on hover. See the header for why this is NOT the `alt`.
+   */
+  title: string;
 }
 
-const { photo, sizes, eager, lightboxIndex } = Astro.props;
+const { photo, sizes, eager, lightboxIndex, hidden, title } = Astro.props;
 
 /*
  * The index reaches the DOM as a string and the island parses it back, so an unusable value would
@@ -113,6 +132,14 @@ if (!Number.isInteger(lightboxIndex) || lightboxIndex < 0) {
  * is no character left that could close the token. Both checks stand: the schema guards the file,
  * this guards the interpolation site, and neither ratifies the other.
  */
+if (typeof title !== 'string' || title.trim().length === 0) {
+  throw new Error(
+    `PhotoTile: title on ${JSON.stringify(photo.id)} is empty, so the hover caption would render ` +
+      'an empty scrim over the bottom of the photograph — a grey band with no text, which reads ' +
+      'as a rendering fault rather than as missing data.'
+  );
+}
+
 const THUMB_URI = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
 const thumb = photo.urls.thumb;
 if (typeof thumb !== 'string' || !THUMB_URI.test(thumb)) {
@@ -140,6 +167,8 @@ const { width, height } = photo.dimensions;
   class="ph-tile"
   href={photoHref(photo)}
   data-lb-index={String(lightboxIndex)}
+  {...{ [TILE_CATEGORY_ATTRIBUTE]: photo.category }}
+  hidden={hidden}
   style={`aspect-ratio: ${width} / ${height}; background-image: url('${thumb}')`}
 >
   <img
@@ -151,4 +180,10 @@ const { width, height } = photo.dimensions;
     decoding="async"
     fetchpriority={eager ? 'high' : undefined}
   />
+  <!--
+    `aria-hidden` because the anchor is already named by the image's `alt` — see the header. A
+    visible caption inside a link is otherwise APPENDED to that name, so a screen reader would read
+    the full description and then the title again.
+  -->
+  <span class="ph-tile-caption" aria-hidden="true">{title}</span>
 </a>

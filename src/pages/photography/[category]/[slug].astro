@@ -48,12 +48,15 @@
  * below reads the field, and the EXIF component cannot: `exifRows` takes the exif object only.
  */
 
+import { ClientRouter } from 'astro:transitions';
+
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { Link } from '@akhil-saxena/design-system/components/Link';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import { type CollectionEntry, getCollection } from 'astro:content';
 
 import ExifList from '../../../components/public/ExifList.astro';
+import { displayCamera, displayLens } from '../../../lib/exif-display';
 import Seo from '../../../components/public/Seo.astro';
 import PublicLayout from '../../../layouts/PublicLayout.astro';
 import { home, site } from '../../../lib/content';
@@ -216,6 +219,17 @@ export async function getStaticPaths() {
         /* §13.2's two back links, composed from the one segment. See the note above the function. */
         categoryHref: `/${ROUTE_ROOT}/${params.category}`,
         galleryHref: `/${ROUTE_ROOT}`,
+        /*
+         * THE POSITION IS WITHIN THE CATEGORY, NOT WITHIN THE CORPUS, and that is a deliberate
+         * departure from the M4 mock, which reads `03 / 40`.
+         *
+         * `previous` and `next` above WRAP INSIDE `bucket`, which is the category. An index over 40
+         * beside a pair of arrows that only ever visit 16 would be a straightforward lie: press
+         * next sixteen times from `03 / 40` and you arrive back at `03 / 40` having never seen
+         * `17 / 40`. The denominator has to be the set the arrows traverse.
+         */
+        position: index + 1,
+        of: size,
       },
     };
   });
@@ -228,9 +242,11 @@ interface Props {
   href: string;
   categoryHref: string;
   galleryHref: string;
+  position: number;
+  of: number;
 }
 
-const { photo, previous, next, href, categoryHref, galleryHref } = Astro.props;
+const { photo, previous, next, href, categoryHref, galleryHref, position, of } = Astro.props;
 
 /**
  * THE LQIP GUARD — the same one `PhotoTile.astro` carries, at the second interpolation site.
@@ -296,12 +312,73 @@ const sizes = `min(100vw, ${PAGE_MAX.band}px)`;
  */
 const backToGallery = '← All photographs';
 const backToCategory = `← ${label}`;
-const previousLabel = previous ? `← ${previous.title}` : '';
-const nextLabel = next ? `${next.title} →` : '';
+/*
+ * `← PREV` / `NEXT →`, NOT the neighbour's title. The M4 column is 290px wide and right-ranged;
+ * a title as long as `Pigeon At Umaid Bhawan` wrapped the row and pushed the pagination off the
+ * bottom-aligned baseline. The neighbour's name is still announced — it is on `aria-label`, where
+ * it costs no width.
+ */
+const previousLabel = '← PREV';
+const nextLabel = 'NEXT →';
+
+/* Zero-padded, so neither row changes width as you move through the category. */
+const pad = (n: number) => String(n).padStart(2, '0');
+const positionLabel = `${pad(position)} / ${pad(of)}`;
+
+/*
+ * `← ARCHITECTURE` — the section and nothing else.
+ *
+ * IT CARRIED THE COUNT AND NO LONGER DOES. It read `← PORTRAITS, 02 OF 02`, and the arrow row
+ * beneath it read `02 / 02` — the same two numbers, 276px apart, in one 290px column. Akhil:
+ * *"remove counter 02 of 02 from ← PORTRAITS, 02 OF 02. move it to bottom, near prev/next."* It is
+ * already there: `positionLabel` sits between the arrows, which is where a position belongs,
+ * because that is the control it describes.
+ *
+ * What is left is a way back to the section, which is the one thing this line was for.
+ */
+const sectionLabel = `← ${label.toUpperCase()}`;
+
+/*
+ * THE GEAR LINE, COMPOSED HERE AND HIDDEN IN CSS. Akhil removed camera and lens from view and said
+ * *"keep in code, hide from view"* — so this is built, rendered, and switched off by
+ * `data-tech="off"` on the column. Flip that one attribute and it returns.
+ *
+ * Only the parts that exist are joined: lens is absent on 11 of the 40 records, so a fixed
+ * `camera · lens` would render a trailing separator on more than a quarter of the pages the day
+ * this is switched back on.
+ */
+/*
+ * `displayCamera` / `displayLens` FROM `exif-display.ts`, NOT A TABLE WRITTEN HERE. A local
+ * `CAMERA_NAMES` map was written first and it was a SECOND DEFINITION of one that already exists:
+ * `gate:exif` printed "5 camera entr(ies), 4 lens entr(ies), read from src/lib/exif-display.ts"
+ * and that is what found it. Those helpers also THROW on an unmapped value rather than falling
+ * back to the raw EXIF string, so a new body silently rendering as
+ * `NIKON CORPORATION NIKON D5300` is unrepresentable.
+ *
+ * Only the parts that exist are joined: lens is absent on 11 of the 40 records, so a fixed
+ * `camera / lens` pair would render a stray line break on more than a quarter of the pages the day
+ * this is switched back into view.
+ */
+const gearLines = [displayCamera(photo.exif.camera), displayLens(photo.exif.lens)].filter(
+  (line): line is string => typeof line === 'string' && line.length > 0,
+);
 const pageTitle = `${photo.title} — ${home.title}`;
 ---
 
-<PublicLayout mainClass="pub-max-band pd-page">
+{
+  /*
+   * `pub-max-photos`, NOT `pub-max-band`. The band caps `.pub-main` at `min(1080px, 100%)` and
+   * centres it, which is right for an article-shaped page and wrong for this one: MEASURED at 1280,
+   * the content ran 100→1180 while the bar and the footer run 48→1232, so the caption's right edge
+   * sat 52px inside the gutter every other element on the site aligns to. With the column now
+   * pinned to the trailing edge, that inset was the difference between "right aligned" and "nearly
+   * right aligned".
+   *
+   * `pub-max-photos` is the gallery's own measure, so a photograph and the grid it came from share
+   * one column — which is also what makes stepping between them not shift the page.
+   */
+}
+<PublicLayout mainClass="pub-max-photos pd-page">
   {
     /*
      * SEO-01, §9.6. `og:image` is `urls.large` — MEASURED at 1200w, the Open Graph recommended
@@ -317,6 +394,40 @@ const pageTitle = `${photo.title} — ${home.title}`;
      * description cannot degenerate into the same string.
      */
   }
+  {
+    /*
+     * SAME-DOCUMENT NAVIGATION BETWEEN PHOTOGRAPHS.
+     *
+     * Akhil: *"only the photo part is the one that re renders or updates and the text updates, but
+     * rest of the elements since they are in the existing same position, we don't move at all, and
+     * they don't re render."*
+     *
+     * They did. Previous and next are real links, so every step was a full document navigation —
+     * MEASURED at 330ms with 16,624 bytes re-fetched, the bar and the footer re-parsed and
+     * repainted each time. Nothing MOVED (both landed at barY 0 / footY 720) but everything was
+     * rebuilt, which is what read as a refresh.
+     *
+     * `transition:persist` on the bar and the footer in `PublicLayout` is the other half: those two
+     * are carried across the swap as the SAME DOM NODES rather than replaced, so they are not
+     * re-rendered at all. The photograph and the caption are what change.
+     *
+     * ON THE ROUTE, NOT IN THE SHARED LAYOUT. In the layout this script would reach Home,
+     * /development and /resume — all of which ship zero JavaScript and none of which has a
+     * navigation that would use it. `slot="head"` keeps it on the 40 photograph documents.
+     *
+     * IT REQUIRED A THIRD ROUTE CLASS IN `gate:public-js`, added the same day and argued at
+     * length there: that gate had ZERO-JS and HYDRATING, and a page carrying a module script with
+     * no island fitted neither. The arithmetic that justified widening it: 16,338 bytes raw /
+     * 5,635 gzipped, once, cached across all 40 — against 16,624 re-fetched every step. Two steps
+     * and it has paid for itself. The gate now REQUIRES the router here and refuses any other
+     * chunk, so this cannot quietly become a general JavaScript allowance.
+     *
+     * Photograph → photograph is a swap; photograph → gallery falls back to a normal navigation,
+     * because the gallery has no router of its own and nothing worth persisting.
+     */
+  }
+  <ClientRouter slot="head" />
+
   <Seo
     slot="head"
     title={pageTitle}
@@ -327,90 +438,203 @@ const pageTitle = `${photo.title} — ${home.title}`;
     imageAlt={photo.alt}
   />
 
-  <nav class="pd-back" aria-label="Back">
-    <Link href={galleryHref} variant="quiet">{backToGallery}</Link>
-    <Link href={categoryHref} variant="quiet">{backToCategory}</Link>
-  </nav>
-
   {
     /*
-     * THE FRAME (§9.6). `loading="eager"` and `fetchpriority="high"`, because this image IS the
-     * page and deferring it defers the LCP. `aspect-ratio` and the LQIP are inline because both are
-     * per-photograph values; everything else is in `photo-detail.css`.
+     * THE M4 LAYOUT. One viewport: header, then a body that is a COLUMN on a narrow screen and a
+     * ROW from 1024px, with the text bottom-aligned to the photograph's own bottom edge.
      *
-     * NO `width` AND NO `height` ATTRIBUTE — §7.2's ruling. `dimensions` is the intrinsic size of
-     * the SOURCE photograph, not of the file in `src`, so `width={…}` would state 3361 for a
-     * 1200px image: harmless for layout, wrong for anything reasoning about bytes. `aspect-ratio`
-     * plus `width: 100%` reserves the box.
+     * NO BACK LINK. The previous build opened with `← All photographs` and `← Architecture`; the
+     * approved matrix has neither, and the layout has no room for a row above the photograph in a
+     * `100dvh` frame. The bar's `photography` item returns to the gallery and is marked current,
+     * and the arrows traverse the category — so nothing is unreachable. Recorded because it
+     * retires two pinned copy strings.
      */
   }
   <div
-    class="pd-frame"
-    style={`aspect-ratio: ${photo.dimensions.width} / ${photo.dimensions.height}; background-image: url('${thumb}')`}
+    class="pd-body"
+    data-orient={photo.dimensions.width >= photo.dimensions.height ? 'landscape' : 'portrait'}
   >
-    <img
-      src={photo.urls.large}
-      srcset={srcsetFor(photo)}
-      sizes={sizes}
-      alt={photo.alt}
-      loading="eager"
-      fetchpriority="high"
-    />
-  </div>
-
-  <div class="pd-identity">
-    <Heading level={1} size="xl" weight="bold" className="pd-title">{photo.title}</Heading>
     {
       /*
-       * §9.3: `place` is present on 17 of 40 and DELIBERATELY empty on the rest — "an empty
-       * description renders nothing at all: no em dash, no gap." So there is no fallback, no
-       * separator and no wrapper: the element is absent, and the gap it would have left is absent
-       * with it because the spacing lives on the flex container.
+       * `.pd-shot` IS THE PHOTOGRAPH'S OWN BOX, and it exists because the placeholder was on the
+       * wrong element.
+       *
+       * The thumbnail used to be `background-image` on `.pd-im` — the FLEX CONTAINER — at
+       * `background-size: contain`. MEASURED at 1280x800 on `architecture-officegreens`: the
+       * container is 746x632 and the photograph is 355x631, so a blurred copy was painted 746px
+       * wide behind a 355px image. Blurred wings either side of every portrait. Akhil: *"why does
+       * the image look off"* — that was it.
+       *
+       * `aspect-ratio` from the record's own dimensions, with `max-width`/`max-height` at 100%, so
+       * the browser resolves the largest box of the RIGHT SHAPE that fits, and reserves it before a
+       * byte of the photograph arrives. That is the no-layout-shift half of the request: nothing
+       * moves when the image lands, because its space was already the right shape and size.
        */
     }
+    <div class="pd-im">
+      {
+        /*
+         * `--pd-ar` IS THE RATIO AS A BARE NUMBER, and it is what lets CSS compute the photograph's
+         * width from a height budget: `min(100%, calc(var(--pd-ar) * 72svh))`. Both terms are
+         * definite before the file arrives, so the box is reserved at the right shape and nothing
+         * moves when the photograph lands. See `photo-detail.css` for the four constructions that
+         * tried to do this with `aspect-ratio` and maxima and each failed one of the two tests.
+         */
+      }
+      <div class="pd-shot">
+        <img
+          src={photo.urls.large}
+          srcset={srcsetFor(photo)}
+          sizes={sizes}
+          alt={photo.alt}
+          loading="eager"
+          fetchpriority="high"
+          width={photo.dimensions.width}
+          height={photo.dimensions.height}
+          style={`background-image: url('${thumb}')`}
+        />
+      </div>
+    </div>
+
     {
-      photo.place && (
-        <Text as="p" size="sm" tone="muted">
-          {photo.place}
-        </Text>
-      )
+      /*
+       * `data-tech="off"` IS THE SWITCH. The gear line and the EXIF list below are rendered and
+       * hidden — see `photo-detail.css` for why the hide is `display: none` and not a
+       * visually-hidden clip.
+       */
     }
-  </div>
-
-  {
-    /*
-     * PUB-07 LIVES ENTIRELY INSIDE THIS COMPONENT, AND SO DOES ITS ABSENCE. `ExifList` renders
-     * NOTHING — no section, no divider, no heading, no empty panel — when `exifRows` returns no
-     * rows. `product-peppers` has all six fields null and is a real committed record, so the branch
-     * is exercised by the corpus rather than reasoned about. The page therefore does not test the
-     * exif object here: a second decision at this level is a second implementation of the rule.
-     */
-  }
-  <ExifList exif={photo.exif} />
-
-  {
-    /*
-     * The neighbour row. Real anchors, ordered by `categoryOrder` within the category and wrapping
-     * at both ends — see `getStaticPaths` for the wrap and for why a single-photograph category
-     * renders no row at all. `rel="prev"`/`rel="next"` state the relationship for a crawler; the
-     * visible text is the neighbouring photograph's own title, so the link says where it goes.
-     */
-  }
-  {
-    previous && next && (
-      <nav class="pd-nav" aria-label="Photograph">
+    <div class="pd-col" data-tech="off">
+      {
+        /*
+         * THE CONTEXT LINE, AND IT IS WHY THERE ARE NO FILTER PILLS ON THIS PAGE.
+         *
+         * Six pill placements were built and measured, and each cost something real: 44px of height
+         * above the composition, or two to six wrapped rows inside the 290px column, because six
+         * sections do not fit in 290px. Akhil chose this instead: *"No filters here — detail page
+         * shows only 'Architecture · 07/10' context; filtering lives on the grid page."*
+         *
+         * WHAT IT GIVES UP, said plainly: a DIFFERENT section is no longer one step away — it is
+         * photograph → this section → another section. That was the original complaint, *"if I
+         * filter a section and open a photo, I am not able to navigate to another section from
+         * here"*, so the trade is deliberate. The leading arrow is what makes the first of those
+         * two steps legible as a way out.
+         */
+      }
+      <p class="pd-context">
         <Link
-          href={previous.href}
-          rel="prev"
+          href={categoryHref}
           variant="quiet"
-          aria-label={`Previous: ${previous.title}`}
+          className="pd-section"
+          aria-label={`Back to ${label}`}
         >
-          {previousLabel}
+          {sectionLabel}
         </Link>
-        <Link href={next.href} rel="next" variant="quiet" aria-label={`Next: ${next.title}`}>
-          {nextLabel}
-        </Link>
+      </p>
+
+      <Heading level={1} size="2xl" weight="regular" className="pd-title">{photo.title}</Heading>
+
+      {
+        /*
+         * ALWAYS RENDERED, EVEN WHEN THE RECORD HAS NO PLACE. Akhil: *"I want to keep the place
+         * always."*
+         *
+         * It used to be `{photo.place && …}`, and its coming and going was the whole reason the
+         * caption's placement was constrained: MEASURED, a cluster anchored to the card's bottom
+         * put the title at y548 on a photograph with a place and y575 on one without — 27px of
+         * movement, on 23 of the 40 records, which is more than half the gallery. Only
+         * `space-between` pinned both ends, and that is what spread the title and the arrows 480px
+         * apart.
+         *
+         * Reserving the line makes every placement stable, so the choice becomes a design one
+         * again rather than one the data was making.
+         *
+         * EMPTY, NOT A DASH OR A FALLBACK. The line holds its height and says nothing — a `—`
+         * would assert that the place is unknown, and the category would answer a question nobody
+         * asked. `aria-hidden` when empty so a screen reader is not handed a blank paragraph.
+         */
+      }
+      <p class="pd-place" aria-hidden={photo.place ? undefined : 'true'}>{photo.place}</p>
+
+      {
+        gearLines.length > 0 && (
+          <p class="pd-gear">
+            {gearLines.map((line, i) => (
+              <Fragment>
+                {i > 0 && <br />}
+                {line}
+              </Fragment>
+            ))}
+          </p>
+        )
+      }
+
+      <ExifList exif={photo.exif} />
+
+      <nav class="pd-nav" aria-label="Photograph">
+        {
+          previous ? (
+            <Link
+              href={previous.href}
+              rel="prev"
+              variant="quiet"
+              className="pd-step"
+              aria-label={`Previous: ${previous.title}`}
+            >
+              {previousLabel}
+            </Link>
+          ) : (
+            <span class="pd-step pd-step-none" aria-hidden="true">
+              {previousLabel}
+            </span>
+          )
+        }
+
+        <span class="pd-count">{positionLabel}</span>
+
+        {
+          next ? (
+            <Link
+              href={next.href}
+              rel="next"
+              variant="quiet"
+              className="pd-step"
+              aria-label={`Next: ${next.title}`}
+            >
+              {nextLabel}
+            </Link>
+          ) : (
+            <span class="pd-step pd-step-none" aria-hidden="true">
+              {nextLabel}
+            </span>
+          )
+        }
       </nav>
-    )
+    </div>
+  </div>
+  {
+    /*
+     * NO CROSS-FADE SCRIPT, AND THE ABSENCE IS A MEASURED DECISION rather than a thing not done.
+     *
+     * Akhil asked for *"animation or something as photo loads"*. A load-triggered cross-fade needs
+     * a load event, so it needs script — CSS cannot know when an image has arrived, and an
+     * `animation` keyed to first paint would fade the element in while it is still blank.
+     *
+     * Written, measured, and REVERTED. `is:inline` clears `gate:public-js`'s A1 rules — its
+     * anti-canary for both A1-SRC and A1-MODULE is a bare inline script — but A2 is stricter than
+     * A1 and refuses it three ways:
+     *
+     *   x [A2-SCRIPT-SET]    3 distinct non-theme inline scripts; exactly 2 are permitted
+     *   x [A2-BOOTSTRAP-LEAK] a 502 B non-theme inline script on 40 zero-JS documents
+     *   x [A2-COUNT]         a zero-JS route may carry exactly one <script>, the theme block
+     *
+     * 502 bytes on 40 documents, to animate something the browser already reveals. The
+     * placeholder below still does the substantive half of the request — the photograph's box is
+     * reserved at its own aspect ratio, so there is no layout shift, and the blurred thumbnail
+     * stands in until the real file paints over it. What is missing is only the tween.
+     *
+     * The `[data-fade]` rules in `photo-detail.css` are the other half and are KEPT: they are
+     * inert with no script to set the attribute, and they are what makes this a one-line change if
+     * Akhil decides the fade is worth amending A2 for.
+     */
   }
 </PublicLayout>

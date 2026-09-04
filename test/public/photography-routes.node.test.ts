@@ -39,6 +39,7 @@ import { beforeAll, describe, expect, inject, it } from 'vitest';
 import manifest from '../../data/portfolio_images.json';
 import siteConfig from '../../data/site_config.json';
 import { BREAKPOINTS } from '../../src/lib/layout-ladder';
+import { ALL, countLineFor } from '../../src/lib/photo-filter';
 import { sizesFor } from '../../src/lib/photo-srcset';
 
 const previewBaseUrl = inject('previewBaseUrl');
@@ -100,7 +101,15 @@ const ROUTES: readonly Route[] = [
     activeHref: '/photography',
     columns: siteConfig.defaultColumns,
     expected: manifest,
-    countLine: `${manifest.length} photographs — all of them`,
+    /*
+     * DERIVED FROM THE SHIPPED HELPER, not spelled again here. It used to read
+     * `${manifest.length} photographs — all of them`, and both halves of that are now wrong: the
+     * em-dash tail went when Akhil asked for the count to stop competing with the pills — *"use
+     * xs/s and remove - — all of them"* — and a test holding its own copy of a sentence is how the
+     * served view and the switched view drift apart. `countLineFor` is what the page renders AND
+     * what the island rewrites on a pill click, so asserting against it closes both.
+     */
+    countLine: countLineFor(ALL, manifest.length, manifest.length),
   },
   ...siteConfig.categories.map((category) => ({
     name: `/photography/${category.id}`,
@@ -108,20 +117,26 @@ const ROUTES: readonly Route[] = [
     activeHref: `/photography/${category.id}`,
     columns: category.columns,
     expected: manifest.filter((record) => record.category === category.id),
-    countLine: (() => {
-      const n = manifest.filter((record) => record.category === category.id).length;
-      return `${n} ${n === 1 ? 'photograph' : 'photographs'}`;
-    })(),
+    countLine: countLineFor(
+      category.id,
+      manifest.filter((record) => record.category === category.id).length,
+      manifest.length
+    ),
   })),
 ];
 
-/** Every pill the rail must carry, in order: the unfiltered one, then the config's records. */
-const EXPECTED_PILLS: ReadonlyArray<{ href: string; label: string; count: number }> = [
-  { href: '/photography', label: 'All', count: manifest.length },
+/**
+ * Every pill the rail must carry, in order: the unfiltered one, then the config's records.
+ *
+ * NO `count` FIELD, AND ITS ABSENCE IS THE ASSERTION. The pills used to read `Architecture · 14`;
+ * Akhil, choosing between the variants: *"numbers off"*. Seven numbers competing along one row
+ * said less than the single derived count line at its trailing edge, which is still asserted above.
+ */
+const EXPECTED_PILLS: ReadonlyArray<{ href: string; label: string }> = [
+  { href: '/photography', label: 'All' },
   ...siteConfig.categories.map((category) => ({
     href: `/photography/${category.id}`,
     label: category.label,
-    count: manifest.filter((record) => record.category === category.id).length,
   })),
 ];
 
@@ -200,10 +215,31 @@ describe('the gallery routes exist and hold every photograph, derived at check t
     (_name, route) => {
       expect(statuses.get(route.name)).toBe(200);
       const html = bodies.get(route.name) as string;
-      const tiles = occurrences(html, 'class="ph-tile"');
-      report(`${route.name}: ${tiles} tiles, manifest says ${route.expected.length}`);
+
+      /*
+       * 🔴 EVERY GALLERY ROUTE NOW SHIPS EVERY PHOTOGRAPH. The category is a VISIBILITY filter, not
+       * a server-side selection, and this assertion used to say the opposite.
+       *
+       * Akhil: *"when i click any filter button or anything. why does the whole page reload, it
+       * shouldnt. Only the images should get filtered, without page reload."* Filtering became
+       * client-side, so a category document carries all forty tiles and marks the ones that do not
+       * belong with the `hidden` ATTRIBUTE — MEASURED on `/photography/portraits`: 40 anchors, 38
+       * hidden, 2 visible, which is exactly the manifest's portrait count.
+       *
+       * So the claim splits in two, and BOTH halves matter. The total is the manifest's, which is
+       * what makes client-side filtering possible at all; the visible count is the category's, which
+       * is what the reader sees. Asserting only the first would pass on a page that filters nothing.
+       */
+      const anchors = html.match(/<a class="ph-tile"[^>]*>/g) ?? [];
+      const hidden = anchors.filter((a) => /\shidden(?=[\s>=])/.test(a));
+      const visible = anchors.length - hidden.length;
+      report(
+        `${route.name}: ${anchors.length} tiles shipped, ${visible} visible, ` +
+          `manifest says ${route.expected.length} in this category`
+      );
       expect(route.expected.length).toBeGreaterThan(0);
-      expect(tiles).toBe(route.expected.length);
+      expect(anchors.length).toBe(manifest.length);
+      expect(visible).toBe(route.expected.length);
     }
   );
 
@@ -211,9 +247,16 @@ describe('the gallery routes exist and hold every photograph, derived at check t
     '%s prints its derived count line with its spaces intact',
     (_name, route) => {
       const html = bodies.get(route.name) as string;
-      const eyebrow = /class="ds-atom-eyebrow"[^>]*>([^<]*)</.exec(html);
-      if (!eyebrow) throw new Error(`${route.name}: no .ds-atom-eyebrow in the response.`);
-      const text = decode(eyebrow[1]);
+      /*
+       * `#ph-count`, NOT `.ds-atom-eyebrow`. Akhil: *"text - 40 photographs needs not be bold,
+       * reduce size, not very prominent."* `Eyebrow` was carrying four prominence signals at once
+       * (700 weight, uppercase, 1.1px tracking, IBM Plex Mono) and became `Text size="xs"`. The id
+       * is the stable hook — it is the same one the filter island rewrites on a pill click — so this
+       * assertion no longer depends on which component renders the line.
+       */
+      const node = /id="ph-count"[^>]*>([^<]*)</.exec(html);
+      if (!node) throw new Error(`${route.name}: no #ph-count in the response.`);
+      const text = decode(node[1]);
       report(`${route.name}: count line ${JSON.stringify(text)}`);
       expect(text).toBe(route.countLine);
     }
@@ -264,8 +307,8 @@ describe('exactly one filter pill is marked as the current page (§16 item 6)', 
       for (const [index, expectedPill] of EXPECTED_PILLS.entries()) {
         const actual = rendered[index];
         expect(actual.href).toBe(expectedPill.href);
-        // The label and the count, in one string: `Architecture · 14`.
-        expect(actual.text).toBe(`${expectedPill.label} · ${expectedPill.count}`);
+        // The label alone. Equality, not `toContain`, so a re-added count turns this red.
+        expect(actual.text).toBe(expectedPill.label);
       }
 
       // `FilterNav` renders an href it does not consider in-app as `<span data-rejected="true">`
@@ -283,22 +326,24 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
     (_name, route) => {
       const html = bodies.get(route.name) as string;
 
+      // Every shipped tile, not just the visible ones — a hidden tile is still markup a reader can
+      // reveal with one click, so it has to reserve its box and carry its LQIP like any other.
       const anchors = html.match(/<a class="ph-tile"[^>]*>/g) ?? [];
-      expect(anchors.length).toBe(route.expected.length);
+      expect(anchors.length).toBe(manifest.length);
       for (const anchor of anchors) {
         expect(anchor).toMatch(/aspect-ratio:\s*\d+\s*\/\s*\d+/);
         expect(decode(anchor)).toContain("background-image: url('data:image/webp;base64,");
       }
 
       const imgs = html.match(/<img\b[^>]*>/g) ?? [];
-      expect(imgs.length).toBe(route.expected.length);
+      expect(imgs.length).toBe(manifest.length);
       // §7.2's ruling. `dimensions` is the SOURCE photograph's size, not the served variant's.
       expect(imgs.filter((tag) => /\swidth\s*=/.test(tag))).toHaveLength(0);
       expect(imgs.filter((tag) => /\sheight\s*=/.test(tag))).toHaveLength(0);
 
       const expectedSizes = sizesFor(route.columns);
       const sizesAttrs = [...html.matchAll(/\ssizes="([^"]*)"/g)].map((m) => decode(m[1]));
-      expect(sizesAttrs).toHaveLength(route.expected.length);
+      expect(sizesAttrs).toHaveLength(manifest.length);
       for (const attr of sizesAttrs) expect(attr).toBe(expectedSizes);
       report(`${route.name}: data-cols ${route.columns}, sizes agrees with sizesFor on all tiles`);
     }
@@ -308,6 +353,10 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
     '%s defers everything below the fold — eager is min(4, tiles), not four',
     (_name, route) => {
       const html = bodies.get(route.name) as string;
+      // EAGER IS STILL THE CATEGORY'S COUNT, and that is the interesting half. The document ships
+      // all forty, but only the tiles a reader can actually SEE on arrival are worth fetching
+      // eagerly — MEASURED: /photography 4, /photography/architecture 4, /photography/portraits 2,
+      // which is min(4, visible) and not min(4, shipped).
       const tiles = route.expected.length;
       const wanted = Math.min(EAGER_TILES_PER_SPEC, tiles);
 
@@ -318,7 +367,7 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
 
       expect(eager).toBe(wanted);
       expect(priority).toBe(wanted);
-      expect(lazy).toBe(tiles - wanted);
+      expect(lazy).toBe(manifest.length - wanted);
     }
   );
 
@@ -327,9 +376,11 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
     (_name, route) => {
       const html = bodies.get(route.name) as string;
       const alts = [...html.matchAll(/<img\b[^>]*\salt="([^"]*)"/g)].map((m) => decode(m[1]));
-      expect(alts).toHaveLength(route.expected.length);
+      expect(alts).toHaveLength(manifest.length);
 
-      const expectedAlts = new Set(route.expected.map((record) => record.alt));
+      // The whole manifest's alts, because the whole manifest ships. The claim that matters here is
+      // unchanged and is the second one: never a title. D-24-1.
+      const expectedAlts = new Set(manifest.map((record) => record.alt));
       const titles = new Set(manifest.map((record) => record.title));
       for (const alt of alts) {
         expect(expectedAlts.has(alt)).toBe(true);
@@ -355,11 +406,17 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
    * repo-wide; this is the gallery half.
    *
    * What is asserted now is the thing PUB-14 needs: exactly ONE island per gallery route, its
-   * component chunk is the Lightbox, and the `type="module"` count is still reported so the day
-   * Astro changes its emission the number changes with it.
+   * component chunk is the one that owns the filter, and the `type="module"` count is still
+   * reported so the day Astro changes its emission the number changes with it.
+   *
+   * THE ISLAND IS `PhotoFilters` NOW, NOT `PhotoLightbox`, and the rename records a deletion. The
+   * overlay was replaced by the `/photography/<category>/<slug>` document — Akhil: *"build this in
+   * place of lightbox, allow nav, scroll etc"* — and the filter controller, which had been living
+   * inside the lightbox island only because `gate:public-js` permits one island per document,
+   * became the island itself. Same budget, one fewer component.
    */
   it.each(ROUTES.map((route) => [route.name, route] as const))(
-    '%s hydrates exactly one island, and it is the Lightbox (PUB-14, §5.1)',
+    '%s hydrates exactly one island, and it is PhotoFilters (PUB-14, §5.1)',
     (_name, route) => {
       const html = bodies.get(route.name) as string;
       const modules = occurrences(html, '<script type="module"');
@@ -371,8 +428,8 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
           `<script type="module"> × ${modules}`
       );
       expect(islands).toBe(1);
-      expect(exported).toBe('PhotoLightbox');
-      expect(component).toMatch(/^\/_astro\/PhotoLightbox\.[^/]*\.js$/);
+      expect(exported).toBe('PhotoFilters');
+      expect(component).toMatch(/^\/_astro\/PhotoFilters\.[^/]*\.js$/);
       // Reported rather than removed: the count is 0 today because of HOW Astro emits an island,
       // not because nothing hydrates. Equality, so a future Astro that does use the module
       // spelling turns this red and gets read rather than silently satisfying the old claim.
@@ -507,111 +564,102 @@ describe('the masonry ladder in the BUILT stylesheet matches src/lib/layout-ladd
      * asks the question that was meant: is the `overflow-x` DECLARATION ON `.ph-filters` inside any
      * at-rule at all.
      */
+    /*
+     * 🔴 INVERTED. THIS USED TO REQUIRE `overflow-x: auto`; IT NOW REQUIRES ITS ABSENCE.
+     *
+     * Akhil: *"if I go down to a smaller screen size, like a mobile view, I see the pills become
+     * into a scrollable container, which is not what I want. I instead want the pills to reduce in
+     * size a little bit if required, or just for them to occupy multiple rows."* The scroller was
+     * deleted rather than disabled — with it went `scroll-snap-type`, the per-pill
+     * `scroll-snap-align`, and an inert `min-width: 0`.
+     *
+     * It also caused the misalignment reported in the same breath: at 390 the rail, the grid and
+     * the widest tile all ended at x366 exactly, but the scroll container CLIPPED its content at
+     * x268, so the row of pills stopped 98px short of the photographs and mid-pill.
+     *
+     * The claim is therefore two-sided, because either half alone is satisfiable by an accident:
+     * no `overflow-x` anywhere on `.ph-filters`, AND a `flex-wrap: wrap` that no at-rule guards.
+     */
     const railOverflow = decls.filter(
       (d) => d.selector.includes('.ph-filters') && d.prop === 'overflow-x'
     );
-    report(
-      `.ph-filters overflow-x declarations: ${railOverflow
-        .map((d) => `${d.value} under [${d.atRules.join(' ') || 'no at-rule'}]`)
-        .join('; ')}`
+    const railWrap = decls.filter(
+      (d) => d.selector.includes('.ph-filters') && d.prop === 'flex-wrap'
     );
-    expect(railOverflow.length).toBeGreaterThan(0);
-    for (const decl of railOverflow) {
-      expect(decl.value).toBe('auto');
+    report(
+      `.ph-filters overflow-x: ${railOverflow.length === 0 ? 'none (they wrap)' : railOverflow.map((d) => d.value).join('; ')}` +
+        ` · flex-wrap: ${railWrap.map((d) => `${d.value} under [${d.atRules.join(' ') || 'no at-rule'}]`).join('; ') || 'none'}`
+    );
+    expect(railOverflow).toHaveLength(0);
+    expect(railWrap.length).toBeGreaterThan(0);
+    for (const decl of railWrap) {
+      expect(decl.value).toBe('wrap');
       expect(decl.atRules).toHaveLength(0);
     }
   });
 });
 
-/* ══ §13.2 — THE CROSS-LINK PAIR'S RETURNING HALF ═══════════════════════════════════════════════
+/* ══ §13.2 — THE RETURNING HALF IS RETIRED, AND THIS IS THE RECORD ═════════════════════════════
  *
- * `/development` has shipped *see the photographs →* since 05-09 and `test/public/development.node.test.ts`
- * asserts it character for character. §13.2's next row is *← see the work* on `/photography`, and
- * 05-15's audit MEASURED that it did not exist: `grep -rn "see the work"` over the whole repository
- * returned one line, the spec row itself. No gate caught it, because §13.2 is prose.
+ * `/development` still ships *see the photographs →* and `test/public/development.node.test.ts`
+ * still asserts it character for character. §13.2's OTHER row — *← see the work* on `/photography`
+ * — is gone. Akhil: *"remvoe ← see the work from photographs page."*
  *
- * So the copy is asserted here the way the other half is — against the SERVED BYTES, character for
- * character, after one pass of entity decoding. This is a §13.2 contract entry and not page prose:
- * it is the navigation between two of the four public views, and the whole reason it is asserted is
- * that a missing navigational string looks exactly like a page that is simply finished.
+ * IT WAS A SPEC ROW BEING RETIRED, NOT A LINE BEING TIDIED AWAY, which is why the assertion is
+ * inverted rather than deleted. §13.2 is prose and no gate reads it; 05-15's audit had already
+ * MEASURED that this row was missing once before (`grep -rn "see the work"` returned one line, the
+ * spec row itself) and nothing had caught it. A deleted test would leave the same silence behind.
+ * An inverted one says the absence is now intended, and turns red the day it comes back by accident.
  *
- * BOTH DIRECTIONS ARE ASSERTED. Exactly one row on `/photography`, and ZERO on all seven category
- * routes — a floor alone ("at least one somewhere") passes on a page that grew a second copy and on
- * one that put it on the wrong route, and this suite has already been bitten once by a count
- * predicate that was a floor.
+ * WHAT REPLACES IT: the bar. Both destinations are its items and the current one is marked, so
+ * `/development` is one click from `/photography` either way — which is what made the editorial row
+ * optional rather than load-bearing.
  */
-describe('/photography carries §13.2’s returning cross-link, and only /photography does', () => {
-  /** The reviewed copy, character for character. `←` is LEFTWARDS ARROW U+2190. */
-  const CROSSLINK_COPY = '← see the work';
-  const WORK_PATH = '/development';
-
+describe('§13.2’s returning cross-link is retired — no route under /photography carries one', () => {
   /** Every `<p class="ph-crosslink-row">…</p>` in a document, in order. */
   const rows = (html: string): string[] =>
     [...html.matchAll(/<p class="ph-crosslink-row">([\s\S]*?)<\/p>/g)].map((m) => m[1] as string);
 
-  it('renders exactly one cross-link row on /photography, pointing at /development', () => {
-    const html = bodies.get('/photography') as string;
-    expect(html, 'no /photography body was fetched').toBeTruthy();
+  /** The copy that used to be here, kept so the search below is for the STRING, not the wrapper. */
+  const RETIRED_COPY = '← see the work';
 
-    const found = rows(html);
-    expect(found, `/photography carries ${found.length} cross-link row(s)`).toHaveLength(1);
+  it('carries no cross-link row on /photography or on any category route', () => {
+    // ANTI-VACUITY: an empty route list would make the loop assert nothing at all.
+    expect(ROUTES.length).toBeGreaterThan(1);
 
-    const anchors = [...(found[0] as string).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)];
-    expect(anchors, 'the row holds no anchor').toHaveLength(1);
-
-    const attrs = (anchors[0] as RegExpMatchArray)[1] as string;
-    const inner = (anchors[0] as RegExpMatchArray)[2] as string;
-
-    expect(/href="([^"]*)"/.exec(attrs)?.[1]).toBe(WORK_PATH);
-
-    // CHARACTER FOR CHARACTER. Astro drops the space between two ADJACENT EXPRESSIONS in a
-    // component's children — `{count} {noun}` shipped as `14photographs` past 59 green assertions
-    // on this very route family — so an exact string is the only assertion worth making about copy.
-    const rendered = decode((inner as string).replace(/<[^>]*>/g, ''))
-      .replace(/\s+/g, ' ')
-      .trim();
-    expect(rendered).toBe(CROSSLINK_COPY);
-
-    // The type role is `CROSSLINK_TYPE` in `src/lib/crosslink.ts`, the SAME object `/development` imports.
-    // `Link` inline-sets `font-family` on every variant, so the served `style` attribute is the
-    // only place this can be checked at all — and asserting it on both halves is what makes "one
-    // declaration, two importers" a measured fact rather than a comment.
-    const style = /style="([^"]*)"/.exec(attrs)?.[1] ?? '';
-    expect(style).toContain('var(--font-display)');
-    expect(style).toContain('italic');
-    expect(style).toContain('var(--text-lg)');
-    expect(style).toContain('var(--ochre-d)');
-    // §4.3 reserves `--ochre-d-strong` for the metric; J2 explicitly rejected it here.
-    expect(style).not.toContain('var(--ochre-d-strong)');
-
-    // INTERNAL: no new tab, so no announcement and no `rel` are owed.
-    expect(/target="([^"]*)"/.exec(attrs)?.[1]).toBeUndefined();
-
-    report(`cross-link: ${JSON.stringify(rendered)} → ${WORK_PATH}, italic serif in --ochre-d`);
-  });
-
-  it('puts it on /photography and on NO category route — the pair is /development ↔ /photography', () => {
-    const categories = ROUTES.filter((route) => route.name !== '/photography');
-    // ANTI-VACUITY: an empty category list would make the loop below assert nothing at all.
-    expect(categories.length).toBeGreaterThan(0);
-
-    for (const route of categories) {
+    for (const route of ROUTES) {
       const html = bodies.get(route.name) as string;
       expect(html, `no body was fetched for ${route.name}`).toBeTruthy();
       expect(rows(html), `${route.name} must not carry a cross-link row`).toHaveLength(0);
     }
 
+    const counts = ROUTES.map((route) => rows(bodies.get(route.name) as string).length);
+    report(`cross-link rows: [${counts.join(', ')}] across ${ROUTES.length} route(s) — all zero`);
+  });
+
+  it('does not ship the retired copy under any other wrapper', () => {
     /*
-     * DERIVED, NEVER TYPED. The first draft of this line read "1 on /photography, 0 on each of 7" as a
-     * LITERAL, and the plant that deleted the cross-link row printed it verbatim while the other
-     * test failed at zero — a report claiming a number it had not measured, in the middle of a
-     * suite whose subject is exactly that failure. It now counts what it says.
+     * THE WRAPPER IS NOT THE CLAIM. A row re-added inside a different element would satisfy the
+     * test above and still put the retired sentence back on the page, so the string itself is what
+     * is searched for — decoded first, because `←` survives as an entity in some emissions.
      */
-    const onPhotos = rows(bodies.get('/photography') as string).length;
-    const perCategory = categories.map((route) => rows(bodies.get(route.name) as string).length);
-    report(
-      `cross-link rows: ${onPhotos} on /photography, [${perCategory.join(', ')}] on the ` +
-        `${categories.length} category route(s)`
-    );
+    for (const route of ROUTES) {
+      const html = decode(bodies.get(route.name) as string);
+      expect(html.includes(RETIRED_COPY), `${route.name} still ships ${RETIRED_COPY}`).toBe(false);
+    }
+    report(`"${RETIRED_COPY}" appears on none of the ${ROUTES.length} routes`);
+  });
+
+  it('leaves the OUTGOING half alone — /development still points here', async () => {
+    /*
+     * THE PAIR IS ONE-DIRECTIONAL NOW, and that is a decision rather than a symmetry bug. Asserted
+     * from this side too, because "we removed the return link" and "we broke the cross-link" look
+     * identical from `/photography` alone.
+     */
+    const response = await fetch(`${previewBaseUrl}/development/`);
+    expect(response.status).toBe(200);
+    const html = decode(await response.text());
+    expect(html).toContain('see the photographs');
+    report('/development still carries its outgoing half — the pair is one-directional by choice');
   });
 });

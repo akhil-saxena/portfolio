@@ -86,6 +86,9 @@
 import type { FilterNavItem } from '@akhil-saxena/design-system/components/FilterNav';
 import { FilterNav } from '@akhil-saxena/design-system/components/FilterNav';
 
+import { type FilterCategory, GRID_ID } from '../../lib/photo-filter';
+import { usePhotoFilter } from '../../lib/use-photo-filter';
+
 /** The unfiltered gallery. THE ONE PLACE THIS PATH IS WRITTEN on the filter side. */
 export const GALLERY_HREF = '/photography';
 
@@ -111,6 +114,14 @@ export function normaliseActiveHref(pathname: string): string {
 }
 
 export interface PhotoFiltersProps {
+  /*
+   * THE CONTROLLER'S CONFIGURATION MOVED HERE when the lightbox island was removed. It lived on
+   * `PhotoLightbox` only because `gate:public-js` allows one `<astro-island>` per document and the
+   * lightbox was that island. With the lightbox gone this component is hydrated instead, and it is
+   * the better host anyway: the rail is what the hook listens to.
+   */
+  readonly total: number;
+  readonly defaultColumns: number;
   /** `data/site_config.json`'s category records, in their committed order (alphabetical). */
   categories: ReadonlyArray<{ readonly id: string; readonly label: string }>;
   /**
@@ -118,12 +129,62 @@ export interface PhotoFiltersProps {
    * routes share ONE definition of it — §13.3 requires every `· n` to be derived, and two
    * independently written group-bys is two places for it to stop being.
    */
-  photos: ReadonlyArray<{ readonly category: string }>;
+  /**
+   * TWO FIELDS PER PHOTOGRAPH, AND THE NARROWNESS IS LOAD-BEARING RATHER THAN TIDY.
+   *
+   * The pages used to pass their full records and this type accepted them structurally, so Astro
+   * serialised all ten fields of all forty into the `props` attribute. MEASURED on `/photography`:
+   * 58,180 bytes of `photos`, inside a 74,322-byte props attribute, in a 169,515-byte document —
+   * **43.8% of the page**, on all six gallery routes, against a Lighthouse-95 budget. This
+   * component reads exactly ONE of those fields (`photo.category`, for the group-by below).
+   *
+   * Projected to `id` + `category` the props attribute is 5,136 bytes — 5.1% of the document.
+   *
+   * AND THE COMPRESSED PICTURE IS DIFFERENT FROM THE RAW ONE, which is why both are recorded rather
+   * than the flattering one. MEASURED on `/photography`, before and after, same build:
+   *
+   *              raw        gzip       brotli
+   *   before   169,515     53,238     29,813
+   *   after    100,329     31,376     27,280
+   *   saved     69,186     21,862      2,533
+   *
+   * Forty near-identical JSON records compress extraordinarily well, so brotli — which is what
+   * Cloudflare serves a modern browser — recovers most of what the raw figure promises. The honest
+   * transfer win is ~2.5KB per document, not 69KB.
+   *
+   * IT IS STILL WORTH DOING, for the reason the transfer number does not show: 69KB of HTML that no
+   * longer has to be parsed, tokenised and held as DOM on a phone, and 58KB that no longer has to be
+   * JSON-parsed on the main thread before the island mounts. That is main-thread time on the exact
+   * route with the tightest budget.
+   *
+   * `id` IS KEPT THOUGH NOTHING READS IT YET, and that is the deliberate half. A category→count map
+   * would be ~200 bytes and would also end the island's ability to recompute anything positional
+   * client-side — which is the property that made filtering-without-reload possible at all. An array
+   * of identities keeps that door open for 2KB.
+   */
+  photos: ReadonlyArray<{ readonly id: string; readonly category: string }>;
   /** `Astro.url.pathname`, un-normalised. Normalising is this component's job — see the header. */
   pathname: string;
 }
 
-export function PhotoFilters({ categories, photos, pathname }: PhotoFiltersProps) {
+export function PhotoFilters({
+  categories,
+  photos,
+  pathname,
+  total,
+  defaultColumns,
+}: PhotoFiltersProps) {
+  /*
+   * The delegated listener that turns a pill click into an attribute instead of a navigation. Same
+   * hook, same contract; see `use-photo-filter.ts` for why it is a hook and not an island.
+   */
+  usePhotoFilter({
+    categories: categories as readonly FilterCategory[],
+    total,
+    defaultColumns,
+    gridSelector: `#${GRID_ID}`,
+  });
+
   const counts = new Map<string, number>();
   for (const photo of photos) {
     counts.set(photo.category, (counts.get(photo.category) ?? 0) + 1);
@@ -152,21 +213,23 @@ export function PhotoFilters({ categories, photos, pathname }: PhotoFiltersProps
   }
 
   const items: FilterNavItem[] = [
-    {
-      href: GALLERY_HREF,
-      label: (
-        <>
-          All <span className="ph-count">· {photos.length}</span>
-        </>
-      ),
-    },
+    /*
+     * NO `· n` ON THE PILLS. Each label used to carry its own count in a `.ph-count` span. Akhil
+     * removed them on 2026-09-02 — the rail reads as six words rather than six words and six
+     * numbers, and the total still shows once, on the count line beside the rail.
+     *
+     * REMOVED FROM THE MARKUP, not hidden with `display: none`. A hidden span is still in the
+     * anchor's accessible name, so a screen reader would announce "Portraits dot 2" for a pill
+     * that visibly says "Portraits" — the numbers would be gone for everyone except the people
+     * who cannot see them.
+     *
+     * `counts` is still computed and still guarded below: it is what proves the group-by produced
+     * something, and it is one edit away from being rendered again.
+     */
+    { href: GALLERY_HREF, label: 'All' },
     ...categories.map((category) => ({
       href: categoryHref(category.id),
-      label: (
-        <>
-          {category.label} <span className="ph-count">· {counts.get(category.id) ?? 0}</span>
-        </>
-      ),
+      label: category.label,
     })),
   ];
 
@@ -175,7 +238,21 @@ export function PhotoFilters({ categories, photos, pathname }: PhotoFiltersProps
       items={items}
       activeHref={normaliseActiveHref(pathname)}
       ariaLabel="Photo categories"
-      size="lg"
+      /*
+       * `sm`, NOT `lg`. The four candidate sizes were compared in the browser and Akhil chose the
+       * small end. IT IS THE PROP AND NOT A STYLESHEET OVERRIDE, because
+       * `.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn` is (0,3,0) and primitives.css
+       * says so at that very rule: it "would otherwise beat anything a single-class rule could
+       * say". An app-CSS height would have needed (0,4,0) to win a contest the component already
+       * offers a prop to avoid.
+       *
+       * `sm` is 28px tall at 12px. The header nav is 12.5px (`--text-sm`), so the two rows of
+       * interactive text are half a pixel apart rather than identical — the design system's
+       * segmented sizes are literal 12/13/14px rather than type-scale rungs. Recorded as D-27,
+       * not overridden: half a pixel is not worth re-entering the specificity contest this prop
+       * exists to skip.
+       */
+      size="sm"
       className="ph-filters"
     />
   );

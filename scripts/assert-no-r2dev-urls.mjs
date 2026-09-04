@@ -173,6 +173,19 @@ const RULES = [
   // ---------------------------------------------------------------------------------------- SKIP
   {
     scan: false,
+    label: '.migration/**',
+    why:
+      'the receipt the key migration writes — one entry per object it copied, with the old key, ' +
+      'the new key and the hash. It is a RECORD OF WHAT WAS DONE, so its old keys are the ' +
+      'evidence rather than a mistake: rewriting them would erase the before-half of the ' +
+      'before/after this file exists to prove. Same reasoning as .planning/** below. Nothing here ' +
+      'is imported, copied into dist/ or read at runtime — `astro build` never looks at it. It ' +
+      'refused the build on 2026-09-04 by being unclassified, which is the rule working: a file ' +
+      'appeared and nobody had decided whether it ships.',
+    test: (p) => p.startsWith('.migration/'),
+  },
+  {
+    scan: false,
     label: '.planning/**',
     test: (p) => p.startsWith('.planning/'),
     why:

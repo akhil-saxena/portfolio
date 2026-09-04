@@ -102,7 +102,38 @@
    * the honest answer and reads loose rather than cramped, which is the direction asked for.
    */
   line-height: var(--lh-normal);
-  letter-spacing: var(--ls-tighter);
+  /*
+   * ================================================================================================
+   * `normal` — THE FONT'S OWN KERNING, BECAUSE EVERY TRACKED-IN RUNG STILL COLLIDES
+   * ================================================================================================
+   *
+   * Akhil: *"i dont want letters to touch each other, for titles"*, then, after the first fix:
+   * *"on hero. i still see akh and ax touching."*
+   *
+   * MEASURED, not judged by eye. "Akhil Saxena" was rendered at 8x device scale at five tracking
+   * values and the bitmap scanned column by column: a column with no ink is a real gap between
+   * glyphs, so ELEVEN letters should give ELEVEN separate ink clusters. Anything fewer is a touch.
+   *
+   *     --ls-tighter  -0.038em    6 clusters   five pairs fused
+   *     --ls-tight    -0.024em    9 clusters   `Ak`, `kh` and `ax` still fused  <- the first fix
+   *     --ls-base     -0.005em   10 clusters   one still fused
+   *     normal         0         11 clusters   every glyph separate
+   *
+   * So the first fix was measurably not enough, and `--ls-base` — the loosest rung below
+   * `--ls-wide` — is still not enough. THE RAMP HAS NOWHERE ELSE TO GO: `--ls-wide` is +0.1em,
+   * which at 44px is +4.4px a pair and reads as a spaced-out logo rather than a title. There is no
+   * rung between -0.005em and +0.1em.
+   *
+   * `normal` IS NOT A LITERAL AND IT IS NOT A DODGE. `gate:app-css` lists it in HANDOVER_KEYWORDS —
+   * "values that DEFER a decision rather than making one" — and deferring is exactly right here:
+   * it hands spacing back to Libre Baskerville's own kerning pairs, and the type designer is the
+   * authority on whether `A` and `k` collide. Tracking a display serif in was the decision that
+   * caused this; not tracking it is not a second decision.
+   *
+   * FILED AS D-38: the tracking ramp has no rung at or just above 0, so a display face that needs
+   * its natural fit has to reach for a keyword. Same shape as D-36 on the leading ramp.
+   */
+  letter-spacing: normal;
   color: var(--ink);
 }
 

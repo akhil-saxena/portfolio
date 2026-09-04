@@ -276,6 +276,39 @@ const homeCtas = ctas.map((cta) => {
        * which of the two the component believes it is rendering, and 48 is the design's own value.
        */
     }
+    {
+      /*
+       * ============================================================================================
+       * `letterSpacing: 'normal'` — THE FONT'S OWN KERNING, BECAUSE EVERY TRACKED-IN RUNG COLLIDES
+       * ============================================================================================
+       *
+       * Akhil: *"on hero. i still see akh and ax touching"* — after a first fix that moved this one
+       * rung, `--ls-tighter` to `--ls-tight`. He was right, and the eye was the wrong instrument, so
+       * it was measured: "Akhil Saxena" rendered at 8x device scale and the bitmap scanned column by
+       * column. A column with no ink is a real gap, so ELEVEN letters should give ELEVEN separate ink
+       * clusters; fewer means glyphs are fusing.
+       *
+       *     --ls-tighter  -0.038em    6 clusters   five pairs fused
+       *     --ls-tight    -0.024em    9 clusters   Ak, kh and ax still fused   <- the first fix
+       *     --ls-base     -0.005em   10 clusters   one still fused
+       *     normal         0         11 clusters   every glyph separate
+       *
+       * `--ls-base` is the loosest rung below `--ls-wide`, and `--ls-wide` is +0.1em — at 44px that
+       * is +4.4px a pair, a spaced-out logo rather than a title. The ramp has nothing between them.
+       *
+       * `normal` IS A HANDOVER, NOT A LITERAL. `gate:app-css` lists it among "values that DEFER a
+       * decision rather than making one", and deferring is exactly right: it returns spacing to Libre
+       * Baskerville's own kerning pairs, and the type designer is the authority on whether A and k
+       * collide. Tracking a display serif IN was the decision that caused this; declining to is not a
+       * second one. Filed as D-38 — the ramp has no rung at or just above zero.
+       *
+       * 🔴 AND THIS COMMENT SITS OUT HERE RATHER THAN INSIDE THE `style` OBJECT. Written there first,
+       * it refused the build: `gate:app-css` parses that object as declarations and read the prose
+       * line "measured: Akhil Saxena" as a property called `measured`. The gate was right to — an
+       * inline style object is exactly where an unreadable value hides — so the rationale moved and
+       * the object stayed three plain pairs.
+       */
+    }
     <Heading
       level={1}
       size={48}
@@ -284,40 +317,7 @@ const homeCtas = ctas.map((cta) => {
       style={{
         fontSize: 'var(--hm-name)',
         lineHeight: 'var(--lh-tight)',
-        /*
-         * ==========================================================================================
-         * `--ls-tight`, ONE RUNG LOOSER THAN THE COMPONENT'S `--ls-tighter`
-         * ==========================================================================================
-         *
-         * Akhil: *"on hero page, due to letter spacing the text letters touch each other, increade
-         * their kerning/gap slightly so theyre not touching."*
-         *
-         * MEASURED. `Heading` inlines the whole size/leading/TRACKING bundle when `size` is a NUMBER,
-         * and its 4xl rung is `--ls-tighter` (-0.038em) — which at 44px is -1.672px per pair. On this
-         * particular string that is a collision rather than tight setting: `A`+`k` and `k`+`h` in
-         * "Akhil" have no side bearings to spare in Libre Baskerville, whose large x-height and short
-         * extenders already fill the em.
-         *
-         * Three rungs were rendered at 4x and compared:
-         *
-         *     --ls-tighter  -1.672px   Ak and kh touching
-         *     --ls-tight    -1.056px   clear, and still tracked-in for a display serif  <- this
-         *     --ls-base     -0.220px   comfortable, and looser than a 44px serif wants
-         *
-         * `--ls-tight` is the "slightly" the note asked for: +0.014em, +0.6px per pair.
-         *
-         * IT GOES IN `style` BECAUSE THE COMPONENT'S VALUE IS INLINE. A stylesheet cannot reach an
-         * inline declaration at any specificity short of `!important`, which `src/styles/` forbids —
-         * but `...style` is spread LAST in `Heading`, after the size bundle, so this wins by the
-         * ordinary rules. Same door the `fontSize` above already uses, and the same reason.
-         *
-         * THE OTHER TWO 44px TITLES STILL CARRY `--ls-tighter`, from two different places:
-         * `/photography` from `.ds-atom-heading[data-size="4xl"]` in primitives.css, `/development`
-         * from `.wk-title`. Neither shows a collision — "Photographs" and "Things I design and build"
-         * have no equivalent tight pair — so they are LEFT ALONE rather than changed for symmetry. If
-         * they should match, the fix is two lines and this is the note that says where.
-         */
-        letterSpacing: 'var(--ls-tight)',
+        letterSpacing: 'normal',
       }}
       data-home-marker={HOME_RENDER_MARKER}
     >

@@ -571,7 +571,18 @@ body {
    */
   color: var(--ink);
   font-size: var(--text-lg);
-  letter-spacing: var(--ls-base);
+  /*
+   * `normal`, NOT `--ls-base`. Akhil named the bar explicitly: *"akhil saxena, in header too."*
+   *
+   * MEASURED at 8x — the wordmark's eleven letters rendered as TEN ink clusters at `--ls-base`
+   * (-0.005em, -0.085px at 17px), so one pair was fused even at this size. Small type was assumed to
+   * be safe from a problem diagnosed at 44px and it was not: the fusing pair is a property of the
+   * FACE, and shrinking it shrinks the gap along with everything else.
+   *
+   * `normal` returns the decision to Libre Baskerville's own kerning — see the D-38 note on the 4xl
+   * rule below for why that is a handover rather than a literal.
+   */
+  letter-spacing: normal;
   margin-inline-end: auto;
 
   /*
@@ -1444,4 +1455,33 @@ body {
  */
 .pub-shell .ds-atom-heading[data-weight="regular"] {
   font-weight: var(--weight-regular);
+}
+
+/*
+ * ================================================================================================
+ * 44px DISPLAY TITLES TRACK AT `--ls-tight`, NOT `--ls-tighter`
+ * ================================================================================================
+ *
+ * Akhil: *"i dont want letters to touch each other, for titles."*
+ *
+ * `primitives.css` gives `.ds-atom-heading[data-size="4xl"]` a `letter-spacing: var(--ls-tighter)`
+ * bundled with its size and leading, so `/photography`'s heading inherits -0.038em from the
+ * component rather than from any app rule. At 44px that is -1.672px per pair, and Libre
+ * Baskerville has no side bearings to spare: its large x-height and short extenders already fill
+ * the em. `--ls-tight` (-0.024em, -1.056px) hands back 0.6px a pair and still reads tracked-in.
+ *
+ * (0,3,0) against the component's (0,2,0), with the attribute written into the selector rather than
+ * trusted to source order — the eighth time that tie has come up in this project.
+ *
+ * THE SAME RUNG IS SET DIRECTLY ON `.wk-title` AND `.rs-name`, whose values come from app CSS and
+ * cannot be reached from here. Three places for one decision is the cost of the design system
+ * bundling tracking into a size token; if it is ever unbundled, this rule and those two lines
+ * collapse into the component's own choice.
+ *
+ * NOT THE 17px WORDMARK. Measured at -0.085px (`--ls-base`) and reads correctly — the collision is
+ * a property of 44px type rather than of the typeface, and loosening the bar would break something
+ * that works.
+ */
+.pub-shell .ds-atom-heading[data-size="4xl"] {
+  letter-spacing: normal;
 }

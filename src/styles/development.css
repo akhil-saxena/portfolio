@@ -855,14 +855,43 @@
 }
 
 /*
- * THE CURRENT ROLE'S DOT IS `--green`, WHICH IS A DESIGN-SYSTEM TOKEN, NOT A LITERAL. The prototype
- * writes `#3d7a4e` and a `rgba(61,122,78,.14)` glow ring; `--green` is `#2f7a52` in tokens.css and
- * is the same ink the StatusPill's success tone already uses on this page. The glow ring is dropped:
- * it cannot be written from an app stylesheet without originating a colour, and a second green ring
- * around a green dot is decoration the page does not need.
+ * ================================================================================================
+ * THE CURRENT ROLE IS MARKED BY A RING, NOT BY COLOUR
+ * ================================================================================================
+ *
+ * Akhil: *"In experience section. dont have green dot for Brevo nor green text ... keep it black dot
+ * only, maybe add a outline circle with 1px spacing."*
+ *
+ * WHAT WENT: `--green` on the dot AND on the years line. It was a design-system token rather than a
+ * literal, and it came from the approved prototype's `#3d7a4e` — but it was the only chromatic
+ * accent left on a monochrome page, and it said "current" twice on one row.
+ *
+ * ONE SIGNAL, NOT TWO. The years line goes back to `--ink-4`, the same as every other role's, so the
+ * ring is the only thing marking the current entry. Two markers for one fact is what made the green
+ * loud: remove the colour and keep both, and the page still says it twice.
+ *
+ * ── THE RING IS THE FOCUS-RING TECHNIQUE, REUSED ──────────────────────────────────────────────
+ *
+ * `0 0 0 2px var(--bg)` then `0 0 0 3px var(--ink-4)`: the inner band is painted in the PAGE'S OWN
+ * COLOUR, so it reads as a gap rather than as a second ring, and the outer band is the visible
+ * outline. Exactly the construction `--focus-ring` uses in `public-shell.css`, for the same reason —
+ * a hairline held off an element's edge reads as a ring, and one touching it reads as a border that
+ * thickened.
+ *
+ * `box-shadow` AND NOT `outline` + `outline-offset`, which would also work: the dot sits on the
+ * connector line drawn by `.wk-role-item::before`, and a shadow paints in the same layer as the
+ * dot's own background while an outline is drawn over everything — including the line, which should
+ * pass behind.
+ *
+ * THREE MARKERS WERE RENDERED AND COMPARED at 4x before this one. Making every dot identical lost
+ * the signal completely: Brevo became indistinguishable from the two roles below it. Brightening the
+ * current dot to `--ink` alone was visible but weak at 8px. The ring is the one that reads at size.
  */
 .wk-role-item.is-current .wk-role-dot {
-  background: var(--green);
+  background: var(--ink);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3px var(--ink-4);
 }
 
 .wk-role-company {
@@ -887,10 +916,6 @@
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--ink-4);
-}
-
-.wk-role-item.is-current .wk-role-years {
-  color: var(--green);
 }
 
 /* `margin-block-start: auto` pins the contact row to the bottom of the rail, which is what makes it

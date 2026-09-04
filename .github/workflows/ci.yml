@@ -189,6 +189,13 @@ jobs:
       - name: Fetch-verify the social cards the artefact ships
         run: npm run gate:og-live
 
+      # The masters are sealed by a Cloudflare WAF rule that lives in a dashboard and nothing in
+      # this repository can see. This asks the live origin whether it is still switched on. It is
+      # here rather than in `gate:content` because it needs the network, which is already a
+      # precondition of the step above.
+      - name: Assert the unwatermarked masters are not served
+        run: npm run gate:masters
+
       # Advisory on purpose, and the advisory form belongs only here. A file: dependency
       # spec is the sanctioned way to consume an unpublished design-system tarball during
       # Phase 5 development, so everyday CI reports one without failing on it. The

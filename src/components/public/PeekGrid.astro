@@ -173,10 +173,7 @@ const positions = homeConfig.peekPositions as Record<string, string | undefined>
  * `14photographs` on seven routes through a green build and 59 green assertions. One expression,
  * one string, no adjacency.
  */
-const ALL_PHOTOGRAPHS = `ALL ${manifest.length} \u2192`;
 
-/** The tile the badge sits on — the last one, so it reads as "…and there are more". */
-const lastPeekId = peekPhotos[peekPhotos.length - 1]?.id;
 ---
 
 {/* §6.6.4 — one of the three named landmarks. `aria-label` names the region; state A itself is a
@@ -204,9 +201,15 @@ const lastPeekId = peekPhotos[peekPhotos.length - 1]?.id;
               style={`object-position: ${positions[photo.id] ?? DEFAULT_FOCAL_POINT}`}
             />
             {
-              photo.id === lastPeekId && (
-                <a class="hm-peek-all" href="/photography">{ALL_PHOTOGRAPHS}</a>
-              )
+              /*
+               * NO `ALL 40 →` OVERLAY. It sat on the last peek tile as a pill and Akhil removed it:
+               * *"from hero page, remove All 40 -> pill."*
+               *
+               * Nothing is lost. The `Photography →` door directly below goes to the same place, is
+               * the same one click, and says so in words rather than in a count — and the whole
+               * peek grid is itself a link to the gallery. The pill was a third way to the same
+               * page, painted over a photograph.
+               */
             }
           </div>
         </li>

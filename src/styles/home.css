@@ -104,7 +104,14 @@
  */
 .pub-bar.pub-bar-plain {
   margin-inline: 0;
-  padding-block-start: var(--space-6);
+  /*
+   * `--space-3` (12px) BECAUSE THAT IS WHAT THE BAR PADS. `.ds-atom-appbar` ships
+   * `padding: 12px 20px`, so on every other route the toggle's centre lands at y32. At
+   * `--space-6` here it landed at y44 — the same control, 12px lower, on the one page a visitor
+   * sees first. MEASURED both ways; the toggle is 40x40 on all 53 documents, so matching the pad
+   * matches the centre exactly rather than approximately.
+   */
+  padding-block-start: var(--space-3);
 }
 
 .pub-nav-plain {
@@ -231,50 +238,13 @@
  * gated on `pointer` and never on width: a 1024px tablet and a 1024px laptop window want opposite
  * answers.
  */
-.pub-nav-plain .pub-toggle {
-  border-radius: var(--radius-full);
-  border-color: transparent;
-  background-color: transparent;
-}
-
 /*
- * LONGHANDS, NOT THE `transition` SHORTHAND. `gate:app-css` refuses the shorthand and is right to:
- * its first term is a PROPERTY NAME, so the declaration can never be written token-only and the
- * gate cannot tell a tokenised duration from a typed one inside it. `transition-property` is in the
- * free set for that reason; the duration and easing come from tokens.
- *
- * Only the glyph transitions. The button itself has nothing left to animate.
+ * THE TOGGLE'S OWN RULES HAVE MOVED to `public-shell.css`, and the move is the point. They were
+ * `.pub-nav-plain .pub-toggle`, and `home.css` is imported by `src/pages/index.astro` alone — so
+ * the glyph-only chrome, the hover fade and the 44px touch floor were HOME'S ONLY. Every other
+ * route got the design system's default bordered IconButton, at a different size. Rules that
+ * describe one control on every page do not belong in one page's stylesheet.
  */
-.pub-nav-plain .pub-toggle .ds-atom-iconbtn-glyph {
-  opacity: 0.7;
-}
-
-/*
- * THE FADE LIVES INSIDE THE MOTION QUERY, and PUB-13's assertion caught it outside — correctly.
- *
- * The hover state itself is NOT motion and stays out here: under `reduce` the glyph still goes to
- * full strength, it just arrives instantly. Suppressing the state rather than the animation would
- * take the affordance away from exactly the visitor who asked for less movement.
- */
-@media (prefers-reduced-motion: no-preference) {
-  .pub-nav-plain .pub-toggle .ds-atom-iconbtn-glyph {
-    transition-property: opacity;
-    transition-duration: var(--dur-1);
-    transition-timing-function: var(--ease-out);
-  }
-}
-
-.pub-nav-plain .pub-toggle:hover .ds-atom-iconbtn-glyph {
-  opacity: 1;
-}
-
-@media (pointer: coarse) {
-  .pub-nav-plain .pub-toggle {
-    box-sizing: border-box;
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
 
 /*
  * The shell's `.pub-main` adds `padding-top: var(--space-11)` for the gap under the AppBar. The

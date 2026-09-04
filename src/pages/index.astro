@@ -310,10 +310,47 @@ const homeCtas = ctas.map((cta) => {
       */
       }
       <div class="hm-doors">
-        <Button as="a" href="/photography" variant="primary" size="lg" className="hm-door">
+        {
+          /*
+           * BOTH DOORS ARE OUTLINES, AND BOTH ARE `ghost`. Akhil: *"make both buttons same weight.
+           * outline only ones. not filled. both are equal weight."*
+           *
+           * They were `primary` and `secondary`, which is a deliberate hierarchy — MEASURED, the
+           * first rendered a solid #f2f2f4 fill with dark text and the second a #17171a panel, so
+           * one door was plainly louder than the other. That was right when the page argued for
+           * photography first; it is not what is wanted now.
+           *
+           * `ghost` IS THE ONLY VARIANT THAT CAN BE UNFILLED. `Button` composes
+           * `{...baseStyle, ...sizeStyles, ...variantStyles[variant], ...style}` INLINE, so
+           * `primary`'s and `secondary`'s backgrounds cannot be undone from `src/styles/` at any
+           * specificity short of `!important`, which that tree forbids. `ghost` sets
+           * `background: transparent`.
+           *
+           * THE `style` PROP IS THE DOOR THE COMPONENT LEAVES OPEN. `ghost` also sets
+           * `borderColor: "transparent"` inline, so app CSS cannot reveal the edge either — but
+           * `...style` is spread LAST, after the variant, so a border colour passed here wins by
+           * the ordinary rules rather than by force. `.ds-atom-btn` already carries
+           * `border: 1px solid var(--rule)`, so only the colour is needed.
+           */
+        }
+        <Button
+          as="a"
+          href="/photography"
+          variant="ghost"
+          size="lg"
+          className="hm-door"
+          style={{ borderColor: 'var(--rule-strong)' }}
+        >
           Photography →
         </Button>
-        <Button as="a" href="/development" variant="secondary" size="lg" className="hm-door">
+        <Button
+          as="a"
+          href="/development"
+          variant="ghost"
+          size="lg"
+          className="hm-door"
+          style={{ borderColor: 'var(--rule-strong)' }}
+        >
           Development →
         </Button>
       </div>

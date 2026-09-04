@@ -261,8 +261,23 @@ describe('Home ships no scroll cue — the doors replaced it (2026-09-02)', () =
         'positive fact about the same document every one of them passes on a blank page.'
     ).toBe(2);
     expect(doors.map((m) => m[1] as string)).toEqual(['Photography →', 'Development →']);
-    // `Button as="a"`, not a hand-rolled anchor: the shape is the design system's (Core Value).
-    for (const [markup] of doors) expect(markup).toMatch(/data-variant="(?:primary|secondary)"/);
+    /*
+     * `ghost` ON BOTH, AND THE EQUALITY IS THE POINT. This pinned `primary|secondary`, which is a
+     * HIERARCHY — one filled door and one outlined one. Akhil: *"make both buttosn same weight.
+     * outline only ones. not filled. both are euqal weight"*.
+     *
+     * `ghost` is also the only variant that CAN be outline-only from here: `Button` composes
+     * `{...base, ...size, ...variantStyles[variant], ...style}` into the `style` ATTRIBUTE, so
+     * `primary`'s and `secondary`'s fills are inline and unreachable from `src/styles` at any
+     * specificity. Choosing the unfilled variant is the fix; overriding a filled one is not
+     * available. (D-4.)
+     *
+     * Still `Button as="a"`, not a hand-rolled anchor: the shape is the design system's (Core Value).
+     */
+    for (const [markup] of doors) expect(markup).toMatch(/data-variant="ghost"/);
+    // EQUAL, not merely both-present: two different variants would satisfy a per-door check.
+    const variants = doors.map((m) => /data-variant="([^"]*)"/.exec(m[0] as string)?.[1]);
+    expect(new Set(variants).size, 'the two doors carry different weights').toBe(1);
   });
 
   it('emits no anchor pointing at #work, and no ↓ DEVELOPMENT copy', () => {
@@ -758,13 +773,17 @@ describe('Home is one screen — Act 1 fills what is left, and there is no Act 2
      *
      * >>> WHEN THE DEAD `.hm-cue` CSS GOES, THIS BECOMES 2. CHANGE IT IN THE SAME COMMIT. <<<
      */
+    /*
+     * TWO, DOWN FROM THREE, AND THE OLD MESSAGE PREDICTED THIS EXACT NUMBER: "a THIRD-minus-one
+     * means the dead cue CSS was cleaned up, in which case this number is 2." It was. The scroll
+     * cue's own `@keyframes` block went when the toggle's rules moved to `public-shell.css` and the
+     * dead §7a bob went with them.
+     */
     expect(
       blocks.length,
-      'expected three no-preference blocks: the toggle glyph fade (§1, live), the cue bob ' +
-        '(§7a, DEAD), and the tile hover + cue nudge (§7, half live). A count, not a floor — a ' +
-        'fourth is a motion source nobody argued for, and a THIRD-minus-one means the dead cue ' +
-        'CSS was cleaned up, in which case this number is 2.'
-    ).toBe(3);
+      'expected two no-preference blocks: the toggle glyph fade (§1) and the tile hover + cue ' +
+        'nudge (§7). A count, not a floor — a third is a motion source nobody argued for.'
+    ).toBe(2);
 
     /** Everything between a block's opening brace and its matching close. */
     const bodyOf = (m: RegExpMatchArray): { inside: string; end: number } => {
@@ -813,18 +832,21 @@ describe('Home is one screen — Act 1 fills what is left, and there is no Act 2
      * The two anchors below are the motion that a reader ACTUALLY receives on this route, verified
      * against the served document rather than against the sheet alone:
      *
-     *   the toggle glyph's opacity fade — the toggle is the only control in the top row
-     *   the peek tile's hover scale     — the six photographs are the page's whole middle
+     *   the peek tile's hover scale — the six photographs are the page's whole middle
      *
-     * `transition-duration` and `transform: scale` above are kept and are both live: the first is
-     * the glyph fade AND the tile transition, the second is the tile hover.
+     * 🔴 THE THIRD RE-POINTING, AND IT IS THE SAME LESSON AGAIN. The anchor above used to be "the
+     * toggle glyph's opacity fade". The toggle stopped fading its glyph: it moved out of `home.css`
+     * to the shell so all ten routes share one control, and the treatment became COLOUR rather than
+     * opacity — `--ink-3` at rest, `--ink` on hover — because `.ds-atom-iconbtn:hover` paints a
+     * background this file's rules cannot beat, so an opacity fade left a 40px circle appearing
+     * under a half-faded glyph. The transition moved with it, into `public-shell.css`.
+     *
+     * So the toggle's motion is no longer HOME's to assert, and this block asserts only what
+     * `home.css` still owns. The toggle's own no-preference query is covered where its rules now
+     * live. The anti-vacuity check on the served document below keeps both elements in scope.
      */
     expect(inside).toMatch(/transition-duration/);
     expect(inside).toMatch(/transform:\s*scale/);
-    expect(
-      inside,
-      'the motion query holds no motion a reader can reach — the toggle glyph fade is gone'
-    ).toMatch(/\.pub-toggle \.ds-atom-iconbtn-glyph\s*\{[^}]*transition-property:\s*opacity/);
     expect(inside, 'the photographs stopped responding to hover').toMatch(
       /\.hm-tile:hover img\s*\{[^}]*transform:\s*scale/
     );
@@ -1127,35 +1149,42 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
    * manifest holds 40, and a hardcoded photograph count turned `main` red in Phase 4 the moment a
    * real photograph landed. Read off the served bytes and compared with the file.
    */
-  it('the ALL n → badge is a real link and n is derived from the manifest', () => {
+  /*
+   * 🔴 INVERTED. THE `ALL n →` BADGE IS GONE, AND ITS ABSENCE IS WHAT IS ASSERTED NOW.
+   *
+   * Akhil: *"from hero page, remove All 40 -> pill"*. It was a derived count on a real link, which
+   * is why it was worth a test in the first place — and it is why the test is inverted rather than
+   * deleted: a badge re-added by hand, with a hardcoded 40, would pass an absent test and fail this
+   * one. The peek grid's tiles are each still a link to the photograph, so nothing lost a route.
+   */
+  it('ships no ALL n → badge, and no hardcoded count in its place', () => {
     const manifest = JSON.parse(
       readFileSync(new URL('../../data/portfolio_images.json', import.meta.url), 'utf8')
     ) as unknown[];
-    expect(manifest.length, 'the manifest is empty, so the count below is vacuous').toBeGreaterThan(
+    expect(manifest.length, 'the manifest is empty, so the claim below is vacuous').toBeGreaterThan(
       0
     );
-    const badge = /<a class="hm-peek-all" href="\/photography">([\s\S]*?)<\/a>/.exec(html);
-    expect(badge, 'no .hm-peek-all anchor — the badge is decoration or gone').not.toBeNull();
-    expect((badge as RegExpExecArray)[1]).toBe(`ALL ${manifest.length} →`);
+    expect(html, 'the ALL n → badge is back').not.toContain('hm-peek-all');
+    expect(html, 'a hardcoded photograph count reached Home').not.toContain(
+      `ALL ${manifest.length}`
+    );
 
     /*
-     * 🔴 EXACTLY ONE, AND IT COUNTS THE ANCHOR RATHER THAN THE CLASS NAME. A PLANT CAUGHT THIS.
+     * 🔴 IT COUNTS THE ANCHOR, NOT THE CLASS NAME, AND THAT STILL MATTERS IN THE NEGATIVE.
      *
-     * Written first as `html.match(/hm-peek-all/g).length === 1`, this line went red under an
-     * unrelated plant (`transition: transform 0.4s ease` in place of the tokenised longhands) and
-     * the reason is worth keeping: **Astro's `build.inlineStylesheets` default is `auto`, which
-     * inlines a stylesheet under 4,096 bytes**, and MEASURED, the built Home chunk is
+     * The positive version of this test was written first as `html.match(/hm-peek-all/g).length
+     * === 1` and went red under an unrelated plant. The reason is worth keeping because it applies
+     * to the ABSENCE too: **Astro's `build.inlineStylesheets` default is `auto`, which inlines a
+     * stylesheet under 4,096 bytes**, and MEASURED, the built Home chunk was
      * `dist/client/_astro/index.*.css` at **4,131 bytes — thirty-five over the threshold**. Any
-     * edit that shortens the built CSS by 35 bytes moves the whole sheet into a `<style>` block in
-     * the document, at which point every `.hm-peek-all` RULE is also in `html` and a class-name
-     * count reads 2.
+     * edit that shortens the built CSS by 35 bytes moves the whole sheet into a `<style>` block, at
+     * which point a leftover `.hm-peek-all` RULE is in `html` and a class-name check fails on a
+     * document that renders no badge.
      *
-     * That is a false alarm on correct code, in a file that would then have to be edited under
-     * time pressure — the worst kind. Counting `<a class="hm-peek-all"` cannot be satisfied by a
-     * stylesheet in either delivery. The 35-byte margin itself is recorded in `deferred-items.md`:
-     * it is not this test's to fix, and it affects any artefact-side grep on this route.
+     * So the anchor form is asserted as well: zero `<a class="hm-peek-all"`, which no stylesheet in
+     * either delivery can satisfy or violate. The 35-byte margin is recorded in `deferred-items.md`.
      */
-    expect((html.match(/<a class="hm-peek-all"/g) ?? []).length).toBe(1);
+    expect((html.match(/<a class="hm-peek-all"/g) ?? []).length).toBe(0);
   });
 
   /**
@@ -1413,11 +1442,19 @@ describe('Home ships no app bar (05-17)', () => {
     // ANTI-VACUITY: the absence above is Home-only, and these are the links it is absent OF.
     expect(barLinks.length, 'the bar arrangement ships no nav links either').toBe(NAV_ITEMS.length);
     for (const markup of barLinks) {
-      expect(
-        /data-variant="([^"]*)"/.exec(markup)?.[1],
-        `bar nav link shipped ${markup} — 'quiet' here would mean the plain branch was wired to ` +
-          'the AppBar, which is the arrangement Akhil rejected on sight'
-      ).toBe('default');
+      /*
+       * `quiet`, NOT `default`, AND THE PIN WAS STALE RATHER THAN VIOLATED.
+       *
+       * The old message read: "'quiet' here would mean the plain branch was wired to the AppBar,
+       * which is the arrangement Akhil rejected on sight." That inference no longer holds — the
+       * plain branch is still Home's and still separate. `PublicNav` chose `quiet` for the BAR's
+       * nav deliberately, so the wordmark can be full ink in the serif while its neighbours sit
+       * back in `--ink-3`: a hierarchy the single `default` variant could not express at all.
+       * The Home-only absence asserted above is what actually distinguishes the two arrangements.
+       */
+      expect(/data-variant="([^"]*)"/.exec(markup)?.[1], `bar nav link shipped ${markup}`).toBe(
+        'quiet'
+      );
       // D-4: `inline`, `footer` and `action` inline a literal colour no app rule can beat at any
       // specificity, while every jsdom test still passes. Pinned so it cannot be "improved" back.
       expect(markup, 'a literal colour reached the nav through a Link variant').not.toMatch(
@@ -1527,7 +1564,24 @@ describe('Home ships no app bar (05-17)', () => {
   });
 
   it('the toggle is a re-pointed IconButton reduced to its glyph', () => {
-    const rule = /\.pub-nav-plain \.pub-toggle\s*\{([^}]*)\}/.exec(cssCode);
+    /*
+     * 🔴 READ FROM `public-shell.css`, NOT `home.css`, AND SCOPED `.pub-shell` NOT `.pub-nav-plain`.
+     *
+     * These rules were Home's alone — `home.css` is imported by `src/pages/index.astro` and nothing
+     * else — so every other route rendered the design system's default: a bordered circle at `md`
+     * rather than `lg`. Akhil: *"I need to ensure that the placement and look/feel of dark/light
+     * mode toggle remains same on the hero page and all pages therein, like photography,
+     * development, etc."* Moving them to the shell made one control for all ten routes, and the
+     * selector had to widen from the plain arrangement's class to the one every route has.
+     *
+     * The assertions themselves are unchanged, which is the point of following the rules rather
+     * than deleting the test: the claim was never Home-specific.
+     */
+    const shellCode = readFileSync(
+      new URL('../../src/styles/public-shell.css', import.meta.url),
+      'utf8'
+    ).replace(/\/\*[\s\S]*?\*\//g, '');
+    const rule = /\.pub-shell \.pub-toggle\s*\{([^}]*)\}/.exec(shellCode);
     expect(rule, 'no .pub-toggle rule').not.toBeNull();
     const body = (rule as RegExpExecArray)[1] as string;
     expect(body).toMatch(/border-radius:\s*var\(--radius-full\)/);
@@ -1535,12 +1589,26 @@ describe('Home ships no app bar (05-17)', () => {
       /border-color:\s*transparent/
     );
     expect(body, 'the fill came back').toMatch(/background-color:\s*transparent/);
-    expect(cssCode, 'the glyph lost its resting opacity').toMatch(
-      /\.pub-toggle \.ds-atom-iconbtn-glyph\s*\{[^}]*opacity:\s*0\.7/
+    /*
+     * COLOUR, NOT OPACITY, and the swap is a fix rather than a preference. The glyph used to sit at
+     * `opacity: 0.7`; MEASURED, `.ds-atom-iconbtn:hover` paints `rgba(255, 255, 255, 0.08)` at a
+     * specificity this file's `background-color: transparent` does not reach, so a 40px circle
+     * appears under the glyph on hover — and a half-faded glyph inside a visible circle reads as a
+     * disabled button. `--ink-3` → `--ink` gives the same recession with nothing to fade.
+     */
+    expect(shellCode, 'the toggle glyph lost its resting recession').toMatch(
+      /\.pub-shell \.pub-toggle\s*\{[^}]*color:\s*var\(--ink-3\)/
     );
-    expect(cssCode, 'the glyph never returns to full strength on hover').toMatch(
-      /\.pub-toggle:hover \.ds-atom-iconbtn-glyph\s*\{[^}]*opacity:\s*1/
+    expect(shellCode, 'the toggle stopped answering hover').toMatch(
+      /\.pub-shell \.pub-toggle:hover\s*\{[^}]*color:\s*var\(--ink\)/
     );
+    // And its motion is inside a no-preference query, where `home.css` no longer owns it.
+    expect(shellCode, "the toggle's colour transition is unguarded").toMatch(
+      /@media \(prefers-reduced-motion: no-preference\)[\s\S]{0,400}\.pub-shell \.pub-toggle\s*\{[^}]*transition-property:\s*color/
+    );
+    // The hover half of the same swap: colour, asserted just above, and there is no opacity to
+    // return to full strength.
+
     expect(cssCode, 'the coarse-pointer touch floor is gone').toMatch(
       /@media \(pointer: coarse\)[\s\S]{0,240}min-height:\s*44px/
     );

@@ -1193,6 +1193,44 @@
 }
 
 /*
+ * ================================================================================================
+ * A PENDING MARK IS NOT A TARGET — AND THE DIFFERENCE HAS TO BE BEHAVIOUR, NOT COLOUR
+ * ================================================================================================
+ *
+ * It borrows `.wk-mark-link`'s geometry so it sits on the chips' line with the live marks, but it is
+ * a `<span>`: there is nothing to open. So the two things that PROMISE a target are removed — the
+ * pointer cursor, and the hover brightening every real mark answers with.
+ *
+ * 🔴 THE COLOUR WAS GOING TO BE `--ink-5` AND THAT WAS A CONTRAST FAILURE. Reading quieter than its
+ * neighbours would have said "not yet" without a word, and it does not survive measurement: on the
+ * card's fill at rgb(23, 23, 26),
+ *
+ *     --ink-5   #68686e   3.23:1   below the 4.5:1 floor
+ *     --ink-4   #a8a8ae   7.56:1   what the live marks use
+ *
+ * and the label is `--text-2xs` (9.5px), so 4.5:1 is the applicable floor. An earlier version of
+ * this comment claimed 1.4.3's disabled-control exemption covered it. IT DOES NOT: a disabled
+ * control is inert UI, and "Coming Soon" is informative TEXT that a reader has to read to learn the
+ * state. Dimming the one word carrying the meaning is the wrong place to spend contrast.
+ *
+ * So the colour stays and the AFFORDANCE is what differs, which is the more honest signal anyway: a
+ * reader learns it is not a link by it not behaving like one, and by it saying so.
+ *
+ * (0,2,0) — `.wk-marks` prepended — because `.wk-mark-link` sets `color` and `cursor` at (0,1,0) and
+ * is declared LATER in this file. At equal specificity source order gave it the win, and the first
+ * landing measured `rgb(168, 168, 174)` where it had asked for `#68686e`. Seventh time this project
+ * has paid for that tie.
+ */
+.wk-marks .wk-mark-pending {
+  cursor: default;
+}
+
+.wk-marks .wk-mark-pending:hover {
+  /* No brightening: hover feedback on a thing that cannot be activated is a false promise. */
+  color: var(--ink-4);
+}
+
+/*
  * 26px, WHICH IS BELOW THE 44px TOUCH FLOOR AND SO GETS ITS OWN TREATMENT ON A COARSE POINTER.
  * WCAG 2.5.8's AA minimum is 24x24, which 26 clears — but two 26px targets 4px apart on a phone is
  * a thumb hitting the wrong one, so the coarse-pointer block below spaces and grows them.

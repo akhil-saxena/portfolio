@@ -69,12 +69,13 @@
       "Kotlin"
     ],
     "icon": "/assets/momentum-icon.png",
-    "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
+    "href": "https://github.com/akhil-saxena/momentum-android",
     "badges": [
       {
         "label": "Play Store",
         "href": "https://play.google.com/store/apps/details?id=com.momentum.goals",
-        "icon": "play-store"
+        "icon": "play-store",
+        "pending": true
       },
       {
         "label": "GitHub",

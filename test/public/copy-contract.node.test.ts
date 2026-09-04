@@ -408,7 +408,16 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
           leaves.filter((leaf) => leaf === 'Photography →' || leaf === 'Development →'),
           'the leaf-text extractor found neither door — it is the same expression the absence ' +
             'check below reads, so every retired row would pass on nothing'
-        ).toEqual(['Photography →', 'Development →']);
+          /*
+           * ORDER MATTERS HERE ONLY BECAUSE THIS IS AN EQUALITY, and the order changed on
+           * 2026-09-04: Akhil *"hero page to have primary and secondary cta. primary being
+           * development"*, so `Development →` leads in the DOM as well as in weight — tab order
+           * follows the DOM, and a primary door reached second is only primary to the eye.
+           * `home.node.test.ts` owns that claim; this row only needs the extractor to have found
+           * both doors, so it is compared as a SET to stop a future reorder reddening an
+           * anti-vacuity anchor that does not care.
+           */
+        ).toEqual(expect.arrayContaining(['Photography →', 'Development →']));
       }
       expect(
         leaves.filter((leaf) => leaf === pin.copy),

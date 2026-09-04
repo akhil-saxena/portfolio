@@ -396,7 +396,13 @@
 
 @media (min-width: 673px) {
   .hm-a {
-    --hm-name: var(--text-3xl);
+    /*
+     * `--text-4xl` (44), UP FROM `--text-3xl` (40), so the hero title and `Photographs` are the same
+     * rung as well as the same weight. Akhil: *"use same font as Photographs title on hero."* The
+     * narrow rung below is untouched: at 390 the content box is 342px and 44px would put "Akhil
+     * Saxena" over the viewport, which is the reason the step exists at all.
+     */
+    --hm-name: var(--text-4xl);
   }
 }
 

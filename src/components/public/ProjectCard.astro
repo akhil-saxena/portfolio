@@ -101,6 +101,8 @@ import { Chip } from '@akhil-saxena/design-system/components/Chip';
 import { Link } from '@akhil-saxena/design-system/components/Link';
 import type { Project } from '../../schemas';
 import SocialIcons from './SocialIcons.astro';
+/* The same separator `IdentityRail` uses for year ranges — one decision, not two that look alike. */
+import { EN_DASH } from '../../lib/period';
 
 interface Props {
   project: Project;
@@ -143,6 +145,16 @@ const { project, description } = Astro.props;
  * `aria-label`, because two copies of an announcement drift and a drifted one is worse than none.
  */
 const NEW_TAB = '(opens in a new tab)';
+
+/**
+ * The word a pending destination shows in place of its name.
+ *
+ * ONE CONSTANT, TWO PLACES — the visible label and the `title` — because they are the same claim and
+ * two literals would drift. Not in `projects.json`: it is not a property of any project, it is what
+ * this card says about a badge whose `pending` flag is set, and putting it in the data would invite
+ * five spellings of it.
+ */
+const PENDING_LABEL = 'Coming Soon';
 
 /**
  * The project's own artwork, and the two fields are NOT interchangeable.
@@ -381,22 +393,65 @@ const mark = project.mark ?? null;
        * site of its own. The label comes from the badge's own `label`, so the text is data.
        */
     }
+    {
+      /*
+       * ============================================================================================
+       * A PENDING DESTINATION IS TEXT, NOT A LINK
+       * ============================================================================================
+       *
+       * Akhil: *"for momentum, on play store icon, add a tooltip on hover saying Coming Soon."*
+       *
+       * MEASURED, which is why this is a `<span>` and not a tooltip on an anchor: `momentum`'s Play
+       * Store URL returns 404 while `hued`'s returns 200. The mark was a link to a Google error
+       * page. A `title` tooltip would have told sighted mouse users and left keyboard, screen-reader
+       * and touch readers clicking through to the 404 — it describes the problem rather than fixing
+       * it.
+       *
+       * SO A PENDING BADGE RENDERS THE SAME GLYPH-PLUS-LABEL SHAPE AS `cairn.co.in`, in a `<span>`:
+       * nothing to click, nothing in the tab order, no outbound anchor to rel-pair or announce. The
+       * state is READ by everyone instead of hovered by some. `title` is still set, so the hover
+       * Akhil asked for is there too — as a supplement to the visible text rather than the only
+       * carrier of it.
+       *
+       * `aria-label` IS DELIBERATELY ABSENT on the span. On the anchors it replaces a nameless glyph;
+       * here the visible text IS the name, and an `aria-label` would override it with a second
+       * wording of the same thing.
+       *
+       * THE LABEL SAYS "Coming Soon" AND THE DATA SAYS "Play Store". Both are true and they answer
+       * different questions — the record names the destination, the card names its state — so the
+       * `title` carries the pair: "Play Store — Coming Soon".
+       */
+    }
     <ul class="wk-marks">
-      {project.badges.map((badge) => (
-        <li>
-          <a
-            class:list={['wk-mark-link', { 'wk-mark-named': badge.icon === 'globe' }]}
-            href={badge.href}
-            aria-label={`${badge.label} ${NEW_TAB}`}
-            title={badge.label}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <SocialIcons icon={badge.icon} size={16} />
-            {badge.icon === 'globe' && <span class="wk-mark-label">{badge.label}</span>}
-          </a>
-        </li>
-      ))}
+      {
+        project.badges.map((badge) =>
+          badge.pending === true ? (
+            <li>
+              <span
+                class="wk-mark-link wk-mark-named wk-mark-pending"
+                title={`${badge.label} ${EN_DASH} ${PENDING_LABEL}`}
+              >
+                <SocialIcons icon={badge.icon} size={16} />
+                <span class="wk-mark-label">{PENDING_LABEL}</span>
+              </span>
+            </li>
+          ) : (
+            <li>
+              <a
+                class:list={['wk-mark-link', { 'wk-mark-named': badge.icon === 'globe' }]}
+                href={badge.href}
+                aria-label={`${badge.label} ${NEW_TAB}`}
+                title={badge.label}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <SocialIcons icon={badge.icon} size={16} />
+                {badge.icon === 'globe' && <span class="wk-mark-label">{badge.label}</span>}
+              </a>
+            </li>
+          )
+        )
+      }
     </ul>
   </div>
 

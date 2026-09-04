@@ -25,7 +25,7 @@
  *
  *     top      the theme toggle only, right-aligned, in a <div> (NOT a <nav>, NOT an AppBar)
  *     centre   Akhil Saxena · Interfaces & Imagery · six photographs · two doors
- *     doors    `Photography →` (primary) and `Development →` (secondary), real `Button as="a"`
+ *     doors    `Development →` (primary) and `Photography →` (secondary), real `Button as="a"`
  *     bottom   an app-composed footer: © left, three brand marks right, gutter-aligned
  *
  * WHAT WENT, and every one of these had an assertion here that now requires its ABSENCE:
@@ -260,24 +260,61 @@ describe('Home ships no scroll cue — the doors replaced it (2026-09-02)', () =
       'Act 1 ships no doors. Everything else in this block asserts an ABSENCE, and without a ' +
         'positive fact about the same document every one of them passes on a blank page.'
     ).toBe(2);
-    expect(doors.map((m) => m[1] as string)).toEqual(['Photography →', 'Development →']);
     /*
-     * `ghost` ON BOTH, AND THE EQUALITY IS THE POINT. This pinned `primary|secondary`, which is a
-     * HIERARCHY — one filled door and one outlined one. Akhil: *"make both buttosn same weight.
-     * outline only ones. not filled. both are euqal weight"*.
+     * ==============================================================================================
+     * DEVELOPMENT FIRST, AND THE TWO DOORS CARRY DIFFERENT WEIGHTS ON PURPOSE
+     * ==============================================================================================
      *
-     * `ghost` is also the only variant that CAN be outline-only from here: `Button` composes
+     * Akhil: *"hero page to have primary and secondary cta. primary being development."*
+     *
+     * THIS ASSERTION HAS NOW SWUNG BOTH WAYS, and both swings are recorded because the reasons are
+     * different rather than contradictory:
+     *
+     *   it pinned `primary|secondary` first — a hierarchy, one filled door and one outlined
+     *   then `ghost` on both, EQUAL, after *"make both buttosn same weight. outline only ones. not
+     *     filled. both are euqal weight"*
+     *   now `primary` then `secondary` again, ranked, with development leading
+     *
+     * "Not filled" was the MECHANISM of "equal weight", not a separate preference: `ghost` is the
+     * only variant that can be unfilled at all, because `Button` composes
      * `{...base, ...size, ...variantStyles[variant], ...style}` into the `style` ATTRIBUTE, so
      * `primary`'s and `secondary`'s fills are inline and unreachable from `src/styles` at any
-     * specificity. Choosing the unfilled variant is the fix; overriding a filled one is not
-     * available. (D-4.)
+     * specificity (D-4). With a hierarchy wanted again, the filled variants are the tool that
+     * expresses one and the constraint that ruled them out is gone.
      *
-     * Still `Button as="a"`, not a hand-rolled anchor: the shape is the design system's (Core Value).
+     * 🔴 ORDER IS ASSERTED, AND IT IS THE ACCESSIBILITY HALF OF "PRIMARY". Tab order follows the
+     * DOM, so a primary door that a keyboard reader reaches second is only primary to the eye. The
+     * markup is swapped rather than reordered with CSS `order`, which would have made the visual
+     * and focus sequences disagree — and this assertion is what stops a later "just flip them
+     * visually" from passing.
      */
-    for (const [markup] of doors) expect(markup).toMatch(/data-variant="ghost"/);
-    // EQUAL, not merely both-present: two different variants would satisfy a per-door check.
+    expect(doors.map((m) => m[1] as string)).toEqual(['Development →', 'Photography →']);
+
     const variants = doors.map((m) => /data-variant="([^"]*)"/.exec(m[0] as string)?.[1]);
-    expect(new Set(variants).size, 'the two doors carry different weights').toBe(1);
+    expect(variants, 'the doors are not ranked primary-then-secondary').toEqual([
+      'primary',
+      'secondary',
+    ]);
+    // DIFFERENT, not merely both-present: two `primary`s would satisfy a per-door check and would
+    // be the equal-weight arrangement this replaced.
+    expect(new Set(variants).size, 'the two doors carry the same weight').toBe(2);
+
+    /*
+     * NO ASSERTION ABOUT THE INLINE BORDER COLOUR, AND THE ATTEMPT IS WORTH RECORDING.
+     *
+     * The ghost pair had to pass `style={{ borderColor: 'var(--rule-strong)' }}`, because `ghost`
+     * sets `borderColor: "transparent"` inline and the edge could only be handed back through the
+     * `style` prop. Removing the doors' `style` prop was part of this change, so a
+     * `not.toMatch(/border-color:/)` looked like the way to pin it.
+     *
+     * IT IS NOT EXPRESSIBLE FROM THE SERVED BYTES. MEASURED — `primary` and `secondary` write their
+     * OWN `border-color` into the same `style` attribute, so the emitted markup carries one either
+     * way and nothing in it says whether a consumer added it. The check would have failed on correct
+     * behaviour, which is worse than no check: it teaches the next person to delete the assertion.
+     *
+     * The variant pinning above is what actually guards this — a door that went back to `ghost` to
+     * carry a hand-passed border fails on `data-variant`, which IS in the bytes.
+     */
   });
 
   it('emits no anchor pointing at #work, and no ↓ DEVELOPMENT copy', () => {
@@ -1080,7 +1117,36 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
     expect(heading('hm-name'), 'the name stopped reading --hm-name').toContain(
       'font-size:var(--hm-name)'
     );
-    expect(heading('hm-name'), 'the name lost its weight').toContain('font-weight:700');
+    /*
+     * ==============================================================================================
+     * THE WEIGHT MOVED OUT OF THE INLINE STYLE, WHICH IS THE POINT OF THE CHANGE
+     * ==============================================================================================
+     *
+     * This pinned `font-weight:700` in the inline style, which is what `Heading weight={700}` emits:
+     * a NUMBER goes straight into the `style` attribute, where no stylesheet can reach it.
+     *
+     * Akhil: *"use same font as Photographs title on hero."* The family already matched on both;
+     * the weight did not. So the prop is now the TOKEN STRING `weight="regular"`, which makes the
+     * component emit `data-weight="regular"` and stop writing `font-weight` inline at all — and that
+     * is what lets `public-shell.css` correct it.
+     *
+     * 🔴 IT NEEDS CORRECTING BECAUSE `regular` RENDERS 500 AND LIBRE BASKERVILLE DOES NOT SHIP 500.
+     * `primitives.css` sets `.ds-atom-heading[data-weight="regular"] { font-weight: 500 }` while
+     * `--weight-regular` is 400 — two names for one word, disagreeing — and `design-system.css`
+     * imports only `latin-400`, `latin-400-italic` and `latin-700`. Filed as D-37. Until it lands,
+     * a (0,3,0) rule in the shell points the attribute back at its own token.
+     *
+     * SO BOTH HALVES ARE ASSERTED: the attribute is in the markup (the reader), and the ABSENCE of
+     * an inline `font-weight` is what proves the stylesheet can still reach it. Pinning only the
+     * attribute would pass on a heading that also inlined a number and ignored the correction.
+     */
+    expect(heading('hm-name'), 'the name stopped carrying data-weight').toMatch(
+      /data-weight="regular"/
+    );
+    expect(
+      heading('hm-name'),
+      'the name inlines a font-weight again, which no stylesheet can correct'
+    ).not.toMatch(/font-weight:/);
     const nameRungs = [...cssCode.matchAll(/--hm-name:\s*var\((--text-[a-z0-9]+)\)/g)].map(
       (m) => m[1] as string
     );
@@ -1089,7 +1155,7 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
       'the name jumped a rung. Akhil chose these on 2026-08-30 after comparing nine pairings: ' +
         '--text-2xl below the 673px rung, --text-3xl above it. 3xl/4xl was the first pass and ' +
         '5xl is the prototype 60px, which he rejected.'
-    ).toEqual(['--text-2xl', '--text-3xl']);
+    ).toEqual(['--text-2xl', '--text-4xl']);
 
     process.stdout.write(
       `  type: name var(--hm-name) = ${nameRungs.join(' -> ')}/700 · subtitle 18 · tagline ${

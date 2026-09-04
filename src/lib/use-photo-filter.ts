@@ -8,7 +8,6 @@ import {
   FILTER_EVENT,
   type FilterCategory,
   GRID_CATEGORY_ATTRIBUTE,
-  headingFor,
   isVisibleIn,
   TILE_CATEGORY_ATTRIBUTE,
   TITLE_ID,
@@ -118,8 +117,28 @@ export function usePhotoFilter({
 
       const visible = tiles.filter((tile) => !tile.hidden).length;
 
-      const title = document.getElementById(TITLE_ID);
-      if (title !== null) title.textContent = headingFor(category, categories);
+      /*
+       * ============================================================================================
+       * THE HEADING IS NOT TOUCHED. Akhil: *"Photographs page should not have title changing on
+       * filters. keep it stuck at Photographs."*
+       * ============================================================================================
+       *
+       * This wrote `headingFor(category, categories)` into the `<h1>` on every filter change, so
+       * choosing Wildlife retitled the page "Wildlife". THE PAGE HAS NOT CHANGED — it is the same
+       * route, the same document, the same set with some of it hidden — and retitling it claims a
+       * navigation that did not happen. It also meant the `<h1>` and the browser's own title said
+       * different things, since only one of the two was being rewritten.
+       *
+       * WHAT SAYS WHICH CATEGORY YOU ARE IN, and it is two things rather than none: the active pill
+       * carries `aria-current="page"` (set below), and the count line right beside it re-derives to
+       * the visible number. The heading names the PAGE; the pill names the VIEW.
+       *
+       * `headingFor` IS DELETED, because this was its only caller — I wrote "still used by the
+       * category routes" here first and it was wrong: those routes set `{category.label}` directly.
+       * A pre-rendered category route keeping its own name IS correct and is a different case,
+       * `/photography/wildlife` being a different document reached by a real navigation — it just
+       * never went through that function.
+       */
 
       const count = document.getElementById(COUNT_ID);
       if (count !== null) count.textContent = countLineFor(category, visible, total);

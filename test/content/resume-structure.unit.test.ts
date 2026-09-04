@@ -292,7 +292,14 @@ const evidenceById = new Map(evidence.projects.map((project) => [project.id, pro
  *                               2nd one ids not very important"* — four lists lost their second and
  *                              third entries, cairn's changed members entirely
  *     badges        two        cairn's globe label became `cairn.co.in` so the mark names its
- *                              destination; design-system gained a `Storybook` badge
+ *                              destination; design-system gained a `Storybook` badge, and momentum's
+ *                              Play Store badge gained `pending: true`
+ *     href          one        momentum's, and this one was a DEFECT rather than a revision: it was
+ *                              the Play Store URL that MEASURES 404, and it was also `project.href`,
+ *                              so the card's stretched title link pointed at a Google error page. It
+ *                              now points at the repository. A byte-pin here would have made a wrong
+ *                              destination unfixable without editing this file — a pin is for
+ *                              catching a destination LOST, not for preventing one corrected
  *     id/title/label/icon/href   NONE — byte-identical on all five
  *
  * THE MOVE WAS STILL LOSSLESS. That is what this suite proves and it remains proven: the five keys
@@ -304,7 +311,7 @@ const evidenceById = new Map(evidence.projects.map((project) => [project.id, pro
  * the evidence that it still sits in its own position, and key ORDER is half of what this comparison
  * checks. A blanked value keeps the slot.
  */
-const REVISED_SINCE_MOVE = ['tech', 'badges'] as const;
+const REVISED_SINCE_MOVE = ['tech', 'badges', 'href'] as const;
 
 const maskDescription = (record: ProjectRecord): Record<string, unknown> => {
   const masked: Record<string, unknown> = { ...record, description: '<<OD-6 FIELD>>' };

@@ -1400,3 +1400,48 @@ body {
    */
   color: var(--ink-3);
 }
+
+/*
+ * ================================================================================================
+ * 🔴 `Heading weight="regular"` RENDERS 500, AND LIBRE BASKERVILLE DOES NOT SHIP 500
+ * ================================================================================================
+ *
+ * Akhil: *"check if title on photograph page, is smae fornt for hero page title."* MEASURED across
+ * the three titled routes — the FAMILY already matched everywhere. The weight did not, and the
+ * reason is a defect rather than a choice:
+ *
+ *     primitives.css   .ds-atom-heading[data-weight="regular"]  ->  font-weight: 500
+ *     tokens.css       --weight-regular                         ->  400
+ *
+ * TWO NAMES FOR ONE WORD, DISAGREEING. The whole prop ramp is shifted, and hard-coded rather than
+ * pointed at the tokens it is named after:
+ *
+ *     prop `regular`  ->  500     --weight-regular   400     off by a rung
+ *     prop `medium`   ->  600     --weight-medium    500     off by a rung
+ *     prop `bold`     ->  700     --weight-bold      700     agrees
+ *     prop `black`    ->  900     --weight-black     900     agrees
+ *
+ * FILED UPSTREAM AS D-37, and it is not a naming quibble because of what it lands on:
+ * `design-system.css` imports exactly `latin-400`, `latin-400-italic` and `latin-700` of Libre
+ * Baskerville. 500 IS NOT LOADED, so the browser SYNTHESISES it — a 400 outline mechanically
+ * emboldened, which on a 44px text serif shows as thickened joins and filled counters. Both
+ * headings that pass the prop were rendering a weight that does not exist.
+ *
+ * ── WHY IT IS HERE AND NOT ON THE TWO ROUTES ──────────────────────────────────────────────────
+ *
+ * It was written first as `.ph-head .ph-title[data-weight="regular"]`, which fixed `/photography`
+ * and did nothing for Home — Home has no `.ph-head` ancestor, and adding a photography hook to the
+ * hero to reach the rule would have been a class that means "please apply an unrelated page's
+ * correction". `.pub-shell` wraps every public route, so one rule covers every present and future
+ * caller, and a route that starts passing the prop tomorrow is already correct.
+ *
+ * (0,3,0) — one class, one class, one attribute — against the component's (0,2,0). The attribute is
+ * written INTO the selector rather than trusted to source order; that tie has cost this project six
+ * fixes that looked landed and were not.
+ *
+ * IT POINTS AT THE TOKEN, NOT AT `400`. The day D-37 lands upstream this rule becomes a no-op
+ * rather than becoming a second wrong opinion.
+ */
+.pub-shell .ds-atom-heading[data-weight="regular"] {
+  font-weight: var(--weight-regular);
+}

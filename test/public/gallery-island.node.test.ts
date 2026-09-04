@@ -53,6 +53,12 @@ import { describe, expect, inject, it } from 'vitest';
 
 import manifest from '../../data/portfolio_images.json';
 import siteConfig from '../../data/site_config.json';
+/*
+ * The two element ids the island reaches through, imported rather than typed as strings: the
+ * heading assertion below is that `TITLE_ID` appears in the SERVED HTML and never in the island
+ * BUNDLE, and a re-typed literal would keep passing after a rename while the real hook moved.
+ */
+import { COUNT_ID, TITLE_ID } from '../../src/lib/photo-filter';
 import { photoHref } from '../../src/lib/photo-srcset';
 
 const previewBaseUrl = inject('previewBaseUrl');
@@ -394,5 +400,85 @@ describe('the island is handed the whole manifest, and the route it is standing 
       `categories handed to the island: ${props.categories.map((c) => c.id).join(', ')} ` +
         `(defaultColumns ${props.defaultColumns})`
     );
+  });
+});
+
+/* ============================================================================================
+ * The heading is the PAGE's name, not the view's
+ * ========================================================================================== */
+
+describe('the heading does not move with the filter (Akhil, 2026-09-04)', () => {
+  /** Tags out, entities decoded, whitespace collapsed — the words a reader sees. */
+  const words = (fragment: string) =>
+    decode(fragment.replace(/<[^>]+>/g, ''))
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  /*
+   * Akhil: *"Photographs page should not have title changing on filters. keep it stuck at
+   * Photographs."*
+   *
+   * The island used to write `headingFor(category, categories)` into the `<h1>` on every pill
+   * click, so choosing Wildlife retitled the page "Wildlife". The page had not changed — same
+   * route, same document, same set with some of it hidden — and it left the `<h1>` disagreeing
+   * with `document.title`, which was never rewritten.
+   *
+   * 🔴 WHY THIS IS ASSERTED ON THE ISLAND'S SOURCE AND NOT BY CLICKING. The behaviour was verified
+   * in a real browser (heading held at "Photographs" across All → Wildlife → Portraits → All while
+   * the count went 40 → 7 → 2 → 40), but this suite runs over SERVED BYTES with no DOM. What it can
+   * check, and what actually prevents the regression, is that the shipped island contains no write
+   * to the heading element at all — the id it would have to reach through is `TITLE_ID`, and it is
+   * the id the markup gives the `<h1>`.
+   *
+   * The two halves together are the claim: the SERVER renders the fixed heading, and the CLIENT
+   * bundle carries nothing that could change it.
+   */
+  it('serves the fixed heading on /photography, and the category routes keep their own name', async () => {
+    const all = await body('/photography', '/photography/');
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(all)?.[1] ?? '';
+    expect(words(h1), '/photography does not serve "Photographs" as its heading').toBe(
+      'Photographs'
+    );
+    expect(all, `the heading has lost its ${TITLE_ID} hook`).toContain(`id="${TITLE_ID}"`);
+
+    /*
+     * A category ROUTE is a different document reached by a real navigation, so its own name is
+     * correct there — asserted so "the heading never changes" is not over-read into flattening the
+     * pre-rendered routes too.
+     */
+    const category = siteConfig.categories[0] as { id: string; label: string };
+    const one = await body(`/photography/${category.id}`, `/photography/${category.id}/`);
+    const catH1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(one)?.[1] ?? '';
+    expect(words(catH1), `/photography/${category.id} does not name itself`).toBe(category.label);
+
+    report(
+      `heading: /photography serves "Photographs", /photography/${category.id} serves ` +
+        `"${category.label}" — the page names itself, the view does not rename it`
+    );
+  });
+
+  it('ships no client code that writes to the heading', async () => {
+    const html = await body('/photography', '/photography/');
+    const { componentUrl } = island(html);
+    const bundle = await (await fetch(`${previewBaseUrl}${componentUrl}`)).text();
+
+    /*
+     * ANTI-VACUITY FIRST. If the bundle were empty or the wrong file, every "does not contain"
+     * below would pass. It must contain the ids it DOES legitimately write — the grid and the count.
+     */
+    expect(
+      bundle.length,
+      'the island bundle is empty — the assertions below would read nothing'
+    ).toBeGreaterThan(0);
+    expect(bundle, 'the bundle does not carry the count id, so this is the wrong file').toContain(
+      COUNT_ID
+    );
+
+    expect(bundle, `the island still reaches for ${TITLE_ID}`).not.toContain(TITLE_ID);
+    expect(bundle, 'the island still carries the retired heading helper').not.toContain(
+      'headingFor'
+    );
+
+    report(`island bundle: writes ${COUNT_ID}, never reaches ${TITLE_ID} — heading is server-only`);
   });
 });

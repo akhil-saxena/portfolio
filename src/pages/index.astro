@@ -250,12 +250,75 @@ const homeCtas = ctas.map((cta) => {
         values handed through are tokens; `--hm-name` is driven by `home.css` §2.
       */
     }
+    {
+      /*
+       * ==========================================================================================
+       * THE HERO TITLE MATCHES `Photographs`: SAME RUNG, SAME WEIGHT, SAME FAMILY
+       * ==========================================================================================
+       *
+       * Akhil: *"check if title on photograph page, is smae fornt for hero page title , if not. use
+       * same font as Photographs title on hero."*
+       *
+       * MEASURED, the family already matched — all three titled routes are Libre Baskerville. What
+       * differed was weight and size, and this heading was the outlier on both: 700 against 400, and
+       * 40px against 44px.
+       *
+       * `weight="regular"` AS A TOKEN STRING, NOT `700` AS A NUMBER. `Heading` writes a NUMBER into
+       * an inline `style`, where no stylesheet can reach it; given a token string it emits
+       * `data-weight` and lets CSS supply the value. That matters here because the component's
+       * `regular` renders 500 — a weight Libre Baskerville does not ship — and `public-shell.css`
+       * carries the (0,3,0) correction and the D-37 filing. Passing the string is what routes this
+       * heading through that correction instead of inlining a fifth opinion.
+       *
+       * `size={48}` STAYS A NUMBER, and that is deliberate: the inline `fontSize` it writes is
+       * immediately overridden by the `style` prop below, which spreads LAST and hands the size to
+       * `--hm-name` so a media query can step it. The number is inert; removing it would change
+       * which of the two the component believes it is rendering, and 48 is the design's own value.
+       */
+    }
     <Heading
       level={1}
       size={48}
-      weight={700}
+      weight="regular"
       className="hm-name"
-      style={{ fontSize: 'var(--hm-name)', lineHeight: 'var(--lh-tight)' }}
+      style={{
+        fontSize: 'var(--hm-name)',
+        lineHeight: 'var(--lh-tight)',
+        /*
+         * ==========================================================================================
+         * `--ls-tight`, ONE RUNG LOOSER THAN THE COMPONENT'S `--ls-tighter`
+         * ==========================================================================================
+         *
+         * Akhil: *"on hero page, due to letter spacing the text letters touch each other, increade
+         * their kerning/gap slightly so theyre not touching."*
+         *
+         * MEASURED. `Heading` inlines the whole size/leading/TRACKING bundle when `size` is a NUMBER,
+         * and its 4xl rung is `--ls-tighter` (-0.038em) — which at 44px is -1.672px per pair. On this
+         * particular string that is a collision rather than tight setting: `A`+`k` and `k`+`h` in
+         * "Akhil" have no side bearings to spare in Libre Baskerville, whose large x-height and short
+         * extenders already fill the em.
+         *
+         * Three rungs were rendered at 4x and compared:
+         *
+         *     --ls-tighter  -1.672px   Ak and kh touching
+         *     --ls-tight    -1.056px   clear, and still tracked-in for a display serif  <- this
+         *     --ls-base     -0.220px   comfortable, and looser than a 44px serif wants
+         *
+         * `--ls-tight` is the "slightly" the note asked for: +0.014em, +0.6px per pair.
+         *
+         * IT GOES IN `style` BECAUSE THE COMPONENT'S VALUE IS INLINE. A stylesheet cannot reach an
+         * inline declaration at any specificity short of `!important`, which `src/styles/` forbids —
+         * but `...style` is spread LAST in `Heading`, after the size bundle, so this wins by the
+         * ordinary rules. Same door the `fontSize` above already uses, and the same reason.
+         *
+         * THE OTHER TWO 44px TITLES STILL CARRY `--ls-tighter`, from two different places:
+         * `/photography` from `.ds-atom-heading[data-size="4xl"]` in primitives.css, `/development`
+         * from `.wk-title`. Neither shows a collision — "Photographs" and "Things I design and build"
+         * have no equivalent tight pair — so they are LEFT ALONE rather than changed for symmetry. If
+         * they should match, the fix is two lines and this is the note that says where.
+         */
+        letterSpacing: 'var(--ls-tight)',
+      }}
       data-home-marker={HOME_RENDER_MARKER}
     >
       {title}
@@ -312,46 +375,46 @@ const homeCtas = ctas.map((cta) => {
       <div class="hm-doors">
         {
           /*
-           * BOTH DOORS ARE OUTLINES, AND BOTH ARE `ghost`. Akhil: *"make both buttons same weight.
-           * outline only ones. not filled. both are equal weight."*
+           * ==========================================================================================
+           * A PRIMARY AND A SECONDARY DOOR, AND DEVELOPMENT IS FIRST
+           * ==========================================================================================
            *
-           * They were `primary` and `secondary`, which is a deliberate hierarchy — MEASURED, the
-           * first rendered a solid #f2f2f4 fill with dark text and the second a #17171a panel, so
-           * one door was plainly louder than the other. That was right when the page argued for
-           * photography first; it is not what is wanted now.
+           * Akhil: *"hero page to have primary and secondary cta. primary being development."*
            *
-           * `ghost` IS THE ONLY VARIANT THAT CAN BE UNFILLED. `Button` composes
-           * `{...baseStyle, ...sizeStyles, ...variantStyles[variant], ...style}` INLINE, so
-           * `primary`'s and `secondary`'s backgrounds cannot be undone from `src/styles/` at any
-           * specificity short of `!important`, which that tree forbids. `ghost` sets
-           * `background: transparent`.
+           * ── THIS REVERSES AN EARLIER INSTRUCTION, AND THE REASON IT REVERSES CLEANLY ──────────
            *
-           * THE `style` PROP IS THE DOOR THE COMPONENT LEAVES OPEN. `ghost` also sets
-           * `borderColor: "transparent"` inline, so app CSS cannot reveal the edge either — but
-           * `...style` is spread LAST, after the variant, so a border colour passed here wins by
-           * the ordinary rules rather than by force. `.ds-atom-btn` already carries
-           * `border: 1px solid var(--rule)`, so only the colour is needed.
+           * These were `primary` and `secondary` once. Akhil: *"make both buttons same weight.
+           * outline only ones. not filled. both are equal weight."* — so both became `ghost`, and
+           * `ghost` was not a style choice but the only variant that CAN be unfilled: `Button`
+           * composes `{...baseStyle, ...sizeStyles, ...variantStyles[variant], ...style}` INLINE, so
+           * `primary`'s and `secondary`'s backgrounds are unreachable from `src/styles/` at any
+           * specificity short of `!important`, which that tree forbids (D-4).
+           *
+           * "Not filled" was in service of "equal weight" — it was how the hierarchy was removed. A
+           * hierarchy is now wanted, so the variants that express one are the right tool again, and
+           * the design system names them exactly: `primary` and `secondary`.
+           *
+           * ── DEVELOPMENT COMES FIRST IN THE MARKUP, NOT JUST IN WEIGHT ────────────────────────
+           *
+           * A primary call to action that a keyboard reader reaches second is only primary to the
+           * eye. Tab order follows the DOM, so the two are swapped here rather than reordered with
+           * CSS — `order` would have made the visual and the focus sequence disagree, which is the
+           * bug the two-doors row exists to avoid.
+           *
+           * `home.node.test.ts` pins the pair and their order, and that assertion is updated with
+           * this change rather than around it: the order is now part of what "primary" means here.
+           *
+           * NO `style` PROP ON EITHER. The ghost pair needed one, because `ghost` also sets
+           * `borderColor: "transparent"` inline and the edge had to be handed back. `primary` and
+           * `secondary` bring their own fills, so there is nothing to restore and no inline value to
+           * carry — the variants are used as the design system ships them.
            */
         }
-        <Button
-          as="a"
-          href="/photography"
-          variant="ghost"
-          size="lg"
-          className="hm-door"
-          style={{ borderColor: 'var(--rule-strong)' }}
-        >
-          Photography →
-        </Button>
-        <Button
-          as="a"
-          href="/development"
-          variant="ghost"
-          size="lg"
-          className="hm-door"
-          style={{ borderColor: 'var(--rule-strong)' }}
-        >
+        <Button as="a" href="/development" variant="primary" size="lg" className="hm-door">
           Development →
+        </Button>
+        <Button as="a" href="/photography" variant="secondary" size="lg" className="hm-door">
+          Photography →
         </Button>
       </div>
 

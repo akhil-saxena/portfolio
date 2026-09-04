@@ -336,7 +336,14 @@
 }
 
 /*
- * NO `.ph-title` RULE, AND THE ABSENCE IS THE POINT.
+ * THE WEIGHT CORRECTION IS NOT HERE. `weight="regular"` renders 500 and Libre Baskerville ships
+ * only 400 and 700, so the heading was being synthesised — but that is true of every route that
+ * passes the prop, not this one. The fix and the D-37 filing live in `public-shell.css`, once,
+ * where `.pub-shell` wraps all of them.
+ */
+
+/*
+ * NO `.ph-title` SIZE RULE, AND THE ABSENCE IS THE POINT.
  *
  * Akhil: *"size of `Things I design and build.` is bigger than size of heading `Photographs`.
  * increase size of Photographs."* MEASURED across the three titled routes, it was the odd one out

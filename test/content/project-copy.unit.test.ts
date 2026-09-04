@@ -89,7 +89,8 @@ interface Project {
   oneLiner: string;
   description: string;
   tech: string[];
-  badges: Array<{ label: string; href: string; icon: string }>;
+  href: string;
+  badges: Array<{ label: string; href: string; icon: string; pending?: true }>;
   [key: string]: unknown;
 }
 
@@ -469,7 +470,20 @@ describe.each(projects.map((project) => [project.id, project] as const))(
       if (!before) return;
 
       // The keys the migration wrote, plus the two Akhil has since revised. Named, not inferred.
-      const EVOLVED_SINCE_MIGRATION = ['tech', 'badges'];
+      /*
+       * `href` JOINED THIS LIST ON 2026-09-04, AND IT WAS HIDING A DEFECT.
+       *
+       * MEASURED by fetching every destination: `momentum`'s Play Store URL returns 404 while
+       * `hued`'s returns 200. That URL was BOTH the badge's href and `project.href`, so the card's
+       * stretched title link — its largest click target — pointed at a Google error page. It now
+       * points at the repository, which exists.
+       *
+       * Pinning `href` byte-identical made a WRONG destination unfixable without editing this test,
+       * which is the wrong way round: a pin catches a destination being LOST, it does not exist to
+       * prevent one being corrected. It is replaced by the live assertion below — every badge href
+       * absolute, and the record's own href never one the same record marks pending.
+       */
+      const EVOLVED_SINCE_MIGRATION = ['tech', 'badges', 'href'];
       const pinned = Object.keys(before).filter(
         (key) => !MIGRATED_KEYS.includes(key) && !EVOLVED_SINCE_MIGRATION.includes(key)
       );
@@ -512,6 +526,24 @@ describe.each(projects.map((project) => [project.id, project] as const))(
         expect(badge.icon?.trim().length, `${id} has a badge with no icon`).toBeGreaterThan(0);
         expect(badge.href, `${id} has a badge with a relative href`).toMatch(/^https?:\/\//);
       }
+
+      /*
+       * 🔴 AND THE RECORD'S OWN DESTINATION IS NOT A BADGE IT MARKS PENDING.
+       *
+       * This is what replaces the `href` byte-pin, and it catches the real defect rather than any
+       * change at all. `momentum` stored the same Play Store URL as `project.href` AND as a badge
+       * href; that badge is now `pending` because the listing 404s — which left the card saying
+       * "Coming Soon" beside a title that linked straight to it.
+       *
+       * A record that promises a destination must not also send the reader there.
+       */
+      const pendingHrefs = record.badges
+        .filter((badge) => badge.pending === true)
+        .map((badge) => badge.href);
+      expect(
+        pendingHrefs,
+        `${id}.href is a destination the same record marks pending`
+      ).not.toContain(record.href);
     });
   }
 );

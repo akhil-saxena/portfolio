@@ -407,8 +407,17 @@ describe('/development — the project cards', () => {
          */
         (attr(a.attrs, 'class') ?? '').includes('wk-mark-link')
       );
-      expect(badgeLinks.length, `${project.id}'s badge row`).toBe(project.badges.length);
-      for (const badge of project.badges) {
+      /*
+       * A PENDING BADGE IS NOT COUNTED HERE, because it is not an anchor. `momentum`'s Play Store
+       * listing 404s, so that badge renders as a `<span class="wk-mark-pending">` — no href, no tab
+       * stop, nothing to rel-pair or announce. Counting it would demand a link to a page that does
+       * not exist; the pending badges have their own block at the end of this file.
+       */
+      const linkable = project.badges.filter(
+        (badge) => (badge as { pending?: true }).pending !== true
+      );
+      expect(badgeLinks.length, `${project.id}'s badge row`).toBe(linkable.length);
+      for (const badge of linkable) {
         expect(
           badgeLinks.some((a) => attr(a.attrs, 'href') === badge.href),
           `${project.id} is missing the badge href ${badge.href}`
@@ -453,7 +462,17 @@ describe('/development — the project cards', () => {
       );
     });
 
-    const expected = projects.length + projects.reduce((n, p) => n + p.badges.length, 0);
+    /*
+     * One anchor per card plus one per LINKABLE badge. A pending badge contributes none — see the
+     * per-card note above — so it is excluded here rather than the total being loosened.
+     */
+    const expected =
+      projects.length +
+      projects.reduce(
+        (n, p) =>
+          n + p.badges.filter((badge) => (badge as { pending?: true }).pending !== true).length,
+        0
+      );
     expect(
       external,
       'the grid does not carry one outbound anchor per card plus one per badge'
@@ -800,5 +819,84 @@ describe('/development — the cross-link, the metadata and the JavaScript budge
     say(
       `grid: steps at ${gridSteps.join('px, ')}px; every @media width in the served CSS is one of ${[...declared].join(', ')}`
     );
+  });
+});
+
+/* ============================================================================================
+ * A promised destination is text, not a link
+ * ========================================================================================== */
+
+describe('a pending badge renders as text and is reachable by nobody', () => {
+  /*
+   * Akhil: *"for momentum, on play store icon, add a tooltip on hover saying Coming Soon."*
+   *
+   * MEASURED by fetching both listings: momentum's Play Store URL returns 404 and hued's returns
+   * 200. So that mark was an anchor to a Google error page, and a `title` tooltip would have told
+   * sighted mouse users while leaving keyboard, screen-reader and touch readers to click through.
+   *
+   * WHAT IS ASSERTED IS THE PART THAT MATTERS TO A READER WHO CANNOT HOVER: the badge is not an
+   * anchor, it carries no href anywhere in the card, and it says its state in visible text.
+   */
+  const PENDING_LABEL = 'Coming Soon';
+
+  it('marks every pending badge as a span, and never as a link', async () => {
+    await loadPage();
+
+    const pending = projects.flatMap((project) =>
+      project.badges
+        .filter((badge) => (badge as { pending?: true }).pending === true)
+        .map((badge) => ({ project, badge }))
+    );
+
+    // ANTI-VACUITY. With no pending badge in the corpus every assertion below asserts nothing.
+    expect(
+      pending.length,
+      'no project stores a pending badge — this suite would pass on a page that had lost the feature'
+    ).toBeGreaterThan(0);
+
+    const cards = sliceCards(page);
+
+    for (const { project, badge } of pending) {
+      const index = projects.findIndex((p) => p.id === project.id);
+      const card = cards[index] as string;
+
+      expect(card, `${project.id} does not render the pending label`).toContain(PENDING_LABEL);
+      expect(card, `${project.id}'s pending badge is not marked as such`).toContain(
+        'wk-mark-pending'
+      );
+
+      /*
+       * 🔴 THE HREF MUST NOT APPEAR ANYWHERE IN THE CARD, not merely off the badge. `project.href`
+       * for momentum WAS the same 404 — so the card's own stretched TITLE link pointed at it too,
+       * and checking only the badge would have declared the card fixed while its largest click
+       * target still went to the error page.
+       */
+      expect(card, `${project.id} still links to its pending destination`).not.toContain(
+        badge.href
+      );
+    }
+
+    say(
+      `pending: ${pending.length} badge(s) rendered as text, ${PENDING_LABEL} visible, no card links to them`
+    );
+  });
+
+  it('leaves live badges as announced outbound links', async () => {
+    await loadPage();
+    const cards = sliceCards(page);
+
+    let live = 0;
+    projects.forEach((project, index) => {
+      const card = cards[index] as string;
+      for (const badge of project.badges) {
+        if ((badge as { pending?: true }).pending === true) continue;
+        live += 1;
+        expect(card, `${project.id} lost its live ${badge.label} link`).toContain(badge.href);
+      }
+    });
+
+    // The contrast is the claim: pending badges vanish from the hrefs, live ones do not.
+    expect(live, 'no live badge remains — the assertion above compared nothing').toBeGreaterThan(0);
+    say(`live: ${live} badge href(s) still present as links`);
   });
 });

@@ -67,13 +67,19 @@ export function categoryFromPathname(
   return categories.some((category) => category.id === segment) ? segment : ALL;
 }
 
-/** The `/photography` heading. The category views use the category's own label. */
-export const ALL_HEADING = 'Photographs';
-
-export function headingFor(category: string, categories: readonly FilterCategory[]): string {
-  if (category === ALL) return ALL_HEADING;
-  return categories.find((c) => c.id === category)?.label ?? ALL_HEADING;
-}
+/*
+ * `headingFor` IS DELETED, AND ITS ONLY CALLER WAS THE THING THAT WAS WRONG.
+ *
+ * It returned "Photographs" for the all view and the category's own label otherwise, and the filter
+ * island called it to rewrite the `<h1>` on every pill click. Akhil: *"Photographs page should not
+ * have title changing on filters. keep it stuck at Photographs."* With that call gone the function
+ * had no callers at all — the pre-rendered category routes set their own heading from
+ * `{category.label}` directly and never used it.
+ *
+ * `ALL_HEADING` GOES WITH IT rather than being kept as "the page's title": the title now lives in
+ * exactly one place per route, in the markup, which is where a heading that never changes belongs.
+ * A constant read by nothing is a second source of truth waiting for someone to trust it.
+ */
 
 /**
  * §13.3: every count is derived, no literal appears in any copy string.

@@ -83,6 +83,33 @@ export const BadgeSchema = z.strictObject({
   label: z.string().min(1),
   href: z.url(),
   icon: z.string().min(1),
+
+  /**
+   * A DESTINATION THAT IS PROMISED RATHER THAN LIVE.
+   *
+   * Akhil: *"for momentum, on play store icon, add a tooltip on hover saying Coming Soon."* The
+   * reason he asked is the fact worth recording — MEASURED by fetching both listings:
+   *
+   *     hued      play.google.com/.../app.hued           200
+   *     momentum  play.google.com/.../com.momentum.goals  404
+   *
+   * So that mark was an anchor to a Google error page. A hover tooltip would have explained it to
+   * sighted mouse users and left every keyboard, screen-reader and touch reader clicking through to
+   * the 404 — the tooltip describes the problem instead of fixing it.
+   *
+   * `ProjectCard` renders a pending badge as TEXT AND NOT A LINK: same glyph-plus-label shape as
+   * `cairn.co.in`, but a `<span>`, so there is nothing to click, nothing in the tab order and no
+   * outbound anchor to announce. The state is readable by everyone rather than hoverable by some.
+   *
+   * `href` STAYS REQUIRED AND STAYS A URL. The address is already known; it just does not answer
+   * yet. Keeping it means going live is deleting this one flag rather than re-finding the link — and
+   * a pending badge with no href would be a badge that cannot be promoted.
+   *
+   * `z.literal(true).optional()` RATHER THAN `z.boolean()`: the only meaningful state is "pending",
+   * so absence is the default and `"pending": false` can never be written. A boolean would allow two
+   * spellings of live.
+   */
+  pending: z.literal(true).optional(),
 });
 
 export const ProjectSchema = z.strictObject({

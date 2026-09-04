@@ -82,8 +82,6 @@ jobs:
       # The seeded values are the fake ones from the committed examples, on the RFC 2606
       # reserved .invalid TLD, which can never resolve. That is deliberate: no build and
       # no test can accidentally reach a real Access endpoint.
-      - name: Seed the placeholder Access values
-        run: npm run bootstrap:local
 
       # Cheapest first. A formatting mistake should not have to wait behind a build.
       - name: Lint and formatting

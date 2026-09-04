@@ -64,8 +64,14 @@ export const EN_DASH = '\u2013';
 /** The separator as it appears between the two halves: space, en dash, space. */
 const SEPARATOR = ` ${EN_DASH} `;
 
-/** The word that stands in for an end date on a role that has not ended. */
-const PRESENT = 'Present';
+/**
+ * The word that stands in for an end date on a role that has not ended.
+ *
+ * EXPORTED, because `IdentityRail` needs the same word and typed its own `'now'` until 2026-09-05 —
+ * so `/resume` read "Present" while `/development` read "now" for the same fact. One constant, and
+ * the rail uppercases it in CSS, so it renders as PRESENT there and Present on the résumé.
+ */
+export const PRESENT = 'Present';
 
 /**
  * A date range as it is stored. `endMonth` and `endYear` are ABSENT — not `null`, not `0` — when

@@ -264,15 +264,6 @@ function clearStalePreviewLock(): void {
 }
 
 export default async function setup(project: TestProject) {
-  // `astro:env` declares both Access secrets non-optionally with `validateSecrets: true`,
-  // so a build with either local env file missing fails outright — deliberately. The
-  // committed examples hold placeholders on the non-resolving `.invalid` TLD, which is
-  // what makes it impossible for a test to reach a real Cloudflare Access endpoint
-  // (threat T-02-21). Invoked as the script file itself rather than through the manifest.
-  await runToCompletion('bootstrap-local-env', [
-    resolve(repoRoot, 'scripts/bootstrap-local-env.mjs'),
-  ]);
-
   await runToCompletion('astro build', [astroBin, 'build'], productionBuildEnv);
 
   // A live preview server from a crashed earlier run is FATAL to the foreground path:

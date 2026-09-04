@@ -23,18 +23,7 @@
     "directory": "./dist",
     "binding": "ASSETS",
     // Needs a dist/404.html to serve, which src/pages/404.astro provides.
-    "not_found_handling": "404-page",
-
-    // AUTH-03, and one half of the composed fail-open hazard this phase exists to
-    // close. Static Assets serve a matching file BEFORE the Worker runs, so any path
-    // that happens to have a static file at it is never seen by auth code at all.
-    //
-    // /admin is written as two explicit entries rather than one "/admin*" wildcard:
-    // Cloudflare's docs only demonstrate the "/segment" and "/segment/*" shapes, and an
-    // unmatched pattern fails OPEN silently. That is the one failure mode not worth
-    // guessing at. /_actions/* is here because Astro Actions POST to /_actions/<name>
-    // and it is the prefix most easily forgotten.
-    "run_worker_first": ["/admin", "/admin/*", "/api/*", "/_actions/*"]
+    "not_found_handling": "404-page"
   },
 
   // The non-apex hostname decided in plan 02-02 (see 02-DNS-R2-PREREQS.md ->
@@ -45,10 +34,11 @@
   // nothing to run against.
   //
   // The apex akhilsaxena.com is deliberately NOT attached here. Cutover owns it.
-  "routes": [{ "pattern": "preview.akhilsaxena.com", "custom_domain": true }],
+  "routes": [{ "pattern": "akhilsaxena.com", "custom_domain": true }],
 
-  // Bucket name carried from the legacy config (git show
-  // legacy/nextjs-portfolio:wrangler.toml).
+  // Kept although no runtime code reads it: `photo-pipeline-contract.unit.test.ts` asserts
+  // STAGING_BUCKET byte-equal to this name, so this file is where the Actions pipeline's bucket
+  // name is declared. Removing it reddened three tests.
   "r2_buckets": [{ "binding": "PORTFOLIO_BUCKET", "bucket_name": "portfolio-photos" }]
 
   // Deliberately absent:

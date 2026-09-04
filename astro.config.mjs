@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 import sitemap from '@astrojs/sitemap';
-import { defineConfig, envField } from 'astro/config';
+import { defineConfig } from 'astro/config';
 // Astro loads this config through Vite, so it can import TypeScript out of src/ — measured, not
 // assumed (plan 03-08, experiment 4f). Note the explicit `.ts`: `src/schemas/index.ts` re-exports
 // with EXTENSIONLESS relative specifiers, which only a bundler resolves. A plain
@@ -230,20 +230,4 @@ export default defineConfig({
   // per-request Access JWT verification), so this keeps the Worker smaller and the
   // account free of a namespace nobody reads.
   session: false,
-
-  env: {
-    schema: {
-      // Both are non-optional and carry no default, on purpose. A default here would
-      // be a fail-open path wearing a config hat: the legacy app degraded to a
-      // cookie-presence check when Access config was missing, and this is the
-      // structural fix for that. Phases 3 and 4 extend this schema with GITHUB_PAT,
-      // GITHUB_REPO and R2_PUBLIC_URL — declaring them now would force the developer
-      // to provision secrets that nothing in Phase 2 reads.
-      CF_ACCESS_TEAM_DOMAIN: envField.string({ context: 'server', access: 'secret' }),
-      CF_ACCESS_AUD: envField.string({ context: 'server', access: 'secret' }),
-    },
-    // FND-04's structural half. Turns a missing CF_ACCESS_AUD into a build/startup
-    // error instead of a runtime surprise on the first /admin request.
-    validateSecrets: true,
-  },
 });

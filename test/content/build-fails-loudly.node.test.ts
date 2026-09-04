@@ -79,10 +79,6 @@ const COPIED = [
   'worker-configuration.d.ts',
   'biome.json',
   '.nvmrc',
-  // Seeded by `npm run bootstrap:local`; astro:env's build-time validation reads them off disk,
-  // not out of the process environment (measured five ways in plan 02-06).
-  '.dev.vars',
-  '.env',
 ];
 
 /** The five committed content files. FIVE — `projects.json` is the one the plan's text forgets. */
@@ -165,9 +161,18 @@ async function runBuild(): Promise<BuildResult> {
     exitCode = typeof failure.code === 'number' ? failure.code : 1;
     output = `${failure.stdout ?? ''}${failure.stderr ?? ''}`;
   }
+  /*
+   * `dist/client/index.html`, NOT `dist/server/wrangler.json`.
+   *
+   * The old probe read the ADAPTER's server bundle, which the Cloudflare adapter only emits when a
+   * route opts out of prerendering. With `/admin` and `/api/health` removed the site is fully
+   * static, `dist/server/` is empty, and the probe reported "the build emitted nothing" on a build
+   * that had emitted 135 files. Home's HTML is the thing whose absence actually means the build
+   * produced nothing.
+   */
   let distEmitted = true;
   try {
-    readFileSync(path.join(sandbox, 'dist', 'server', 'wrangler.json'));
+    readFileSync(path.join(sandbox, 'dist', 'client', 'index.html'));
   } catch {
     distEmitted = false;
   }

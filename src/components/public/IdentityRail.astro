@@ -34,7 +34,7 @@ import { Link } from '@akhil-saxena/design-system/components/Link';
 
 import homeConfig from '../../../data/home_config.json';
 import type { ExperienceEntry } from '../../schemas';
-import { EN_DASH } from '../../lib/period';
+import { EN_DASH, PRESENT } from '../../lib/period';
 import SocialIcons from './SocialIcons.astro';
 
 interface Props {
@@ -114,7 +114,7 @@ const YEAR_SEPARATOR = ` ${EN_DASH} `;
  */
 const yearsOf = (entry: ExperienceEntry): string =>
   entry.isPresent
-    ? `${entry.startYear}${YEAR_SEPARATOR}now`
+    ? `${entry.startYear}${YEAR_SEPARATOR}${PRESENT}`
     : `${entry.startYear}${YEAR_SEPARATOR}${entry.endYear}`;
 
 const roles = entries.map((entry) => ({ entry, years: yearsOf(entry) }));
@@ -225,7 +225,7 @@ const roles = entries.map((entry) => ({ entry, years: yearsOf(entry) }));
         <li class={index === 0 ? 'wk-role-item is-current' : 'wk-role-item'}>
           {
             /* `aria-hidden` — the dot says "this is the current role" to a sighted reader and the
-              markup says it with `is-current` plus the years reading "now". A decorative span
+              markup says it with `is-current` plus the years reading "Present". A decorative span
               announced as nothing is correct; announced as "bullet" it would be noise. */
           }
           <span class="wk-role-dot" aria-hidden="true"></span>

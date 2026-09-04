@@ -103,8 +103,6 @@ jobs:
       # for the same reason CI does: astro:env server secrets are read at runtime from the
       # Cloudflare environment, so the real values belong in `wrangler secret put` and
       # nowhere else. See the CI workflow's header for the measurement behind this.
-      - name: Seed the placeholder Access values
-        run: npm run bootstrap:local
 
       # The chain lives in package.json, not here, so a developer running it from a laptop
       # gets exactly the same sequence: the enforcing dependency gate, then the build (which

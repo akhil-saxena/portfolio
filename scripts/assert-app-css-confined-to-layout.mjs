@@ -583,26 +583,6 @@ const DEBTS = [
       '--dur-5/6 continuation of the ramp) and re-pointing this line; a consumer cannot invent the ' +
       'rung, which is exactly why this is a finding and not a fix.',
   },
-  {
-    id: 'DEBT-ADMIN-DOORWAY',
-    where: ['src/pages/admin/index.astro'],
-    property: 'font-family',
-    value: 'system-ui, sans-serif',
-    why: 'A literal font stack — the clearest possible origination, in the one page that has one.',
-    disposition:
-      'The /admin doorway deliberately imports NOTHING from the design system ("a doorway that ' +
-      'now has a lock and nothing behind it"), so `var(--font)` there would resolve to nothing ' +
-      'and fall back to the UA default — worse, and silently. Phase 7 replaces this page with ' +
-      'the real editor built from design-system components, and this <style> block goes with it.',
-  },
-  {
-    id: 'DEBT-ADMIN-DOORWAY-LH',
-    where: ['src/pages/admin/index.astro'],
-    property: 'line-height',
-    value: '1.5',
-    why: 'A literal line-height where --lh-normal (1.5) exists.',
-    disposition: 'As DEBT-ADMIN-DOORWAY — same block, same page, deleted by Phase 7.',
-  },
 ];
 
 /**

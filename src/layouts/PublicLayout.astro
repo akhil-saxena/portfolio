@@ -180,7 +180,34 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
         early and the compiler reports only "Unexpected token" at the line after.) */
     }
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {
+      /*
+       * ============================================================================================
+       * THE SVG IS GONE, AND THAT IS THE POINT RATHER THAN A SIMPLIFICATION
+       * ============================================================================================
+       *
+       * `public/favicon.svg` was a brown rounded square with "AS" in Georgia — a placeholder, and a
+       * DIFFERENT MARK from the artwork Akhil supplied (a cream Baskerville ampersand on near-black,
+       * the `&` out of "Interfaces & Imagery").
+       *
+       * 🔴 KEEPING BOTH WOULD HAVE SHIPPED THE OLD ONE. Chrome and Firefox PREFER `image/svg+xml`
+       * over PNG when a page offers both, regardless of source order or `sizes` — so adding the new
+       * icons beside the old vector would have changed nothing visible in the two browsers most
+       * readers use, and looked like the PNGs had failed.
+       *
+       * WHY NOT REDRAW IT AS AN SVG: the mark is a specific typeface's italic ampersand, and a
+       * hand-traced path would be a near-miss of the artwork rather than the artwork. The largest
+       * PNG is 512px, which covers every raster consumer including hi-DPI tabs.
+       *
+       * FOUR OF THE FIVE SUPPLIED FILES SHIP. `favicon-640.png` is left out: nothing consumes a
+       * 640px icon — 180 is Apple's touch icon, 512 is the PWA and Android size, 16 and 32 are the
+       * tab — so it would be 37KB added to every deploy for no reader.
+       */
+    }
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="icon" href="/favicon-512.png" sizes="512x512" type="image/png" />
+    <link rel="apple-touch-icon" href="/favicon-180.png" />
     <script is:inline>
       /* D-34 · the design system ships no theme entry point at 2.0.0-beta.1, so this is a local
          copy of a selector contract this repository does not own. Filed upstream for

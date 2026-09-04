@@ -342,7 +342,13 @@ describe('the tiles reserve their box and carry the right bytes (§7.2-§7.5)', 
       expect(imgs.filter((tag) => /\sheight\s*=/.test(tag))).toHaveLength(0);
 
       const expectedSizes = sizesFor(route.columns);
-      const sizesAttrs = [...html.matchAll(/\ssizes="([^"]*)"/g)].map((m) => decode(m[1]));
+      /*
+       * 🔴 SCOPED TO `<img>`. This matched `sizes=` ANYWHERE, and the favicons added on 2026-09-05
+       * declare `sizes="32x32"`, `"16x16"` and `"512x512"` on `<link rel="icon">` in the HEAD — so
+       * every gallery route began reporting icon dimensions as tile sizes. The tiles were correct
+       * throughout; the extractor was reading the head.
+       */
+      const sizesAttrs = [...html.matchAll(/<img[^>]*\ssizes="([^"]*)"/g)].map((m) => decode(m[1]));
       expect(sizesAttrs).toHaveLength(manifest.length);
       for (const attr of sizesAttrs) expect(attr).toBe(expectedSizes);
       report(`${route.name}: data-cols ${route.columns}, sizes agrees with sizesFor on all tiles`);

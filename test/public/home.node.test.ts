@@ -1201,7 +1201,15 @@ describe('Act 1 is the approved design, and its measures come from the ladder', 
     // The failure this closes has no visual symptom: a `sizes` string that disagrees with the
     // stylesheet downloads a different variant of all six photographs and nothing goes red.
     const sizes =
-      /<img[^>]*class="[^"]*"?[^>]*sizes="([^"]*)"/.exec(html) ?? /sizes="([^"]*)"/.exec(html);
+      /*
+       * 🔴 THE FALLBACK BRANCH WAS `/sizes="([^"]*)"/ OVER THE WHOLE DOCUMENT, and on 2026-09-05 it
+       * started matching `<link rel="icon" sizes="32x32">` in the HEAD — so this read "32x32" and
+       * failed with "expected '32x32' to contain 'min(100vw, 880px)'". The favicons are correct; the
+       * extractor was reading the wrong element because its fallback was not scoped to an `<img>`.
+       * Both branches now require one.
+       */
+      /<img[^>]*class="[^"]*"?[^>]*sizes="([^"]*)"/.exec(html) ??
+      /<img[^>]*\ssizes="([^"]*)"/.exec(html);
     expect(sizes, 'no sizes attribute on the page at all').not.toBeNull();
     const value = (sizes as RegExpExecArray)[1] as string;
     expect(value, 'the widest clause must cap at ACT_ONE_MAX, not at PAGE_MAX.home').toContain(

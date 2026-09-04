@@ -183,30 +183,58 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
     {
       /*
        * ============================================================================================
-       * THE SVG IS GONE, AND THAT IS THE POINT RATHER THAN A SIMPLIFICATION
+       * THE AMPERSAND, AS THE REAL OUTLINE, IN TWO GROUNDS
        * ============================================================================================
        *
-       * `public/favicon.svg` was a brown rounded square with "AS" in Georgia — a placeholder, and a
-       * DIFFERENT MARK from the artwork Akhil supplied (a cream Baskerville ampersand on near-black,
-       * the `&` out of "Interfaces & Imagery").
+       * Akhil: *"new icon has white borders now. which is bad. I want to create svgs for it, then
+       * use those. It's just ampersand in libre baskerville ... use both dark/light mode variants."*
        *
-       * 🔴 KEEPING BOTH WOULD HAVE SHIPPED THE OLD ONE. Chrome and Firefox PREFER `image/svg+xml`
-       * over PNG when a page offers both, regardless of source order or `sizes` — so adding the new
-       * icons beside the old vector would have changed nothing visible in the two browsers most
-       * readers use, and looked like the PNGs had failed.
+       * ── WHERE THE WHITE BORDER CAME FROM ──────────────────────────────────────────────────────
        *
-       * WHY NOT REDRAW IT AS AN SVG: the mark is a specific typeface's italic ampersand, and a
-       * hand-traced path would be a near-miss of the artwork rather than the artwork. The largest
-       * PNG is 512px, which covers every raster consumer including hi-DPI tabs.
+       * The supplied PNGs baked a rounded square into the artwork, and its antialiased edge was a
+       * ring of part-transparent light pixels. At 16px that fringe is a meaningful fraction of the
+       * icon, and against a browser tab that is neither `--bg` nor white it reads as a border rather
+       * than as an edge. THE FIX IS NOT A BETTER TILE, IT IS NO TILE: these SVGs have a transparent
+       * ground, so the glyph sits directly on whatever colour the tab happens to be and there is no
+       * edge to fringe.
        *
-       * FOUR OF THE FIVE SUPPLIED FILES SHIP. `favicon-640.png` is left out: nothing consumes a
-       * 640px icon — 180 is Apple's touch icon, 512 is the PWA and Android size, 16 and 32 are the
-       * tab — so it would be 37KB added to every deploy for no reader.
+       * ── THE PATH IS THE FONT'S OWN OUTLINE, NOT A TRACE ───────────────────────────────────────
+       *
+       * Extracted with fontTools from `libre-baskerville-latin-400-italic.woff2` — the same file the
+       * site loads — so it is the identical glyph the subtitle renders in "Interfaces & Imagery",
+       * not a redraw of it. `SVGPathPen` over glyph `ampersand`, upem 1000, bbox (59,-10)-(910,780),
+       * scaled to 90% of a 64-unit box and flipped in y because font space has y up and SVG has y
+       * down. The alternative was tracing a bitmap the way the globe was traced; there is no reason
+       * to approximate an outline that can be read exactly.
+       *
+       * ── TWO FILES, SWITCHED BY `media` ────────────────────────────────────────────────────────
+       *
+       * `prefers-color-scheme` on a `<link rel="icon">` is honoured by Chrome and Firefox, so the
+       * dark file (light glyph) is used against dark browser chrome and the light file against
+       * light. A browser that ignores `media` takes the first declaration, which is why the DARK
+       * variant is first: this site's own ground is dark, and a light glyph is the safer default
+       * against the tab colours a dark-themed browser uses.
+       *
+       * `favicon-180.png` STAYS as the Apple touch icon. iOS does not accept SVG there, and it is
+       * the one place the rounded tile is correct rather than a fringe — a home-screen icon is
+       * composited onto the wallpaper and needs its own ground.
+       *
+       * The 16, 32 and 512 PNGs are deleted: a vector serves every one of those sizes exactly, and
+       * `favicon-640.png` was never shipped because nothing consumes it.
        */
     }
-    <link rel="icon" href="/favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="icon" href="/favicon-16.png" sizes="16x16" type="image/png" />
-    <link rel="icon" href="/favicon-512.png" sizes="512x512" type="image/png" />
+    <link
+      rel="icon"
+      href="/favicon-dark.svg"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: dark)"
+    />
+    <link
+      rel="icon"
+      href="/favicon-light.svg"
+      type="image/svg+xml"
+      media="(prefers-color-scheme: light)"
+    />
     <link rel="apple-touch-icon" href="/favicon-180.png" />
     <script is:inline>
       /* D-34 · the design system ships no theme entry point at 2.0.0-beta.1, so this is a local

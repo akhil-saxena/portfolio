@@ -468,39 +468,81 @@ body {
   background: var(--bg);
 }
 
-.pub-bar:not(.pub-bar-plain)::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 100%;
-  /*
-   * `--space-4`, 16px. It was `--space-8` (32px) and Akhil's note on that was *"reduce fade, not so
-   * harsh, keep subtle, short"*. Worth recording the tension in the two words, because they pull
-   * opposite ways: a LONGER gradient is a softer dissolve, a SHORTER one is subtler but meets the
-   * header's opaque edge more abruptly. 16px takes the "short and subtle" reading — the band stops
-   * reading as a vignette. If the cut ever looks hard, this is the number to raise, and the
-   * clearance argument below is what caps it.
-   */
-  height: var(--space-4);
-  background: linear-gradient(to bottom, var(--bg), transparent);
-  /* The fade sits over the content; a click in that band belongs to the photograph beneath it. */
-  pointer-events: none;
-}
+/*
+ * ================================================================================================
+ * NO GRADIENT, NO HAIRLINE — AN OPAQUE BAR AND A CLEAN CUT
+ * ================================================================================================
+ *
+ * THREE TREATMENTS WERE RENDERED IN BOTH THEMES, SCROLLED, OVER REAL PHOTOGRAPHS. This is the one
+ * that survived, and it is the one with nothing in it.
+ *
+ * ── WHAT WAS HERE FIRST: A 16px GRADIENT ──────────────────────────────────────────────────────
+ *
+ * `linear-gradient(to bottom, var(--bg), transparent)`, down from 32px after *"reduce fade, not so
+ * harsh, keep subtle, short"*. Akhil: *"a plain white gradient band reads dated/soft."* Its problem
+ * was never the length. The bar's background is `var(--bg)` — THE PAGE'S OWN COLOUR — so the
+ * gradient dissolved page-colour into nothing over page-colour: invisible against a flat ground,
+ * and visible only where a photograph passed beneath it, as a 16px smear across the top of the
+ * picture.
+ *
+ * ── THEN A 1px HAIRLINE, WHICH AKHIL ASKED FOR AND THEN REJECTED ON SIGHT ─────────────────────
+ *
+ * *"opaque --bg header with a 1px hairline when scrolled — matches your ruled, editorial
+ * vocabulary. My pick for this site."* Built with `--wire`, because the two candidates measured
+ * against the page at `rgb(13, 13, 15)`:
+ *
+ *     --rule  (0.09 alpha)  ->  rgb(42, 42, 48)     1.36:1   below the 3:1 non-text floor
+ *     --wire  (0.22 alpha)  ->  rgb(109, 109, 115)  3.78:1   clears it
+ *
+ * Then: *"hard cut doesnt look good with black divider."* MEASURED in the render and he is right —
+ * a rule that clears 3:1 against the page ALSO clears it against the photographs, so it does not
+ * read as the bar's own bottom edge. It reads as a grey line laid ACROSS the pictures, with a
+ * near-black band above it. The contrast that made it a legitimate boundary is the same contrast
+ * that made it an intrusion.
+ *
+ * ── AND A `box-shadow`, WHICH WAS INVISIBLE ───────────────────────────────────────────────────
+ *
+ * `0 1px 0 var(--rule), 0 6px 14px -8px` — a shadow instead of a drawn line, on the theory that
+ * depth reads as separation without a mark. On dark it is a shadow cast on near-black: indistinct
+ * from no treatment at all. On light it adds a faint grey band, which is the gradient again.
+ *
+ * ── WHY NOTHING IS THE RIGHT ANSWER ───────────────────────────────────────────────────────────
+ *
+ * There is nothing to divide. The bar is painted in the page's own colour, so above the boundary
+ * and below it are the same value wherever the content is text — a line there separates a grey from
+ * itself. Where the content is a PHOTOGRAPH, the photograph's own edge is already the boundary, and
+ * it is a better one than any rule: it is the shape of the thing that is moving.
+ *
+ * ── AND WHY NOT THE FROSTED BAR, WHICH IS A CONTRAST FAILURE RATHER THAN A PREFERENCE ─────────
+ *
+ * The fourth candidate was a 24px fade paired with a real `backdrop-filter: blur(14px)` — the fade
+ * without a blur being the dated part. It requires the bar to go TRANSLUCENT, or the filter is a
+ * no-op over a flat fill. Rendered at `--bg` 68% and sampled where the header's own text sits, the
+ * ground becomes the passing photograph:
+ *
+ *     over the dark photo    rgb(125, 116, 109)   --ink-3 label at 1.45:1
+ *     over the pink palace   rgb( 91,  69,  60)   --ink-3 label at 2.82:1
+ *     over the peppers       rgb(139,  88,  12)   --ink-3 label at 1.90:1
+ *
+ * Every one is far below the 4.5:1 floor for text, AND THE FAILURE MOVES AS THE PAGE SCROLLS,
+ * which is worse than a fixed one because no single screenshot shows it. Deepening the tint to ~90%
+ * rescues the contrast and makes the blur invisible — an opaque bar with a per-frame GPU cost.
+ *
+ * `backdrop-filter: blur(14px)` STILL SURVIVES ON `.ds-atom-appbar` and stays inert for the same
+ * reason it always was: it samples what is painted behind, and what is behind it is this rule's
+ * opaque page-coloured backing.
+ */
 
 /*
- * AND NOT ON /photography, WHERE A SECOND STICKY ELEMENT FOLLOWS. That route pins `.ph-head` — the
- * title, the pills and the count — directly beneath the bar, so the bar's fade would hang OVER the
- * top of that pinned block and wash the word "Photographs" as soon as the page moved. The fade
- * belongs under whatever the LAST pinned element is, which there is `.ph-head`, and
- * `photography.css` puts it there.
+ * `/photography` NEEDED A ROUTE EXCEPTION WHEN THE BAR CARRIED A TREATMENT, AND NO LONGER DOES.
  *
- * `:has()` because the route marker is on `.pub-main`, a SIBLING of the bar — there is no ancestor
- * that knows which route this is. primitives.css already relies on `:has()` for the same shape of
- * problem (`:root:has(.ds-atom-appbar[data-variant="withSearch"])`).
+ * That route pins `.ph-head` directly beneath the bar, so a gradient or a hairline on the bar would
+ * have landed in the MIDDLE of the pinned stack rather than at its bottom — the first hairline
+ * landing forgot to move with the change and rendered two rules 60px apart, one under the wordmark
+ * and one under the pills. With the bar carrying neither, there is nothing to except: the block that
+ * used to do it (a `:has(.pub-max-photos)` selector, since the route marker sits on `.pub-main`, a
+ * SIBLING of the bar) is deleted rather than left switching off a treatment that no longer exists.
  */
-.pub-shell:has(.pub-max-photos) .pub-bar:not(.pub-bar-plain)::after {
-  content: none;
-}
 
 /* ── 1c-iii. r5: the chosen header. Wordmark left, nav right, toggle right. ────────────────── */
 

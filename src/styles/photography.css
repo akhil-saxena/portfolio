@@ -532,16 +532,12 @@
  * that gap and the first tile is 16px clear. Raising the fade past `--space-8` would put a wash on
  * a photograph nobody has scrolled.
  */
-.ph-rail::after {
-  content: "";
-  position: absolute;
-  inset-inline: 0;
-  top: 100%;
-  height: var(--space-4);
-  background: linear-gradient(to bottom, var(--bg), transparent);
-  /* A click in the band belongs to the photograph beneath it. */
-  pointer-events: none;
-}
+/*
+ * NO TREATMENT ON THIS EDGE EITHER. `.ph-rail` is the last pinned element on this route, so it is
+ * where content actually slides under — and it is therefore where a gradient smeared the top of a
+ * photograph and a hairline drew a grey line across it. `public-shell.css` carries the renders, the
+ * contrast measurements and the four rejected candidates. The photograph's own edge is the boundary.
+ */
 
 /*
  * ================================================================================================

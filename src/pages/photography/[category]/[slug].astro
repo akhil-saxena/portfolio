@@ -1,53 +1,4 @@
 ---
-/**
- * `/photography/<category>/<slug>` — one prerendered page per photograph. Plan 05-08.
- * (PUB-07, PUB-08, PUB-09, SEO-01. §9.3, §9.4, §9.5, §9.6, §13.2, §4.4 rule 2, §7.2, §7.4.)
- *
- * ================================================================================================
- * THE PATH IS THE IMPORTED HREF. IT IS NEVER RE-DERIVED HERE. (BL-8)
- * ================================================================================================
- *
- * `photoSlug` and `photoHref` in `src/lib/photo-srcset.ts` are the SINGLE definition of
- * `/photography/<category>/<slug>`. `PhotoTile.astro` (plan 05-07) builds every gallery tile's `href`
- * from `photoHref`; the params below come from `photoSlug`, and the two are tied together at build
- * time by the equality a few lines down.
- *
- * The failure this prevents has no symptom. 05-07 and this plan are both wave 4, so neither could
- * read the other's output, and no gate in the phase compares an emitted tile href against an
- * emitted page. Two independent derivations that disagree produce EVERY TILE 404ing against a page
- * that exists under a different slug — with a green build, a green suite and a green gate, first
- * detected by a human clicking a tile in wave 7.
- *
- * So there is no `slice`, no `split`, no template literal composing a URL from an id in this file.
- * `test/public/photo-detail.node.test.ts` closes the loop from the other end: it reads every
- * `.ph-tile` href out of the eight BUILT gallery pages and asserts each one answers 200 from a page
- * this route generated. That is the check neither plan could write alone.
- *
- * MEASURED, all 40 records: the slug is the id with its `<category>-` prefix removed, and it
- * round-trips. `wildlife-gentlegiants` is the record that makes the point — its published object
- * keys carry a content hash (`gentlegiants-1de8c65e.webp`, and a DIFFERENT hash per variant) while
- * its id does not. A slug recovered from a URL would have produced `gentlegiants-1de8c65e`; the id
- * is the only field that can produce `gentlegiants`, and it is what `photoSlug` reads.
- *
- * ================================================================================================
- * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 4)
- * ================================================================================================
- *
- * No `client:*` directive, no island. The design-system components below are rendered to static
- * markup during the prerender and ship no runtime. This route is the no-JS destination of every
- * gallery tile, so the whole crawlability and Back-button guarantee of PUB-04 and PUB-06 rests on
- * it staying static.
- *
- * ================================================================================================
- * `date` IS NOT REACHABLE FROM THIS FILE
- * ================================================================================================
- *
- * §9.4: the corpus carries three distinct dates across 40 records — an ingest window, not a capture
- * history — and `REQUIREMENTS.md` Out of Scope settled that it is neither displayed nor sorted by.
- * Plan 05-12 adds `scripts/assert-photo-date-unrendered.mjs` over exactly this directory. Nothing
- * below reads the field, and the EXIF component cannot: `exifRows` takes the exif object only.
- */
-
 import { ClientRouter } from 'astro:transitions';
 
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
@@ -64,48 +15,15 @@ import { PAGE_MAX } from '../../../lib/layout-ladder';
 import { photoHref, photoSlug, srcsetFor } from '../../../lib/photo-srcset';
 import '../../../styles/photo-detail.css';
 
-/** One validated record, as the collection hands it over. Not a rival shape — it IS the schema's. */
 type DetailRecord = CollectionEntry<'photos'>['data'];
 
-/** A neighbour, reduced to what the anchor needs. */
 type Neighbour = { readonly href: string; readonly title: string };
 
-/**
- * 🔴 EVERY PATH ON THIS PAGE IS COMPOSED INSIDE `getStaticPaths` AND ARRIVES AS A PROP.
- *
- * MEASURED, and it cost a build: **`getStaticPaths` cannot see this file's frontmatter.** Astro
- * hoists the function out of the component module and evaluates it on its own, so a `const`
- * declared here is simply not in scope inside it. The first revision of this route put the route's
- * own first segment in a module constant and read it in both places; `astro check` passed, and the
- * BUILD died in the prerender with
- *
- *     Failed to get static paths from the Cloudflare prerender server (500)
- *     ReferenceError: ROUTE_ROOT is not defined
- *
- * That is 05-01's finding in a new costume — the prerender runs inside `workerd`, a green
- * typecheck is not evidence about it, and only `npm run build` asks the question. The repair is not
- * a second copy of the constant: `getStaticPaths` composes `href`, `categoryHref` and `galleryHref`
- * once and hands them down, so the segment is written in exactly one place in this file and the
- * component body never composes a URL at all.
- */
 export async function getStaticPaths() {
-  /**
-   * The route's own first segment. It is the name of the directory this file sits in, and it is the
-   * only part of the emitted URL that `photoHref` cannot supply — which is precisely why the
-   * equality below is worth asserting rather than assuming: it is the seam between the file
-   * system's opinion about the path and the library's.
-   */
   const ROUTE_ROOT = 'photography';
 
   const entries = await getCollection('photos');
 
-  /*
-   * ANTI-VACUITY. `getStaticPaths` returning an empty array is not an error to Astro — it emits no
-   * page and exits 0. Every photograph's page would silently disappear, every gallery tile would
-   * 404, and the build would report success. `src/content.config.ts` records that the file loader
-   * LOGS and returns rather than throwing when the manifest cannot be read, so this is a reachable
-   * state and not a hypothetical one.
-   */
   if (entries.length === 0) {
     throw new Error(
       "photos/[category]/[slug]: getCollection('photos') returned no entries, so this route would " +
@@ -116,25 +34,6 @@ export async function getStaticPaths() {
 
   const all: DetailRecord[] = entries.map((entry) => entry.data);
 
-  /*
-   * The sequence within each category, derived from the data. §7.1 and §9.6 order a category by
-   * `categoryOrder`, and so does the gallery route (05-07), so the neighbour a reader gets here is
-   * the tile that sat beside the one they clicked.
-   *
-   * THE NEIGHBOUR IS TAKEN FROM POSITION IN THIS SORTED LIST, never from arithmetic on the stored
-   * number. MEASURED today: the values are dense 1..n inside all seven categories — but a Phase 7
-   * reorder is one drag away, and `order + 1` would silently point at nothing the moment a gap
-   * appeared. Position cannot.
-   *
-   * WHAT IS REFUSED IS A DUPLICATE, AND THAT IS A DELIBERATE NARROWING OF THE PLAN'S WORDING.
-   * The plan asks for a density assertion. Density is NOT load-bearing once the walk is positional
-   * — a sequence of 1, 2, 4 produces a perfectly good cycle — so refusing it would fail the build
-   * on a legitimate reorder for no reader-visible reason. A DUPLICATE is load-bearing: two records
-   * sharing a value leaves their relative order to the sort's stability, which decides silently and
-   * can decide differently between builds, so prev/next would swap with no edit to any file. The
-   * suite reports the density it measures rather than enforcing it; this refuses the case that has
-   * a symptom nobody could see.
-   */
   const sequences = new Map<string, DetailRecord[]>();
   for (const record of all) {
     const bucket = sequences.get(record.category);
@@ -160,21 +59,6 @@ export async function getStaticPaths() {
     const index = bucket.findIndex((candidate) => candidate.id === photo.id);
     const size = bucket.length;
 
-    /*
-     * PREVIOUS AND NEXT WRAP, at both ends (§9.6). `(index - 1 + size) % size` rather than
-     * `index === 0 ? size - 1 : index - 1`: the modular form is the one that cannot be written
-     * with an off-by-one, and JavaScript's `%` keeps the sign of its left operand, which is why the
-     * `+ size` is there rather than decorative.
-     *
-     * THE ONE-PHOTOGRAPH CATEGORY, DECIDED HERE RATHER THAN DISCOVERED LATER. When a category
-     * holds a single photograph both neighbours are the page itself, and a "previous" link that
-     * reloads the page you are on is a control that does nothing — worse for a keyboard or screen
-     * reader user than an absent one, because it announces a way out that is not one. So the row is
-     * NOT RENDERED at all below that size. MEASURED today: the smallest categories hold two, so
-     * this branch is unreachable against the committed manifest — which is exactly why it had to be
-     * decided now. The suite asserts the row's presence against the DERIVED category size, so the
-     * rule is checked rather than assumed.
-     */
     const previous: Neighbour | null =
       size > 1
         ? {
@@ -190,14 +74,6 @@ export async function getStaticPaths() {
     const params = { category: photo.category, slug: photoSlug(photo) };
     const href = photoHref(photo);
 
-    /*
-     * THE JOIN, ASSERTED AT BUILD TIME. `params` is what Astro turns into a path; `href` is what
-     * every gallery tile carries. Both come from `photo-srcset.ts`, and this states the one thing
-     * that is NOT guaranteed by that: that the URL this file's location produces —
-     * `/<ROUTE_ROOT>/<category>/<slug>` — is character-for-character the href the library emits.
-     * Move this file, or change the shape `photoHref` returns, and the build stops here instead of
-     * shipping forty pages nothing links to.
-     */
     const emitted = `/${ROUTE_ROOT}/${params.category}/${params.slug}`;
     if (emitted !== href) {
       throw new Error(
@@ -214,20 +90,9 @@ export async function getStaticPaths() {
         photo,
         previous,
         next,
-        /* The page's own address — the canonical, and the value the join above just proved. */
         href,
-        /* §13.2's two back links, composed from the one segment. See the note above the function. */
         categoryHref: `/${ROUTE_ROOT}/${params.category}`,
         galleryHref: `/${ROUTE_ROOT}`,
-        /*
-         * THE POSITION IS WITHIN THE CATEGORY, NOT WITHIN THE CORPUS, and that is a deliberate
-         * departure from the M4 mock, which reads `03 / 40`.
-         *
-         * `previous` and `next` above WRAP INSIDE `bucket`, which is the category. An index over 40
-         * beside a pair of arrows that only ever visit 16 would be a straightforward lie: press
-         * next sixteen times from `03 / 40` and you arrive back at `03 / 40` having never seen
-         * `17 / 40`. The denominator has to be the set the arrows traverse.
-         */
         position: index + 1,
         of: size,
       },
@@ -248,19 +113,6 @@ interface Props {
 
 const { photo, previous, next, href, categoryHref, galleryHref, position, of } = Astro.props;
 
-/**
- * THE LQIP GUARD — the same one `PhotoTile.astro` carries, at the second interpolation site.
- *
- * `thumb` is the one manifest value that lands inside a CSS `url()` rather than in an ordinary
- * attribute. Astro escapes the ATTRIBUTE, which stops a value breaking out of `style="…"` — but a
- * bare apostrophe inside the value would still terminate the `url('…')` token and let everything
- * after it be read as further declarations, inside an attribute the escaper considers clean.
- *
- * IT IS A SECOND COPY AND THAT IS SAID OUT LOUD. Extracting it would mean editing 05-07's file
- * while 05-07 is still running, which is the change this wave cannot make safely. Each guard
- * protects its own interpolation site and neither ratifies the other; consolidating them into one
- * exported helper is a one-line change for 05-14, and it is filed there rather than left implicit.
- */
 const THUMB_URI = /^data:image\/webp;base64,[A-Za-z0-9+/]+={0,2}$/;
 const thumb = photo.urls.thumb;
 if (typeof thumb !== 'string' || !THUMB_URI.test(thumb)) {
@@ -272,14 +124,6 @@ if (typeof thumb !== 'string' || !THUMB_URI.test(thumb)) {
   );
 }
 
-/**
- * The category's own label, from `data/site_config.json` through the validated export.
- *
- * REFUSED rather than defaulted. The back link reads `← {Category}` (§13.2) and a missing record
- * would render `← undefined` on every page of that category — visible, wrong, and shipped. RI-2 in
- * `src/schemas/content-set.ts` refuses a declared category with no photographs; this is the other
- * direction, which no schema covers.
- */
 const label = site.categories.find((entry) => entry.id === photo.category)?.label;
 if (!label) {
   throw new Error(
@@ -289,144 +133,28 @@ if (!label) {
   );
 }
 
-/**
- * §9.6's `sizes`, with the number DERIVED. `PAGE_MAX.band` is 1080 and it is the same constant
- * `.pub-max-band` is gated against by `scripts/assert-gutter-ladder.mjs`, so the width the browser
- * is told about and the width the column is capped at cannot drift apart.
- *
- * RECORDED, because it is a deliberate simplification and not an oversight: this ignores the
- * gutters, so between the cap and the gutter the string over-states the frame by at most
- * `2 × gutter`. §9.6 specifies exactly this expression and it is reviewed; the error is in the safe
- * direction (a slightly larger candidate, never a blurrier one), and the alternative is a fifth
- * bespoke `sizes` form on a page that has one image. `sizesFor` is not used here because it answers
- * a different question — the width of one cell of a masonry column ladder, which this page has not
- * got.
- */
 const sizes = `min(100vw, ${PAGE_MAX.band}px)`;
 
-/*
- * COMPOSED IN THE FRONTMATTER, EVERY ONE OF THEM. MEASURED by 05-07 on the category routes: two
- * adjacent expressions inside a framework component's children lose the whitespace between them —
- * `{count} {noun}` shipped as `14photographs` on all seven pages, with a green build and a green
- * suite. Every string below reaches its component as ONE expression for that reason.
- */
 const backToGallery = '← All photographs';
 const backToCategory = `← ${label}`;
-/*
- * `← PREV` / `NEXT →`, NOT the neighbour's title. The M4 column is 290px wide and right-ranged;
- * a title as long as `Pigeon At Umaid Bhawan` wrapped the row and pushed the pagination off the
- * bottom-aligned baseline. The neighbour's name is still announced — it is on `aria-label`, where
- * it costs no width.
- */
 const previousLabel = '← PREV';
 const nextLabel = 'NEXT →';
 
-/* Zero-padded, so neither row changes width as you move through the category. */
 const pad = (n: number) => String(n).padStart(2, '0');
 const positionLabel = `${pad(position)} / ${pad(of)}`;
 
-/*
- * `← ARCHITECTURE` — the section and nothing else.
- *
- * IT CARRIED THE COUNT AND NO LONGER DOES. It read `← PORTRAITS, 02 OF 02`, and the arrow row
- * beneath it read `02 / 02` — the same two numbers, 276px apart, in one 290px column. Akhil:
- * *"remove counter 02 of 02 from ← PORTRAITS, 02 OF 02. move it to bottom, near prev/next."* It is
- * already there: `positionLabel` sits between the arrows, which is where a position belongs,
- * because that is the control it describes.
- *
- * What is left is a way back to the section, which is the one thing this line was for.
- */
 const sectionLabel = `← ${label.toUpperCase()}`;
 
-/*
- * THE GEAR LINE, COMPOSED HERE AND HIDDEN IN CSS. Akhil removed camera and lens from view and said
- * *"keep in code, hide from view"* — so this is built, rendered, and switched off by
- * `data-tech="off"` on the column. Flip that one attribute and it returns.
- *
- * Only the parts that exist are joined: lens is absent on 11 of the 40 records, so a fixed
- * `camera · lens` would render a trailing separator on more than a quarter of the pages the day
- * this is switched back on.
- */
-/*
- * `displayCamera` / `displayLens` FROM `exif-display.ts`, NOT A TABLE WRITTEN HERE. A local
- * `CAMERA_NAMES` map was written first and it was a SECOND DEFINITION of one that already exists:
- * `gate:exif` printed "5 camera entr(ies), 4 lens entr(ies), read from src/lib/exif-display.ts"
- * and that is what found it. Those helpers also THROW on an unmapped value rather than falling
- * back to the raw EXIF string, so a new body silently rendering as
- * `NIKON CORPORATION NIKON D5300` is unrepresentable.
- *
- * Only the parts that exist are joined: lens is absent on 11 of the 40 records, so a fixed
- * `camera / lens` pair would render a stray line break on more than a quarter of the pages the day
- * this is switched back into view.
- */
 const gearLines = [displayCamera(photo.exif.camera), displayLens(photo.exif.lens)].filter(
   (line): line is string => typeof line === 'string' && line.length > 0,
 );
-/* `·` and not an em dash — see the note in src/pages/index.astro. */
 const pageTitle = `${photo.title} · ${home.title}`;
 ---
 
-{
-  /*
-   * `pub-max-photos`, NOT `pub-max-band`. The band caps `.pub-main` at `min(1080px, 100%)` and
-   * centres it, which is right for an article-shaped page and wrong for this one: MEASURED at 1280,
-   * the content ran 100→1180 while the bar and the footer run 48→1232, so the caption's right edge
-   * sat 52px inside the gutter every other element on the site aligns to. With the column now
-   * pinned to the trailing edge, that inset was the difference between "right aligned" and "nearly
-   * right aligned".
-   *
-   * `pub-max-photos` is the gallery's own measure, so a photograph and the grid it came from share
-   * one column — which is also what makes stepping between them not shift the page.
-   */
-}
+{}
 <PublicLayout mainClass="pub-max-photos pd-page">
-  {
-    /*
-     * SEO-01, §9.6. `og:image` is `urls.large` — MEASURED at 1200w, the Open Graph recommended
-     * width — and `og:image:alt` is the photograph's own `alt`, which is the only description a
-     * reader of the card gets. `og:type` is `article`; `twitter:card` is `summary_large_image`,
-     * which `<Seo>` emits for every page. The canonical is this page's own path, made absolute by
-     * `<Seo>` from `Astro.site`, which throws on anything it cannot resolve.
-     *
-     * The description is the photograph's `alt`. It is reviewed prose describing this exact image
-     * (the shortest in the corpus measures 83 characters), so it is the one field on the record
-     * that answers "what is this page about" without a sentence being invented for it. `alt` is
-     * also, by `PhotoSchema`'s own rule, NOT equal to the title — so the card's title and its
-     * description cannot degenerate into the same string.
-     */
-  }
-  {
-    /*
-     * SAME-DOCUMENT NAVIGATION BETWEEN PHOTOGRAPHS.
-     *
-     * Akhil: *"only the photo part is the one that re renders or updates and the text updates, but
-     * rest of the elements since they are in the existing same position, we don't move at all, and
-     * they don't re render."*
-     *
-     * They did. Previous and next are real links, so every step was a full document navigation —
-     * MEASURED at 330ms with 16,624 bytes re-fetched, the bar and the footer re-parsed and
-     * repainted each time. Nothing MOVED (both landed at barY 0 / footY 720) but everything was
-     * rebuilt, which is what read as a refresh.
-     *
-     * `transition:persist` on the bar and the footer in `PublicLayout` is the other half: those two
-     * are carried across the swap as the SAME DOM NODES rather than replaced, so they are not
-     * re-rendered at all. The photograph and the caption are what change.
-     *
-     * ON THE ROUTE, NOT IN THE SHARED LAYOUT. In the layout this script would reach Home,
-     * /development and /resume — all of which ship zero JavaScript and none of which has a
-     * navigation that would use it. `slot="head"` keeps it on the 40 photograph documents.
-     *
-     * IT REQUIRED A THIRD ROUTE CLASS IN `gate:public-js`, added the same day and argued at
-     * length there: that gate had ZERO-JS and HYDRATING, and a page carrying a module script with
-     * no island fitted neither. The arithmetic that justified widening it: 16,338 bytes raw /
-     * 5,635 gzipped, once, cached across all 40 — against 16,624 re-fetched every step. Two steps
-     * and it has paid for itself. The gate now REQUIRES the router here and refuses any other
-     * chunk, so this cannot quietly become a general JavaScript allowance.
-     *
-     * Photograph → photograph is a swap; photograph → gallery falls back to a normal navigation,
-     * because the gallery has no router of its own and nothing worth persisting.
-     */
-  }
+  {}
+  {}
   <ClientRouter slot="head" />
 
   <Seo
@@ -439,49 +167,14 @@ const pageTitle = `${photo.title} · ${home.title}`;
     imageAlt={photo.alt}
   />
 
-  {
-    /*
-     * THE M4 LAYOUT. One viewport: header, then a body that is a COLUMN on a narrow screen and a
-     * ROW from 1024px, with the text bottom-aligned to the photograph's own bottom edge.
-     *
-     * NO BACK LINK. The previous build opened with `← All photographs` and `← Architecture`; the
-     * approved matrix has neither, and the layout has no room for a row above the photograph in a
-     * `100dvh` frame. The bar's `photography` item returns to the gallery and is marked current,
-     * and the arrows traverse the category — so nothing is unreachable. Recorded because it
-     * retires two pinned copy strings.
-     */
-  }
+  {}
   <div
     class="pd-body"
     data-orient={photo.dimensions.width >= photo.dimensions.height ? 'landscape' : 'portrait'}
   >
-    {
-      /*
-       * `.pd-shot` IS THE PHOTOGRAPH'S OWN BOX, and it exists because the placeholder was on the
-       * wrong element.
-       *
-       * The thumbnail used to be `background-image` on `.pd-im` — the FLEX CONTAINER — at
-       * `background-size: contain`. MEASURED at 1280x800 on `architecture-officegreens`: the
-       * container is 746x632 and the photograph is 355x631, so a blurred copy was painted 746px
-       * wide behind a 355px image. Blurred wings either side of every portrait. Akhil: *"why does
-       * the image look off"* — that was it.
-       *
-       * `aspect-ratio` from the record's own dimensions, with `max-width`/`max-height` at 100%, so
-       * the browser resolves the largest box of the RIGHT SHAPE that fits, and reserves it before a
-       * byte of the photograph arrives. That is the no-layout-shift half of the request: nothing
-       * moves when the image lands, because its space was already the right shape and size.
-       */
-    }
+    {}
     <div class="pd-im">
-      {
-        /*
-         * `--pd-ar` IS THE RATIO AS A BARE NUMBER, and it is what lets CSS compute the photograph's
-         * width from a height budget: `min(100%, calc(var(--pd-ar) * 72svh))`. Both terms are
-         * definite before the file arrives, so the box is reserved at the right shape and nothing
-         * moves when the photograph lands. See `photo-detail.css` for the four constructions that
-         * tried to do this with `aspect-ratio` and maxima and each failed one of the two tests.
-         */
-      }
+      {}
       <div class="pd-shot">
         <img
           src={photo.urls.large}
@@ -497,30 +190,9 @@ const pageTitle = `${photo.title} · ${home.title}`;
       </div>
     </div>
 
-    {
-      /*
-       * `data-tech="off"` IS THE SWITCH. The gear line and the EXIF list below are rendered and
-       * hidden — see `photo-detail.css` for why the hide is `display: none` and not a
-       * visually-hidden clip.
-       */
-    }
+    {}
     <div class="pd-col" data-tech="off">
-      {
-        /*
-         * THE CONTEXT LINE, AND IT IS WHY THERE ARE NO FILTER PILLS ON THIS PAGE.
-         *
-         * Six pill placements were built and measured, and each cost something real: 44px of height
-         * above the composition, or two to six wrapped rows inside the 290px column, because six
-         * sections do not fit in 290px. Akhil chose this instead: *"No filters here — detail page
-         * shows only 'Architecture · 07/10' context; filtering lives on the grid page."*
-         *
-         * WHAT IT GIVES UP, said plainly: a DIFFERENT section is no longer one step away — it is
-         * photograph → this section → another section. That was the original complaint, *"if I
-         * filter a section and open a photo, I am not able to navigate to another section from
-         * here"*, so the trade is deliberate. The leading arrow is what makes the first of those
-         * two steps legible as a way out.
-         */
-      }
+      {}
       <p class="pd-context">
         <Link
           href={categoryHref}
@@ -534,26 +206,7 @@ const pageTitle = `${photo.title} · ${home.title}`;
 
       <Heading level={1} size="2xl" weight="regular" className="pd-title">{photo.title}</Heading>
 
-      {
-        /*
-         * ALWAYS RENDERED, EVEN WHEN THE RECORD HAS NO PLACE. Akhil: *"I want to keep the place
-         * always."*
-         *
-         * It used to be `{photo.place && …}`, and its coming and going was the whole reason the
-         * caption's placement was constrained: MEASURED, a cluster anchored to the card's bottom
-         * put the title at y548 on a photograph with a place and y575 on one without — 27px of
-         * movement, on 23 of the 40 records, which is more than half the gallery. Only
-         * `space-between` pinned both ends, and that is what spread the title and the arrows 480px
-         * apart.
-         *
-         * Reserving the line makes every placement stable, so the choice becomes a design one
-         * again rather than one the data was making.
-         *
-         * EMPTY, NOT A DASH OR A FALLBACK. The line holds its height and says nothing — a `—`
-         * would assert that the place is unknown, and the category would answer a question nobody
-         * asked. `aria-hidden` when empty so a screen reader is not handed a blank paragraph.
-         */
-      }
+      {}
       <p class="pd-place" aria-hidden={photo.place ? undefined : 'true'}>{photo.place}</p>
 
       {
@@ -612,30 +265,5 @@ const pageTitle = `${photo.title} · ${home.title}`;
       </nav>
     </div>
   </div>
-  {
-    /*
-     * NO CROSS-FADE SCRIPT, AND THE ABSENCE IS A MEASURED DECISION rather than a thing not done.
-     *
-     * Akhil asked for *"animation or something as photo loads"*. A load-triggered cross-fade needs
-     * a load event, so it needs script — CSS cannot know when an image has arrived, and an
-     * `animation` keyed to first paint would fade the element in while it is still blank.
-     *
-     * Written, measured, and REVERTED. `is:inline` clears `gate:public-js`'s A1 rules — its
-     * anti-canary for both A1-SRC and A1-MODULE is a bare inline script — but A2 is stricter than
-     * A1 and refuses it three ways:
-     *
-     *   x [A2-SCRIPT-SET]    3 distinct non-theme inline scripts; exactly 2 are permitted
-     *   x [A2-BOOTSTRAP-LEAK] a 502 B non-theme inline script on 40 zero-JS documents
-     *   x [A2-COUNT]         a zero-JS route may carry exactly one <script>, the theme block
-     *
-     * 502 bytes on 40 documents, to animate something the browser already reveals. The
-     * placeholder below still does the substantive half of the request — the photograph's box is
-     * reserved at its own aspect ratio, so there is no layout shift, and the blurred thumbnail
-     * stands in until the real file paints over it. What is missing is only the tween.
-     *
-     * The `[data-fade]` rules in `photo-detail.css` are the other half and are KEPT: they are
-     * inert with no script to set the attribute, and they are what makes this a one-line change if
-     * Akhil decides the fade is worth amending A2 for.
-     */
-  }
+  {}
 </PublicLayout>

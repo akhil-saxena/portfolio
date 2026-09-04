@@ -1,102 +1,15 @@
 ---
-/**
- * The six-photograph peek grid — state A's gallery region. Plan 05-11, Task 1.
- *
- * ================================================================================================
- * SIX RENDER AT EVERY CLASS. THE GRID REFLOWS; IT NEVER TRUNCATES.
- * ================================================================================================
- *
- * `home_config.peekIds` is the source, and the count is DERIVED from it — never a literal. R-6:
- * dropping to four on a narrow screen means two of the six photographs Akhil chose do not exist on
- * that class, and there is no summary edition of a portfolio to fall back to. The arrangement
- * ladder lives in `src/styles/home.css`; nothing here or there hides a tile.
- *
- * A grid at every class and never a horizontal rail — the reason is the vertical snap container
- * this page has and `/photography` does not. See `home.css` §2.
- *
- * ================================================================================================
- * ONE FLUSH ROUNDED BLOCK, NOT SIX ROUNDED CARDS — THE COMPOSITION'S LOAD-BEARING DETAIL
- * ================================================================================================
- *
- * `git show legacy/nextjs-portfolio:src/styles/home.css`, `.hd-gallery`:
- *
- *     border-radius: 10px;  overflow: hidden;  gap: 0.5rem;
- *
- * The radius and the clip are on the **container**. Only the four outer corners of the block are
- * rounded; the twenty interior corners are square, and the six photographs read as one object.
- * Phase 5 shipped the radius on the TILE instead — six separately-rounded cards — and that single
- * difference is most of why the shipped page reads as a grid and the approved one reads as
- * composed. The markup below therefore carries `.hm-peek-grid` as the rounding/clipping element
- * and `.hm-tile` carries none; see `home.css` §2 for the rules and the reason the tile keeps
- * `overflow: hidden` anyway (the hover scale needs a clip of its own).
- *
- * ================================================================================================
- * THE `ALL n →` BADGE IS A REAL LINK, AND `n` IS THE MANIFEST'S LENGTH
- * ================================================================================================
- *
- * The design handoff puts a badge on the last tile reading `ALL 39 →`. **39 is not typed here.**
- * `05-UI-SPEC.md` said 39, the manifest holds 40, and a hardcoded photograph count turned `main`
- * red in Phase 4 the moment a real photograph landed — so the figure is `manifest.length` and
- * moves the day the pipeline runs.
- *
- * The handoff makes the WHOLE GRID one anchor to `/photography`. That is not done here, and the reason
- * is the accessible name: an `<a>` wrapping six `<img>` elements takes their six `alt` strings
- * concatenated as its name, so a screen-reader user hears a forty-word link. The badge is the
- * anchor instead — accessible name exactly `ALL 40 →`, one tab stop, `--space-11` of hit box on a
- * coarse pointer — and the primary route to the gallery stays the `View Portfolio →` CTA that
- * `home_config.ctas` owns. The photographs themselves are deliberately not links, which is the
- * legacy behaviour too (`.hd-gallery-item` is a `<div>` there).
- *
- * ================================================================================================
- * `alt` IS THE PHOTOGRAPH'S OWN `alt`, NEVER ITS `title` — D-24-1, AND IT IS A PUBLIC DEFECT
- * ================================================================================================
- *
- * `deferred-items.md` D-24-1 records the legacy `home.astro:154 alt={p.title}` as a defect on the
- * site's primary route: six images announcing their NAME where their DESCRIPTION belongs, to
- * exactly the readers who cannot see them. All 40 `alt` strings are committed and reviewed.
- * `test/public/home.node.test.ts` asserts it in both directions — that every chosen photograph's
- * `alt` is present, and that no image on the page uses a photograph's `title` as its `alt`.
- *
- * ================================================================================================
- * WHY `sizesFor` IS NOT CALLED HERE, AND WHY THAT IS NOT A RE-DERIVATION
- * ================================================================================================
- *
- * 05-05 exports `sizesFor(columns)` and wave 4 is told to import rather than re-derive. It is
- * imported by `/photography`, and it is the WRONG function for this grid: it is built for the masonry's
- * own column ladder (1 column at base, 2 at the first breakpoint, `columns` above) against
- * `PAGE_MAX.photos` (1280). The peek grid is 2 columns at base, 3 from 673, against
- * `ACT_ONE_MAX` (1000). Calling it here would emit a `sizes` string that is silently wrong —
- * the browser would download a different variant of all six photographs with no visual symptom and
- * no error, which is the exact failure `sizesFor`'s own docstring refuses a bad column count over.
- *
- * So the arrangement differs and the SOURCE OF TRUTH does not: `peekSizes()` below is composed
- * from the same `GUTTER_RUNGS` that `sizesFor` composes, in the same descending, first-match-wins
- * clause order, against this grid's OWN gap and cap — `PEEK_GAP` (16px) and `ACT_ONE_MAX`
- * (1000px, the design's Act-1 column). Both live in `src/lib/layout-ladder.ts`
- * beside `MASONRY_GAP` and `PAGE_MAX`, each with the reason it is not the other. No breakpoint,
- * gutter, gap or cap is typed here.
- * `srcsetFor` IS imported unchanged — it is arrangement-independent.
- *
- * Recorded as a finding for whoever needs a third grid: `sizesFor` cannot be reused across
- * arrangements, and the honest fix is to give it the ladder as a parameter rather than to copy it.
- */
 import homeConfig from '../../../data/home_config.json';
 import manifest from '../../../data/portfolio_images.json';
 import { ACT_ONE_MAX, GUTTER_RUNGS, PEEK_GAP } from '../../lib/layout-ladder';
 import { srcsetFor } from '../../lib/photo-srcset';
 import { DEFAULT_FOCAL_POINT } from '../../schemas/photo';
 
-/**
- * The peek arrangement, as data rather than as prose, so the `sizes` string and the stylesheet's
- * media queries cannot disagree about it silently. `test/public/home.node.test.ts` asserts that
- * every `minWidth` here is one of `BREAKPOINTS` and that `home.css` steps at the same rung.
- */
 const PEEK_COLUMNS: ReadonlyArray<{ minWidth: number | null; columns: number }> = [
   { minWidth: null, columns: 2 },
   { minWidth: 673, columns: 3 },
 ];
 
-/** The column count in force at a gutter rung. */
 function peekColumnsAt(width: number | null): number {
   let inForce = PEEK_COLUMNS[0].columns;
   for (const step of PEEK_COLUMNS) {
@@ -106,11 +19,6 @@ function peekColumnsAt(width: number | null): number {
   return inForce;
 }
 
-/**
- * The `sizes` attribute for a peek tile. Descending by `min-width`, because a `sizes` list is
- * first-match-wins, and every term is derived: the gutter from `GUTTER_RUNGS`, the inter-tile gap
- * from `PEEK_GAP`, the cap from `ACT_ONE_MAX`.
- */
 function peekSizes(): string {
   const conditioned = GUTTER_RUNGS.filter((rung) => rung.minWidth !== null);
   const pad = Math.max(...conditioned.map((rung) => String(rung.minWidth).length));
@@ -144,12 +52,6 @@ function peekSizes(): string {
 
 const SIZES = peekSizes();
 
-/**
- * The chosen photographs, resolved against the manifest. An unknown id THROWS rather than being
- * skipped: a silently-dropped peek id is five photographs where six were chosen, and the page
- * still renders. The count is never compared to a literal — 05-UI-SPEC says 39 and the manifest is
- * at 40, and a hardcoded count turned `main` red in Phase 4 the moment a real photograph landed.
- */
 const peekPhotos = homeConfig.peekIds.map((id) => {
   const photo = manifest.find((record) => record.id === id);
   if (!photo) {
@@ -162,27 +64,11 @@ const peekPhotos = homeConfig.peekIds.map((id) => {
   return photo;
 });
 
-/** `home_config.peekPositions` overrides, defaulting to the schema's own constant (OD-5). */
 const positions = homeConfig.peekPositions as Record<string, string | undefined>;
-
-/**
- * The badge's copy, and the FIGURE IS DERIVED. See this file's header for why `39` is not typed.
- *
- * Assembled with an explicit template literal rather than as `ALL {count} {ARROW}` in the
- * template: **Astro drops the whitespace between two adjacent expressions**, which shipped
- * `14photographs` on seven routes through a green build and 59 green assertions. One expression,
- * one string, no adjacency.
- */
 
 ---
 
-{/* §6.6.4 — one of the three named landmarks. `aria-label` names the region; state A itself is a
-    plain <div>, so the page carries exactly three and not four. */}
 <section class="hm-peek" aria-label="Photographs">
-  {/* 05-17: the radius and the clip moved OFF this element and onto `.hm-tile`, one per
-      photograph. 05-16 put them here so the six read as a single flush slab — a reading taken from
-      the legacy `.hd-gallery` and not from the approved design, which MEASURES as six separated
-      tiles at `gap: 14px` with `border-radius: 8px` on each. See `src/styles/home.css` §3. */}
   <ul class="hm-peek-grid" data-peek-count={peekPhotos.length} data-peek-total={manifest.length}>
     {
       peekPhotos.map((photo) => (
@@ -201,15 +87,6 @@ const positions = homeConfig.peekPositions as Record<string, string | undefined>
               style={`object-position: ${positions[photo.id] ?? DEFAULT_FOCAL_POINT}`}
             />
             {
-              /*
-               * NO `ALL 40 →` OVERLAY. It sat on the last peek tile as a pill and Akhil removed it:
-               * *"from hero page, remove All 40 -> pill."*
-               *
-               * Nothing is lost. The `Photography →` door directly below goes to the same place, is
-               * the same one click, and says so in words rather than in a count — and the whole
-               * peek grid is itself a link to the gallery. The pill was a third way to the same
-               * page, painted over a photograph.
-               */
             }
           </div>
         </li>
@@ -217,4 +94,3 @@ const positions = homeConfig.peekPositions as Record<string, string | undefined>
     }
   </ul>
 </section>
-

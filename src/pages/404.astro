@@ -1,153 +1,31 @@
 ---
-/**
- * The 404, on the public shell. Plan 05-13, task 2.
- *
- * ================================================================================================
- * WHY THIS ROUTE EXISTS AT ALL
- * ================================================================================================
- *
- * `wrangler.jsonc` sets `assets.not_found_handling` to `"404-page"`, which needs a
- * `dist/client/404.html` to serve — with no such file the Workers asset handler falls back to a
- * bare platform response with no navigation, no theme and no copy. MEASURED against real workerd
- * with this page in place: a request for `/nope-<random>` answers **404** and returns THIS
- * document, not a platform page.
- *
- * ================================================================================================
- * WHY IT CARRIES THE SHELL AND NOT A HAND-ROLLED DOCUMENT
- * ================================================================================================
- *
- * The Phase 2 placeholder this replaces was a complete standalone `<html>` — its own `<head>`, its
- * own `<style>`, no nav, no footer, no theme script. A reader who mistypes a URL therefore left the
- * site's visual identity at the moment they most need a way back into it, and the page was
- * unthemed: a dark-mode reader got a white flash and a white page.
- *
- * On `PublicLayout` it inherits all of that for free — the nav, the footer, the single inline theme
- * block (so no flash), and the gutter ladder — which is also why the ladder gate keeps covering it.
- *
- * ================================================================================================
- * 🔴 IT DELIBERATELY DOES NOT USE `<Seo>`, AND THAT IS THE OPPOSITE OF AN OVERSIGHT
- * ================================================================================================
- *
- * Every other route in this phase renders `<Seo>` and SEO-01 requires the full tag set on every
- * page. This one must not, and the reason is specific rather than stylistic:
- *
- *   - `<Seo>` emits `<link rel="canonical">`. A canonical on a 404 declares the not-found URL to be
- *     a canonical page of this site, which is the definition of a soft 404. The status code says
- *     "this is not a page" and the canonical would say "this is the page" — a crawler resolves that
- *     contradiction in favour of the tag it can act on.
- *   - `<Seo>` emits `og:url`, `og:image` and `og:title`. A 404 sharing as a photograph of Singapore
- *     with a real-looking title is worse than sharing as nothing.
- *
- * So the head slot carries a `<title>` and the `noindex` this page has always had, and nothing
- * else. `test/public/seo.node.test.ts` excludes exactly `404.html` from the pages it audits, and
- * asserts that it is BOTH excluded from the sitemap AND present on disk — an exclusion asserted
- * against a document that does not exist is vacuously true, which is how this would have rotted.
- *
- * ================================================================================================
- * COPY — §13.2, VERBATIM, INCLUDING ONE JUDGEMENT ALREADY RECORDED
- * ================================================================================================
- *
- *     **Not found.**
- *     *There is nothing at this address.*
- *     → `Go to the home page`
- *
- * THE ARROW IS THE TABLE'S MARKER FOR "THEN A LINK", NOT COPY — it sits outside the backticks,
- * exactly as it does in the empty-category row directly above, where 05-07 recorded the same
- * reading in `PhotoEmpty.tsx`. Rows whose arrow IS copy carry it inside the backticks
- * (`ALL WORK →`, `SCROLL FOR THE WORK ↓`). The trailing period on "Not found." is likewise the
- * table's, and is kept for the same reason `PhotoEmpty` keeps "…yet.".
- *
- * ================================================================================================
- * ZERO FRAMEWORK JAVASCRIPT (§5.1)
- * ================================================================================================
- *
- * `Heading`, `Text` and `Link` are design-system React components rendered to static markup at
- * build time — no `client:*` directive, so no island, no hydration and no module script. They are
- * imported by subpath, never through the barrel, which `gate:ds` enforces.
- */
-
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import PublicLayout from '../layouts/PublicLayout.astro';
 
-/** Where the one link goes. Named so the markup and this file's own docstring cannot disagree. */
 const WORK_PATH = '/development';
 const PHOTOS_PATH = '/photography';
 ---
 
 <PublicLayout mainClass="pub-max-home">
   <Fragment slot="head">
-    {
-      /*
-       * NO EM DASH. Akhil: *"don't use em dashes in text"*, and the title was
-       * `Not found — Akhil Saxena` — the one place a visual check would miss, because a browser tab
-       * truncates it and no screenshot of the page shows it.
-       */
-    }
+    {}
     <title>Not found · Akhil Saxena</title>
     <meta name="robots" content="noindex" />
   </Fragment>
 
-  {
-    /*
-     * ================================================================================================
-     * P2, "THE PHOTOGRAPH THAT ISN'T" — the empty frame IS the illustration
-     * ================================================================================================
-     *
-     * Akhil: *"Use p2 to build 404 page ... dont add home button"*, from the three 404 designs. P2 is
-     * the two-column one: the message on the left, an empty picture frame on the right, captioned
-     * "No image at this address".
-     *
-     * IT EARNS ITS PLACE ON THIS SITE SPECIFICALLY. A generic 404 illustration is decoration; an
-     * empty frame on a PHOTOGRAPHER'S site is the same joke the page is already making, drawn once
-     * instead of said twice. It is built from a border and a dashed inset rather than from an image,
-     * so the page that says "no image here" does not itself load one.
-     *
-     * NO HOME BUTTON. The design's own third action was a quiet `home` link and it is dropped on
-     * instruction. What remains is the two destinations that actually hold something — and the
-     * wordmark in the bar is already a link home on every route, so nothing is lost.
-     *
-     * `aria-hidden` ON THE FRAME. Its caption repeats what the prose above already says, and a
-     * screen reader meeting both hears the same fact twice. The frame is a picture of an absence;
-     * the absence is stated in text.
-     */
-  }
+  {}
   <div class="nf-page">
     <div class="nf-copy">
       <p class="nf-eyebrow">404 · Not found</p>
-      {
-        /* §4.3 item 1: the accent is the full stop and nothing else. `--ochre-d`, the same token
-          `.wk-stop` uses — the design's green period is not taken, because the last chromatic accent
-          left this palette on 2026-09-05 when the timeline's green dot went. */
-      }
+      {}
       <Heading level={1} size="4xl" weight="regular" className="nf-title">
         Nothing to see here<span class="nf-stop">.</span>
       </Heading>
       <Text variant="small" className="nf-sub">
         This address holds no page. An empty frame, no photograph in it.
       </Text>
-      {
-        /*
-         * ==========================================================================================
-         * NO ACTIONS AT ALL — THE BAR ALREADY CARRIES BOTH DESTINATIONS
-         * ==========================================================================================
-         *
-         * Akhil: *"do i need buttons there? on 404 page. we have header already. it's duplicacy."*
-         *
-         * He is right, and it is the SAME RULE that removed the home button one step earlier —
-         * *"dont add home button"* — applied consistently instead of to one link out of three. The
-         * shell's nav ships `development` and `photography` on every route, this page included, and
-         * the wordmark is the link home. Two buttons under the prose repeat all of it.
-         *
-         * P2's design has three actions. They earn their place in a static mock, where nothing else
-         * on the canvas is clickable; on the real page they are the third copy of a menu the reader
-         * can already see. What the page needs is to SAY that the address is empty, and it does.
-         *
-         * `.nf-acts` and `.nf-act` are gone from the stylesheet with them; `Button` is no longer
-         * imported. `seo.node.test.ts` asserts the absence, because a 404 with no visible way out
-         * reads like an oversight to the next person and this is the note saying it is not.
-         */
-      }
+      {}
     </div>
 
     <div class="nf-frame" aria-hidden="true">
@@ -157,10 +35,6 @@ const PHOTOS_PATH = '/photography';
 </PublicLayout>
 
 <style>
-  /*
-   * Layout only. Type, colour and radius come from the design system's tokens; nothing here
-   * originates a value in a dimension it already names.
-   */
   .nf-page {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -169,7 +43,6 @@ const PHOTOS_PATH = '/photography';
     padding-block: var(--space-16);
   }
 
-  /* Two columns only when the frame can be its own width without squeezing the prose. */
   @media (min-width: 673px) {
     .nf-page {
       grid-template-columns: minmax(0, 1fr) 340px;
@@ -196,16 +69,7 @@ const PHOTOS_PATH = '/photography';
     color: var(--ochre-d);
   }
 
-  /*
-   * 🔴 `padding`, NOT `margin`. `Heading` and `Text` both write `margin: 0` into the STYLE
-   * ATTRIBUTE, which no stylesheet can reach at any specificity short of `!important`. The first
-   * version used `margin-block-start` and the sub-paragraph rendered ON TOP of the heading's
-   * descenders — measured, not guessed: "This address holds no page" overlapped "Nothing to see
-   * here". `#ph-count` in `photography.css` carries the same note for the same reason.
-   */
-  /* padding, not margin: Heading and Text write margin:0 inline. */
   .nf-sub {
-    /* A copy measure rather than a layout maximum, so it is in ch and not in the page ladder. */
     max-width: min(46ch, 100%);
     padding-block-start: var(--space-5);
   }
@@ -214,14 +78,6 @@ const PHOTOS_PATH = '/photography';
     padding-block-start: var(--space-1);
   }
 
-  /*
-   * THE FRAME IS DRAWN, NOT LOADED. A 1px edge with a dashed inset 12px inside it — the second
-   * border is what makes it read as a mount rather than as an empty box, and both are `--wire` and
-   * `--rule`, the two hairline weights this site already uses for bounding and separating.
-   *
-   * `aspect-ratio` rather than a fixed height, so the 340x250 of the design survives the column
-   * narrowing at the breakpoint instead of leaving a fixed box in a fluid grid.
-   */
   .nf-frame {
     position: relative;
     display: flex;

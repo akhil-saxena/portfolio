@@ -1,44 +1,4 @@
 ---
-/**
- * `/development` — PUB-02, SEO-01. Plan 05-09.
- *
- * ================================================================================================
- * THE SHAPE OF THE PAGE, AND WHERE EVERY STRING ON IT COMES FROM
- * ================================================================================================
- *
- * §10, as reviewed at 1440 on 2026-08-22: a 44px header whose full stop is the accent, a
- * sub-paragraph capped at 480px, the `PROFESSIONAL EXPERIENCE` eyebrow, the employment band, the
- * `PROJECTS` eyebrow with a derived count line, the card grid, and the italic serif cross-link
- * above the footer.
- *
- * The header and the sub-paragraph are the reviewed page copy, transcribed from
- * `design_handoff_portfolio/Work.dc.html` — they exist in no data file and belong to no record.
- * Everything else on the page is read at build time: the three employment rows from
- * `data/resume.json`, the five cards from `data/projects.json`, and the project count from the
- * length of that array.
- *
- * ================================================================================================
- * NOT ONE COUNT ON THIS PAGE IS A LITERAL
- * ================================================================================================
- *
- * No count is RENDERED as a literal and none is ASSERTED as one — not in this file, in
- * `EmploymentBand.astro`, in `ProjectCard.astro`, in `work.css` or in
- * `test/public/development.node.test.ts`. (The figures named in these comments are prose describing the
- * fixture on the day it was written; nothing reads them.) §13.3 is explicit that
- * no hand-maintained copy of a count may exist, and this project has already paid for it twice:
- * the design system's component figure went stale three times in nine days, and plan 04-09 turned
- * `main` red by writing a count that 04-01 had re-scoped.
- *
- * ================================================================================================
- * ZERO FRAMEWORK JAVASCRIPT (§5.1 route 2)
- * ================================================================================================
- *
- * `Card`, `Chip`, `StatusPill` and `Link` are React components rendered to static markup at build
- * time — no `client:*` directive anywhere on this route, so no island, no hydration and no module
- * script. The only `<script>` the page carries is the shell's single inline theme block, which
- * §5.2 permits by name. The suite asserts all of that against the served bytes.
- */
-
 import { getCollection } from 'astro:content';
 import rawProjects from '../../data/projects.json';
 import PublicLayout from '../layouts/PublicLayout.astro';
@@ -49,38 +9,13 @@ import { resume } from '../lib/content';
 import { resolveDsTokens } from '../lib/ds-component-count';
 import '../styles/development.css';
 
-/** The route's own path, in one place: the canonical and the `<Seo>` call sit beside it. */
 const WORK_PATH = '/development';
 
-/*
- * The projects come through the `projects` CONTENT COLLECTION rather than a raw JSON import, so the
- * records this page renders are the ones `ProjectSchema` validated. `src/content.config.ts` records
- * why that matters: content sync runs before the build whether or not a page reads a collection,
- * which is the property a module-scope parse turned out NOT to have (03-08 measured it).
- *
- * 🔴 AND `getCollection` DOES NOT PRESERVE THE FILE'S ORDER. MEASURED, against this build: it
- * returns the five records sorted by `id` — cairn, design-system, hued, momentum, timeshift —
- * where `data/projects.json` stores them cairn, hued, momentum, timeshift, design-system. The
- * page rendered the design-system card SECOND on its first build, which is not §10.1's order and
- * is not an order anybody chose. Worse, it is an order that MOVES: renaming a project's `id`
- * silently reshuffles the reviewed grid.
- *
- * So the collection remains the source of the RECORDS and the file is read for their ORDER, which
- * is the one thing the store does not carry. `rawProjects` is used for nothing else — every field
- * rendered on this page comes from the validated entry.
- */
 const orderOnDisk = (rawProjects as ReadonlyArray<{ id: string }>).map((record) => record.id);
 const projects = (await getCollection('projects'))
   .map((entry) => entry.data)
   .sort((a, b) => orderOnDisk.indexOf(a.id) - orderOnDisk.indexOf(b.id));
 
-/*
- * ANTI-VACUITY. `ProjectsSchema` refuses an empty array upstream, and the `file()` loader does NOT:
- * `src/content.config.ts`'s header records, read out of the loader's own source, that a missing or
- * unparseable file is LOGGED rather than thrown and an empty array is a warning. So a deleted
- * `data/projects.json` would reach this line as `[]`, and the page would ship an eyebrow, the word
- * for zero — which `spellCount` refuses — and an empty grid.
- */
 if (projects.length === 0) {
   throw new Error(
     'work.astro: the `projects` collection is empty. The file() loader logs a missing or ' +
@@ -89,59 +24,15 @@ if (projects.length === 0) {
   );
 }
 
-/*
- * §6.7 — `{{ds.componentCount}}` / `{{ds.categoryCount}}` resolved from the INSTALLED design
- * system's own README. `resolveDsTokens` throws on any `{{…}}` token it cannot resolve, and that
- * throw is the point: `ProjectSchema` bans the literal FIGURE, not the token, so this call is the
- * only thing between a stored token and the page a hiring manager reads first.
- */
 const cards = projects.map((project) => ({
   project,
   description: resolveDsTokens(project.description),
 }));
 
-/*
- * The one-liner is Home's string (§13.1) and this page does not render it — it is resolved here as
- * a GUARD, because both fields carry the token and `ProjectSchema`'s OD-6 refusal follows the
- * sentence rather than the field. A typo'd token stored in `oneLiner` fails this build, naming the
- * token and the input, instead of surfacing later on a route that renders it.
- */
 for (const project of projects) resolveDsTokens(project.oneLiner);
-
-/*
- * 🔴 THE COUNT LINE IS GONE. Akhil: *"remove text - five, shipped on my own."*
- *
- * It read `five, shipped on my own` and before that `five — shipped on my own`. Two things were
- * wrong with it and only one was the dash: the count is visible — there are five cards directly
- * beneath it — so the line spent a whole row of the section rule telling the reader something they
- * could see, and `shipped on my own` is the subtitle's claim made a second time nine lines later.
- *
- * `spellCount` AND ITS WORD TABLE WENT WITH IT. They were local to this file and existed for this
- * one line: twelve spelled numerals and a `RangeError` whose message explains why falling back to
- * digits would be the dangerous branch. All of it was machinery for a sentence that is no longer
- * rendered, and §13.3's rule that no count may be a hand-maintained literal is unaffected — there
- * is no count on this page to be one.
- */
 ---
 
-{
-  /*
-   * 🔴 `chrome` IS GONE FROM THIS CALL, so the shell draws its bar and its footer here exactly as it
-   * does on the other nine routes. Akhil: *"keep header same as in all other pages, footer too. Not
-   * customised for this page."*
-   *
-   * THAT ENDS TREATMENT A's ONE REAL COST. A's rail owned the identity, which meant this route had
-   * its own wordmark, its own contact row and a theme toggle in a place no other page puts it — a
-   * hole in the shell contract that `PublicLayout`'s `chrome` prop still documents, and which no
-   * route now opens. `chrome: 'rail'` stays supported and unused: it is one word to re-enable and
-   * the note beside it is the argument against doing so.
-   *
-   * `Development`, not `Work`, in the title — and a middle dot rather than an em dash. The route,
-   * the nav label and the `<h1>` all said development after commit cceb99e renamed them; this string
-   * was the last place still calling it Work, and it is the string a search result shows. A comment
-   * cannot sit between a component's attributes, which is what broke the build when it did.
-   */
-}
+{}
 <PublicLayout mainClass="pub-max-work wk-page">
   <Seo
     slot="head"
@@ -150,105 +41,15 @@ for (const project of projects) resolveDsTokens(project.oneLiner);
     canonical={WORK_PATH}
   />
 
-  {
-    /*
-     * ================================================================================================
-     * THE SPLIT: A RAIL THAT OWNS THE IDENTITY, AND A COLUMN THAT OWNS THE WORK
-     * ================================================================================================
-     *
-     * `Split Page Refinements.html` treatment A, asked for by name. The rail takes the wordmark, the
-     * headline, the intro, the experience and the contact row; this column takes the nav, the
-     * projects and the cross-link. `chrome="rail"` on the layout above is what stops the shell
-     * drawing a bar and a footer that would now be duplicates — see that prop's own note for what
-     * it costs.
-     *
-     * `EmploymentBand` IS NO LONGER RENDERED HERE. Its full-width rows with a metric ranged right
-     * cannot fit a 420px rail, so `IdentityRail` renders the same `resume.experience` as a dated
-     * timeline. The band is still the arrangement `/resume` uses and is untouched.
-     *
-     * THE HEADLINE IS PASSED INTO THE RAIL AS A SLOT rather than moved into it. The `<h1>` is the
-     * page's, not the rail's: a component that renders another page's `<h1>` decides that page's
-     * document outline, and the next route that wants a rail would inherit this one's heading.
-     */
-  }
-  {
-    /*
-     * ================================================================================================
-     * TREATMENT A: THE RAIL OWNS THE IDENTITY, THE COLUMN OWNS THE WORK
-     * ================================================================================================
-     *
-     * `Final Split Variations.html` A, chosen over B: *"build a."* The rail takes the wordmark, the
-     * headline, the intro, the experience and the contact row; this column takes the nav, the
-     * projects and nothing else. `chrome="rail"` stops the shell drawing a bar and a footer that
-     * would now be second copies — that prop carries the full cost, including the one that matters:
-     * the theme toggle is no longer where it is on the other nine routes.
-     *
-     * THE HEADLINE IS A SLOT, NOT MOVED INTO THE RAIL. The `<h1>` is this page's — a component that
-     * renders another page's heading decides that page's document outline, and the next route that
-     * wants a rail would inherit this one's.
-     */
-  }
-  {
-    /*
-     * ================================================================================================
-     * THE HEADLINE SITS IN THE EXPERIENCE COLUMN, AND THE SHELL STILL OWNS THE CHROME
-     * ================================================================================================
-     *
-     * Akhil: *"i like the split section better when title/subtitle is only on experience section."*
-     *
-     * So this is neither of the two arrangements built before it. Treatment A put the headline in the
-     * rail AND took the bar and footer off the route; the shared-header version spanned the headline
-     * full width and gave the chrome back. This keeps the chrome shared — `PublicLayout` is called
-     * with no `chrome` prop, so the bar and footer are the same ones the other nine routes draw — and
-     * puts the headline in the rail, where it reads as that column's own opening rather than as a
-     * banner over both.
-     *
-     * IT IS A SLOT, NOT MARKUP MOVED INTO THE COMPONENT. The `<h1>` is this page's: a component that
-     * renders another page's heading decides that page's document outline, and the next route to want
-     * a rail would inherit this one's. `IdentityRail` renders the slot if it is given one.
-     *
-     * `owns="experience"` STILL, because the two things it controls — the wordmark and the contact row
-     * — are the shell's on this route. The rail carries the headline and the timeline and nothing that
-     * exists twice on the page.
-     */
-  }
+  {}
+  {}
+  {}
   <div class="wk-split">
     <IdentityRail entries={resume.experience} owns="experience">
       <header class="wk-header" slot="headline">
-        {
-          /* §4.3 item 1: the full stop is the FIRST of the six elements the accent is reserved for,
-            and it is the stop alone — the heading takes the ink ramp. A span, not a coloured `h1`. */
-        }
+        {}
         <h1 class="wk-title">Things I design and build<span class="wk-stop">.</span></h1>
-        {
-          /*
-           * ================================================================================================
-           * THE SUB-PARAGRAPH IS GONE, BECAUSE THE ROW BELOW IT ALREADY SAID IT
-           * ================================================================================================
-           *
-           * Akhil: *"is subtitle necessary? we're having experience and brevo name just below this."*
-           *
-           * MEASURED, and he is right — it was a restatement in both halves. It read "Products shipped on
-           * my own, alongside frontend engineering at Brevo", and the two things it claimed are the two
-           * things the column then shows:
-           *
-           *   "shipped on my own"                → the five cards to its right, each with its own store mark
-           *   "frontend engineering at Brevo"    → EXPERIENCE, first row: Brevo, Senior Software Engineer,
-           *                                        2023 — NOW, about 120px underneath it
-           *
-           * A lede that survives only until the reader's eye travels 120px is not context, it is a caption
-           * for content that captions itself, and it cost the rail three lines at 768px where the column is
-           * 250px wide.
-           *
-           * IT SURVIVES AS THE `description`, up at the `PublicLayout` call. That is the one place the
-           * sentence is doing work the page cannot do for itself — a search result and a shared link have no
-           * timeline underneath them to read instead. So the copy is not deleted, it is moved to where it is
-           * the only thing there is.
-           *
-           * `.wk-lede` STAYS IN THE STYLESHEET: `/photography` uses it. Removing it here removes a call
-           * site, not a rule.
-           */
-        }
+        {}
       </header>
     </IdentityRail>
 
@@ -266,32 +67,7 @@ for (const project of projects) resolveDsTokens(project.oneLiner);
         </div>
       </section>
 
-      {
-        /*
-         * ==========================================================================================
-         * §13.2's CROSS-LINK PAIR IS NOW FULLY RETIRED
-         * ==========================================================================================
-         *
-         * Akhil: *"remove see the photograhs from development page"*, after *"remvoe ← see the work
-         * from photographs page"* took the returning half. Both editorial rows are gone.
-         *
-         * THE BAR CARRIES BOTH DIRECTIONS. `development` and `photography` are its two items and the
-         * current one is marked, so either page is one click from the other — which is what made the
-         * editorial rows optional rather than load-bearing, and it is the reason recorded when the
-         * first half went.
-         *
-         * WHAT WENT WITH IT: `src/lib/crosslink.ts` held `CROSSLINK_TYPE`, the italic-serif type role
-         * shared by the two rows so they could not drift apart. This page was its only importer, so
-         * the module is deleted rather than left as the one definition of a role nothing plays. The
-         * matching `OPAQUE_STYLE_SOURCES` entry in `gate:app-css` goes too — a register entry for an
-         * identifier no file uses is an exemption nobody is checking.
-         *
-         * The absence is ASSERTED, on both sides, rather than left to be noticed: this page and
-         * `/photography` each check that neither row nor its copy has come back. 05-15's audit had
-         * already measured one of these rows silently missing once before, which is exactly what a
-         * deleted test would have allowed again.
-         */
-      }
+      {}
     </div>
   </div>
 </PublicLayout>

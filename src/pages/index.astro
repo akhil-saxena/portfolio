@@ -1,191 +1,17 @@
 ---
-/**
- * Home — the two-act landing. PUB-01, PUB-13, SEO-01. Plans 05-11, 05-16 and 05-17.
- *
- * ================================================================================================
- * THE MARKER. `home-render-ok` IS A BEHAVIOURAL CONTRACT AND IT IS UNCHANGED BY THIS REBUILD.
- * ================================================================================================
- *
- * `GET /` returning a known marker is asserted by two suites and described in a third file:
- *
- *     test/harness/preview-reachable.node.test.ts   the built site is reachable over real workerd
- *     test/auth/deny-unauthenticated.node.test.ts   the AUTH-01/AUTH-04 suite — the middleware did
- *                                                   NOT run at build time and bake a 401 into the
- *                                                   public site's static HTML (threat T-02-35)
- *     src/middleware.ts                             states the contract in its own header
- *
- * The marker is **`home-render-ok`**, carried by `data-home-marker` on this page's `<h1>`.
- *
- * It is on the `<h1>` on purpose, and the `<h1>` is a design-system `Heading` — a React 19
- * component rendered with NO `client:*` directive. That preserves everything the old marker
- * proved, in one assertion: the build ran, a React component became static HTML with no hydration
- * script, the output was served by workerd, and the middleware let the prerendered route through.
- *
- * It is an ATTRIBUTE rather than the heading's text. The heading's text is `home_config.json`'s
- * `title`, which is reviewed content an editor may legitimately change; an attribute in code
- * cannot be edited out of the CMS by accident.
- *
- * ================================================================================================
- * 🔴 THE SOURCE OF TRUTH IS A FILE THAT RENDERS, AND THE LAST TWO ATTEMPTS DID NOT OPEN IT
- * ================================================================================================
- *
- * `design_handoff_portfolio/Akhil Saxena - Home.dc.html` is a WORKING PROTOTYPE of the approved
- * design. 05-11 built this page from `05-UI-SPEC.md`; 05-16 found the spec had drifted and rebuilt
- * it from the LEGACY stylesheet, using the handoff for detail only. Akhil rejected both:
- * *"rudimentary… like something made by a ten year old."*
- *
- * This plan rendered the prototype in Chromium at 1280x860, measured it, and captured the result
- * beside it. Where `05-UI-SPEC.md` and the prototype disagree, **the prototype wins**, and every
- * divergence is named — here, in `src/styles/home.css`, and in the plan's report.
- *
- * ================================================================================================
- * THE FOUR COMPONENT CHOICES 05-16 GOT WRONG — ALL FOUR WERE ANSWERABLE FROM THE `.d.ts`
- * ================================================================================================
- *
- * Recorded because the pattern matters more than the four instances: each was reported as "the
- * design system cannot express this", and in each case the component's own type declaration says
- * otherwise. Reading `dist/components/*.d.ts` before concluding a gap is the discipline.
- *
- *   1. `AppBar` for the top row. The design has NO bar. MEASURED, `primitives.css`:
- *      `.ds-atom-appbar` is `background: var(--surf-2); backdrop-filter: blur(14px)` and none of
- *      the four `AppBarVariant`s removes it. The row is two `Link`s and an `IconButton` in a flex
- *      row — see `src/components/public/PublicNav.tsx`.
- *
- *   2. `Heading` at the default 28px, with `HeadingSizeToken` stopping at `4xl` (44) reported as
- *      the blocker (D-7). MEASURED, `Heading.d.ts`: `size?: number | HeadingSizeToken`. The
- *      NUMERIC path was always there and always inlined the exact value — `size={60}` is the
- *      design's 60px, exactly, and it is what ships below. D-7 is a real gap in the TOKEN path and
- *      it was never a gap in the component.
- *
- *   3. `Text` + a `style={{ fontFamily: 'var(--display)' }}` escape hatch for the serif subtitle
- *      and intro, filed as D-22. MEASURED, `Heading.d.ts`: `as?: ElementType`, and
- *      `chunk-DQHLFJNO.js` inlines `fontFamily: "var(--display)"` unconditionally. **`Heading
- *      as="p"` IS serif body text**, through the component's own API, with no escape hatch at all.
- *      The three identity lines below use it and the hatch is gone from this page.
- *      D-22 stands as a finding about `Text` — a consumer that needs `Text`'s `leading` or
- *      `maxWidth` in the display face still cannot have it — but Home no longer depends on it.
- *
- *   4. `FilterNav` for the Photos filters (not this page, recorded for completeness): a segmented
- *      capsule where the design is an outlined pill. `Chip` is `border: 1px solid var(--rule)`.
- *
- * ================================================================================================
- * 🟠 THE ONE THING AKHIL ASKED FOR THAT THIS PLAN DOES NOT SHIP — READ BEFORE "FIXING" IT
- * ================================================================================================
- *
- * *"I do not want the links to be that rudimentary… It should instead be buttons."*
- *
- * A button-shaped ANCHOR is not expressible in `2.0.0-beta.2`, and the two obvious ways round it
- * were both measured and both refused:
- *
- *   `Button` has no `as`.  `ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>` and the
- *   prop list is `variant`, `size`, `loading`, `icon` — MEASURED, `Button.d.ts`. It is always a
- *   `<button>`, and a `<button>` inside an `<a>` is invalid HTML. Filed as D-5, and D-6 files the
- *   same asymmetry across four components. **beta.3 is adding it.**
- *
- *   AND ITS SHAPE CANNOT BE BORROWED, WHICH IS A NEW MEASUREMENT AND STRENGTHENS D-5.
- *   The obvious workaround — put `className="ds-atom-btn"` on a `Link` and let the design system's
- *   own stylesheet draw it — DOES NOT WORK. MEASURED, `chunk-UHK72XDD.js`: `baseStyle`,
- *   `sizeStyles` and `variantStyles` are INLINE objects on the element. `padding`, `border-radius`,
- *   `font-size`, `font-weight` and the fill all live in JavaScript, not in `primitives.css`, so an
- *   anchor carrying the class inherits a transition and a hover rule and nothing that makes it look
- *   like a button. There is no class-borrow path, so `as` is not one of several fixes — it is the
- *   only one.
- *
- *   `Chip` is not a substitute either. MEASURED, `chunk-JVIQWPC7.js`: `fontSize: 11`,
- *   `padding: "4px 10px"`, `borderRadius: 999` — a ~21px tag, not a control. Dressing a CTA as a
- *   tag would be a worse answer than a link.
- *
- * So the CTAs ship as `Link`, per this plan's brief, and the seam is marked below. **Hand-rolling
- * button CSS in `home.css` is the one thing that must not happen here** — the Core Value says a
- * gap the design system exposes is a FINDING, not a workaround, and `home.css` contains no
- * padding, border or radius for `.hm-cta` at all.
- *
- * ================================================================================================
- * ZERO FRAMEWORK JAVASCRIPT (PUB-14, §5.1 route 1)
- * ================================================================================================
- *
- * No `client:*` directive appears on this page or in any component it renders, including the
- * `<h1>` that docks itself into the corner on scroll: that interaction is `animation-timeline:
- * scroll()` plus `position: sticky`, with no listener and no island. See `home.css` §4.
- */
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
 import { Button } from '@akhil-saxena/design-system/components/Button';
 import { Link } from '@akhil-saxena/design-system/components/Link';
-/*
- * THE SCHEMA-VALIDATED EXPORT, NOT THE RAW JSON.
- *
- * This imported `data/home_config.json` directly, which typed `ctas` from the LITERAL. With
- * the array now empty that inferred `never[]`, and `cta.style` stopped existing as a property —
- * three type errors from a data edit that broke no code.
- *
- * `src/lib/content.ts` parses the same file through `HomeConfigSchema` at module scope and
- * exports it as `HomeConfig`, so the element type comes from the SCHEMA and does not move when
- * the data does. It also means a malformed record fails the build here, which the raw import
- * never did.
- */
 import { home as homeConfig } from '../lib/content';
 import PeekGrid from '../components/public/PeekGrid.astro';
 import Seo from '../components/public/Seo.astro';
 import PublicLayout from '../layouts/PublicLayout.astro';
 import '../styles/home.css';
 
-/**
- * The scroll cue, and **this string changed in 05-17**.
- *
- *     was   `SCROLL FOR THE WORK ↓`   pinned in test/public/home.node.test.ts, described in
- *                                      test/public/copy-contract.node.test.ts's header
- *     now   `↓ THE WORK`               the design handoff's own wording, verbatim
- *
- * 05-16 kept the pinned string over the handoff's, arguing that it "says what the control DOES
- * rather than where it points". Akhil's answer to the result was: *"The scroll for work should not
- * be this apparent. It should just be a small animation with an arrow showcasing that I need to
- * scroll, not this."* Four shouted words and an underline are the "this". The design's cue is two
- * words behind a leading arrow, mono, muted, breathing — and the arrow LEADS, which is why it is
- * `↓ THE WORK` and not `THE WORK ↓`.
- *
- * BOTH PINS WERE UPDATED IN THE SAME COMMIT AS THIS LINE. A copy contract whose pin is edited
- * without its subject is a contract; one edited with it is a note.
- */
-
-/**
- * The behavioural marker `GET /` must carry. See this file's header, and `src/middleware.ts`,
- * which names the same string.
- */
 const HOME_RENDER_MARKER = 'home-render-ok';
 
-/**
- * The identity lines and the two CTAs, all four READ from `data/home_config.json` and none of
- * them written. Home's three strings are deliberately unpinned so Akhil can edit them through
- * `/admin`; `test/public/copy-contract.node.test.ts` asserts the page renders what the RECORD
- * says rather than a literal, so editing the record moves both sides together.
- */
 const { title, subtitle, intro, description, ctas } = homeConfig;
 
-/**
- * The `style` field on a CTA record is CONTENT, so it cannot be trusted to name a design-system
- * variant directly — a typo in the CMS would render an unstyled link with no error. It is mapped,
- * and an unmapped value THROWS at build time rather than shipping a bare anchor on the site's
- * primary route.
- *
- * `default` and `quiet` are the only two stylesheet-only `Link` variants. §4.6a MEASURED that
- * `inline`, `footer` and `action` set `color` — and `action` and `footer` also set
- * `textDecorationColor: "rgba(0, 0, 0, 0.25)"` — as INLINE styles, which beat any app rule at any
- * specificity while every jsdom test still passes, because jsdom implements no CSS specificity.
- * On `#0d0d0f` that underline is invisible. Do not "improve" these to `action`; see D-4.
- *
- * ------------------------------------------------------------------------------------------------
- * The CTAs are `Button as="a"` — a control that looks like a button and navigates like a link.
- *
- * That was not expressible until `2.0.0-beta.3`. `Button` had no `as`, and its shape could not be
- * borrowed either: `baseStyle`, `sizeStyles` and `variantStyles` are inline objects, so padding,
- * radius, type and fill live in JavaScript and `className="ds-atom-btn"` on a `Link` inherits a
- * transition and nothing else. `as` was the only fix, not one of several — which is why these
- * shipped as text links for two iterations and Akhil rejected both.
- *
- * beta.3 translates `disabled` rather than forwarding it (an anchor gets `aria-disabled`, loses its
- * `href` and its tab stop) and never emits `type` on a non-button. `.hm-cta` still carries no
- * padding, border or radius — the shape is the design system's, not ours.
- */
 const CTA_VARIANT: Record<string, 'primary' | 'secondary'> = {
   primary: 'primary',
   secondary: 'secondary',
@@ -205,117 +31,14 @@ const homeCtas = ctas.map((cta) => {
 ---
 
 <PublicLayout mainClass="pub-max-home" navVariant="plain">
-  {
-    /*
-     * `·`, NOT AN EM DASH. Akhil: *"don't use em dashes in text"*. A sweep of the built site found
-     * 93 distinct em-dash strings, almost all `<title>` tags from this template on five pages — and a
-     * browser tab truncates the title, so no screenshot of any page showed it and it shipped live.
-     */
-  }
+  {}
   <Seo slot="head" title={`${title} · ${subtitle}`} description={description} canonical="/" />
 
-  {
-    /*
-    Act 1 is a plain <div>, not a <section>: an unnamed <section> is not exposed as a region, and a
-    named one here would make FOUR landmarks where §6.6.4 specifies three. The gallery inside it
-    carries `aria-label="Photographs"`.
-
-    Nothing here is hidden from assistive technology. The name docking into the corner and the rest
-    of the act fading out are a SCROLL POSITION and an OPACITY — `display: none`, `visibility:
-    hidden`, `aria-hidden` and `inert` are all forbidden on both, and a screen-reader user reads
-    name → subtitle → intro → photographs → work → résumé linearly and never encounters the
-    interaction at all. A reader who has asked for reduced motion gets no interaction either, and
-    an identical document.
-
-    The `<h1>` is a DIRECT child of `.hm-a` and the rest is wrapped twice, and every level of that
-    nesting is load-bearing rather than tidy:
-
-      .hm-a      `position: sticky` resolves against the nearest block container, so the name needs
-                 `.hm-a`'s full `100svh` of travel — inside a 90px identity block it would unpin
-                 almost immediately.
-      .hm-shed   ONE element carries the fade, so `.hm-cue` keeps its own `animation-name` — a
-                 second one on the same element would replace it outright.
-      .hm-lede   the subtitle and the intro fade FASTER than the photographs, and they have to:
-                 MEASURED, the name pins at scrollY 55 and is still 48px at scrollY 120, by which
-                 point the subtitle's flow position has slid to y=27.8 — behind the name. The two
-                 sheds are the same mechanism at two rates, which needs two elements.
-
-    See `home.css` §4.
-  */
-  }
+  {}
   <div class="hm-a">
-    {
-      /*
-        `size={60}` is the design's 60px through `Heading`'s NUMERIC path — see this file's header
-        on D-7. It is kept even though `style` overrides the `fontSize` it inlines, because its
-        OTHER inline is the size-derived `letterSpacing` (`--ls-tighter` above 28px), which is what
-        the design asks for and which the token path does not emit.
-
-        `style` spreads LAST in `Heading` (MEASURED, `chunk-DQHLFJNO.js`), which is the only way
-        past the numeric path's inline `fontSize` — and it has to be got past, because the name
-        steps down a rung below 673px and an inline style cannot be reached by a media query. Both
-        values handed through are tokens; `--hm-name` is driven by `home.css` §2.
-      */
-    }
-    {
-      /*
-       * ==========================================================================================
-       * THE HERO TITLE MATCHES `Photographs`: SAME RUNG, SAME WEIGHT, SAME FAMILY
-       * ==========================================================================================
-       *
-       * Akhil: *"check if title on photograph page, is smae fornt for hero page title , if not. use
-       * same font as Photographs title on hero."*
-       *
-       * MEASURED, the family already matched — all three titled routes are Libre Baskerville. What
-       * differed was weight and size, and this heading was the outlier on both: 700 against 400, and
-       * 40px against 44px.
-       *
-       * `weight="regular"` AS A TOKEN STRING, NOT `700` AS A NUMBER. `Heading` writes a NUMBER into
-       * an inline `style`, where no stylesheet can reach it; given a token string it emits
-       * `data-weight` and lets CSS supply the value. That matters here because the component's
-       * `regular` renders 500 — a weight Libre Baskerville does not ship — and `public-shell.css`
-       * carries the (0,3,0) correction and the D-37 filing. Passing the string is what routes this
-       * heading through that correction instead of inlining a fifth opinion.
-       *
-       * `size={48}` STAYS A NUMBER, and that is deliberate: the inline `fontSize` it writes is
-       * immediately overridden by the `style` prop below, which spreads LAST and hands the size to
-       * `--hm-name` so a media query can step it. The number is inert; removing it would change
-       * which of the two the component believes it is rendering, and 48 is the design's own value.
-       */
-    }
-    {
-      /*
-       * ============================================================================================
-       * `letterSpacing: 'normal'` — THE FONT'S OWN KERNING, BECAUSE EVERY TRACKED-IN RUNG COLLIDES
-       * ============================================================================================
-       *
-       * Akhil: *"on hero. i still see akh and ax touching"* — after a first fix that moved this one
-       * rung, `--ls-tighter` to `--ls-tight`. He was right, and the eye was the wrong instrument, so
-       * it was measured: "Akhil Saxena" rendered at 8x device scale and the bitmap scanned column by
-       * column. A column with no ink is a real gap, so ELEVEN letters should give ELEVEN separate ink
-       * clusters; fewer means glyphs are fusing.
-       *
-       *     --ls-tighter  -0.038em    6 clusters   five pairs fused
-       *     --ls-tight    -0.024em    9 clusters   Ak, kh and ax still fused   <- the first fix
-       *     --ls-base     -0.005em   10 clusters   one still fused
-       *     normal         0         11 clusters   every glyph separate
-       *
-       * `--ls-base` is the loosest rung below `--ls-wide`, and `--ls-wide` is +0.1em — at 44px that
-       * is +4.4px a pair, a spaced-out logo rather than a title. The ramp has nothing between them.
-       *
-       * `normal` IS A HANDOVER, NOT A LITERAL. `gate:app-css` lists it among "values that DEFER a
-       * decision rather than making one", and deferring is exactly right: it returns spacing to Libre
-       * Baskerville's own kerning pairs, and the type designer is the authority on whether A and k
-       * collide. Tracking a display serif IN was the decision that caused this; declining to is not a
-       * second one. Filed as D-38 — the ramp has no rung at or just above zero.
-       *
-       * 🔴 AND THIS COMMENT SITS OUT HERE RATHER THAN INSIDE THE `style` OBJECT. Written there first,
-       * it refused the build: `gate:app-css` parses that object as declarations and read the prose
-       * line "measured: Akhil Saxena" as a property called `measured`. The gate was right to — an
-       * inline style object is exactly where an unreadable value hides — so the rationale moved and
-       * the object stayed three plain pairs.
-       */
-    }
+    {}
+    {}
+    {}
     <Heading
       level={1}
       size={48}
@@ -332,29 +55,13 @@ const homeCtas = ctas.map((cta) => {
     </Heading>
 
     <div class="hm-shed">
-      {
-        /*
-          `Heading as="p"`, NOT `Text`. Both lines are Playfair in the design, and `Heading` inlines
-          `fontFamily: var(--display)` unconditionally while `Text` inlines `var(--font)` with no
-          lever to change it (D-22). `as` makes the ELEMENT a `<p>` while the VOICE stays the
-          display face — which is the component's documented purpose: *"useful when the visual size
-          and the semantic level diverge"*.
-
-          The sizes are the design's, exactly: 20 and 21. `tone` rather than `color`, so the colour
-          resolves from `[data-tone]` in the design system's stylesheet and the theme owns it.
-          The italic is `home.css`'s, because `font-style` has no token and no component API.
-        */
-      }
+      {}
       <div class="hm-lede">
         <Heading as="p" size={18} weight="regular" tone="muted" className="hm-subtitle">
           {subtitle}
         </Heading>
 
-        {
-          /* Rendered only when the record carries one — an empty `<p>` still takes its
-            padding-block-start, so the gap under the subtitle would be wrong with nothing
-            visible to explain it. The field survives so the admin can restore the line. */
-        }
+        {}
         {
           intro.length > 0 && (
             <Heading as="p" size={16} weight="regular" tone="secondary" className="hm-intro">
@@ -366,57 +73,9 @@ const homeCtas = ctas.map((cta) => {
 
       <PeekGrid />
 
-      {
-        /*
-        THE TWO DOORS — real `Button` components, not hand-rolled anchors.
-
-        Act 1's job is a choice, not a scroll: a photographer takes one, a hiring manager takes the
-        other, and neither is ranked above the other by word order or by weight. `primary` and
-        `secondary` are the design system's own pair for exactly that — one filled, one outlined,
-        equal size, equal position.
-
-        `Button as="a"` because these navigate. It exists since 2.0.0-beta.3; before it, a
-        button-shaped link was not expressible and this row would have been two text links.
-      */
-      }
+      {}
       <div class="hm-doors">
-        {
-          /*
-           * ==========================================================================================
-           * A PRIMARY AND A SECONDARY DOOR, AND DEVELOPMENT IS FIRST
-           * ==========================================================================================
-           *
-           * Akhil: *"hero page to have primary and secondary cta. primary being development."*
-           *
-           * ── THIS REVERSES AN EARLIER INSTRUCTION, AND THE REASON IT REVERSES CLEANLY ──────────
-           *
-           * These were `primary` and `secondary` once. Akhil: *"make both buttons same weight.
-           * outline only ones. not filled. both are equal weight."* — so both became `ghost`, and
-           * `ghost` was not a style choice but the only variant that CAN be unfilled: `Button`
-           * composes `{...baseStyle, ...sizeStyles, ...variantStyles[variant], ...style}` INLINE, so
-           * `primary`'s and `secondary`'s backgrounds are unreachable from `src/styles/` at any
-           * specificity short of `!important`, which that tree forbids (D-4).
-           *
-           * "Not filled" was in service of "equal weight" — it was how the hierarchy was removed. A
-           * hierarchy is now wanted, so the variants that express one are the right tool again, and
-           * the design system names them exactly: `primary` and `secondary`.
-           *
-           * ── DEVELOPMENT COMES FIRST IN THE MARKUP, NOT JUST IN WEIGHT ────────────────────────
-           *
-           * A primary call to action that a keyboard reader reaches second is only primary to the
-           * eye. Tab order follows the DOM, so the two are swapped here rather than reordered with
-           * CSS — `order` would have made the visual and the focus sequence disagree, which is the
-           * bug the two-doors row exists to avoid.
-           *
-           * `home.node.test.ts` pins the pair and their order, and that assertion is updated with
-           * this change rather than around it: the order is now part of what "primary" means here.
-           *
-           * NO `style` PROP ON EITHER. The ghost pair needed one, because `ghost` also sets
-           * `borderColor: "transparent"` inline and the edge had to be handed back. `primary` and
-           * `secondary` bring their own fills, so there is nothing to restore and no inline value to
-           * carry — the variants are used as the design system ships them.
-           */
-        }
+        {}
         <Button as="a" href="/development" variant="primary" size="lg" className="hm-door">
           Development →
         </Button>
@@ -425,24 +84,7 @@ const homeCtas = ctas.map((cta) => {
         </Button>
       </div>
 
-      {
-        /*
-            ACT 1 HAS NO CALLS TO ACTION, and `home_config.ctas` is empty — Akhil, 2026-08-30.
-
-            The approved prototype's Act 1 carries none: the legacy site added them and the rebuild
-            inherited them from there. The button was also the ONLY filled element on the page, so
-            the eye reached it before the photographs, which is backwards for a photographer's
-            landing. The order is now name -> photographs -> scroll.
-
-            Nothing became unreachable. `/photography` is the nav's `photographs` AND the grid's own
-            `ALL 40 →` badge, which links the whole block; `/development` is the nav and Act 2's
-            `ALL WORK →`; `/resume` is Act 2's `RÉSUMÉ →`.
-
-            The mapping and the render stay: the field is CMS content Akhil can refill, and an
-            empty array must render nothing rather than an empty flex row that still takes its
-            `gap` and its margins.
-          */
-      }
+      {}
       {
         homeCtas.length > 0 && (
           <div class="hm-ctas">
@@ -455,13 +97,7 @@ const homeCtas = ctas.map((cta) => {
         )
       }
 
-      {
-        /*
-        NO SCROLL CUE. Act 1 is the whole page now — the two doors ARE the next step, so there is
-        nothing below to point at. The cue's job was to say "there is more"; with Act 2 gone it
-        would be pointing at the footer.
-      */
-      }
+      {}
     </div>
   </div>
 </PublicLayout>

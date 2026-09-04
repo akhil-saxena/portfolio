@@ -1,82 +1,4 @@
 ---
-/**
- * The shell every public route sits in. Plan 05-06, Tasks 1 and 2.
- *
- * Five requirements live here rather than in any route, which is why one defect in this file is
- * five broken routes: PUB-12 (no flash of the wrong theme), PUB-13 (reduced motion), PUB-11's
- * print MODE, SEO-01's landing place, and PUB-14's "zero framework JavaScript", which is a
- * property of the shell because the shell is what every route inherits.
- *
- * ================================================================================================
- * THE ONE CSS IMPORT, AND THE ONE SCRIPT
- * ================================================================================================
- *
- * `src/styles/design-system.css` is imported HERE and nowhere else in the repository (§1.2). It
- * holds the four design-system stylesheets in dependency order; a page that imported three of the
- * four would render with unthemed primitives and look merely "a bit off" rather than broken, which
- * is the kind of defect that ships.
- *
- * There is exactly ONE `<script>` on any public route and it is the `is:inline` block below
- * (§5.2). PUB-14 bans React hydration, not a hand-written script — but it bans a SECOND one, and
- * it bans any `client:*` directive outside `/photography`.
- *
- * ================================================================================================
- * WHY THE THEME SCRIPT EXISTS AT ALL — D-34, AND IT IS DELETABLE
- * ================================================================================================
- *
- * `@akhil-saxena/design-system@2.0.0-beta.1` SHIPS NO THEME ENTRY POINT. MEASURED: its exports map
- * is `.`, `./hooks`, `./icons`, `./components/*`, `./tokens.css`, `./primitives.css`,
- * `./utilities.css`, `./themes/*.css`, `./fonts/*.css`, `./css/*` — there is no `applyTheme`, no
- * `useTheme`, no `/theme`. D-34 was decided in DSGN-05 and Phase 1 did not ship it.
- *
- * DSGN-05's own reasoning is why this is a FINDING and not a preference: `.dark` and `data-brand`
- * are the DESIGN SYSTEM's selectors, changed on its release schedule, so leaving every consumer to
- * reinvent the script is how consumers drift out of sync with a contract they do not own. The
- * portfolio and Cairn would each carry a copy.
- *
- * OQ-3 resolves this as: write it locally AND file the gap upstream for `2.0.0-beta.2`. The Core
- * Value says a gap the design system exposes is a finding rather than a workaround; it does not say
- * the finding must be fixed before the consumer ships, and the live site is down, which is a clock.
- *
- * >>> DELETE THE SCRIPT BELOW, AND THIS COMMENT, THE DAY THE PACKAGE SHIPS A THEME ENTRY POINT. <<<
- *
- * ================================================================================================
- * THE CONTRACT THE SCRIPT MUST NOT BREAK
- * ================================================================================================
- *
- *  - `data-brand` and `class="dark"` are SERVER-RENDERED ATTRIBUTES on <html>, not script-set. A
- *    script that sets the brand paints one frame of the default brand first. In the markup they
- *    are in the cascade before the first byte of body is parsed.
- *  - DARK IS THE DEFAULT AND `prefers-color-scheme` IS NOT CONSULTED. `REQUIREMENTS.md` Out of
- *    Scope: "Three-state theme toggle — Two states, dark by default, as designed." The script's
- *    only theme job is to REMOVE `dark` for a returning light-mode visitor.
- *  - The `localStorage` read is wrapped in `try`. Safari in private mode throws on ACCESS, and an
- *    unhandled throw here aborts the script before the class is corrected — a flash caused by the
- *    code that exists to prevent one, on the one path nobody exercises by accident.
- *  - `beforeprint`/`afterprint` are OQ-5, and they restate NO TOKEN. `themes/monochrome.css`
- *    contains zero at-rules by design and CSS cannot remove a class, so this is the smallest
- *    correct mechanism and it works on every page rather than only on `/resume`.
- *    RESIDUAL, RECORDED NOT HIDDEN: some headless print-to-PDF paths do not fire `beforeprint`.
- *    That risk is accepted (OQ-5) and filed upstream as a request for a theme print block or a
- *    `data-force-light` hook.
- *  - PHASE 8: NO CSP IS CONFIGURED ON THIS SITE TODAY. If one is added, this script needs a hash
- *    or a nonce. Written here so it is a scheduled cost rather than a discovery at cutover.
- *
- * The listener is DELEGATED from `document` rather than bound to the button by
- * `DOMContentLoaded` + `getElementById`. The script runs in `<head>`, so the button does not exist
- * yet; delegation is live from that instant, needs no second lifecycle event, and cannot miss a
- * click landing between parse and `DOMContentLoaded`.
- *
- * ================================================================================================
- * WHAT IS NOT HERE
- * ================================================================================================
- *
- * No `<title>`, no `<meta name="description">`, no canonical, no `og:*`. Those are `<Seo>`'s, and
- * they arrive through the named `head` slot so that no page ever hand-writes a meta tag (SEO-01).
- * A layout that emitted a default title would give every route that forgot `<Seo>` a plausible
- * wrong one instead of a visibly missing one.
- */
-
 import { Link } from '@akhil-saxena/design-system/components/Link';
 
 import SocialIcons from '../components/public/SocialIcons.astro';
@@ -86,85 +8,18 @@ import '../styles/design-system.css';
 import '../styles/public-shell.css';
 
 interface Props {
-  /** Extra class(es) for `<main>` — normally one of the `.pub-max-*` page maxima (§2.2). */
   mainClass?: string;
-  /**
-   * How the top row is drawn. `bar` (the default, 51 documents) is the design system's `AppBar`;
-   * `plain` is Home's, which the approved design gives no bar at all — see `PublicNav.tsx`.
-   *
-   * It is a prop rather than a `pathname === '/'` test inside the layout because the shell must
-   * not know which route is special. A layout that hard-coded the exception would make the second
-   * page that wants a plain row an edit to a file shared by every page that does not.
-   */
   navVariant?: PublicNavVariant;
-  /**
-   * `bar` (the default, every route) draws the shell: the top bar and the footer. `rail` draws
-   * NEITHER, because the page is taking over both.
-   *
-   * ================================================================================================
-   * 🟠 THIS IS A DELIBERATE HOLE IN THE SHELL CONTRACT, AND IT IS THE COST OF THE SPLIT LAYOUT
-   * ================================================================================================
-   *
-   * `Split Page Refinements.html` treatment A puts the identity in a left rail — name, headline,
-   * intro, experience, contact — and says so in its own label: *"no top header at all"*. A layout
-   * that still rendered the bar would show the wordmark twice and the nav twice.
-   *
-   * WHAT IT COSTS, STATED HERE RATHER THAN DISCOVERED LATER:
-   *
-   *   - The bar is `transition:persist`, so on a route with no bar there is nothing to persist. That
-   *     only matters where a `ClientRouter` swaps documents, which is the photo pages, not this one.
-   *   - The theme toggle lives in the bar. Akhil: *"I need to ensure that the placement and
-   *     look/feel of dark/light mode toggle remains same on the hero page and all pages therein."*
-   *     A ships no toggle at all, so the page renders its own in the nav row — the same `PublicNav`
-   *     control, in the same order relative to the nav items, at a different place on the page. That
-   *     is a real divergence from "same placement", and it is the page's to justify, not the shell's.
-   *   - The footer's social marks and the copyright move into the rail. Two implementations of one
-   *     footer is exactly the duplication `PublicFooter` exists to prevent, so the rail composes the
-   *     same `SocialIcons` component rather than its own marks.
-   *
-   * IT IS A PROP, NOT A `pathname` TEST, for the reason `navVariant`'s note gives: the shell must not
-   * know which route is special, or the second page that wants a rail becomes an edit to a file every
-   * page shares.
-   */
   chrome?: 'bar' | 'rail';
 }
 
 const { mainClass, navVariant = 'bar', chrome = 'bar' } = Astro.props;
 
-/**
- * The footer's links are `data/home_config.json`'s `socialLinks`, mapped to `Footer`'s shape.
- *
- * `Footer.links` is PLAIN DATA (`Array<{ label, href }>`), not a `ReactNode`, so it crosses the
- * `.astro` → React boundary without the wrapper `PublicNav.tsx` needs. See that file's header for
- * the measurement of where the boundary actually is.
- *
- * 🔴 A MEASURED DEFECT SHIPS HERE, DELIBERATELY, AND IT IS FILED UPSTREAM.
- * §4.6b says "Phase 5 uses `variant='default'` in the footer, which is stylesheet-only and
- * therefore correct." THAT ESCAPE DOES NOT EXIST. `Footer`'s own `renderLink` hardcodes
- * `<Link variant="footer" className="ds-atom-footer-link">` (MEASURED, `chunk-23WQN7ZH.js.map`),
- * and `Footer` exposes no per-item className, style or variant hook — `className` reaches the
- * `<footer>` element only. So every consumer of `Footer.links` gets `variant="footer"`, whose
- * INLINE `textDecorationColor: rgba(0,0,0,.25)` beats the dark-mode stylesheet rule that would set
- * `rgba(255,255,255,.4)`. On `#0d0d0f` that underline is effectively invisible.
- *
- * NOT PATCHED LOCALLY. The only local fix is an `!important` reaching past a component into its
- * internals, which is the workaround the Core Value forbids and which Phase 0 declined for the
- * same class of defect (D-16-1). The link TEXT is `var(--ink)` and correct in both modes; only its
- * underline is wrong, so this degrades appearance rather than function. Filed for
- * `2.0.0-beta.2` — `Link`'s `footer`/`action` variants should move their colour and
- * decoration into `primitives.css` where the `.dark` rule can win.
- */
 const footerLinks = homeConfig.socialLinks.map((link) => ({
   label: link.label,
   href: link.url,
 }));
 
-/**
- * DERIVED, never typed. The name comes from `home_config.json` (the same string the Home hero
- * uses) and the year from the build clock, so neither can go stale in a file nobody re-reads.
- * Evaluated during prerender, which runs in workerd — `Date` is available there; a filesystem read
- * would not be (05-01).
- */
 const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
 ---
 
@@ -172,60 +27,9 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
 <html lang="en" data-brand="monochrome" class="dark">
   <head>
     <meta charset="utf-8" />
-    {
-      /* A real device-width viewport. The six-class responsive contract runs from a 344px folded
-        cover screen to 1440px+, and there is no fixed pixel width anywhere in this file. A brace
-        comment rather than an HTML one: an HTML comment SHIPS to every page, and this note is for
-        the author. (Do not spell the delimiters out here — a nested terminator ends the comment
-        early and the compiler reports only "Unexpected token" at the line after.) */
-    }
+    {}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {
-      /*
-       * ============================================================================================
-       * THE AMPERSAND, AS THE REAL OUTLINE, IN TWO GROUNDS
-       * ============================================================================================
-       *
-       * Akhil: *"new icon has white borders now. which is bad. I want to create svgs for it, then
-       * use those. It's just ampersand in libre baskerville ... use both dark/light mode variants."*
-       *
-       * ── WHERE THE WHITE BORDER CAME FROM ──────────────────────────────────────────────────────
-       *
-       * The supplied PNGs baked a rounded square into the artwork, and its antialiased edge was a
-       * ring of part-transparent light pixels. At 16px that fringe is a meaningful fraction of the
-       * icon, and against a browser tab that is neither `--bg` nor white it reads as a border rather
-       * than as an edge. THE FIX IS NOT A BETTER TILE, IT IS NO TILE: these SVGs have a transparent
-       * ground, so the glyph sits directly on whatever colour the tab happens to be and there is no
-       * edge to fringe.
-       *
-       * ── THE PATH IS THE FONT'S OWN OUTLINE, NOT A TRACE ───────────────────────────────────────
-       *
-       * Extracted with fontTools from `libre-baskerville-latin-400-italic.woff2` — the same file the
-       * site loads — so it is the identical glyph the subtitle renders in "Interfaces & Imagery",
-       * not a redraw of it. `SVGPathPen` over glyph `ampersand`, upem 1000, bbox (59,-10)-(910,780),
-       * scaled to 90% of a 64-unit box and flipped in y because font space has y up and SVG has y
-       * down. The alternative was tracing a bitmap the way the globe was traced; there is no reason
-       * to approximate an outline that can be read exactly.
-       *
-       * ── TWO FILES, SWITCHED BY `media` ────────────────────────────────────────────────────────
-       *
-       * `prefers-color-scheme` on a `<link rel="icon">` is honoured by Chrome and Firefox, so the
-       * dark file (light glyph) is used against dark browser chrome and the light file against
-       * light. A browser that ignores `media` takes the first declaration, which is why the DARK
-       * variant is first: this site's own ground is dark, and a light glyph is the safer default
-       * against the tab colours a dark-themed browser uses.
-       *
-       * `favicon-180.png` STAYS as the Apple touch icon. iOS does not accept SVG there, and it is
-       * the one place the rounded tile is correct rather than a fringe — a home-screen icon is
-       * composited onto the wallpaper and needs its own ground.
-       *
-       * The 16, 32 and 512 PNGs are deleted: a vector serves every one of those sizes exactly, and
-       * `favicon-640.png` was never shipped because nothing consumes it.
-       *
-       * Named for the GROUND, not the glyph: `-on-dark` holds a LIGHT ampersand, matching the
-       * `cairn-mark-on-dark` / `ds-mark-on-light` pairs in `public/assets`.
-       */
-    }
+    {}
     <link
       rel="icon"
       href="/favicon-on-dark.svg"
@@ -240,11 +44,6 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
     />
     <link rel="apple-touch-icon" href="/favicon-180.png" />
     <script is:inline>
-      /* D-34 · the design system ships no theme entry point at 2.0.0-beta.1, so this is a local
-         copy of a selector contract this repository does not own. Filed upstream for
-         2.0.0-beta.2; delete it the day `@akhil-saxena/design-system/theme` exists.
-         Phase 8: no CSP today — adding one requires a hash or a nonce for this block.
-         Full rationale, and the residual on headless print, in this file's frontmatter. */
       (function () {
         var d = document.documentElement;
         var s = null;
@@ -252,7 +51,6 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
           try {
             return localStorage.getItem('theme');
           } catch (e) {
-            /* Safari private mode throws on access. Returning null leaves the default dark. */
             return null;
           }
         };
@@ -263,44 +61,8 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
         };
         apply();
 
-        /* THE THEME IS RE-APPLIED AFTER A VIEW TRANSITION, and without this the photograph routes
-           snap back to dark on every step. The `ClientRouter` on those pages swaps the document,
-           and `<html>`'s attributes come from the INCOMING one — which is prerendered carrying
-           `class="dark"`, because that is the default this block corrects at runtime. This script
-           runs once on first load and not again, so after a swap the correction was simply gone.
-
-           MEASURED: on load `dark`; after the toggle `""` with `localStorage.theme === "light"`;
-           after pressing next `dark` again, with the preference still stored. The preference was
-           never lost — it had stopped being applied.
-
-           `astro:after-swap` fires BEFORE the new document paints, so the theme is right on the
-           first frame and there is no flash. Registered here, inside the block that already owns
-           the selector contract, rather than as a second script: `gate:public-js`'s A4-COUNT
-           permits a routed document exactly two script blocks, the theme block and the router. */
         document.addEventListener('astro:after-swap', apply);
 
-        /* ARROW KEYS STEP BETWEEN PHOTOGRAPHS, and this is the only page that gets them.
-           Akhil, on the accessibility audit: *"yes on photo page, not on grid."*
-
-           WHY IT LIVES IN THE THEME BLOCK rather than on the photo route. `gate:public-js`'s
-           A4-COUNT permits a routed document exactly TWO script blocks — this one and the
-           view-transition router's module — so an inline script on that page would be a third and
-           would fail the build. This block is the site's one inline script; it already owns the
-           theme contract, the print handlers and the toggle's click. The handler is a no-op
-           anywhere `.pd-nav` does not exist, which is every other route.
-
-           IT QUERIES AT KEYPRESS TIME, not at bind time. The router swaps the document on every
-           step, so the previous/next anchors are new elements after each move; a reference captured
-           now would be stale on the second press.
-
-           MODIFIED PRESSES ARE NOT OURS, and neither is typing. Arrow keys inside a field, or with
-           a modifier held, belong to the browser and to the reader — intercepting them is how a
-           page breaks text selection and browser shortcuts. `isContentEditable` and the tag test
-           are what keep this to the case it is for.
-
-           IT CLICKS THE LINK rather than assigning `location`: the anchors are real, the router is
-           listening for clicks on them, and going through them keeps arrow navigation and mouse
-           navigation on exactly one path. */
         addEventListener('keydown', function (ev) {
           if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.shiftKey) return;
           if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
@@ -313,33 +75,6 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
           link.click();
         });
 
-        /* A SWIPE TURNS THE PAGE, ANYWHERE ON IT. Akhil, asked whether the gesture should be scoped
-           to the photograph or the whole document: *"anywhere on page."* The M4 layout is mostly
-           empty ground, and a reader on a phone should not have to aim at the print.
-
-           IT WAS DOING NOTHING BEFORE THIS. Verified with a real left swipe across the photograph at
-           390px on a touch context: `Haunted Mansion 02 / 16` before, `Haunted Mansion 02 / 16`
-           after. There was no touch handling anywhere in `src/` — the only mentions of swipe were
-           comments in `PhotoLightbox`, the overlay this page replaced, which no route renders. On a
-           gallery that is mostly read on a phone, PREV/NEXT and the back button were the whole
-           vocabulary, and the arrow keys added above serve the smaller half of the audience.
-
-           FOUR CONDITIONS, and each one is a false positive that would otherwise happen:
-
-             - HORIZONTAL INTENT: |dx| must exceed |dy|. Without it, scrolling down the page turns
-               the page, because a thumb drag is never perfectly vertical.
-             - DISTANCE: 50px, so a tap and the jitter around it navigate nothing.
-             - ONE FINGER: a second touch cancels the gesture, so a pinch-zoom on the photograph —
-               the thing a reader most wants to do to a photograph — is never a page turn.
-             - TIME: under 800ms. A slow drag across the screen is someone reading, not turning.
-
-           `{ passive: true }` AND NO `preventDefault`, deliberately: the browser keeps native
-           vertical scrolling and its momentum, which a non-passive touch listener would degrade
-           across the whole document. The cost is that this cannot suppress a scroll it loses to,
-           and it should not — the vertical gesture belongs to the page.
-
-           Like the arrow keys, it queries `.pd-nav` at GESTURE TIME: inert on every other route,
-           and correct after the router swaps the document. */
         var sx = 0;
         var sy = 0;
         var st = 0;
@@ -388,9 +123,7 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
           s = d.classList.toggle('dark') ? 'dark' : 'light';
           try {
             localStorage.setItem('theme', s);
-          } catch (e) {
-            /* Storage denied: the class still flipped, the choice just will not survive a reload. */
-          }
+          } catch (e) {}
         });
       })();
     </script>
@@ -398,46 +131,9 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
   </head>
   <body>
     <div class="pub-shell">
-      {
-        /*
-         * ================================================================================================
-         * THE SKIP LINK — THE FIRST FOCUSABLE THING ON EVERY ROUTE
-         * ================================================================================================
-         *
-         * MEASURED: on `/photography` a keyboard reader passes the wordmark, three nav items, the theme
-         * toggle and six filter pills — ELEVEN stops — before the first photograph, and pays it again on
-         * every navigation. One Tab and one Enter now replaces all eleven. Akhil, on the audit: *"add."*
-         *
-         * IT IS IN THE LAYOUT, so all ten routes get it from one element. The target is `<main>` rather
-         * than a per-page anchor for the same reason: every route already has exactly one.
-         *
-         * `tabindex="-1"` ON THE TARGET IS NOT OPTIONAL AND IS THE PART THAT IS USUALLY MISSING. Jumping
-         * to a fragment moves the SCROLL but not the FOCUS unless the destination is focusable — so
-         * without it the next Tab press returns to the wordmark and the skip link silently does nothing
-         * for the reader it exists to serve. `-1` makes `<main>` programmatically focusable without
-         * adding a twelfth tab stop.
-         *
-         * NOT `hidden`, NOT `display: none`, NOT `visibility: hidden` — all three remove an element from
-         * the focus order, which would make a skip link that can never be reached. It is positioned off
-         * the top edge instead, and `:focus-visible` brings it back. See `.pub-skip` in public-shell.css.
-         *
-         * `variant="footer"` because the design system has no skip-link variant and `footer` is its small
-         * standalone link — the one that is already sized for chrome rather than for body copy. Recorded
-         * as a finding rather than papered over with bespoke type.
-         */
-      }
+      {}
       <Link variant="footer" href="#pub-main" className="pub-skip">Skip to content</Link>
-      {
-        /*
-         * `transition:persist` — THE BAR AND THE FOOTER SURVIVE A VIEW TRANSITION AS THE SAME DOM
-         * NODES rather than being replaced. On the photograph routes, which carry a `ClientRouter`,
-         * that is what stops them re-rendering when you step between photographs: Astro moves these
-         * two elements across instead of rebuilding them.
-         *
-         * Inert everywhere else. With no router on the page there is no transition to take part in,
-         * so the attribute costs nothing on the routes that ship no JavaScript.
-         */
-      }
+      {}
       {
         chrome === 'bar' && (
           <div
@@ -455,22 +151,7 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
       <main id="pub-main" tabindex="-1" class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
         <slot />
       </main>
-      {
-        /*
-        COMPOSED HERE, NOT `Footer` — because `Footer.links` cannot carry an icon.
-
-        MEASURED: `FooterProps.links` is `Array<{ label, href?, onClick? }>` — plain data with no
-        `icon`, no `children`, and no per-item `className` or `style`; `className` reaches the
-        `<footer>` element only. A footer of brand marks is not expressible through the component
-        at any effort short of reaching into its internals. Filed as D-26.
-
-        The legacy site's Home footer is one centred row: three 18px marks, then the copyright at
-        0.7rem in the faintest ink. That is what this reproduces, at Akhil's request on 2026-09-02.
-
-        `rel="noopener noreferrer"` on the two that leave and NOT on `mailto:` — `target="_blank"`
-        is what makes those attributes mean anything, and a mail link opens no browsing context.
-      */
-      }
+      {}
       {
         chrome === 'bar' && (
           <footer transition:persist class="pub-footer pub-footer-row">

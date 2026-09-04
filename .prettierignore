@@ -2,6 +2,29 @@
 # .ts/.tsx/.js/.mjs/.css/.json. These entries mirror biome.json's ignore set so the
 # two tools can never disagree about a file, and so neither walks the gitignored
 # Phase 0 playground (the D-02 scope fence).
+
+# ---------------------------------------------------------------------------------
+# THE SPLIT IS ENFORCED HERE, NOT ONLY DESCRIBED ABOVE.
+#
+# The header said Prettier "is scoped to **/*.astro by the check/format scripts",
+# and that was true of the scripts and false of the tool: `prettier --write
+# "test/**/*.ts"` typed by hand reformatted about twenty test files into Prettier's
+# style, which Biome then reported as twenty format errors. The mistake was caught
+# by `npm run check` and cost a detour to undo.
+#
+# Ignoring the extensions Biome owns makes the same command a no-op instead. The
+# scripts still pass `**/*.astro` explicitly, so nothing about the intended path
+# changes; only the unintended one stops working.
+# ---------------------------------------------------------------------------------
+*.ts
+*.tsx
+*.js
+*.mjs
+*.cjs
+*.css
+*.json
+*.jsonc
+
 node_modules/
 dist/
 .astro/

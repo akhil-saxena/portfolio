@@ -36,6 +36,21 @@
     "enabled": true,
     "rules": { "preset": "recommended" }
   },
+  "overrides": [
+    {
+      "includes": [
+        "test/pipeline/workflow-contract.unit.test.ts",
+        "test/pipeline/migrate-keys-workflow.unit.test.ts"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "es5" }
   },

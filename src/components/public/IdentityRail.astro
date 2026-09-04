@@ -40,7 +40,13 @@ import SocialIcons from './SocialIcons.astro';
 interface Props {
   readonly entries: ReadonlyArray<ExperienceEntry>;
   /** The route this rail is on, so the cross-link never points at the page it is on. */
-  readonly crossLink: { readonly href: string; readonly label: string };
+  /*
+   * OPTIONAL, because only the `identity` treatment has anywhere to put it. It renders inside
+   * `.wk-rail-foot`, which `owns="experience"` suppresses — so a REQUIRED prop meant `/development`
+   * had to pass one and then watch it be dropped. That silence is what hid the missing cross-link;
+   * `/development` now renders §13.2's row itself and passes nothing here.
+   */
+  readonly crossLink?: { readonly href: string; readonly label: string };
   /**
    * WHAT THE RAIL OWNS, and it is two different pages.
    *
@@ -278,7 +284,9 @@ const roles = entries.map((entry) => ({ entry, years: yearsOf(entry) }));
           })
         }
       </div>
-      <Link href={crossLink.href} variant="quiet" className="wk-rail-cross">{crossLink.label}</Link>
+      {crossLink && (
+        <Link href={crossLink.href} variant="quiet" className="wk-rail-cross">{crossLink.label}</Link>
+      )}
     </div>
     )
   }

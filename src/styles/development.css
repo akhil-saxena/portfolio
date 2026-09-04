@@ -177,100 +177,19 @@
   text-align: right;
 }
 
-/* ── 4. The employment band (§10 item 4) ────────────────────────────────────────────────────── */
-
 /*
- * `--wk-band-max` is set as an inline custom property by `EmploymentBand.astro` from
- * `PAGE_MAX.band`, so 1080 is written once in the repository and this file does not carry a copy
- * of it. See that component's header for why `.pub-max-band` was rejected: it centres.
- */
-.wk-band {
-  max-width: min(var(--wk-band-max), 100%);
-}
-
-/*
- * A hairline between rows, and none under the last — §10 item 4 says "hairline-separated", which
- * is a separator rather than a border on each row. `--rule` is the hairline token (§4.2); `--wire`
- * is the CONTROL border and belongs on the cards, not here.
- */
-.wk-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-6);
-  padding: var(--space-4) 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.wk-row:last-child {
-  border-bottom: 0;
-}
-
-.wk-identity {
-  min-width: 0;
-}
-
-/* §3.1 "Project / card / photo title": Playfair `--text-xl` 22 / 700 / `--lh-snug` / `--ls-tight`. */
-.wk-company {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-bold);
-  line-height: var(--lh-snug);
-  letter-spacing: var(--ls-tight);
-  color: var(--ink);
-}
-
-/*
- * §10 item 4: "role · period in DM Sans 13px `--ink-3`". `--ink-3` measures 8.21 / 7.56 / 7.02 on
- * dark and 7.44 / 7.63 / 7.06 on light — AAA on every surface of both modes (§4.2).
- */
-.wk-role {
-  margin: var(--space-1) 0 0;
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  line-height: var(--lh-normal);
-  letter-spacing: var(--ls-base);
-  color: var(--ink-3);
-}
-
-/*
- * THE METRIC — §4.3 item 2, and the same treatment plan 05-10 gave it on `/resume`.
+ * ── 4. The employment band is DELETED ────────────────────────────────────────────────────────
  *
- * IBM Plex Mono `--text-xs` 11 / 500 / `--ls-wide`, right-aligned, the VALUE in `--ochre-d-strong`
- * (the AAA step: 9.00 / 8.29 / 7.70 dark, 7.92 / 8.13 / 7.52 light) and the LABEL on the ink ramp.
- * `src/styles/resume.css` declares the identical pair on `.rs-metric` / `.rs-metric-value`; the two
- * routes render the same three records and must not render them two ways.
+ * `EmploymentBand.astro` rendered `resume.experience` as full-width hairline-separated rows with a
+ * metric ranged right, capped at `PAGE_MAX.band`. The split redesign replaced it with the rail's
+ * TIMELINE and left the component importable by nothing — so `.wk-band`, `.wk-row`, `.wk-identity`,
+ * `.wk-company`, `.wk-role`, `.wk-metric` and `.wk-metric-value` styled markup that no page emitted.
  *
- * 🔴 THE ONE DELIBERATE DIFFERENCE: THE SEPARATOR.
- * `/resume` emits the two spans with NOTHING between them — MEASURED in the built
- * `dist/client/resume/index.html`, where the value and the label run together into one word.
- * Astro's `compressHTML` (on by default) removes the newline the source carries between the two
- * spans, so a whitespace-only separator in a template does not survive the build. The gap is
- * declared here in CSS, where compression cannot reach it. The reviewed capture
- * (`design_handoff_portfolio/Work.dc.html`) puts a space between the two halves, so the space is
- * the reviewed intent on both routes; `/resume` losing it is a defect in that page, reported
- * rather than fixed from here — it is plan 05-10's file.
- *
- * NOTHING BELOW ENCODES THE WORDING. The three values on disk are placeholders Akhil intends to
- * revise (OQ-1b); no rule here depends on their length, their case or their content.
+ * Removed with the component rather than left "in case": dead selectors are the cheapest thing in a
+ * stylesheet to keep and the most expensive to read past, and `git log` holds them if the band is
+ * ever wanted back. `.wk-count` stayed — it sits above this section and its own line is retired
+ * separately.
  */
-.wk-metric {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  line-height: var(--lh-normal);
-  letter-spacing: var(--ls-wide);
-  text-align: right;
-  color: var(--ink-3);
-}
-
-.wk-metric-value {
-  margin-right: var(--space-2);
-  color: var(--ochre-d-strong);
-}
 
 /* ── 5. The project grid (§10 item 6) ───────────────────────────────────────────────────────── */
 

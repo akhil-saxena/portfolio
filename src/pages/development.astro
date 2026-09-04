@@ -47,6 +47,8 @@ import ProjectCard from '../components/public/ProjectCard.astro';
 import Seo from '../components/public/Seo.astro';
 import { resume } from '../lib/content';
 import { resolveDsTokens } from '../lib/ds-component-count';
+import { Link } from '@akhil-saxena/design-system/components/Link';
+import { CROSSLINK_TYPE } from '../lib/crosslink';
 import '../styles/development.css';
 
 /** The route's own path, in one place: the canonical and the `<Seo>` call sit beside it. */
@@ -229,11 +231,7 @@ for (const project of projects) resolveDsTokens(project.oneLiner);
      */
   }
   <div class="wk-split">
-    <IdentityRail
-      entries={resume.experience}
-      crossLink={{ href: PHOTOS_PATH, label: 'photography →' }}
-      owns="experience"
-    >
+    <IdentityRail entries={resume.experience} owns="experience">
       <header class="wk-header" slot="headline">
         {
           /* §4.3 item 1: the full stop is the FIRST of the six elements the accent is reserved for,
@@ -285,6 +283,39 @@ for (const project of projects) resolveDsTokens(project.oneLiner);
           }
         </div>
       </section>
+
+      {
+        /*
+         * ==========================================================================================
+         * §13.2's OUTGOING CROSS-LINK, RESTORED — IT WAS PASSED TO THE RAIL AND RENDERED NOWHERE
+         * ==========================================================================================
+         *
+         * 🔴 THIS WAS A LIVE BUG, not a tidy-up. The split redesign moved the rail's `owns` prop to
+         * `"experience"`, which suppresses `.wk-rail-foot` — and `.wk-rail-foot` is where the rail
+         * rendered its `crossLink`. So the page kept PASSING a required `crossLink` prop that the
+         * component then dropped on the floor: `/development` shipped no link to the gallery at all,
+         * and the only thing pointing that way was the header nav.
+         *
+         * It is not a cosmetic loss. §13.2 makes the cross-link a PAIR, and the returning half was
+         * deliberately retired — `photography-routes.node.test.ts` asserts that retirement while
+         * explicitly leaving the OUTGOING half alone, and line 662 of that file checks this very
+         * page still ships the words. Two suites were red for the same missing element.
+         *
+         * `CROSSLINK_TYPE` IS THE SHARED OBJECT, imported rather than re-typed. `Link` inline-sets
+         * `font-family` on every variant, so a serif cross-link cannot be expressed from
+         * `development.css` at all without `!important` — which is why `gate:app-css` names this one
+         * identifier as the only permitted inline-style value, and parses its literal to check every
+         * value in it. One object, two importers, so the pair cannot drift into two type roles.
+         *
+         * INTERNAL, so no `target` and no `rel`: the new-tab announcement and the tabnabbing guard
+         * belong to the outbound anchors in the card grid and to nothing else.
+         */
+      }
+      <p class="wk-crosslink-row">
+        <Link className="wk-crosslink" href={PHOTOS_PATH} variant="quiet" style={CROSSLINK_TYPE}>
+          see the photographs →
+        </Link>
+      </p>
     </div>
   </div>
 </PublicLayout>

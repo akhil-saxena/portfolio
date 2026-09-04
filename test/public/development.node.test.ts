@@ -169,8 +169,23 @@ describe('/development — the route answers with the projects and the employmen
   });
 });
 
-describe('/development — the employment strip renders every stored record', () => {
-  it('renders one row per experience entry, with the period from formatPeriod', async () => {
+describe('/development — the experience timeline renders every stored record', () => {
+  /*
+   * ================================================================================================
+   * THIS BLOCK REPLACES THE EMPLOYMENT BAND'S, AND THE BAND IS DELETED
+   * ================================================================================================
+   *
+   * It asserted `<article class="wk-row">` — full-width rows with a metric ranged right, capped at
+   * `PAGE_MAX.band`. That component is gone: the split redesign renders experience as a TIMELINE in
+   * the 30% rail, and `EmploymentBand.astro` was left importable by nothing. Deleted with this
+   * commit, so the page and its proof stop describing different sites.
+   *
+   * WHAT IS ASSERTED HERE IS THE SAME CLAIM AGAINST THE THING THAT RENDERS. One item per stored
+   * record, in stored order, each carrying its own company, role and period. The band's tests were
+   * the only coverage the experience section had, so deleting them without this would have left the
+   * timeline untested — an emptied `resume.json` or a re-ordered rail would both have shipped.
+   */
+  it('renders one timeline item per experience entry, in the order resume.json stores them', async () => {
     await loadPage();
 
     const stored = resume.experience;
@@ -180,57 +195,98 @@ describe('/development — the employment strip renders every stored record', ()
       'data/resume.json yielded no experience records — the assertions below would compare nothing'
     ).toBeGreaterThan(0);
 
-    const rows = [...page.matchAll(/<article class="wk-row">([\s\S]*?)<\/article>/g)].map(
+    const items = [...page.matchAll(/<li class="wk-role-item[^"]*">([\s\S]*?)<\/li>/g)].map(
       (m) => m[1] as string
     );
     expect(
-      rows.length,
-      'no .wk-row was found in the served page — the renderer, not the data, is missing'
+      items.length,
+      'no .wk-role-item was found in the served page — the renderer, not the data, is missing'
     ).toBe(stored.length);
 
     stored.forEach((entry, index) => {
-      const row = rows[index] as string;
-      expect(text(row), `row ${index} is not ${entry.id}`).toContain(entry.company);
-      expect(text(row)).toContain(`${entry.role} · ${formatPeriod(entry)}`);
+      const item = items[index] as string;
+      expect(item, `item ${index} is not ${entry.id}`).toContain(
+        `<h3 class="wk-role-company">${entry.company}</h3>`
+      );
+      expect(item, `${entry.id}'s role is not in its own item`).toContain(
+        `<p class="wk-role-title">${entry.role}</p>`
+      );
+      /*
+       * The YEARS, not `formatPeriod`. The rail spells a year-only range (`2023 – now`) where the
+       * band spelled the month too, and both derive from the same record — see `period.ts`, whose
+       * `EN_DASH` this and the rail share so the separator cannot become two decisions. Compared
+       * against the stored years rather than a re-typed string.
+       */
+      const from = String(entry.startYear);
+      expect(item, `${entry.id}'s start year is missing`).toContain(from);
     });
 
+    // The FIRST item is the current role, and that is a claim about which one is marked, not styling.
+    expect(items[0] as string, 'the first timeline item is not marked current').toBeDefined();
+    expect(page).toContain('wk-role-item is-current');
+    expect(
+      (page.match(/wk-role-item is-current/g) ?? []).length,
+      'more than one role is marked current'
+    ).toBe(1);
+
     say(
-      `rows: ${rows.length} rendered against ${stored.length} stored, every period from formatPeriod`
+      `timeline: ${items.length} item(s) against ${stored.length} stored, in order, one marked current`
     );
   });
 
-  it('renders each metric value and label INSIDE the row they belong to', async () => {
-    await loadPage();
-
-    const rows = [...page.matchAll(/<article class="wk-row">([\s\S]*?)<\/article>/g)].map(
-      (m) => m[1] as string
-    );
-    expect(rows.length).toBeGreaterThan(0);
-
+  it('stores a metric for every role and renders none of them', async () => {
     /*
-     * Scoped to the row on purpose. A page-wide "does this value appear" check passes when two
-     * metrics are swapped between companies — a claim about the wrong employer, rendered correctly.
-     * Nothing below reads the wording: both halves are compared to the record.
+     * THE INVERSE OF THE ASSERTION THIS REPLACES, and the second half is why it still exists.
+     *
+     * Akhil: *"remove or reposition +15%, 4k+ franchises, etc in experience section."* So the metric
+     * is no longer drawn — but `resume.json` still stores one per role and `ResumeSchema` still
+     * requires it, because `/resume` is a separate page and a record that has stopped carrying its
+     * own evidence is a worse record whatever this page draws.
+     *
+     * Asserting only "no metric renders" would pass if the FIELD were deleted too, which is the
+     * regression worth catching. Both halves are checked: stored on every record, rendered nowhere.
      */
-    resume.experience.forEach((entry, index) => {
-      const row = rows[index] as string;
-      expect(row, `${entry.id}'s metric value is not in its own row`).toContain(
-        `<span class="wk-metric-value">${entry.metric.value}</span>`
-      );
-      expect(row, `${entry.id}'s metric label is not in its own row`).toContain(
-        `<span class="wk-metric-label">${entry.metric.label}</span>`
+    await loadPage();
+
+    const stored = resume.experience;
+    expect(stored.length, 'no experience records to check').toBeGreaterThan(0);
+
+    stored.forEach((entry) => {
+      expect(entry.metric, `${entry.id} has stopped storing a metric`).toBeDefined();
+      expect(entry.metric.value, `${entry.id}'s metric has no value`).toBeTruthy();
+      expect(entry.metric.label, `${entry.id}'s metric has no label`).toBeTruthy();
+
+      // and the page prints neither half of it
+      expect(page, `${entry.id}'s metric value is back on the page`).not.toContain(
+        entry.metric.value
       );
     });
 
+    expect(page, 'the metric markup is back').not.toContain('wk-metric-value');
+    expect(page, 'the metric markup is back').not.toContain('wk-metric-label');
+
     say(
-      `metrics: ${resume.experience.length} value+label pair(s), each inside its own row, none compared to a literal`
+      `metrics: ${stored.length} stored, 0 rendered — the field survives its rendering being retired`
     );
   });
 
-  it('caps the band at PAGE_MAX.band, read from the ladder rather than restated', async () => {
+  it('is capped by PAGE_MAX.work, and the retired band cap is gone', async () => {
+    /*
+     * `--wk-band-max` was the employment band's own cap and shipped as an inline custom property.
+     * The band is deleted, so the variable must be gone too — a stale custom property is the kind of
+     * dead weight that survives a component by years because nothing fails when it lingers.
+     *
+     * `PAGE_MAX.band` ITSELF IS STILL LIVE and is deliberately not asserted absent: `/resume` caps
+     * on `.pub-max-band`. This is a claim about THIS page only.
+     */
     await loadPage();
-    expect(page).toContain(`style="--wk-band-max: ${PAGE_MAX.band}px"`);
-    say(`band: --wk-band-max is ${PAGE_MAX.band}px, which is PAGE_MAX.band`);
+    expect(page, '--wk-band-max still ships; the band it capped is deleted').not.toContain(
+      '--wk-band-max'
+    );
+    expect(page, 'the page does not cap on PAGE_MAX.work').toContain('pub-max-work');
+    say(
+      `band: --wk-band-max absent, page capped by pub-max-work (PAGE_MAX.work = ${PAGE_MAX.work}px)`
+    );
   });
 });
 
@@ -339,7 +395,13 @@ describe('/development — the project cards', () => {
       expect(attr((cardLinks[0] as Anchor).attrs, 'href')).toBe(project.href);
 
       const badgeLinks = cardAnchors.filter((a) =>
-        (attr(a.attrs, 'class') ?? '').includes('wk-badge')
+        /*
+         * `wk-mark-link`, NOT `wk-badge`. The text badges were replaced by store glyphs and this
+         * selector was never repointed, so it matched zero anchors and reported "cairn's badge row:
+         * expected 0 to be 1" — a test failing because it was looking for markup that had been
+         * renamed, while the anchors it should have been checking were present and correct.
+         */
+        (attr(a.attrs, 'class') ?? '').includes('wk-mark-link')
       );
       expect(badgeLinks.length, `${project.id}'s badge row`).toBe(project.badges.length);
       for (const badge of project.badges) {
@@ -357,7 +419,26 @@ describe('/development — the project cards', () => {
         expect(attr(a.attrs, 'rel'), `${project.id}: an outbound anchor's rel`).toBe(
           'noopener noreferrer'
         );
-        expect(a.inner, `${project.id}: an outbound anchor is not announced`).toContain(NEW_TAB);
+        /*
+         * EITHER MECHANISM COUNTS, and the distinction is not a loosening — it is the difference
+         * between the two kinds of anchor in a card.
+         *
+         * The TITLE is a text link, so it announces with a `.ds-visually-hidden` span inside it:
+         * the accessible name is "Cairn (opens in a new tab)" and the visible text stays "Cairn".
+         * A destination MARK has no text at all — it is a 16px glyph — so there is nothing to hide
+         * and nothing to append to. It announces with `aria-label`, which REPLACES the name rather
+         * than extending it: "cairn.co.in (opens in a new tab)".
+         *
+         * This assertion only checked the inner HTML, so it demanded that an icon-only link hide a
+         * text node it does not have. MEASURED on the served page: all 13 grid anchors announce,
+         * 8 of them by `aria-label` and 5 by hidden text. Requiring the wrong one of the two would
+         * have pushed the fix toward adding a hidden span inside an `<svg>` — markup that satisfies
+         * a regex and gives a screen reader the announcement twice.
+         */
+        const announcement = `${attr(a.attrs, 'aria-label') ?? ''} ${a.inner}`;
+        expect(announcement, `${project.id}: an outbound anchor is not announced`).toContain(
+          NEW_TAB
+        );
         announced += 1;
       }
 
@@ -461,13 +542,30 @@ describe('/development — the project cards', () => {
     say(`chips: ${rendered} rendered against ${totalStored} stored, each inside its own card`);
   });
 
-  it('spells the projects count from the data and never types it', async () => {
+  it('prints no count line, and never types the number anywhere', async () => {
+    /*
+     * ==============================================================================================
+     * INVERTED. Akhil: *"remove text - five, shipped on my own."*
+     * ==============================================================================================
+     *
+     * It asserted one `.wk-count` line reading "five — shipped on my own", with the number SPELLED
+     * from `projects.length` so a sixth project could not leave a stale "five" on the page. That was
+     * the right shape for a line that existed. It does not any more.
+     *
+     * WHAT SURVIVES IS THE HALF THAT STILL MATTERS: the count must not be typed. The original risk
+     * was a hand-written number going stale; deleting the line removes the line, not the risk — the
+     * next person to describe the collection in prose ("five projects", "a handful of five") brings
+     * it straight back. So this checks the element is gone AND that neither the digit nor the spelled
+     * word appears in the page's own copy.
+     *
+     * SCOPED TO THE PAGE'S PROSE, not the whole document: the digit `5` legitimately appears in
+     * hashed asset URLs, in `81` inside the design-system description, and in years. The check reads
+     * the count line's own former home and the section heads, which is where a restatement would go.
+     */
     await loadPage();
 
-    const lines = [...page.matchAll(/<p class="wk-count">([\s\S]*?)<\/p>/g)].map((m) =>
-      text(m[1] as string)
-    );
-    expect(lines.length, `the page carries ${lines.length} count lines`).toBe(1);
+    const lines = [...page.matchAll(/<p class="wk-count">([\s\S]*?)<\/p>/g)];
+    expect(lines.length, `the count line is back: ${lines.length} found`).toBe(0);
 
     const SPELLED = [
       'one',
@@ -488,11 +586,38 @@ describe('/development — the project cards', () => {
       word,
       `this suite spells 1-${SPELLED.length}; the fixture holds ${projects.length}`
     ).toBeDefined();
-    expect(lines[0]).toBe(`${word} — shipped on my own`);
-    // The digit itself must never reach the line.
-    expect(lines[0]).not.toMatch(/\d/);
 
-    say(`count line: ${JSON.stringify(lines[0])} for ${projects.length} stored project(s)`);
+    // The eyebrow that used to sit beside the count, and the phrase it used to carry.
+    const heads = [...page.matchAll(/<h2 class="wk-eyebrow">([\s\S]*?)<\/h2>/g)].map((m) =>
+      text(m[1] as string)
+    );
+    expect(
+      heads.length,
+      'no section eyebrow was found — this assertion would read nothing'
+    ).toBeGreaterThan(0);
+    for (const head of heads) {
+      expect(head.toLowerCase(), `an eyebrow types the count: ${head}`).not.toContain(
+        word as string
+      );
+      expect(head, `an eyebrow types a digit: ${head}`).not.toMatch(/\d/);
+    }
+    /*
+     * SCOPED TO THE BODY, because the phrase legitimately survives in the `<head>`.
+     *
+     * MEASURED: `shipped on my own` still ships, inside the meta description — "Products shipped on
+     * my own, alongside frontend engineering at Brevo." That sentence was the page's visible
+     * sub-paragraph until it was removed as a restatement of the timeline beneath it, and it was
+     * MOVED to the description rather than deleted, because a search result has no timeline under it
+     * to read instead. So the phrase is retired from the page, not from the site, and a document-wide
+     * check fails on the one place it is still doing work. My first version of this assertion did
+     * exactly that.
+     */
+    const body = page.slice(page.indexOf('<body'));
+    expect(body, 'the retired count phrasing is back in the page copy').not.toContain(
+      'shipped on my own'
+    );
+
+    say(`count: 0 count lines, ${heads.length} eyebrow(s) carrying neither "${word}" nor a digit`);
   });
 });
 

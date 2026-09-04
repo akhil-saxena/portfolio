@@ -40,3 +40,70 @@
 # /portfolio?cat=nature&x=1 -> location: /photos?cat=nature&x=1
 /portfolio   /photography  301
 /portfolio/  /photography  301
+
+
+# ── THE 2026-09-02 RECATEGORISATION ────────────────────────────────────────────────────────────
+#
+# Seven categories became five, on subject rather than on a mix of subject and treatment:
+# `abstract`, `product` and `street` are retired and `nature` is now `landscape`. Because the
+# manifest enforces `id === category + "-" + slug` (photoSlug throws otherwise), recategorising a
+# photograph also renames it — so 18 per-photo URLs moved.
+#
+# BOTH SLASH FORMS, for the reason measured above for /portfolio: a rule does not match its own
+# trailing-slash form, so the unslashed rule alone would 404 every inbound link that ends in one.
+#
+# THE FOUR RETIRED CATEGORY ROUTES ARE SPLIT, NOT REDIRECTED WHOLESALE. `nature` maps cleanly to
+# `landscape` (same eight photographs plus two). `product` maps to `still-life` (both members went
+# there). `abstract` and `street` DO NOT map anywhere: their members were distributed across three
+# and four destinations respectively, so there is no single right target and both land on the
+# gallery, where the visitor can see the whole rail. Sending them to one arbitrary category would
+# be a worse answer than sending them to all of them.
+#
+# Photo-level rules come FIRST: /photography/nature/lonetree must not be swallowed by the
+# category-level /photography/nature rule.
+
+/photography/abstract/intothemist   /photography/architecture/intothemist  301
+/photography/abstract/intothemist/  /photography/architecture/intothemist  301
+/photography/abstract/lightscameraart   /photography/still-life/lightscameraart  301
+/photography/abstract/lightscameraart/  /photography/still-life/lightscameraart  301
+/photography/abstract/watertexture   /photography/landscape/watertexture  301
+/photography/abstract/watertexture/  /photography/landscape/watertexture  301
+/photography/nature/acrossthetrees   /photography/landscape/acrossthetrees  301
+/photography/nature/acrossthetrees/  /photography/landscape/acrossthetrees  301
+/photography/nature/hillsandgreens   /photography/landscape/hillsandgreens  301
+/photography/nature/hillsandgreens/  /photography/landscape/hillsandgreens  301
+/photography/nature/naturehills   /photography/landscape/naturehills  301
+/photography/nature/naturehills/  /photography/landscape/naturehills  301
+/photography/nature/lonetree   /photography/landscape/lonetree  301
+/photography/nature/lonetree/  /photography/landscape/lonetree  301
+/photography/abstract/plane   /photography/landscape/plane  301
+/photography/abstract/plane/  /photography/landscape/plane  301
+/photography/nature/naturewaterfall   /photography/landscape/naturewaterfall  301
+/photography/nature/naturewaterfall/  /photography/landscape/naturewaterfall  301
+/photography/nature/shipsunset   /photography/landscape/shipsunset  301
+/photography/nature/shipsunset/  /photography/landscape/shipsunset  301
+/photography/nature/sunrisepoint   /photography/landscape/sunrisepoint  301
+/photography/nature/sunrisepoint/  /photography/landscape/sunrisepoint  301
+/photography/street/davidjpg   /photography/still-life/davidjpg  301
+/photography/street/davidjpg/  /photography/still-life/davidjpg  301
+/photography/nature/fairwayreflections   /photography/landscape/fairwayreflections  301
+/photography/nature/fairwayreflections/  /photography/landscape/fairwayreflections  301
+/photography/product/peppers   /photography/still-life/peppers  301
+/photography/product/peppers/  /photography/still-life/peppers  301
+/photography/product/gadgets   /photography/still-life/gadgets  301
+/photography/product/gadgets/  /photography/still-life/gadgets  301
+/photography/street/disneylandwalle   /photography/still-life/disneylandwalle  301
+/photography/street/disneylandwalle/  /photography/still-life/disneylandwalle  301
+/photography/street/slothjpg   /photography/wildlife/slothjpg  301
+/photography/street/slothjpg/  /photography/wildlife/slothjpg  301
+/photography/street/tunnelvision   /photography/architecture/tunnelvision  301
+/photography/street/tunnelvision/  /photography/architecture/tunnelvision  301
+
+/photography/nature   /photography/landscape  301
+/photography/nature/  /photography/landscape  301
+/photography/abstract   /photography  301
+/photography/abstract/  /photography  301
+/photography/product   /photography/still-life  301
+/photography/product/  /photography/still-life  301
+/photography/street   /photography  301
+/photography/street/  /photography  301

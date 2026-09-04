@@ -215,3 +215,310 @@ removes the fill. Home's design has no bar at all — the row is two `Link`s and
 flex row. That is not a gap in `AppBar`; it is a page that does not want an app bar, and composing
 two primitives is the design system being used at the level the design asks for. Filed here only so
 that the next plan to reach for `AppBar` on `/` finds the reason it was not used.
+
+### D-26 — no `--ls-*` rung between -0.005em and 0.1em
+
+**Filed 2026-09-02, from the public header.** The tracking scale is `--ls-base` (-0.005em),
+`--ls-tight` (-0.024em), `--ls-tighter` (-0.038em) and `--ls-wide` (0.1em) — three negative rungs
+crowded within 0.033em of each other, then a single positive rung twenty times further out. There is
+nothing in between, so **no small positive tracking can be expressed in tokens at all.**
+
+Measured, on the bar's nav: at `--text-sm` (12.5px), the design called for +0.02em — the amount that
+keeps 12.5px lowercase legible without opening it up. `--ls-wide` is 0.1em, five times that, which
+at this size reads as a caption rather than a nav. `--ls-base` is *negative*. `normal` is the
+closest reachable value, and it is what ships.
+
+**Consequence, shipped and visible:** the header nav is set at `letter-spacing: normal` where the
+chosen design was +0.02em. The gap is 0.25px per character — over `photography` that is 2.75px of
+width. Small, and it is a real difference between what was approved and what is live.
+
+**Why it was not worked around:** `gate:app-css` classifies `letter-spacing` as TOKENISED, so a
+literal is refused. That refusal is the gate doing its job — this is the design system's scale being
+too coarse for a legitimate use, which is exactly the kind of finding the project's core value asks
+for rather than a `!important` or a fork.
+
+**Resolve by** adding a positive rung around +0.02em (`--ls-slight`, say) — or by deciding that small
+positive tracking is not a thing this system does, and saying so, which is equally an answer.
+
+### D-27 — `SegmentedControl`'s three sizes are literal pixels, not type-scale rungs
+
+**Filed 2026-09-02, from the gallery's filter rail.** `primitives.css:3713-3727`:
+
+```css
+.ds-atom-segmented[data-size="sm"] .ds-atom-segmented-btn { height: 28px; font-size: 12px;  padding: 0 10px }
+.ds-atom-segmented[data-size="md"] .ds-atom-segmented-btn { height: 32px; font-size: 13px;  padding: 0 14px }
+.ds-atom-segmented[data-size="lg"] .ds-atom-segmented-btn { height: 40px; font-size: 14px;  padding: 0 18px }
+```
+
+Only `md`'s 13px is a rung — `--text-base`. `sm`'s 12px is half a pixel under `--text-sm` (12.5px),
+and `lg`'s 14px is between `--text-base` (13) and `--text-md` (15) and matches neither. The paddings
+(10/14/18) are likewise off the 4px spacing scale's rungs at 8/16/20.
+
+**Consequence, shipped and visible:** the header nav is `--text-sm`, 12.5px, and the filter pills
+beside it are `size="sm"`, 12px. The two rows of interactive text on `/photography` are half a pixel
+apart where the design intends one size. Half a pixel is invisible; two scales in one system is not,
+and the next control to be matched against a segmented control will have the same problem.
+
+**Why it was not overridden.** `.ds-atom-segmented[data-size="sm"] .ds-atom-segmented-btn` is
+(0,3,0), and the rule's own neighbouring comment says it "would otherwise beat anything a
+single-class rule could say". An app-CSS `font-size` would need (0,4,0) — re-entering exactly the
+specificity contest the `size` prop exists to avoid, to move 0.5px. The prop was taken instead and
+the gap recorded here.
+
+**Resolve by** re-pointing the three `font-size`s at `--text-sm` / `--text-base` / `--text-md` and
+the paddings at `--space-*`. Note that this CHANGES the rendered size of every existing segmented
+control by up to 1px, so it is a visual change and not a pure refactor.
+
+### D-28 — no camera, image, aperture or frame icon in a 33-icon set
+
+**Filed 2026-09-02, from the mobile nav.** The package exports exactly these:
+
+```
+AlertTriangle Check CheckCircle2 ChevronDown ChevronLeft ChevronRight ChevronUp Clock Code Copy
+Heading2 Heading3 Info Italic Link Link2 List ListOrdered Minus Moon MoreHorizontal Plus Quote
+Search Star Strikethrough Sun Trash Trash2 Underline X XCircle
+```
+
+Thirty-three icons, and the set is clearly scoped to a rich-text editor plus the usual UI furniture:
+six of them (`Bold`, `Italic`, `Underline`, `Strikethrough`, `Quote`, `ListOrdered`) exist only for a
+toolbar. There is no camera, no image, no aperture, no frame, no gallery.
+
+**Consequence, shipped and visible:** below 673px the public bar shows its two destinations as
+glyphs, because MEASURED at 390px the wordmark ended at x131 and `development` began at x131 — they
+were touching. `development` takes `Code`, which the package has. `photography` takes a hand-drawn
+SVG in `src/components/public/NavIcons.tsx`. That file is lucide's `camera` path at the design
+system's own measured attributes (`viewBox="0 0 24 24"`, `fill="none"`, `stroke="currentColor"`,
+`stroke-width="1.5"` — not lucide's default of 2), so it sits beside `Code` at the same weight. It is
+still app-owned artwork standing in for a design-system icon.
+
+**Why `lucide-react` was not imported directly:** it is the design system's dependency, not this
+repository's, and reaching past the package for a component it re-exports is exactly what
+`gate:ds` refuses. Same reasoning as `SocialIcons.astro` and the brand marks (D-26's neighbour).
+
+**Resolve by** re-exporting lucide's `camera` (and `image`, `aperture`) from
+`@akhil-saxena/design-system/icons`. `NavIcons.tsx` is written to be DELETED that day and says so;
+the nav is its only caller.
+
+### D-29 — `0.15s` is the system's real transition duration and it is not a token
+
+**Filed 2026-09-02, from the public bar's three icons.** The motion scale is `--dur-1` 120ms,
+`--dur-2` 180ms, `--dur-3` 240ms, `--dur-4` 360ms. MEASURED, a literal `0.15s` appears in the
+`transition` of **twenty-two** components:
+
+```
+input  input-wrap  checkbox-box  radio-box  stickynote  card[data-variant="kanban"]
+card[data-hover="elevate"]  copy  copy-icon  select-chevron  multiselect-chevron  wizard-label
+inlineedit  searchfilters-input  sortable-item  pagination-icbtn  oauthbtn  link  textarea
+fileinput  richtext-hints
+```
+
+150ms is therefore the system's de-facto interaction duration, and it is the one value the duration
+scale does not contain. `--dur-1` and `--dur-2` are each exactly 30ms away from it, so a consumer
+cannot even round to the nearest rung without picking a side.
+
+**Consequence, shipped and visible:** the public bar's theme toggle animates its hover at
+`--dur-1` (120ms) while the `development` / `photography` word-links beside it animate at the
+`.ds-atom-link` literal (150ms). Akhil asked for the three icons to share a hover; the three GLYPHS
+do — measured `color/0.12s` on each at 390px, where they are the only things in the bar — but on
+desktop the toggle is 30ms faster than the words. It is imperceptible and it is still two speeds
+in one bar.
+
+**Why it was not matched:** writing `0.15s` in app CSS is an origination in a tokenised dimension
+and `gate:app-css` refuses it, correctly. There is no token to hand through.
+
+**Resolve by** adding the rung the system already uses — `--dur-0: 150ms`, or renumbering so one
+rung is 150 — and re-pointing those twenty-two declarations at it. This is the same class as D-14
+(the card's literal `.15s`), which turns out not to be one component's slip but the house style.
+
+### D-30 — `SegmentedControl`'s active style matches on ATTRIBUTE PRESENCE, so `data-active="false"` is active
+
+**Filed 2026-09-02, from a bug a visitor could see.** `primitives.css:3704`:
+
+```css
+.ds-atom-segmented-btn[data-active] {
+	background: var(--amber);
+	color: var(--ink-inverse);
+}
+```
+
+`[data-active]` tests for the attribute, not for its value. `data-active="false"` — the natural way
+to write "not active", and what `element.dataset.active = String(isActive)` produces — therefore
+paints the button as SELECTED.
+
+**Consequence, shipped and visible.** The gallery's client-side filter sets the state on click, and
+wrote `data-active` on every pill. On load the server-rendered markup was correct, because
+`FilterNav` emits the attribute only on the current item. After the first click, five of six pills
+filled `--amber` with inverted text and the one the visitor had chosen was the only outlined one —
+the selection exactly inverted. Akhil: *"clicking on filter pills in dark mode has a weird effect,
+the non selected items pill's turn full white, fix this. the selected item should be white, not
+opposite."*
+
+Fixed in `src/lib/use-photo-filter.ts` by REMOVING the attribute rather than setting it to `"false"`.
+Note that this repository's own rules use `[data-active="true"]` and were right about which pill was
+current the whole time — the design system was painting the other five underneath them, which is
+what made it read as an inversion rather than as a missing state.
+
+**Resolve by** matching the value: `[data-active="true"]`, or `[data-active]:not([data-active="false"])`
+if the boolean-attribute spelling must keep working. A presence selector on a `data-*` attribute
+whose obvious values are `"true"` and `"false"` is a trap for every consumer that renders state from
+a boolean.
+
+### D-31 — `Heading`'s weight token names are shifted from the `--weight-*` scale, and 400 is unreachable
+
+**Filed 2026-09-02.** The global scale is `--weight-regular: 400`, `--weight-medium: 500`,
+`--weight-semibold: 600`, `--weight-bold: 700`, `--weight-extrabold: 800`, `--weight-black: 900`.
+`Heading`'s own token names resolve differently (`primitives.css:7289-7300`):
+
+| `weight` prop | renders | the same name in `--weight-*` |
+|---|---|---|
+| `"regular"` | **500** | 400 |
+| `"medium"` | **600** | 500 |
+| `"bold"` | 700 | 700 |
+| `"black"` | 900 | 900 |
+
+So `weight="regular"` is not regular, and the numeric union (`500 | 600 | 700 | 800 | 900`) has no
+400 either — **a `Heading` cannot render 400 by any prop.**
+
+**Consequence here, and it is mild by luck rather than by design.** Akhil asked for lighter page
+titles. `/development` is a plain `<h1>` and took `--weight-regular` (400). `/photography` uses
+`Heading` and could only reach `weight="regular"` → 500. MEASURED, the two render IDENTICALLY:
+Libre Baskerville ships only 400, 400-italic and 700, and CSS font matching resolves a 500 target to
+the 400 face with no synthetic emboldening — `measureText('Photographs')` at 44px gives width 286.53
+and ascent 36.52 for both 400 and 500, and 290.06 / 33.26 for both 600 and 700. So the computed
+values differ (500 vs 400) while the pixels do not.
+
+That luck does not survive a variable font or a family with a real 500. **Do not "tidy" the 500 to a
+number** — it cannot be one.
+
+**Resolve by** re-pointing those four rules at the `--weight-*` tokens of the same name and adding
+`400` to the numeric union.
+
+### D-32 — `--scrim` has no foreground partner, so the system hardcodes `#ffffff`
+
+**Filed 2026-09-02, from the gallery's hover caption.** `--scrim` is `#000000a6` and, unusually and
+correctly, it does NOT flip with the theme — a veil over a photograph should be dark whichever theme
+the page is in, because it is darkening the *medium*, not the page.
+
+There is no fixed light token to put on it. MEASURED, every light-looking token in the system flips:
+`--cream`, `--cream-2`, `--cream-3`, `--paper`, `--paper-warm`, `--paper-deep`, `--ink-inverse`. So a
+consumer wanting the conventional white-on-scrim caption has nothing to reach for — and neither did
+the design system, which wrote a literal in its own component:
+
+```css
+.ds-atom-lightbox-caption { color: #ffffff; … }
+```
+
+**Consequence here.** `gate:app-css` refuses colour literals in `src/styles/`, correctly, so the
+gallery's hover caption is built from the pair that inverts TOGETHER instead: `--ink` on
+`--ink-inverse` — measured `#f2f2f4` on `#0d0d0f` in dark, `#111114` on `#fafafb` in light. Contrast
+is guaranteed in both themes with no literal, and the trade is that the veil follows the PAGE rather
+than the medium: light mode gets a pale veil with dark type where the convention is dark-over-photo.
+That is a defensible choice and it is not the one the design would pick if it had the option.
+
+**Resolve by** adding the partner — `--on-scrim: #ffffff`, fixed in both themes, beside `--scrim` —
+and re-pointing `.ds-atom-lightbox-caption` at it. One token retires a literal in the system's own
+CSS and unblocks every consumer captioning media.
+
+### D-33 — `SegmentedControl`'s dark-mode active text is a hardcoded `#000` that assumes the amber fill
+
+**Filed 2026-09-02, from a defect that shipped invisible.** `primitives.css`:
+
+```css
+.ds-atom-segmented-btn[data-active] { background: var(--amber); color: var(--ink-inverse) }
+.dark .ds-atom-segmented-btn[data-active] { color: #000 }
+```
+
+The dark-mode rule replaces the token with a literal black, and it is only legible because of the
+`--amber` fill declared on the rule above it. The two are coupled and neither says so.
+
+**Consequence, shipped and visible.** The gallery's filter rail restyles the active pill as an
+OUTLINE — `background: transparent`, `color: var(--ink)`, `border-color: var(--ink)` — because a
+filled amber segment reads as a form control on a page of photographs. Removing the fill left the
+`#000` with nothing to sit on: MEASURED via `CSS.getMatchedStylesForNode`, the active pill computed
+`rgb(0, 0, 0)` against a `#0d0d0f` page. The current section was unreadable in the default theme.
+
+**It also could not be overridden at the obvious specificity.** `.dark .ds-atom-segmented-btn
+[data-active]` is (0,3,0); an app rule written `.ph-filters .ds-atom-segmented-btn[data-active=
+"true"]` is (0,3,0) too, so it TIED and lost on source order — which is how this reached the built
+site. The fix escalates to (0,4,0) by adding `.ds-atom-segmented`, already on the same element.
+
+Note this is the second defect in one component from the same cause as D-30: rules that encode the
+selected state in more than one place, none of which is the value a consumer would override.
+
+**Resolve by** using `--ink-inverse` in the dark rule as the light one does — it is `#0d0d0f` in
+dark, which is what `#000` was approximating — or by dropping the dark override entirely, since
+`--ink-inverse` already inverts. Either way the fill and the foreground should be declared together
+so restyling one cannot orphan the other.
+
+### D-34 — the dark theme's shadow scale has one usable rung
+
+**Filed 2026-09-03, from the photo page's print mat.** The base scale is a normal three-step ramp;
+the dark theme replaces it with something else entirely. MEASURED off the running site:
+
+| | dark | light |
+|---|---|---|
+| `--shadow-1` | `none` | `0 1px 2px #0000000d` |
+| `--shadow-2` | `0 0 0 1px #2a2a30` | `0 4px 12px #00000014` |
+| `--shadow-3` | `0 0 0 1px #3a3a42, 0 16px 40px #0000008c` | `0 12px 32px #0000001f` |
+
+In dark, rung 1 is nothing and rung 2 is a **hairline ring with no drop shadow at all**. Only rung 3
+lifts anything, and it lifts hard: 16px of offset under a 40px blur, about 56px of throw.
+
+**Consequence, and it is why this was found.** The photo page mounts each photograph on a white card
+that must read as lifted off the page rather than outlined on it. Reviewer feedback said the caption
+"sits slightly below the photo" — measured, the caption's box bottom and the mat's box bottom are
+IDENTICAL (delta 0.0 at 1440 and at 1280, landscape and portrait). What they were seeing was
+`--shadow-3`'s 56px of throw making the mat look taller than it is. The obvious remedy is a smaller
+drop shadow; there is none. `--shadow-2` swaps the lift for a border — the one treatment this card
+was explicitly not to have — and `--shadow-1` is `none`.
+
+So a piece of design feedback about a real perceptual problem has no token-only answer: the choice is
+a 56px phantom, a hairline border, or nothing.
+
+**Resolve by** giving dark a genuine mid rung — the ring is a separate concern from the lift and
+should not occupy a shadow rung at all. Something like `0 6px 18px rgba(0,0,0,0.45)` for
+`--shadow-2`, with the `0 0 0 1px` ring moved to its own token (`--ring-subtle`) so a consumer can
+take a lift, an outline, or both, rather than being handed one when it asked for the other.
+
+---
+
+### D-35 — the focus ring is shaped for an amber brand and lands as 18:1 ink under `monochrome`
+
+`tokens.css` derives the indicator from the accent — `--focus: var(--amber-d)`, then
+`--focus-ring: 0 0 0 3px var(--focus)`. That is a sound default for a brand whose accent is a hue:
+amber at 3px reads as a *signal*, distinct in kind from the ink around it.
+
+`themes/monochrome.css` then maps the accent onto the ink ramp — `--amber-d: #111114` on
+`:root[data-brand="monochrome"]`, `#95959b` on its `.dark` — and the construction stops meaning what
+it did. MEASURED on the portfolio at 1280 in both themes, the shipped indicator is a **3px band of
+the darkest ink on the page**:
+
+| | ring colour | vs page | required (1.4.11) |
+|---|---|---|---|
+| light | `#111114` on `#fafafb` | **18.07:1** | 3:1 |
+| dark | `#f2f2f4` on `#0d0d0f` | **17.37:1** | 3:1 |
+
+Six times the requirement, at the heaviest weight in the scale. Akhil, unprompted, on seeing it:
+*"focus state is too dark, like the border is too dark and too weighty."* Nothing else on a
+monochrome page is that heavy, so the ring reads as louder than the control it is pointing at.
+
+**This is not a request to weaken the indicator.** The site's fix keeps `--focus` untouched and
+changes only the geometry — `0 0 0 2px var(--bg), 0 0 0 3px var(--focus)`, a 1px ring held 2px off
+the edge. Contrast is unchanged at 18.07 / 17.37. What changes is that the gap, rather than the
+thickness, is what makes the line read as deliberate. The alternative of softening the COLOUR was
+measured and rejected: a 32% halo lands at 2.06:1 light and 1.56:1 dark, a real failure dressed up
+as restraint.
+
+**A second, independent half.** Three primitives never read `--focus-ring` at all —
+`.ds-atom-iconbtn` and `.ds-atom-segmented-btn` spell `outline: 2px solid var(--focus)` inline in
+their own rules, so a consumer who overrides the token gets a page where the links move and the
+pills do not. Whatever weight the system settles on, it should be expressible in ONE place; today it
+takes a token override plus a rule override to move the whole surface.
+
+**Resolve by** either (a) giving `monochrome` its own `--focus-ring` sized for ink rather than
+inheriting one sized for amber, or (b) making thickness and offset their own tokens
+(`--focus-width` / `--focus-offset`) that the outline-based primitives also spend, so one
+declaration moves every focus surface in the system.
+
+**Related:** D-4 (inline styles force `!important` — `Button` writes `outline:none` inline, so its
+focus indicator is only reachable through `box-shadow`).

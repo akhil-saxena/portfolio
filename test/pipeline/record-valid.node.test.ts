@@ -12,9 +12,9 @@
  *
  * `astro sync`, NOT `astro build`. Measured in 04-RESEARCH §6 and again here: `sync` fires the same
  * `astro:config:done` hook, so it runs all five per-file schemas and all six RI rules, exits 1 on a
- * violation, and needs **no `.env`/`.dev.vars`** — `astro build` exits 1 without them at
- * `validatePublicVariables`, which would make every case below fail for a reason that has nothing
- * to do with content.
+ * violation, and needs no env file: the auth subsystem whose `astro:env` schema forced `.env` and
+ * `.dev.vars` to exist was removed on 2026-09-05, so `sync` has no secrets to validate and every
+ * case below fails only for reasons that have to do with content.
  *
  * THE THREE TRAPS THIS FILE IS WRITTEN AGAINST
  * -------------------------------------------
@@ -74,8 +74,6 @@ const COPIED = [
   'worker-configuration.d.ts',
   'biome.json',
   '.nvmrc',
-  '.dev.vars',
-  '.env',
 ];
 
 /** The five committed content files. FIVE — `projects.json` is the one that gets forgotten. */

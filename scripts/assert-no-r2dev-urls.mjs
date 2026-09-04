@@ -146,12 +146,6 @@ const RULES = [
   },
   {
     scan: true,
-    label: '*.example',
-    test: (p) => p.endsWith('.example'),
-    why: 'the templates a developer copies into real local config, so a stale origin propagates.',
-  },
-  {
-    scan: true,
     label: '.github/**',
     test: (p) => p.startsWith('.github/'),
     why:

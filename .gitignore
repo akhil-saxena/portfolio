@@ -13,7 +13,6 @@ dist/
 # env
 .env
 .env.*
-!.env.example
 
 # misc
 .DS_Store
@@ -37,9 +36,8 @@ yarn-error.log*
 # node_modules out of the repo.
 .playground/
 
-# cloudflare local dev secrets (see .dev.vars.example)
+# cloudflare local dev secrets
 .dev.vars
-!.dev.vars.example
 
 # live-run scratch (plan 04-10 Task 4)
 # The before-state SHA and the new record's id are written to FILES rather than exported,

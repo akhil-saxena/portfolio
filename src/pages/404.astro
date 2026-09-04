@@ -67,46 +67,181 @@
  */
 
 import { Heading } from '@akhil-saxena/design-system/components/Heading';
-import { Link } from '@akhil-saxena/design-system/components/Link';
 import { Text } from '@akhil-saxena/design-system/components/Text';
 import PublicLayout from '../layouts/PublicLayout.astro';
 
 /** Where the one link goes. Named so the markup and this file's own docstring cannot disagree. */
-const HOME_PATH = '/';
+const WORK_PATH = '/development';
+const PHOTOS_PATH = '/photography';
 ---
 
 <PublicLayout mainClass="pub-max-home">
   <Fragment slot="head">
-    <title>Not found — Akhil Saxena</title>
+    {
+      /*
+       * NO EM DASH. Akhil: *"don't use em dashes in text"*, and the title was
+       * `Not found — Akhil Saxena` — the one place a visual check would miss, because a browser tab
+       * truncates it and no screenshot of the page shows it.
+       */
+    }
+    <title>Not found · Akhil Saxena</title>
     <meta name="robots" content="noindex" />
   </Fragment>
 
+  {
+    /*
+     * ================================================================================================
+     * P2, "THE PHOTOGRAPH THAT ISN'T" — the empty frame IS the illustration
+     * ================================================================================================
+     *
+     * Akhil: *"Use p2 to build 404 page ... dont add home button"*, from the three 404 designs. P2 is
+     * the two-column one: the message on the left, an empty picture frame on the right, captioned
+     * "No image at this address".
+     *
+     * IT EARNS ITS PLACE ON THIS SITE SPECIFICALLY. A generic 404 illustration is decoration; an
+     * empty frame on a PHOTOGRAPHER'S site is the same joke the page is already making, drawn once
+     * instead of said twice. It is built from a border and a dashed inset rather than from an image,
+     * so the page that says "no image here" does not itself load one.
+     *
+     * NO HOME BUTTON. The design's own third action was a quiet `home` link and it is dropped on
+     * instruction. What remains is the two destinations that actually hold something — and the
+     * wordmark in the bar is already a link home on every route, so nothing is lost.
+     *
+     * `aria-hidden` ON THE FRAME. Its caption repeats what the prose above already says, and a
+     * screen reader meeting both hears the same fact twice. The frame is a picture of an absence;
+     * the absence is stated in text.
+     */
+  }
   <div class="nf-page">
-    <Heading level={1} size="lg">Not found.</Heading>
-    <Text variant="small">There is nothing at this address.</Text>
-    {
-      /* `variant="default"` — §4.6a measured that `inline`, `footer` and `action` set `color` as an
-         INLINE style, which beats any app rule while every jsdom test still passes. */
-    }
-    <Link href={HOME_PATH} variant="default">Go to the home page</Link>
+    <div class="nf-copy">
+      <p class="nf-eyebrow">404 · Not found</p>
+      {
+        /* §4.3 item 1: the accent is the full stop and nothing else. `--ochre-d`, the same token
+          `.wk-stop` uses — the design's green period is not taken, because the last chromatic accent
+          left this palette on 2026-09-05 when the timeline's green dot went. */
+      }
+      <Heading level={1} size="4xl" weight="regular" className="nf-title">
+        Nothing to see here<span class="nf-stop">.</span>
+      </Heading>
+      <Text variant="small" className="nf-sub">
+        This address holds no page. An empty frame, no photograph in it.
+      </Text>
+      {
+        /*
+         * ==========================================================================================
+         * NO ACTIONS AT ALL — THE BAR ALREADY CARRIES BOTH DESTINATIONS
+         * ==========================================================================================
+         *
+         * Akhil: *"do i need buttons there? on 404 page. we have header already. it's duplicacy."*
+         *
+         * He is right, and it is the SAME RULE that removed the home button one step earlier —
+         * *"dont add home button"* — applied consistently instead of to one link out of three. The
+         * shell's nav ships `development` and `photography` on every route, this page included, and
+         * the wordmark is the link home. Two buttons under the prose repeat all of it.
+         *
+         * P2's design has three actions. They earn their place in a static mock, where nothing else
+         * on the canvas is clickable; on the real page they are the third copy of a menu the reader
+         * can already see. What the page needs is to SAY that the address is empty, and it does.
+         *
+         * `.nf-acts` and `.nf-act` are gone from the stylesheet with them; `Button` is no longer
+         * imported. `seo.node.test.ts` asserts the absence, because a 404 with no visible way out
+         * reads like an oversight to the next person and this is the note saying it is not.
+         */
+      }
+    </div>
+
+    <div class="nf-frame" aria-hidden="true">
+      <span class="nf-frame-label">No image at this address</span>
+    </div>
   </div>
 </PublicLayout>
 
 <style>
   /*
-   * Layout only — no colour, no type size, no font family. Every one of those belongs to the
-   * design-system components above, which is the project's core value rather than a preference.
-   *
-   * The stack mirrors `.ph-empty` in `src/styles/photography.css` deliberately: the two states are the
-   * same shape (a heading, a line of prose, a link) and a reader who meets both should not find
-   * them spaced differently. It is not extracted into a shared rule because this route is the only
-   * other consumer and `src/styles/` holds one file per route, not per shape.
+   * Layout only. Type, colour and radius come from the design system's tokens; nothing here
+   * originates a value in a dimension it already names.
    */
   .nf-page {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-12);
+    align-items: center;
+    padding-block: var(--space-16);
+  }
+
+  /* Two columns only when the frame can be its own width without squeezing the prose. */
+  @media (min-width: 673px) {
+    .nf-page {
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: var(--space-16);
+    }
+  }
+
+  .nf-copy {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: var(--space-3);
-    padding-block: var(--space-16);
+  }
+
+  .nf-eyebrow {
+    margin: 0 0 var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  .nf-stop {
+    color: var(--ochre-d);
+  }
+
+  /*
+   * 🔴 `padding`, NOT `margin`. `Heading` and `Text` both write `margin: 0` into the STYLE
+   * ATTRIBUTE, which no stylesheet can reach at any specificity short of `!important`. The first
+   * version used `margin-block-start` and the sub-paragraph rendered ON TOP of the heading's
+   * descenders — measured, not guessed: "This address holds no page" overlapped "Nothing to see
+   * here". `#ph-count` in `photography.css` carries the same note for the same reason.
+   */
+  .nf-sub {
+    /* A copy measure rather than a layout maximum, so it is in ch and not in the page ladder. */
+    max-width: min(46ch, 100%);
+    padding-block-start: var(--space-5);
+  }
+
+  .nf-title {
+    padding-block-start: var(--space-1);
+  }
+
+  /*
+   * THE FRAME IS DRAWN, NOT LOADED. A 1px edge with a dashed inset 12px inside it — the second
+   * border is what makes it read as a mount rather than as an empty box, and both are `--wire` and
+   * `--rule`, the two hairline weights this site already uses for bounding and separating.
+   *
+   * `aspect-ratio` rather than a fixed height, so the 340x250 of the design survives the column
+   * narrowing at the breakpoint instead of leaving a fixed box in a fluid grid.
+   */
+  .nf-frame {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 340 / 250;
+    border: 1px solid var(--wire);
+  }
+
+  .nf-frame::before {
+    position: absolute;
+    inset: var(--space-3);
+    border: 1px dashed var(--rule);
+    content: '';
+  }
+
+  .nf-frame-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--ls-wide);
+    text-transform: uppercase;
+    color: var(--ink-4);
   }
 </style>

@@ -656,9 +656,75 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
     expect(html).toMatch(/<meta\s+name="robots"\s+content="noindex"\s*\/?>/);
 
-    for (const line of ['Not found.', 'There is nothing at this address.', 'Go to the home page']) {
-      expect(html, `§13.2 copy missing from the built 404: "${line}"`).toContain(line);
+    /*
+     * ==============================================================================================
+     * THE COPY IS P2's, AND THE HOME LINK IS ASSERTED ABSENT
+     * ==============================================================================================
+     *
+     * This pinned `Not found.` / `There is nothing at this address.` / `Go to the home page`. The
+     * page was rebuilt to design P2 — "the photograph that isn't" — on 2026-09-05, and Akhil asked
+     * for no home button: *"Use p2 to build 404 page ... dont add home button."*
+     *
+     * The third line is INVERTED rather than dropped. A home link is the obvious thing for the next
+     * person to add back to a 404, and it was removed on purpose: the wordmark in the bar is already
+     * a link home on every route, so a button repeating it is a second way to say one thing. Only
+     * asserting the new copy would let it return silently.
+     */
+    for (const line of [
+      '404 · Not found',
+      'Nothing to see here',
+      'This address holds no page. An empty frame, no photograph in it.',
+      'No image at this address',
+    ]) {
+      expect(html, `P2 copy missing from the built 404: "${line}"`).toContain(line);
     }
+
+    expect(html, 'the retired 404 copy is back').not.toContain('Go to the home page');
+
+    /*
+     * NO EM DASH IN THE COPY, including the `<title>`, which read `Not found — Akhil Saxena` until
+     * this rebuild. Akhil: *"don't use em dashes in text."* The title is the one place a visual
+     * check misses it: a browser tab truncates, and no screenshot of the page shows it.
+     *
+     * 🔴 SCOPED TO THE RENDERED TEXT, NOT THE RAW BYTES. The first version searched the whole
+     * document and failed — on the theme script's own COMMENT in `PublicLayout`, which ships inline
+     * on every page and contains a perfectly ordinary prose dash. The instruction is about text a
+     * reader sees; asserting over source comments would have made this test refuse correct pages and
+     * taught the next person to delete it.
+     */
+    const rendered = html
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<style[\s\S]*?<\/style>/g, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<[^>]+>/g, ' ');
+    expect(rendered, 'an em dash is back in the 404 copy').not.toContain('—');
+    // The <title> is stripped with its tags above, so it is checked on its own.
+    expect(
+      /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '',
+      'the title carries an em dash'
+    ).not.toContain('—');
+
+    /*
+     * ==============================================================================================
+     * THE PAGE'S OWN CONTENT CARRIES NO ACTIONS, AND THAT IS ASSERTED RATHER THAN LEFT TO CHANCE
+     * ==============================================================================================
+     *
+     * Akhil: *"do i need buttons there? on 404 page. we have header already. it's duplicacy."* Same
+     * rule that removed the home button, applied to all three links instead of one: the shell's nav
+     * ships `development` and `photography` on every route, so buttons repeating them under the
+     * prose are a third copy of a menu already on screen.
+     *
+     * A 404 WITH NO VISIBLE WAY OUT READS LIKE AN OVERSIGHT, which is exactly why the absence is
+     * pinned — and why the second half asserts the way out still EXISTS, in the bar. Checking only
+     * "no buttons" would pass on a page that had also lost its nav.
+     */
+    const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
+    expect(main, 'the 404 grew action buttons again; the bar already carries both').not.toContain(
+      'ds-atom-btn'
+    );
+
+    expect(html, 'the 404 has no route to /development at all').toContain('href="/development"');
+    expect(html, 'the 404 has no route to /photography at all').toContain('href="/photography"');
 
     // It carries the shell — the nav and the footer, so a reader who mistypes a URL has a way back
     // that is not the browser's back button. The Phase 2 placeholder this replaced had neither.

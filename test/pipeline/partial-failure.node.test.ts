@@ -399,7 +399,38 @@ function makeSandbox(): Sandbox {
    * pipeline is tested against the code AND the data in front of the author.
    */
   git(work, ['add', '-A', '--', 'data', 'scripts', 'src', '.github']);
-  const overlayed = git(work, ['status', '--porcelain', '--']);
+  /*
+   * ================================================================================================
+   * 🔴 ASK WHETHER ANYTHING IS *STAGED*, NOT WHETHER THE TREE IS DIRTY
+   * ================================================================================================
+   *
+   * This read `git status --porcelain --`, which reports the WHOLE tree, and then committed if the
+   * output was non-empty. Those are two different questions, and the difference is a bug that only
+   * appears when the author's checkout is CLEAN — which is the state CI is always in.
+   *
+   * MEASURED, the failure: `.gitignore` line 2 is `node_modules/`, with a trailing slash, so it
+   * matches a DIRECTORY. This fixture creates `node_modules` as a SYMLINK (`symlinkSync` above), and
+   * git treats a symlink as a file — so the pattern does not match it and it reports as untracked:
+   *
+   *     $ git status --porcelain --
+   *     ?? node_modules
+   *
+   * With a dirty checkout the overlay copies real files, `git add` stages them, and the commit has
+   * content; the stray `??` line is harmless noise inside a condition that happened to be true for
+   * the right reason. With a CLEAN checkout the overlay copies nothing, that one line is the entire
+   * output, the guard says "there is an overlay" and `git commit` exits 1 with "nothing added to
+   * commit but untracked files present". Ten cases fail, and case 9 then fails a second way because
+   * case 8 never produced a state for it to compare against.
+   *
+   * `git diff --cached --name-only` asks the precondition `git commit` actually has: is anything in
+   * the index? Scoping the status call to the same four pathspecs would also have worked, but it
+   * would still be answering a question one step removed from the one that matters.
+   *
+   * WHY THIS WAS NOT CAUGHT EARLIER: every local run of this suite happened mid-change, with a dirty
+   * tree. It went red the moment the branch was committed — which looked like the commits broke it
+   * and was the opposite: they revealed it.
+   */
+  const overlayed = git(work, ['diff', '--cached', '--name-only']);
   if (overlayed.length > 0) {
     git(work, ['commit', '--no-verify', '-m', 'sandbox: the working tree under test']);
     git(work, ['push', '--no-verify', 'origin', `HEAD:${BRANCH}`]);

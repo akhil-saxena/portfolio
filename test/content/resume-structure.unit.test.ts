@@ -75,10 +75,16 @@ const PHASE_5_KEYS = ['status', 'oneLiner'];
 /**
  * Keys added AFTER the move, named one at a time so an unnamed one still fails.
  *
- * `evidence` — plan 05-16. `ProjectSchema` gained `evidence: z.enum(['components']).optional()` so a
- * project can declare what it is able to SHOW of itself, and `design-system` declares `components`:
- * its own Chip, StatusPill, Button and Link render on the card as the evidence, rather than a
- * paragraph describing a component library. Akhil chose that treatment out of three: *"i is okay"*.
+ * `mark` — a theme-aware brand-mark pair, one file per ground, for the two projects whose artwork is
+ * a knock-out rather than an opaque store square. `icon` could not express it: a single path is wrong
+ * in one of the two themes.
+ *
+ * `evidence` WAS HERE AND HAS BEEN REMOVED, which is worth recording rather than quietly dropping.
+ * Plan 05-16 added `evidence: z.enum(['components']).optional()` so `design-system` could render its
+ * own Chip, StatusPill, Button and Link on the card as the evidence. Akhil later removed that strip
+ * — *"in ds card, remove additional cip/statuspill, button, link etc"* — and the field came out of
+ * the schema and the data with it, because a field no renderer reads is a field that drifts. Leaving
+ * its name in this list would have made the catch-all below tolerate a key that cannot legally exist.
  *
  * WHY THIS LIST EXISTS RATHER THAN THE PROOF BEING RELAXED. The claim below is that the five project
  * records moved from `resume.json` to `projects.json` BYTE-IDENTICALLY, and every exception erodes
@@ -87,7 +93,7 @@ const PHASE_5_KEYS = ['status', 'oneLiner'];
  * only the keys both files happen to share — would let the record be rewritten a field at a time
  * with the test staying green, which is precisely what it was written to prevent.
  */
-const POST_MOVE_KEYS = ['evidence', 'mark'];
+const POST_MOVE_KEYS = ['mark'];
 
 /** The record whose description OD-6 changed, and the token it now carries. */
 const FIGURE_RECORD_ID = 'design-system';
@@ -274,8 +280,35 @@ const evidenceById = new Map(evidence.projects.map((project) => [project.id, pro
  * are DROPPED, because the evidence revision predates them and has no slot for them at all — a
  * blank would compare a present key against an absent one and fail for the wrong reason.
  */
+/*
+ * ================================================================================================
+ * `tech` AND `badges` JOIN `description` IN THE MASK, AND EACH GETS ITS OWN ASSERTION BELOW
+ * ================================================================================================
+ *
+ * MEASURED against the evidence revision, which key diverged on which record:
+ *
+ *     description   all five   already masked — OD-6 then 05-02 replaced it
+ *     tech          all five   Akhil: *"use fe language + be language ... use just a single pill if
+ *                               2nd one ids not very important"* — four lists lost their second and
+ *                              third entries, cairn's changed members entirely
+ *     badges        two        cairn's globe label became `cairn.co.in` so the mark names its
+ *                              destination; design-system gained a `Storybook` badge
+ *     id/title/label/icon/href   NONE — byte-identical on all five
+ *
+ * THE MOVE WAS STILL LOSSLESS. That is what this suite proves and it remains proven: the five keys
+ * that identify a record — its route, its name, its artwork, its destination — are unchanged since
+ * before it moved. The two divergences are content decisions taken with the page rendered, months
+ * after the move, and a proof that forbids them is a proof that has become a freeze.
+ *
+ * MASKED RATHER THAN DROPPED, for the reason `description` already was: dropping a key also deletes
+ * the evidence that it still sits in its own position, and key ORDER is half of what this comparison
+ * checks. A blanked value keeps the slot.
+ */
+const REVISED_SINCE_MOVE = ['tech', 'badges'] as const;
+
 const maskDescription = (record: ProjectRecord): Record<string, unknown> => {
   const masked: Record<string, unknown> = { ...record, description: '<<OD-6 FIELD>>' };
+  for (const key of REVISED_SINCE_MOVE) masked[key] = `<<REVISED: ${key}>>`;
   // Not cast back to `ProjectRecord`: after the deletions it is deliberately NOT one, and saying
   // so would be a lie the compiler rejects (ts2352). The only consumer is `JSON.stringify`.
   for (const key of PHASE_5_KEYS) delete masked[key];
@@ -406,6 +439,32 @@ describe.each(PROJECT_IDS)('project "%s" moved verbatim', (id) => {
     expect(JSON.stringify(maskDescription(after), null, 2)).toBe(
       JSON.stringify(maskDescription(before), null, 2)
     );
+  });
+
+  it('had its tech list and badges REVISED after the move, and both are still well-formed', () => {
+    /*
+     * THE COVERAGE THE MASK WOULD OTHERWISE HAVE COST, and it is two claims rather than one.
+     *
+     * That they CHANGED is asserted, so the mask cannot be quietly hiding a case where nothing
+     * changed and the exemption was never needed — the same discipline the `description` assertion
+     * below already applies. And that they are still USABLE is asserted, because these fields are
+     * Akhil's to revise and nobody's to empty: `tech` drives the card's chips and `badges` its
+     * destination marks, and an empty either makes a card that says nothing about where to go.
+     */
+    const changed =
+      JSON.stringify(after.tech) !== JSON.stringify(before.tech) ||
+      JSON.stringify(after.badges) !== JSON.stringify(before.badges);
+    expect(
+      changed,
+      `${id}: neither tech nor badges differs from the evidence revision, so masking both hides nothing`
+    ).toBe(true);
+
+    expect(after.tech.length, `${id} lists no tech`).toBeGreaterThan(0);
+    expect(after.badges.length, `${id} carries no badges`).toBeGreaterThan(0);
+    for (const badge of after.badges) {
+      expect(badge.href, `${id} has a badge with a relative href`).toMatch(/^https?:\/\//);
+      expect(badge.icon?.trim().length, `${id} has a badge with no icon`).toBeGreaterThan(0);
+    }
   });
 
   it('had its description REPLACED by plan 05-02, which is where that field is proven now', () => {

@@ -68,12 +68,28 @@ import { resolveDsTokens } from '../../src/lib/ds-component-count.ts';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const PROJECTS_REL = 'data/projects.json';
 
+/*
+ * The fields this proof READS, declared; everything else falls through the index signature.
+ *
+ * `tech` and `badges` were not here, because the migration proof only ever indexed them
+ * generically (`project[key]`) inside a loop driven by the old record's own keys — and indexing
+ * through `[key: string]: unknown` is legal. The narrowed claims now access them by NAME, which the
+ * index signature types as `unknown`, so they are declared rather than cast at each use.
+ *
+ * NOT imported from `src/schemas/projects.ts`. That module imports `astro/zod` and re-exports
+ * through extensionless relative specifiers only a bundler resolves — the same reason
+ * `migrate-project-copy.mjs` restates the OD-6 refusal instead of importing it. The schema is still
+ * the authority: this suite runs the REAL `ProjectSchema` over the shipped file elsewhere, so a
+ * divergence between this shape and the schema's fails there rather than passing silently here.
+ */
 interface Project {
   id: string;
   title: string;
   status: string;
   oneLiner: string;
   description: string;
+  tech: string[];
+  badges: Array<{ label: string; href: string; icon: string }>;
   [key: string]: unknown;
 }
 
@@ -337,9 +353,60 @@ describe.each(projects.map((project) => [project.id, project] as const))(
     const section = sections[id];
     const before = previous.records.find((record) => record.id === id);
 
-    it('carries the reviewed one-liner and card copy, verbatim modulo the token rules', () => {
+    it('carries the reviewed ONE-LINER verbatim, modulo the token rules', () => {
+      /*
+       * ============================================================================================
+       * THE CARD COPY IS NO LONGER COMPARED TO THE DECK, AND THE ONE-LINER STILL IS
+       * ============================================================================================
+       *
+       * This asserted BOTH fields against `00-COPY/one-liners.md`. The deck's own frontmatter said
+       * `status: first-pass` / `awaiting: akhil-edit`, and that edit has now happened — Akhil rewrote
+       * all five card descriptions directly, over four rounds, judging them on the rendered page.
+       *
+       * MEASURED, which keys actually diverged from the deck: `description` on all five, `oneLiner`
+       * on none. So the deck is still the reviewed source for the one-liner and this half of the
+       * claim is untouched — it is the CARD half that has a new author.
+       *
+       * 🔴 WHY THE CARD COMPARISON IS RETIRED RATHER THAN REPAIRED. Two repairs were available and
+       * both are worse:
+       *
+       *   Re-point the deck at the new copy and keep comparing. The comparison would then be between
+       *   Akhil's text and a transcription of Akhil's text that I made — it proves the transcription,
+       *   not the data, and it puts a markdown file in the path of every future copy edit.
+       *
+       *   Grow `TOKEN_RULES` until it can produce the new placement. The rules are
+       *   `/\b\d+ components\b/` and `/\bin \d+ categories\b/`; the new copy reads "81 accessible
+       *   components across 10 categories", which matches neither. Extending them means the migration
+       *   script's regexes have to track whatever phrasing Akhil chooses next — the test driving the
+       *   copy instead of guarding it.
+       *
+       * WHAT GUARDS THE CARD COPY INSTEAD is below and in three other places: the real schema refuses
+       * a literal component figure, every token must be a documented one, the §13.1 budget is checked
+       * on the RESOLVED string, and `gate:placeholders` fails the build if any `{{…}}` survives into
+       * shipped HTML. The migration is a completed event; those four are standing properties.
+       */
       expect(project.oneLiner).toBe(applyTokenRules(section['one-liner']).text);
-      expect(project.description).toBe(applyTokenRules(section.card).text);
+    });
+
+    it('stores card copy that is authored, legal under the schema, and tokenised correctly', () => {
+      /*
+       * THE THREE THINGS THAT ARE STILL TRUE OF THE CARD COPY, now that it is authored in the JSON.
+       *
+       * The schema check is run through the REAL `ProjectSchema` elsewhere in this suite; what is
+       * restated here is its OD-6 refusal, per record, because a literal figure is the specific
+       * regression this field has already suffered three times in nine days.
+       */
+      expect(project.description, `${id} has no card copy`).toBeTruthy();
+
+      // OD-6: no typed component figure. The token exists so this can never go stale.
+      expect(project.description, `${id} types a literal component figure`).not.toMatch(
+        /\b\d+[- ]component/i
+      );
+
+      // Every token is one of the two the resolver knows. A typo ships literally.
+      for (const token of tokensIn(project.description)) {
+        expect(DOCUMENTED_TOKENS, `${id} carries an unknown token ${token}`).toContain(token);
+      }
     });
 
     it('carries the reviewed badge as its status, lowercased', () => {
@@ -349,25 +416,101 @@ describe.each(projects.map((project) => [project.id, project] as const))(
       expect(Object.values(BADGE_TO_STATUS)).toContain(project.status);
     });
 
-    it('differs from its reviewed source ONLY where a token replaced a figure', () => {
-      // Claim 2, and the independent one. Neither side names a figure or a noun from the copy.
+    it('the one-liner differs from its reviewed source ONLY where a token replaced a figure', () => {
+      /*
+       * Claim 2, and the independent one: it never names `79`, `10`, `components` or `categories`.
+       * Both sides are masked for tokens and digit runs and must then be identical character for
+       * character, so a migration that "helpfully" fixed a typo or re-cased a word fails even though
+       * the script and this test share an extractor.
+       *
+       * SCOPED TO THE ONE-LINER for the reason above: the card copy has a new author and no longer
+       * has a second artefact to be independent OF.
+       */
       expect(mask(project.oneLiner)).toBe(mask(section['one-liner']));
-      expect(mask(project.description)).toBe(mask(section.card));
-      for (const token of [...tokensIn(project.oneLiner), ...tokensIn(project.description)]) {
+      for (const token of tokensIn(project.oneLiner)) {
         expect(DOCUMENTED_TOKENS).toContain(token);
       }
     });
 
-    it('kept every pre-migration field byte-identical', () => {
+    it('kept the identity fields byte-identical since before the migration', () => {
+      /*
+       * ============================================================================================
+       * THE SCOPE NARROWED FROM "EVERY UNMIGRATED KEY" TO THE FIVE NOTHING HAS TOUCHED
+       * ============================================================================================
+       *
+       * This looped over every key the migration was not allowed to write and demanded each be
+       * byte-identical to the pre-migration revision. That claim can only hold for as long as the
+       * records never change again — it proves the MIGRATION was lossless, and it does it by freezing
+       * the data.
+       *
+       * MEASURED against `${previous.ref.slice(0, 7)}`, which key diverged on which record:
+       *
+       *     description   all five   a migrated key; already excluded from this loop
+       *     tech          all five   Akhil, later: *"use fe language + be language ... use just a
+       *                              single pill if 2nd one ids not very important"*
+       *     badges        two        cairn's globe label became `cairn.co.in`, design-system gained
+       *                              a `Storybook` badge
+       *     id/title/label/icon/href   NONE — byte-identical on all five
+       *
+       * So the migration WAS lossless and the two later divergences are content decisions taken with
+       * the page in front of him. Freezing them would make this suite the reason copy cannot change.
+       *
+       * WHAT IS PINNED IS THE PART THAT MUST NEVER MOVE. `id` is the route and the join key,
+       * `href` is the destination, `icon` and `label` are artwork, `title` is the name. A migration
+       * or a later edit that dropped or transposed any of those is invisible in a five-record diff
+       * and is exactly what this test was written to catch — that half is unchanged and still driven
+       * from the OLD record's own keys, so a key that existed then and is missing now still fails.
+       *
+       * `tech` AND `badges` GET LIVE ASSERTIONS INSTEAD, below: still present, still non-empty, and
+       * every badge still carrying a href and an icon. Dropping them from this loop without that
+       * would have left two fields with no coverage at all.
+       */
       expect(before).toBeDefined();
       if (!before) return;
-      // Driven from the OLD record's own keys, not from a list this file holds: a key that existed
-      // then and is missing now must fail, and it cannot fail if the loop never names it.
-      const carried = Object.keys(before).filter((key) => !MIGRATED_KEYS.includes(key));
-      expect(carried.length).toBeGreaterThan(0); // ANTI-VACUITY for the loop below
+
+      // The keys the migration wrote, plus the two Akhil has since revised. Named, not inferred.
+      const EVOLVED_SINCE_MIGRATION = ['tech', 'badges'];
+      const pinned = Object.keys(before).filter(
+        (key) => !MIGRATED_KEYS.includes(key) && !EVOLVED_SINCE_MIGRATION.includes(key)
+      );
+      expect(
+        pinned.length,
+        'no key is pinned — the loop below would assert nothing'
+      ).toBeGreaterThan(0);
       expect([...Object.keys(before)].sort()).toEqual([...PRE_MIGRATION_KEYS].sort());
-      for (const key of carried) {
-        expect(JSON.stringify(project[key])).toBe(JSON.stringify(before[key]));
+      for (const key of pinned) {
+        expect(JSON.stringify(project[key]), `${id}.${key} moved since the migration`).toBe(
+          JSON.stringify(before[key])
+        );
+      }
+    });
+
+    it('still carries a usable tech list and badge list', () => {
+      /*
+       * THE COVERAGE THE NARROWING ABOVE WOULD OTHERWISE HAVE COST. Both fields are Akhil's to
+       * revise; neither is his to empty, and `ProjectSchema` requires `tech` non-empty and
+       * `badges` at least one — so this asserts the SHAPE the page depends on rather than the values.
+       *
+       * `record` is a typed alias for the same object. `describe.each` is given a tuple and types
+       * the callback's parameters from the tuple's UNION, so `project` arrives wide enough that
+       * `project.tech` resolves to `unknown` and `.length` on it is a typecheck error — which the
+       * existing assertions never hit because they index with `project[key]`, and indexing an
+       * unknown is legal. Bound once here rather than cast at each of the six uses.
+       */
+      const record = project as Project;
+
+      expect(Array.isArray(record.tech), `${id}.tech is not an array`).toBe(true);
+      expect(record.tech.length, `${id} lists no tech`).toBeGreaterThan(0);
+      for (const entry of record.tech) {
+        expect(typeof entry, `${id} has a non-string tech entry`).toBe('string');
+        expect(entry.trim().length, `${id} has an empty tech entry`).toBeGreaterThan(0);
+      }
+
+      expect(record.badges.length, `${id} carries no badges`).toBeGreaterThan(0);
+      for (const badge of record.badges) {
+        expect(badge.label?.trim().length, `${id} has a badge with no label`).toBeGreaterThan(0);
+        expect(badge.icon?.trim().length, `${id} has a badge with no icon`).toBeGreaterThan(0);
+        expect(badge.href, `${id} has a badge with a relative href`).toMatch(/^https?:\/\//);
       }
     });
   }

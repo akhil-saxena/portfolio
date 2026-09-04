@@ -133,11 +133,12 @@ jobs:
       # looks for in executable position; the script cross-checks them against the
       # committed example files and fails if the two have drifted apart, because a gate
       # searching for a string nobody uses is a gate that passes and checks nothing.
-      - name: Assert no placeholder value was inlined into the artifact
-        run: >-
-          node scripts/assert-no-inlined-secrets.mjs
-          'placeholder.cloudflareaccess.invalid'
-          '0000000000000000000000000000000000000000000000000000000000000000'
+      # `assert-no-inlined-secrets.mjs` was here. It proved that `astro:env` server secrets were
+      # read at runtime rather than inlined at build time, by scanning dist/ for the committed
+      # Access placeholders. With the auth subsystem removed there are no server secrets and no
+      # placeholders, so it scanned for strings that cannot exist and would have passed forever —
+      # which this repository treats as worse than not running a gate at all. It comes back with
+      # the admin, and with whatever secret that needs.
 
       # Both Vitest projects: the workerd pool suite, and the HTTP suite that runs
       # against a real preview server. That suite's global setup rebuilds the artifact,

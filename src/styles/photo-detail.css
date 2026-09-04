@@ -45,126 +45,981 @@
  * variant with no visual symptom at all, which is the §7.4 failure mode this arrangement removes.
  */
 
+/*
+ * ================================================================================================
+ * THE M4 LAYOUT — the approved photo-page matrix, in this site's palette and type
+ * ================================================================================================
+ *
+ * Akhil supplied `M4 Build Matrix.html`: six canvas cells (mobile 390, tablet 834, desktop 1280 x
+ * landscape and portrait subject) and said *"build this in place of lightbox, allow nav, scroll
+ * etc."* The geometry below is that matrix, declaration for declaration.
+ *
+ * THE PALETTE AND THE TYPE ARE NOT THE MATRIX'S, and that is a substitution rather than a slip.
+ * The matrix runs on `--bg:#0d0d0c`, `--ink:#f2efe9`, `--ink-2:#b0aca3`, `--ink-3:#6f6b63`, an
+ * accent `#c96442`, and Newsreader / DM Sans / JetBrains Mono. Two of this repository's own gates
+ * refuse that:
+ *
+ *   `gate:app-css`  a hex literal in `src/styles/` is an origination in a tokenised dimension.
+ *                   None of those six values is a token here, and the accent has no token at all.
+ *   `gate:fonts`    REQUIRED_FAMILIES is Libre Baskerville, DM Sans, IBM Plex Mono. Newsreader and
+ *                   JetBrains Mono are not loaded, and loading them is design-system work.
+ *
+ * So this ships the matrix's LAYOUT with the site's tokens: `--ink` / `--ink-2` / `--ink-3` in
+ * place of the warm inks, `--font-display` (Libre Baskerville) for the serif, `--font-mono`
+ * (IBM Plex Mono) for the monospaced rows, and NO accent — nothing here is terracotta, because
+ * nothing can be. Adopting the matrix's palette is a design-system change and Akhil's call.
+ *
+ * ================================================================================================
+ * ONE VIEWPORT, AND IT SCROLLS RATHER THAN CLIPS
+ * ================================================================================================
+ *
+ * The matrix frames are fixed 760/1080/800px boxes. A page cannot be, so the body is `100dvh`
+ * MINUS the header and the footer, with `min-height: 0` on the image so flexbox may shrink it —
+ * without that a tall photograph pushes the caption off the bottom instead of scaling down.
+ *
+ * `dvh` and not `vh`: on iOS Safari `vh` is the LARGER viewport, so the caption sits under the
+ * browser chrome until the toolbar retracts. The shell asserts `svh`/`dvh` and never `vh`.
+ *
+ * NOTHING IS `overflow: hidden`. The matrix's frames clip; a page must not. At 390x400 — a phone
+ * held sideways — the photograph and its caption cannot both fit, and the page scrolls. Clipping
+ * there would put the title and the arrows out of reach with no way to get at them.
+ */
+
 .pd-page {
+  /* The matrix's `.body`: it owns the space between bar and footer, and hands none of it back. */
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: 0;
+
+  /*
+   * EQUIDISTANT FROM THE BAR AND THE FOOTER. Akhil: *"move the entire photo section a bit up, so
+   * header/footer both have equidistant spacing from photo section."*
+   *
+   * MEASURED before this: 24px of air above the photograph and 0 below the caption — `.pub-main`
+   * pads `--space-6` on top for every route and nothing at the bottom, because every other route
+   * ends in flowing content that wants to run to the footer. This one is a fixed composition and
+   * wants to be centred in what it is given.
+   *
+   * Matching the top's `--space-6` is what moves the block UP: the bottom padding is taken out of
+   * the flex track, so the photograph loses that height and the whole composition rises by half of
+   * it. It is the same token on both edges rather than a computed centring, so the two gaps are
+   * equal by construction and not by arithmetic that could drift.
+   */
+  padding-block-end: var(--space-6);
+
+  /*
+   * And the composition sits in the middle of what is left. With `.pd-body` sized to its content
+   * and the same `--space-6` on both edges, the air above the photograph and the air below the
+   * caption are equal by construction.
+   */
+  justify-content: center;
 }
 
 /*
+ * IT HUGS ITS CONTENT AND THE PAGE CENTRES IT. `flex: 1` was wrong: it made the body fill the
+ * track, so with the children bottom-aligned every spare pixel piled up ABOVE the photograph —
+ * MEASURED 134px above a landscape photograph against 24px below the caption, which is what Akhil
+ * saw.
+ *
+ * `align-content: center` was tried instead and did nothing: this is a `nowrap` container, and a
+ * single flex line is not what that property was reaching for here. Sizing the body to its content
+ * and centring it from `.pd-page` is the construction that does work, and it is simpler.
+ */
+.pd-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/*
+ * `min-height: 0` IS LOAD-BEARING, TWICE. A flex item's default `min-height: auto` refuses to
+ * shrink below its content, and an image's content is its intrinsic height — 3553px for
+ * `architecture-officegreens`. Without it the item claims that height, the column below is pushed
+ * out of the viewport, and the page scrolls on every portrait photograph.
+ */
+/*
+ * A FIXED-HEIGHT STAGE, AND THE CARD CENTRES INSIDE IT.
+ *
+ * Akhil: *"i want the placement for ← LANDSCAPE, 06 OF 10 / Plane / ← PREV 06 / 10 NEXT → to remain
+ * in a fixed place, even when i move from portrait to landscape."*
+ *
+ * On DESKTOP that was already true and measured so — both cards are `--pd-card-h` tall, so the
+ * column beside them is one height and the caption sat at y350/y375/y626 on a landscape and a
+ * portrait alike. STACKED it was not: the two cards genuinely differ in height there (228 against
+ * 350 at 390px, because a 3:2 card as tall as the portrait one would be 525px wide against 342px
+ * of screen), and the caption follows whatever the card leaves. MEASURED, the context line sat at
+ * y435 on a landscape photograph and y496 on a portrait — 61px of jump when moving between them.
+ *
+ * So the stage gets its own height, `--pd-stage-h`, which does NOT vary with orientation. The taller
+ * of the two cards fills it and the shorter one centres in it, and the caption below always starts
+ * at the same y. On desktop the stage and the card are the same height, so nothing there changes.
+ */
+.pd-im {
+  flex: none;
+  height: var(--pd-stage-h);
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /*
+   * NO PLACEHOLDER HERE. This carried the LQIP as its own `background-image` with
+   * `background-size: contain`, and that was the defect: MEASURED at 1280x800 on
+   * `architecture-officegreens`, the container is 746x632 while the photograph is 355x631, so a
+   * blurred copy was painted across the full 746px behind a 355px picture. The placeholder belongs
+   * on a box the shape of the photograph, which is `.pd-shot`.
+   */
+}
+
+/*
+ * THE PHOTOGRAPH'S BOX. `aspect-ratio` comes from the record, inline, so this element is the
+ * picture's exact shape before any of it has downloaded — which is what removes layout shift: the
+ * space is reserved at the right size and nothing moves when the image lands.
+ *
+ * `max-width`/`max-height` at 100% with an `aspect-ratio` makes the browser resolve the largest box
+ * of that shape which fits the container, on whichever axis binds. That is what keeps a 0.56
+ * portrait and a 1.50 landscape both fully visible in the same frame.
+ *
+ * `overflow: hidden` clips the placeholder's blur, which otherwise bleeds past the corner radius.
+ */
+/*
+ * IT SHRINK-WRAPS THE PHOTOGRAPH. `display: flex` with only max constraints, so the box is exactly
+ * the image's rendered size — which is what lets the placeholder sit precisely behind it and, on
+ * desktop, what puts the caption's baseline on the photograph's own bottom edge rather than on the
+ * bottom of a taller track.
+ *
+ * THE ASPECT RATIO LIVES ON THE `<img>`, NOT HERE, and that was a measured bug. With
+ * `aspect-ratio` plus `max-width: 100%` and `max-height: 100%` on this element, nothing gave it a
+ * BASIS: its only content is an absolutely-positioned placeholder and an image at `width: 100%`,
+ * both of which size against the parent. MEASURED, with the photograph's request delayed 2.5s, the
+ * box resolved to 0x0 while it downloaded and then jumped to 342x607 — a layout shift, on the
+ * element added to prevent one. Moving the ratio to the image, which has its own intrinsic size,
+ * makes the box computable before a byte arrives.
+ */
+/*
+ * THE PHOTOGRAPH'S BOX IS SIZED FROM THE VIEWPORT, NOT FROM ITS TRACK, and that is the third
+ * attempt — the first two were circular and both were caught by measurement.
+ *
+ *   attempt 1  `max-width: 100%; max-height: 100%` + `aspect-ratio` here, image at `100%/100%`.
+ *              Nothing gave the box a BASIS: its content sized against it and it sized against its
+ *              content. MEASURED with the photograph's request delayed 2.5s — the box resolved
+ *              0x0 while downloading, then jumped to 342x607. A layout shift, on the element added
+ *              to prevent one.
+ *   attempt 2  ratio moved onto the `<img>`, box shrink-wrapping it. `max-height: 100%` on the
+ *              image then referred to a parent that was itself sized by the image. MEASURED
+ *              746x1325 on a 1280x800 desktop — the portrait overflowed the viewport by 693px.
+ *
+ * `72svh` is a definite length from a definite source, so the box is computable before a byte of
+ * the file arrives, and `aspect-ratio` gives it the right shape. `max-width: 100%` clamps a wide
+ * photograph and the ratio pulls the height down with it. A viewport fraction as a LAYOUT bound is
+ * the form `gate:app-css` already permits — its own anti-canaries carry `min-height: 60svh`.
+ *
+ * WHY IT MATTERS THAT THE BOX HUGS THE PHOTOGRAPH: the caption bottom-aligns to it. Were the box
+ * to fill its track, the caption would align to the track's bottom instead and sit below the
+ * picture's edge on every landscape photograph, which is the alignment the matrix asks for and the
+ * one that would have quietly gone missing.
+ *
+ * `svh` and not `dvh` or `vh`: the shell's assertion permits `svh` only, and `svh` is the SMALL
+ * viewport, so the composition still fits with a mobile toolbar extended.
+ *
+ * `overflow: hidden` clips the placeholder's blur, which otherwise feathers past the corner radius.
+ */
+/*
  * ================================================================================================
- * 2. THE BACK LINKS (§13.2) AND THE NEIGHBOUR ROW (§9.6)
+ * THE PRINT — a fixed white card, one size per orientation, the photograph centred on it
  * ================================================================================================
  *
- * Both are rows of real anchors that wrap rather than scroll. They hold at most three items at any
- * width, so none of the rail machinery `.ph-filters` needs applies here.
+ * Akhil: *"a fixed size container should be there, which separates from the background with not
+ * exactly a border border, but maybe just a shadow. And that container should be a fixed size no
+ * matter what the image size is. So that container should remain the same size for all landscape
+ * photos. and one different size for all the portrait photos. It need not be the same aspect ratio
+ * as the image because the image will be centered onto that card, not stretched, neither filled."*
  *
- * `justify-content: space-between` on the neighbour row is what puts "next" at the right edge; the
- * row is only ever two items, and when a category holds a single photograph the page renders no
- * neighbour row at all (see the route's frontmatter for that decision).
+ * THIS REPLACES A SHRINK-WRAPPING MOUNT, and it is simpler in every direction. That mount was the
+ * photograph's own box, so it changed size and shape on every page — which is what made the
+ * caption and the arrows move, and what made the sizing take five attempts and a browser harness
+ * to get right. A card whose size depends only on the VIEWPORT and the ORIENTATION is definite by
+ * construction: nothing is computed from the file, so nothing can shift, and the arrows do not move
+ * between photographs.
+ *
+ * TWO SIZES, chosen by `data-orient`, which the route sets from the record's own dimensions. The
+ * photograph is centred inside at its own aspect ratio — never stretched, never cropped — so the
+ * white shows as an even margin on whichever axis is short. Left and right are always equal and top
+ * and bottom are always equal, because centring is what produces them.
+ *
+ * A SHADOW AND NOT A BORDER, as asked: `--shadow-3`, the system's largest, so the card lifts off
+ * the page rather than being outlined on it.
+ *
+ * NO MAXIMA IN THE CARD'S SIZING. A browser harness measured that the max-violation recompute does
+ * NOT transfer through `aspect-ratio` in either direction — `aspect-ratio` with a definite width
+ * and a `max-height` is right for a photograph wider than its box and wrong for a taller one, and
+ * the reverse pairing fails the other way. Four constructions built on maxima each failed one of
+ * "right shape" or "no layout shift". Both card dimensions here are computed from a viewport length
+ * and a bare ratio, so the question does not arise.
  */
 
-.pd-back {
+.pd-shot {
+  /*
+   * `--paper-fixed`, declared once on `.pub-shell` and registered there as DEBT-PRINT-PAPER. A
+   * local `--pd-paper: #ffffff` stood here first; it is the same value the gallery's hover caption
+   * needs, so it was hoisted rather than written twice. See that declaration for why a literal is
+   * unavoidable (D-32).
+   */
+
+  /*
+   * `flex: none`, SO THE CARD IS NEVER SHRUNK. It is a flex item of `.pd-im`, and the default
+   * `flex-shrink: 1` was quietly overriding the width below — see `.pd-body`'s header for the
+   * 562x901 that exposed it. The width is now capped by the space that exists, so there is nothing
+   * for shrinking to correct.
+   */
+  flex: none;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
+  align-items: center;
+  justify-content: center;
+  width: var(--pd-card-w);
+  height: var(--pd-card-h);
+  padding: var(--space-3);
+  background-color: var(--paper-fixed);
+  /*
+   * `--shadow-3`, AND POINT 1 OF THE REVIEW CANNOT BE IMPLEMENTED WITH TOKENS. Recorded because the
+   * feedback was right about what it saw and wrong about the cause, and the fix is upstream.
+   *
+   * The note read: *"Caption sits slightly below the photo — the prev/next row's baseline is under
+   * the mat's bottom edge. Align the bottom of the pn row with the bottom of the mat (not the white
+   * frame's shadow), so the two columns share one baseline."*
+   *
+   * THEY ALREADY SHARE ONE. MEASURED at 1440 and at 1280, on a landscape photograph and a portrait:
+   * the arrow row's box bottom and the mat's box bottom are identical, delta 0.0, in every case.
+   * Nothing is misaligned. What reads as misaligned is this shadow — in dark mode `--shadow-3` is
+   * `0 0 0 1px #3a3a42, 0 16px 40px #0000008c`, so the mat throws about 56px of soft edge BELOW
+   * itself and looks taller than it is. The caption then appears to sit inside that phantom.
+   *
+   * `--shadow-2` was tried and is worse: the dark theme redefines the scale, and there
+   * `--shadow-2` is `0 0 0 1px #2a2a30` — a hairline RING with no lift, which is the "border
+   * border" this card was explicitly not to have, and invisible against a white mat besides.
+   * `--shadow-1` is `none` in dark. So the dark scale has exactly ONE rung carrying a real drop
+   * shadow, and it is this one. FILED as D-34.
+   *
+   * Moving the arrow row instead was measured too, and breaks a true alignment to satisfy an
+   * apparent one: combined with the wider mat it came out 151px OUT.
+   */
+  box-shadow: var(--shadow-3);
+
+  /*
+   * Landscape takes the width it is given and its height follows at 3:2. Portrait is driven from a
+   * height budget instead, because 3:2 of the available width would be taller than the screen. Both
+   * depend only on the viewport, so every landscape photograph gets the same card and every
+   * portrait one the same different card.
+   */
+  box-sizing: border-box;
+}
+
+/*
+ * THE TWO CARD SIZES ARE DECLARED ON `.pd-body`, NOT ON THE CARD, and that is a fix for a silent
+ * failure rather than a preference. `.pd-col` needs the same height to pin the caption and it is
+ * the card's SIBLING — custom properties inherit DOWN, never sideways — so on `.pd-shot` they were
+ * invisible to it, `height: var(--pd-card-h)` resolved to nothing, and the column silently kept
+ * its bottom-packed behaviour. MEASURED, the title sat at y466 on one portrait and y523 on another
+ * because the taller caption simply started higher: exactly the movement the fixed card was meant
+ * to stop, with a rule in the file that looked like it had stopped it.
+ */
+.pd-body {
+  /*
+   * THE CARD IS FITTED TO BOTH AXES, ALWAYS — and it was not.
+   *
+   * Its width was derived from the height budget alone (`66svh * 1.5` on desktop), which took no
+   * account of how much width there actually was. At a tall viewport that produced a card wider
+   * than its track, and the flex default `flex-shrink: 1` silently papered over it by squashing the
+   * mat out of shape: MEASURED at 1024x1366, a portrait card came out 562x901 — ratio 0.62 against
+   * the 0.667 it declares — so the mat stopped being one fixed shape per orientation and the
+   * photograph letterboxed inside it.
+   *
+   * `min(available width, height budget x ratio)` is the fit. Both terms are definite lengths, so
+   * the size is computable before the photograph downloads and can never exceed either axis; the
+   * card then carries `flex: none` because there is nothing left for shrinking to correct.
+   */
+  --pd-avail-w: calc(100vw - 2 * var(--pub-gutter));
+  /*
+   * The stage is a fixed height for both orientations, so the caption's position cannot depend on
+   * which one is showing. The CARD may now be shorter than the stage when width binds; `.pd-im`
+   * bottom-aligns it on desktop so the mat's bottom edge stays on the caption's baseline.
+   */
+  --pd-stage-h: 46svh;
+  --pd-card-w: min(var(--pd-avail-w), calc(var(--pd-stage-h) * 1.5));
+  --pd-card-h: calc(var(--pd-card-w) / 1.5);
+
+  /*
+   * THE CAPTION'S EDGE, AND IT IS THE *LANDSCAPE* CARD'S EDGE AT BOTH ORIENTATIONS.
+   *
+   * Akhil: *"keep the placement for title/place fixed, right now when i move from landscape to
+   * portrait photo. it should remain in place where it was on landscape, not move to underneath
+   * portrait."*
+   *
+   * This is deliberately NOT `--pd-card-w`, and the difference is the whole point: `--pd-card-w` is
+   * re-declared by `[data-orient="portrait"]` below, so ranging the caption against it moved the
+   * title inward by the difference between the two cards on every step from a landscape photograph
+   * to a portrait one. MEASURED at 390: landscape card right 366, portrait card right 324 — the
+   * title jumped 42px sideways mid-sequence, on a page whose entire premise is that the furniture
+   * holds still and only the photograph changes.
+   *
+   * It is the landscape formula because landscape is the WIDER card, which is also the earlier ask
+   * this has to keep satisfying — *"align it so text ends at max end of photo card end"*. The MAX
+   * end. On a landscape photograph the caption ends exactly on the mat's edge; on a portrait it
+   * ends where the mat's edge would be, which is the fixed position being asked for here.
+   *
+   * Declared once, alongside the landscape card, and never overridden — the `[data-orient]` rule
+   * below deliberately leaves it alone. That absence is load-bearing.
+   */
+  --pd-cap-w: min(var(--pd-avail-w), calc(var(--pd-stage-h) * 1.5));
+}
+
+.pd-body[data-orient="portrait"] {
+  --pd-card-w: min(var(--pd-avail-w), calc(var(--pd-stage-h) * 0.6667));
+  --pd-card-h: calc(var(--pd-card-w) / 0.6667);
+}
+
+/*
+ * THE PHOTOGRAPH, CENTRED AND UNSTRETCHED. Both dimensions `auto` with maxima, which is safe HERE
+ * and only here: the card's size does not depend on the image, so the maxima resolve against a
+ * definite box and a replaced element with an intrinsic ratio scales down to fit both while keeping
+ * its shape. The flex centring above is what makes the leftover white even on both sides.
+ *
+ * `background-image` is the stored thumbnail, set inline by the route. It stands in until the file
+ * paints over it and needs no `filter`: the thumbnail is a couple of dozen pixels wide, so scaling
+ * it up IS the blur. There is no blurred layer over the card — *"dont add blur to cover container."*
+ */
+.pd-shot img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * LONGHANDS — `gate:app-css` refuses the `transition` shorthand, and the reason is recorded on
+   * the theme toggle in `public-shell.css`.
+   *
+   * `--dur-3` (240ms) rather than the 120ms every hover on this site uses: a hover is feedback and
+   * wants to be instant, whereas this is a photograph arriving and a fast fade reads as a flicker.
+   * The placeholder leaves on the same curve so the two cross rather than one following the other.
+   */
+  .pd-shot img {
+    transition-property: opacity;
+    transition-duration: var(--dur-3);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+.pd-col {
+  flex: none;
+
+  /*
+   * ================================================================================================
+   * STACKED, THE CAPTION RANGES AGAINST THE PHOTOGRAPH'S EDGE — NOT THE PAGE'S
+   * ================================================================================================
+   *
+   * Akhil: *"in mobile, the photo detail page is centered correctly, but title/place escapes to
+   * right of the photo's border, align it so text ends at max end of photo card end."*
+   *
+   * MEASURED, and it is a tablet defect rather than a phone one, which is why it took a wide device
+   * to see. The card is fitted to a height budget and CENTRED once it stops filling the width; the
+   * column was `width: auto` and therefore full-bleed, so `text-align: right` ranged the caption
+   * against `.pd-body` instead:
+   *
+   *     390:  card right 366 · text right 366   — identical, because the card still fills the width
+   *     744:  card right 663 · text right 712   — 49px past the photograph
+   *     900:  card right 741 · text right 868   — 127px
+   *    1023:  card right 803 · text right 991   — 188px
+   *
+   * The gap grows with the viewport, so the widest stacked screen — the one with the most room to
+   * look composed — was the one where the title floated furthest off the picture it names.
+   *
+   * `min(100%, ...)` RATHER THAN THE BARE TOKEN. `--pd-cap-w` is itself a `min()` of the available
+   * width and the height budget, and it is declared on `.pd-body`, so it inherits here — one
+   * derivation, shared with the mat, that cannot drift from it. The `100%` clamp is the guard for
+   * any width where that value would exceed the column's own container: the caption may match the
+   * photograph, never overhang the page.
+   *
+   * `--pd-cap-w`, NOT `--pd-card-w`, and that is not interchangeable — see its declaration. The
+   * card token changes with orientation; the caption's edge must not.
+   *
+   * `margin-inline: auto` centres the column on the same axis the card is centred on, so the two
+   * right edges coincide by construction rather than by arithmetic. Reset to `0` in the 1024 block,
+   * where the body becomes a row and an auto margin would push the column off the photograph.
+   */
+  width: min(100%, var(--pd-cap-w));
+  margin-inline: auto;
+  padding-block-start: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  /*
+   * RIGHT-RANGED, AND STACKED TOO. The matrix keeps `text-align: right` in its `.stack` cells —
+   * `.stack .col` overrides only the width and the padding — so the caption is right-ranged at
+   * every width, and on a narrow screen it ranges against the same edge the photograph ends on.
+   */
+  text-align: right;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+/*
+ * THE CONTEXT LINE. Monospaced, uppercase and at the smallest rung, so it reads as a label above
+ * the title rather than as a second heading — the same voice the count in the arrow row uses,
+ * because they are the same kind of fact.
+ *
+ * `--ink-3` at rest, `--ink` on hover, matching every other link on the site: it IS a link, back to
+ * the section, and the leading arrow is what says so at a glance.
+ */
+.pd-context {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  /*
+   * `--ls-wide` (0.1em), not the 0.14em this was first written as — `gate:app-css` refused the
+   * literal and is right to. The scale offers `--ls-base` -0.005em, `--ls-tight`, `--ls-tighter`
+   * and `--ls-wide` 0.1em; for a tracked uppercase label 0.1em is the rung that exists and it is
+   * the one the design system means for exactly this. (The gap this scale has is on the SMALL
+   * positive side and is filed as D-26; it does not bite here.)
+   */
+  letter-spacing: var(--ls-wide);
+}
+
+/*
+ * HOVER IS A COLOUR CHANGE, NEVER AN UNDERLINE — the same treatment the bar's `development` and
+ * `photography` links use. Akhil: *"use darken on hover instead of underline, in these elements,
+ * like how we have in header for development/photography."*
+ *
+ * `Link variant="quiet"` ships `--ink-3` with no underline at rest and, on hover, `--ink` PLUS
+ * `text-decoration: underline`. So the colour half is already right and the underline has to be
+ * undone — on the section link and on both arrows.
+ *
+ * (0,4,0), AND `.pd-col` IS IN EVERY SELECTOR TO GET THERE. The design system's rule is
+ * `.ds-atom-link[data-variant="quiet"]:hover` — (0,3,0). Written as
+ * `.pd-section[data-variant="quiet"]:hover` this is ALSO (0,3,0): a tie, decided by which
+ * stylesheet the bundler emitted last, and it lost. MEASURED — the hover still reported
+ * `text-decoration-line: underline` while the rule sat in the file looking correct. The ancestor
+ * class takes it to (0,4,0), which is what the bar's equivalent already does.
+ *
+ * This is the fourth time this tie has cost something here, and the third where the build stayed
+ * green through it. The lesson that keeps not sticking: against a design-system rule carrying a
+ * `data-variant` attribute, count the specificity before assuming the override wins.
+ */
+.pd-col .pd-section[data-variant="quiet"] {
+  color: var(--ink-3);
+  text-decoration: none;
+}
+
+.pd-col .pd-section[data-variant="quiet"]:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.pd-title {
+  /* `Heading` supplies the size and the face; only the flow is ours. */
+  margin: 0;
+
+  /*
+   * NO HEIGHT IS RESERVED HERE, AND THAT IS A REVERSAL — `min-height: 2lh` stood here and has been
+   * removed.
+   *
+   * It was added when the caption group was CENTRED: a group that changes height moves its own top
+   * edge by half the difference, and MEASURED across all 40 titles, 36 take one line in this column
+   * and four take two (`Temple Mahabalipuram`, `Hawa Mahal Daytime`, `Pigeon At Umaid Bhawan`,
+   * `Portrait Patrika Gate 1`). Reserving both lines held everything still.
+   *
+   * The group is BOTTOM-PACKED now, and that stabilises the same things by a different mechanism:
+   * the arrows sit on the card's bottom edge, the place line a fixed 32px above them, and the
+   * title's last line directly above that. All fixed without reserving anything. What a second line
+   * changes is only where the title STARTS — it grows upward, into space that is empty anyway.
+   *
+   * Keeping the reservation therefore bought nothing and cost a blank line between the title and
+   * the place on 36 of the 40 photographs. Akhil: *"Too much gap between the title and the place."*
+   * That gap WAS the reservation.
+   */
+}
+
+.pd-place {
+  /* The matrix's `.loc`: the serif, italic, one step down, in the second ink. */
+  margin: var(--space-2) 0 0;
+  /*
+   * IT HOLDS ITS LINE WHEN EMPTY. The element always renders now, so the box has to be there even
+   * with nothing in it — otherwise an absent place still collapses the line and the caption still
+   * moves, which is the 27px this change exists to remove. `1lh` is exactly one line of this
+   * element's own type, so the reservation cannot drift from the text it reserves for.
+   */
+  min-height: 1lh;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: var(--text-md);
+  color: var(--ink-2);
+}
+
+.pd-gear {
+  margin: var(--space-5) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: var(--lh-relaxed);
+  color: var(--ink-3);
 }
 
 .pd-nav {
+  /* The gap between the caption and its controls. See `.pd-col`'s desktop rule for the 177px this
+     replaced. */
+  margin-block-start: var(--space-8);
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-4);
+  /*
+   * `--space-3` (12px), down from `--space-6` (24px). MEASURED at 1440, the row spanned 174px of a
+   * 290px column and read as three separate things; at 12px it is 150px and reads as one control,
+   * which is what a previous/position/next triple is. Feedback: *"tighten to a fixed gap group
+   * flushed right so it reads as one control."*
+   */
+  gap: var(--space-3);
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  /* The matrix centres the pagination when stacked and leaves it ranged right in the row. */
+  align-self: center;
+}
+
+.pd-count {
+  color: var(--ink-3);
+  /*
+   * 400, AND THE ARROWS GO TO 500 RATHER THAN THIS GOING BELOW IT. Akhil asked for `07 / 10` at a
+   * lower weight; it was already `--weight-regular` (400), and 400 is the FLOOR — `design-system.css`
+   * imports `@fontsource/ibm-plex-mono/latin-400` and `latin-500` and nothing else, so asking for
+   * 300 would hand the browser a face it does not have and get a synthesised one.
+   *
+   * So the contrast is made from the other side: the arrows take `--weight-medium`, which is a real
+   * token and a loaded face, and the count reads lighter against them. Same intent, expressible.
+   */
+  font-weight: var(--weight-regular);
+}
+
+.pd-col .pd-step[data-variant="quiet"] {
+  font-weight: var(--weight-medium);
 }
 
 /*
- * ================================================================================================
- * 3. THE FRAME (§9.6, §7.2, §7.3, §4.4 rule 2)
- * ================================================================================================
- *
- * The box is reserved before the bytes arrive, by exactly the mechanism the tile uses: an inline
- * `aspect-ratio` from the record's own `dimensions` plus `width: 100%` here. NO `width`/`height`
- * ATTRIBUTE IS EMITTED — §7.2's ruling, restated at the interpolation site in the route.
- *
- * The LQIP is the frame's own `background-image`, sized `cover`; the `<img>` paints over it when
- * its bytes decode, so there is no `load` event to listen for and nothing to hydrate.
- * `background-color: var(--cream-2)` and not white, for the same reason `.ph-tile` gives: the
- * surface under a placeholder must be a page colour or it flashes hard on the dark field.
- *
- * THE INSET HAIRLINE IS DARK-ONLY (§4.4 rule 2), and `--rule` rather than `--wire`: a photograph is
- * not an interactive control, so the 3:1 non-text-contrast floor that governs a filter pill's
- * border does not apply to it. This is the same declaration `.ph-tile` carries, on the same
- * photographs, so a tile and its own page draw the same edge.
- *
- * `border-radius: 10px` is §7.3's reviewed value and it is a LITERAL, recorded rather than hidden:
- * MEASURED, `tokens.css` has no 10px rung (`--radius-sm` 4, `--radius-md` 8, `--radius-lg` 12,
- * `--radius-xl` 16, `--radius-pill` 999). `.ph-tile` carries the same literal for the same reason;
- * substituting 8 or 12 here alone would make a photograph change shape when it is opened.
+ * A DEAD END IS SHOWN, NOT REMOVED. `previous` and `next` wrap inside the category, so both exist
+ * whenever the category holds more than one photograph — and a category of ONE renders neither.
+ * The row then has to keep its shape or the count jumps sideways on that one page, so the arrow
+ * renders as inert text at the third ink and `aria-hidden`.
  */
-
-.pd-frame {
-  display: block;
-  width: 100%;
-  margin: 0;
-  background-color: var(--cream-2);
-  background-size: cover;
-  background-position: center;
-  overflow: hidden;
-  /* §7.3's reviewed radius; there is no token between 8px and 12px. See the note above. */
-  border-radius: 10px;
+.pd-col .pd-step[data-variant="quiet"] {
+  color: var(--ink-3);
+  text-decoration: none;
 }
 
-.dark .pd-frame {
-  box-shadow: inset 0 0 0 1px var(--rule);
+.pd-col .pd-step[data-variant="quiet"]:hover {
+  color: var(--ink);
+  text-decoration: none;
 }
 
-.pd-frame img {
-  display: block;
-  width: 100%;
-  height: auto;
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * LONGHANDS, and `--dur-1` so these move at the same speed as the bar's links and the toggle
+   * glyph. `gate:app-css` refuses the `transition` shorthand — its first term is a property name.
+   */
+  .pd-col .pd-section[data-variant="quiet"],
+  .pd-col .pd-step[data-variant="quiet"] {
+    transition-property: color;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
 }
+
+.pd-step-none {
+  color: var(--ink-4);
+}
+
+/* ── the matrix's `.tab.stack` cell ─────────────────────────────────────────────────────────── */
 
 /*
  * ================================================================================================
- * 4. THE IDENTITY BLOCK — title, then `place` if there is one
+ * THE TITLE'S BOX IS TWO LINES TALL BELOW 673px, SO PREV/NEXT CANNOT MOVE
  * ================================================================================================
  *
- * `gap` and nothing else. `place` is absent on more than half the corpus and §9.3's rule for it is
- * the same as PUB-07's: "an empty description renders nothing at all: no em dash, no gap." A
- * `margin-bottom` on the title would leave that gap behind when the paragraph is absent, which is
- * why the spacing lives on the flex container instead of on either child.
+ * Akhil: *"pin prev/next so it doesnt move, even if 2 line title."*
+ *
+ * MEASURED, walking all sixteen architecture photographs at 390: every anchor in the caption moved
+ * on the one photograph whose title wraps — `Temple Mahabalipuram`. Context top 553 -> 537, title
+ * bottom 608 -> 623, place bottom 635 -> 650, PREV/NEXT top 667 -> 682.
+ *
+ * NOTE THE DIRECTIONS: the top went UP 16 and the bottom went DOWN 15. That is the signature of a
+ * VERTICALLY CENTRED stack, not of ordinary downward flow — `.pd-body` centres, so 31px of extra
+ * title splits either side and the whole caption breathes outward. Reading only the nav's 15px
+ * would have suggested pushing content down; the real cause is that the block changes HEIGHT at
+ * all. So the fix is to stop the height changing, not to re-anchor the bottom.
+ *
+ * `2lh` — two of the element's own line boxes — rather than the 60px it currently computes to. The
+ * unit re-derives itself if the title's size or leading ever changes, which a literal could not.
+ *
+ * `align-content: end` puts the reserved line ABOVE the title, so a one-line title still sits tight
+ * against its place line and the slack opens toward the photograph, where there is already air.
+ * `grid` rather than `flex` because a grid keeps the text as a block-level box and `text-align:
+ * right` therefore behaves exactly as it does today.
+ *
+ * SCOPED BELOW 673px, AND THE BOUND IS MEASURED, not guessed. Line counts across all forty titles:
+ *
+ *     344px  {1: 37, 2: 3}      390px  {1: 38, 2: 2}
+ *     500px  {1: 40}            600, 672, 700, 1023px  {1: 40}
+ *
+ * Wrapping stops below 500, so 673 carries 173px of headroom over the widest width where it has
+ * ever happened, and tablets pay no reserved line for a case they do not have.
+ *
+ * THE RESIDUAL RISK, stated because it is real: this is bounded by the CORPUS, not by the layout. A
+ * future title long enough to wrap above 673 would move the nav again. The guard is a test that
+ * asserts one line per title above the rung, not a wider reserve — a wider reserve would put 30px
+ * of dead space on every tablet to insure against a photograph that does not exist.
  */
+@media (max-width: 672px) {
+  /*
+   * THE SLACK BELONGS ABOVE THE EYEBROW, NOT BETWEEN IT AND THE TITLE.
+   *
+   * Akhil: *"reduce space between ← ARCHITECTURE / Singapore Sentosa in mobile. keep it together at
+   * top instead, not bottom."*
+   *
+   * The first version of this pin reserved the second line ON THE `h1` and packed it to the bottom
+   * of its own box, which put the reserved 30px exactly where it does the most damage — between the
+   * section eyebrow and the title it introduces. On the thirty-eight one-line titles that read as a
+   * 42px hole (12px of margin plus 30px of reserve) splitting two lines that belong together.
+   *
+   * The reserve is the same idea moved one box out: it is the COLUMN that is held at its tallest
+   * height, and the column already packs to `flex-end`, so the slack falls at its TOP — between the
+   * photograph and the eyebrow, which is empty ground either way. Eyebrow, title, place and PREV /
+   * NEXT then keep both their spacing AND their absolute positions, whatever the title does.
+   *
+   * MEASURED, by stripping this very rule and walking the sequence: the column's border box is
+   * 140px with a one-line title and 170px with two — 344 and 390 see both, 430 and up see only 140.
+   * Minus the 16px of `padding-block-start` this rule's `min-height` sits inside, the tallest
+   * CONTENT box asked for is 154px. VERIFIED load-bearing rather than decorative: with the rule
+   * overridden to `0` the nav top reads 665 and 680 across the same walk; with it, 687 throughout.
+   *
+   * A LITERAL, and it is the honest form here. This is a LAYOUT length under QUAL-03 — sizing a box,
+   * originating nothing in a tokenised dimension — and no spacing rung is near 154. `2lh` was
+   * available on the `h1` and is NOT available here, because `lh` on the column resolves to the
+   * COLUMN's line box, not the title's. The number is measured, and a test is what will catch it if
+   * the type ever changes — see the residual-risk note on `--pd-cap-w`.
+   */
+  .pd-col {
+    min-height: 154px;
+  }
 
-.pd-identity {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  /*
+   * 6px, DOWN FROM 12. The same ask: the eyebrow and the title are one unit — a section name and
+   * the thing it names — and at 12px with a 30px reserve above the title they read as two.
+   */
+  .pd-context {
+    margin-block-end: var(--space-2);
+  }
 }
 
-/* The one declaration this file makes about type. See the exception recorded in the header. */
-.pd-title {
-  letter-spacing: var(--ls-tight);
+@media (min-width: 673px) {
+  .pd-col {
+    padding-block-start: var(--space-5);
+  }
 }
 
-/*
- * ================================================================================================
- * 5. THE EXIF PANEL (§9.3)
- * ================================================================================================
- *
- * A two-column grid of label/value pairs. `grid-template-columns: auto 1fr` rather than a fixed
- * label column: the labels are six known words and their longest is "Focal length", so a hand-set
- * column width would be a number derived from content that `exif-display.ts` owns.
- *
- * `column-gap` is wider than `row-gap` because the pairs read across, not down.
- *
- * NOTHING HERE PAINTS `--amber-vivid`. §4.2 measured it at 3.11 / 3.19 / 2.96 against the three
- * light surfaces, so it fails AA as text on every one of them, and it is the same literal in both
- * modes. It is a marker step, not a text colour.
- *
- * There is no rule for an EMPTY panel, because an empty panel cannot be rendered: `ExifList.astro`
- * emits nothing at all when `exifRows` returns no rows. A `:empty` rule here would be a second
- * implementation of PUB-07 in a language that cannot throw.
- */
+/* ── the matrix's desktop cell: a row, and the text sits on the photograph's baseline ───────── */
+
+@media (min-width: 1024px) {
+  .pd-body {
+    flex-direction: row;
+    /*
+     * `--pd-gap`, AND IT IS 64px BECAUSE THE MAT'S SHADOW SPREADS 40. `--shadow-3` in dark is
+     * `0 0 0 1px, 0 16px 40px`, and a 40px blur throws sideways as well as down. At the old
+     * `--space-11` (44px) the caption sat 4px clear of that halo — MEASURED at exactly 44px on nine
+     * of ten viewports swept, 1024x600 through 1366x1024 — which is why the text read as crowding,
+     * or overlapping, the photograph. Akhil: *"the architecture, the title and the location are
+     * overlapping the image ... fix that. That congestion."*
+     *
+     * NO BOX EVER INTERSECTED: the sweep found zero geometric overlap at any size. What overlapped
+     * was the shadow. 64px puts 24px of clear air between the halo's edge and the first character.
+     * It is a variable because `--pd-avail-w` subtracts it, so the two cannot drift apart.
+     */
+    --pd-gap: var(--space-16);
+    gap: var(--pd-gap);
+    /*
+     * `flex-start`, overriding the `center` the stacked layout needs. In a COLUMN that property
+     * splits the leftover height above and below the composition; turned sideways it centred the
+     * whole row horizontally, so the caption's right edge sat at x1178 instead of on the 1232
+     * gutter and the card began at x100 instead of x48. MEASURED. `.pd-im` takes the remainder
+     * below, so this only has to stop fighting it.
+     */
+    justify-content: flex-start;
+  }
+
+  /*
+   * THE STAGE TAKES ALL THE WIDTH LEFT OVER, AND THE CARD CENTRES IN IT.
+   *
+   * `flex: none` — which the stacked layout needs, to hold the stage's height — makes this box
+   * exactly as wide as the card, so the caption column sat immediately to its right: MEASURED
+   * `888→1178` for a landscape photograph and `474→764` for a portrait. The text swung most of the
+   * way to the middle of the page when you stepped between them. Akhil: *"on landscape, the picture
+   * occupies good width, and the text is right aligned nearly, when i move to a portrait pic, it
+   * moves towards center. keep it right aligned, move portrait photo towards center of page."*
+   *
+   * `flex: 1` gives this box the whole remainder, which pins the 290px column to the trailing
+   * gutter on every photograph, and the `justify-content: center` it already carries puts the card
+   * in the middle of what is left. A portrait card therefore sits nearer the centre of the page
+   * than a landscape one — which is what was asked, and what a narrow print wants anyway.
+   *
+   * `min-width: 0` so the box may shrink below its content rather than pushing the column off the
+   * gutter. The card's width is computed and never exceeds the space, but the flex default of
+   * `min-width: auto` would leave that a promise rather than a guarantee.
+   */
+  /*
+   * BIASED UPWARD, NOT CENTRED. Akhil: *"the page looks very emptyish, especially the space between
+   * the header and the photo."*
+   *
+   * With the footer removed from this route `.pub-main` gained its 80px, and centring split them
+   * evenly — so half the reclaimed height became a hole above the photograph. This pad takes 120px
+   * out of the bottom of the track, lifting the whole composition by that much: MEASURED at
+   * 1440x900, 130 above / 130 below becomes 82 / 178, and at 1280x800, 80 / 80 becomes 32 / 128.
+   *
+   * IT IS DELIBERATELY BOTTOM-HEAVY. The page reads as hanging from the bar rather than floating in
+   * the middle, which is the point — the slack sits below the photograph, where there is no footer
+   * for it to crowd.
+   *
+   * `--space-14` + `--space-16` is 56 + 64. There is no single rung at 120.
+   */
+  .pd-page {
+    padding-block-end: calc(var(--space-14) + var(--space-16));
+  }
+
+  .pd-im {
+    flex: 1;
+    min-width: 0;
+    /*
+     * BOTTOM, not centre. The card may now be shorter than the stage — when width binds, its height
+     * follows the ratio — while the caption column is the stage's height. Centring the card would
+     * lift its bottom edge off the caption's baseline by half the difference, undoing the delta 0.0
+     * the review asked to preserve.
+     */
+    align-items: flex-end;
+  }
+
+  /*
+   * BOTTOM-ALIGNED, which is the matrix's one labelled intent — its desktop cells are captioned
+   * "text bottom-aligned with photo". `.pd-im` switches from centring to `flex-end` and `.pd-col`
+   * already ends at `flex-end`, so the photograph's bottom edge and the last line of the caption
+   * land on the same horizontal.
+   */
+  /*
+   * BOTTOM-ALIGNED TO EACH OTHER, AND THE PAIR CENTRED — which is two requirements that looked
+   * like one.
+   *
+   * The matrix's desktop cells are captioned "text bottom-aligned with photo", and `align-items:
+   * flex-end` on the row delivers that: both children's bottom edges land on the bottom of the
+   * flex LINE. But the line was the full height of the track, so all the leftover height piled up
+   * ABOVE the photograph — MEASURED 134px above a landscape photograph against 24px below the
+   * caption, which is what Akhil saw: *"move the entire photo section a bit up, so header/footer
+   * both have equidistant spacing from photo section."*
+   *
+   * `align-content: center` centres the single line inside the track, so the slack is split
+   * evenly. `align-items: flex-end` still bottom-aligns the two children to each other within it.
+   * The photograph's box shrink-wraps (see `.pd-shot`) rather than filling the track, which is
+   * what leaves any slack to distribute in the first place.
+   */
+  .pd-body {
+    /* The matrix's one labelled intent: the caption's last line on the photograph's bottom edge. */
+    align-items: flex-end;
+  }
+
+  /*
+   * ONE CARD HEIGHT FOR BOTH ORIENTATIONS on desktop, which is what pins the caption: the column
+   * beside it takes the same height, so the title sits at a fixed top edge and the arrows at a
+   * fixed bottom edge on EVERY photograph — Akhil: *"the previous and next buttons and the title
+   * will always be in a fixed position no matter what the image shown is. So I should be able to
+   * hover over the next button and keep clicking on it."* A shrink-wrapping mount could not offer
+   * that; a card sized only from the viewport can.
+   *
+   * BOTH SELECTORS, because `.pd-body[data-orient='portrait']` above is (0,2,0) and would beat a
+   * bare `.pd-body` here whatever the source order — a media query adds no specificity. The
+   * portrait card was measured 269x392 against the landscape's 746x520 for exactly that reason.
+   *
+   * 62svh of an 800px viewport is 496, so the landscape card is 744 wide and the portrait 331 —
+   * both inside the 850px left after the gutters, the 290px column and the gap.
+   */
+  .pd-body,
+  .pd-body[data-orient="portrait"] {
+    /*
+     * 66svh, up from 62. Feedback: *"Left/right imbalance — photo's left margin vs a very wide
+     * right rail. Either widen the photo (let the mat take ~66% of width) or increase left padding
+     * so the margins mirror each other."*
+     *
+     * MEASURED at 1440: at 62svh the mat was 837px, 62% of the 1344px content column, leaving 70px
+     * of slack to its left against a 290px rail — visibly lopsided. At 66svh it is 891px, 66% of
+     * the content, and the slack falls to 43px. Widening was the better of the two options offered:
+     * padding the left would have mirrored the margins by making the photograph smaller, on a page
+     * whose subject is the photograph.
+     */
+    /*
+     * THE STAGE'S HEIGHT COMES FROM THE AVAILABLE WIDTH, not from a viewport fraction, and that is
+     * the structural half of this fix.
+     *
+     * It was `66svh`. On a tall viewport the landscape card is WIDTH-bound, so its height fell
+     * short of the stage and the difference showed as empty stage above it — MEASURED at 1440x900,
+     * 183px of air above a landscape photograph against 121px below, while the portrait sat
+     * symmetrically at 121/121. Raising the budget made it WORSE: at `78svh` the gap above went to
+     * 237px, because a taller stage is more stage for the same card to fail to fill.
+     *
+     * `avail / 1.5` is the height a landscape card actually reaches, so the stage is exactly filled
+     * rather than budgeted. The portrait card is capped by the same height and fills it too, so
+     * NEITHER orientation leaves empty stage — which is also what keeps the caption's position
+     * identical between them, now by construction rather than by reserving height.
+     *
+     * `72svh` stays as a ceiling for a wide, short viewport, where width is abundant and height is
+     * not: without it the card would ask to be taller than the screen.
+     */
+    /*
+     * THE HEIGHT ACTUALLY AVAILABLE, as a third term. Restoring the footer took 80px back from
+     * `.pub-main` and this expression did not know about it: MEASURED at 1280x800, the stage
+     * resolved to 565px inside a 537px track, and because the card is bottom-aligned the excess
+     * pushed its top edge 3px ABOVE the sticky bar. The photograph was overlapping the header.
+     *
+     * `--pd-avail-h` is the viewport less everything that is not this composition: the bar, the
+     * top padding on `.pub-main`, the upward bias, and the footer. Every term is a token or a named
+     * custom property — `--pub-bar-h` and `--pub-footer-h`, both declared on `.pub-shell`, which is
+     * the only place either number lives.
+     *
+     * The footer's height was spelled out here as `--space-5 * 2 + 15px` for one revision, from a
+     * reading taken while the footer was route-hidden and carrying no icons. The default footer is
+     * 80px, not 55, and the 25px shortfall pushed the photograph 1px ABOVE the sticky bar. Naming
+     * it once on the shell is what stops the two files disagreeing again.
+     */
+    --pd-avail-h: calc(
+      100svh -
+      var(--pub-bar-h) -
+      var(--pub-footer-h) -
+      var(--space-6) -
+      var(--space-14) -
+      var(--space-16)
+    );
+    --pd-stage-h: min(72svh, calc(var(--pd-avail-w) / 1.5), var(--pd-avail-h));
+    /*
+     * The width available to the card is what is left after both gutters, the 290px caption column,
+     * that column's own 32px inset, and the gap. Every term is named where it is declared, so
+     * widening any of them narrows the card rather than pushing it into the caption.
+     */
+    /*
+     * `min(100vw, 1280px)`, NOT `100vw` — and this was a measured bug, not a precaution.
+     *
+     * `.pub-main` carries `pub-max-photos`, which is `max-width: min(1280px, 100%)`, so above a
+     * 1280px viewport the content column stops growing while `100vw` keeps going. MEASURED at
+     * 1440x1366: this expression claimed 958px of available width against a stage that was only
+     * 894px wide, so the card overflowed the stage by 64px, slid right, and cut the gap to the
+     * caption from 64px to 32px — the congestion returning at exactly the widths where there is
+     * most room.
+     *
+     * The 1280 is `PAGE_MAX.photos` from `src/lib/layout-ladder.ts`, restated here because CSS
+     * cannot read it and a percentage cannot be used: a `%` in this expression would resolve
+     * against `.pd-im`, which is the box this value is sizing. `scripts/assert-gutter-ladder.mjs`
+     * is what keeps the two copies of that number honest.
+     */
+    --pd-avail-w: calc(
+      min(100vw, 1280px) -
+      2 *
+      var(--pub-gutter) -
+      240px -
+      var(--space-8) -
+      var(--pd-gap)
+    );
+    --pd-card-w: min(var(--pd-avail-w), calc(var(--pd-stage-h) * 1.5));
+    --pd-card-h: calc(var(--pd-card-w) / 1.5);
+  }
+
+  .pd-body[data-orient="portrait"] {
+    --pd-card-w: min(var(--pd-avail-w), calc(var(--pd-stage-h) * 0.6667));
+    --pd-card-h: calc(var(--pd-card-w) / 0.6667);
+  }
+
+  .pd-col {
+    /*
+     * 240px, down from the matrix's 290. LAYOUT under QUAL-03 — sizing a box, not originating a
+     * tokenised dimension — and there is no spacing rung near either number.
+     *
+     * THE COLUMN IS WHAT WAS CAPPING THE PHOTOGRAPH. MEASURED at 1440x900, the landscape card was
+     * width-bound at 798x532 inside 836px of available height: 304px of vertical slack that no
+     * height budget could convert into photograph, because the constraint was horizontal. Fifty
+     * pixels off this column buys 44px of photograph.
+     *
+     * THE COST, and it is real: the four two-line titles (`Temple Mahabalipuram`,
+     * `Hawa Mahal Daytime`, `Pigeon At Umaid Bhawan`, `Portrait Patrika Gate 1`) wrap sooner in a
+     * narrower measure, and one may take three lines. Nothing MOVES when it does — the caption is
+     * bottom-packed, so a longer title grows upward into space that is empty anyway.
+     */
+    width: 240px;
+    /* The stacked layout centres this column on the card; a row must not. See `.pd-col`'s block. */
+    margin-inline: 0;
+    padding-block-start: 0;
+    /*
+     * INSET FROM THE GUTTER, not flush to it. Akhil: *"the text section neednt be as right
+     * aligned, can be slightly with more margin on right than header/footer etc."*
+     *
+     * The column was pinned to the same 1232 line the bar, the footer and the gallery's grid all
+     * end on. Correct for those — they are the page's edges — but the caption is a block of type
+     * beside a photograph, and type sitting hard against the same line as the page furniture reads
+     * as crowded rather than aligned. `--space-8` (32px) pulls it to 1200 and leaves the trailing
+     * edge to the elements that define it.
+     */
+    margin-inline-end: var(--space-8);
+    /*
+     * The card's height, read from `.pd-body` — their common parent, which is where those custom
+     * properties have to be declared. On `.pd-shot` they were invisible here: properties inherit
+     * DOWN, not sideways between siblings, so this `height` resolved to nothing and was dropped.
+     */
+    height: var(--pd-stage-h);
+
+    /*
+     * TITLE AND PLACE CENTRED AGAINST THE PHOTOGRAPH, ARROWS PINNED TO ITS BOTTOM EDGE.
+     *
+     * Six placements were built and measured on a photograph with a place and one without. Until
+     * the place line was made permanent only two of them held still — the line's 27px of coming and
+     * going moved the rest — and `space-between`, which shipped first, was one of those two. It
+     * pinned both ends by pushing them 480px apart, which is what Akhil saw: *"the placement for
+     * title/place/prev next looks off."*
+     *
+     * With the place line always occupying its line all six are stable, so this became a design
+     * choice rather than one the data was making. Akhil chose this one.
+     *
+     * `position: absolute` for the arrows, not a flex end: they have to leave the centred group so
+     * the group can be centred on the photograph without them. Their position is then the card's
+     * bottom edge, which is fixed — MEASURED y626 on every photograph, so the pointer can rest on
+     * `NEXT →` and click through the whole category without moving.
+     */
+    /*
+     * BOTTOM-PACKED, AND THE ARROWS ARE BACK IN THE FLOW. The group was centred with the arrows
+     * absolutely positioned at the card's bottom edge, which left MEASURED 177px between the place
+     * line and the arrows — the caption read as two unrelated things at opposite ends of the
+     * column. Akhil: *"move ← LANDSCAPE / Nature Waterfall / Rhine Falls, Switzerland lower and
+     * closer to ← PREV / 07 / 10 / NEXT →."*
+     *
+     * Packing the column to its bottom edge and giving the arrows a margin above them puts the two
+     * a fixed 32px apart and drops the group to meet them. `position: absolute` is no longer needed
+     * for anything and is gone.
+     *
+     * NOTHING MOVES BETWEEN PHOTOGRAPHS, still: the column's height is the card's, which depends
+     * only on the viewport, and the group's own height is fixed because the title reserves `2lh`
+     * and the place line `1lh` whether they use them or not. Those two reservations are what let
+     * this be a bottom cluster at all — measured earlier, an unreserved place line moved the title
+     * 27px between photographs and that is why the group was centred in the first place.
+     */
+    justify-content: flex-end;
+  }
+
+  .pd-nav {
+    align-self: auto;
+  }
+}
 
 .pd-exif {
   display: flex;
@@ -195,4 +1050,20 @@
 
 .pd-exif-list dd {
   margin: 0;
+}
+
+/*
+ * THE TECHNICAL BLOCK IS KEPT AND SWITCHED OFF, not deleted. Akhil: *"remove NIKON D5300 /
+ * 70-300MM f/4.5-6.3 & tech details too"*, then *"keep in code, hide from view"*. So the gear line
+ * and the whole EXIF list are composed, rendered and hidden by ONE attribute on the column; every
+ * rule for them survives below.
+ *
+ * `display: none` AND NOT A VISUALLY-HIDDEN CLIP. This has to leave the accessibility tree as
+ * well: reading "Nikon D5300, 70-300mm" to a screen-reader user while hiding it from everyone else
+ * would be exactly backwards. `.pd-exif`'s own rules are untouched, so flipping the attribute
+ * restores the layout it always had.
+ */
+.pd-col[data-tech="off"] .pd-gear,
+.pd-col[data-tech="off"] .pd-exif {
+  display: none;
 }

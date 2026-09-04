@@ -411,6 +411,37 @@ const FREE = new Map(
     'text-decoration-thickness':
       'as text-decoration: the design system names no rule thickness, so there is nothing to hand through.',
     'text-underline-offset': 'no token names an underline offset.',
+    'outline-offset':
+      'the gap between a focus outline and the box it surrounds has no token — `grep -c ' +
+      '"--focus-offset" dist/*.css` is 0 across the package, and the design system spells its own ' +
+      'as a literal `outline-offset: 2px` on `.ds-atom-iconbtn:focus-visible` and ' +
+      '`.ds-atom-segmented-btn:focus-visible`. It is FREE rather than TOKENISED because the ' +
+      'dimension does not exist to be tokenised, and FREE rather than LAYOUT because an outline is ' +
+      'drawn OUTSIDE the border box and takes part in no layout: moving it changes what is painted, ' +
+      'never what is sized, positioned or flowed. NOTE this opens no colour hole — `outline` itself ' +
+      'stays subject to the colour check, so `outline: 1px solid #000` is still refused as ' +
+      'CSS-COLOUR while `outline: 1px solid var(--focus)` passes.',
+    filter:
+      'a blur radius has no token — `grep -c "--blur" dist/*.css` is 0 across the whole package, ' +
+      'and the design system spells its own frosting as a literal `backdrop-filter: blur(14px)` ' +
+      'on `.ds-atom-appbar`. It is FREE rather than TOKENISED because the dimension does not ' +
+      'exist to be tokenised, and it is not LAYOUT because it moves no box: a filter paints, it ' +
+      'does not size or position. NOTE that this does NOT open a colour hole — the colour check ' +
+      'runs over every value regardless of classification, so `drop-shadow(0 0 4px #000)` is ' +
+      'still refused as CSS-COLOUR.',
+    'text-overflow':
+      'whether an over-long run is clipped or ellipsised has no token and no component API, in ' +
+      'the same way `text-transform` and `text-decoration` above do not. It names no colour, ' +
+      'type, spacing or radius — the four dimensions this gate keeps out of app CSS — and its ' +
+      'only meaningful values are keywords, so there is no value to hand through even in ' +
+      'principle.',
+    'clip-path':
+      'the visually-hidden technique has no token and no component API. The design system uses ' +
+      'this exact declaration for `.ds-visually-hidden` (`clip-path: inset(50%)` on a 1px box), ' +
+      'and app CSS needs its own copy only because that utility is unconditional while the nav ' +
+      'has to REVERSE it at 673px. A clip shape originates no colour, type, spacing or radius — ' +
+      'the four dimensions this gate exists to keep out of app CSS — so there is nothing to hand ' +
+      'through.',
     'transition-property':
       'it names WHICH property animates, not how fast or with what curve — a property NAME is not ' +
       'a value in any dimension the design system tokenises, and there is no `--transition-*` to ' +
@@ -477,6 +508,29 @@ const FREE = new Map(
  * whitespace collapse.
  */
 const DEBTS = [
+  {
+    id: 'DEBT-PRINT-PAPER',
+    where: ['src/styles/public-shell.css'],
+    property: '--paper-fixed',
+    value: '#ffffff',
+    why:
+      'A colour literal, which is exactly what this gate exists to keep out of app CSS. It is ' +
+      'registered rather than hidden because the value is unreachable any other way.',
+    disposition:
+      'The photo page mounts every photograph on a white card, as a print. THERE IS NO FIXED ' +
+      'LIGHT TOKEN IN THE DESIGN SYSTEM: measured, every light-looking one flips with the theme — ' +
+      '--cream, --cream-2, --cream-3, --paper, --paper-warm, --paper-deep, --ink-inverse — and ' +
+      '--scrim, which is correctly fixed, has no foreground partner. The design system hit the ' +
+      'same wall in its own component and wrote the same literal: `.ds-atom-lightbox-caption ' +
+      '{ color: #ffffff }`. FILED as D-32. `--ink` was shipped first and Akhil rejected it: it is ' +
+      '#f2f2f4 in dark but #111114 in light, so the print got a black frame in one theme — ' +
+      '"white border on photos, not black". A mount is white in both themes or it is not a mount. ' +
+      'RESOLVE by adding the partner token upstream (--paper-fixed, or --on-scrim beside ' +
+      '--scrim) and re-pointing this one declaration at it. It is deliberately a single custom ' +
+      'property so that swap is one line. It was `--pd-paper` on the photo page until the ' +
+      "gallery's hover caption needed the same white; hoisting it to `.pub-shell` kept the count " +
+      'of literals at one rather than two.',
+  },
   {
     id: 'DEBT-RADIUS-10',
     where: ['src/styles/home.css', 'src/styles/photo-detail.css', 'src/styles/photography.css'],

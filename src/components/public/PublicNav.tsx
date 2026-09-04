@@ -66,7 +66,21 @@ import { Moon, Sun } from '@akhil-saxena/design-system/icons';
  * (`new Set(links.map(a => a.getBoundingClientRect().top)).size === 1`) with no horizontal scroll
  * (`scrollWidth === clientWidth === 344`).
  */
-export const NAV_ITEMS: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
+export const NAV_ITEMS: ReadonlyArray<{
+  readonly href: string;
+  readonly label: string;
+  /*
+   * NO `glyph` FIELD ANY MORE, and the reason the field existed is worth keeping: below 673px the
+   * bar used to show `<>` and a camera instead of these words, because MEASURED at 390px the
+   * wordmark ended at x131 and `development` began at x131 — zero gap, the two touching.
+   *
+   * The crowding was real; icons were the wrong cure. Akhil: *"on mobile, on header, im not liking
+   * the icons for photo/dev ... it's all too cluttered."* What actually fits at 390 is ONE word,
+   * and the item that can leave is the one pointing at the page you are already on — so the narrow
+   * bar now names the section you are NOT in, in words, and the glyph vocabulary is gone with the
+   * problem it was solving. `public-shell.css` carries the six-treatment measurement.
+   */
+}> = [
   { href: '/development', label: 'development' },
   { href: '/photography', label: 'photography' },
   // No `résumé`. The approved design carries TWO nav items and says why: "No résumé button on
@@ -170,7 +184,7 @@ const WORDMARK_SUPPRESSED_ON = '/';
  * ingredients, and the `bar` arrangement is untouched by this plan — 51 documents keep the AppBar
  * they already had.
  */
-export type PublicNavVariant = 'bar' | 'plain';
+export type PublicNavVariant = 'bar' | 'plain' | 'rail';
 
 export interface PublicNavProps {
   /** The site name, from `data/home_config.json`. Never typed here — see the layout. */
@@ -211,12 +225,20 @@ function isCurrent(pathname: string, href: string): boolean {
  * `--radius-full` and `--rule-strong` — which is (T) under QUAL-03, a handover, not an origination.
  * Nothing about the control is re-implemented.
  */
-function ThemeToggle({ size }: { size: 'md' | 'lg' }) {
+/*
+ * NO `size` PROP. It took one, and the two call sites passed DIFFERENT values — `lg` on Home, `md`
+ * in the bar — so the control a visitor learned on Home was a different size on every other page.
+ * Akhil: *"I need to ensure that the placement and look/feel of dark/light mode toggle remains same
+ * on the hero page and all pages therein."* A prop whose only job was to differ is the wrong shape
+ * for that, so it is gone rather than merely passed the same value twice: the size cannot drift
+ * again if there is nothing to pass.
+ */
+function ThemeToggle() {
   return (
     <IconButton
       id={THEME_TOGGLE_ID}
       className="pub-toggle"
-      size={size}
+      size="lg"
       /* `label` IS the accessible name — IconButton maps it to `aria-label` and marks the
          glyph `aria-hidden`. It is deliberately state-neutral: the button is static HTML and
          the inline script only toggles a class, so a name saying "Switch to light" would be a
@@ -259,7 +281,18 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
    * stylesheet-only variants, so neither smuggles the `rgba(0, 0, 0, 0.25)` underline that D-4
    * files against `inline`, `footer` and `action`. Do not "improve" either to `inline`.
    */
-  const navVariant = variant === 'plain' ? 'quiet' : 'default';
+  /*
+   * `quiet` ON BOTH ARRANGEMENTS, NOT ONLY `plain`. This was `variant === 'plain' ? 'quiet' :
+   * 'default'`, and the `plain` branch below renders no links at all — so the ternary's true side
+   * was unreachable and every link the site ships was `default`, i.e. UNDERLINED. Akhil, on the
+   * result: *"The header currently has no styling. Nothing at all."* Three underlined anchors in a
+   * row is what a browser does with no stylesheet, so the bar read as unstyled markup.
+   *
+   * `quiet` is `--ink-3` with no underline (primitives.css:7490). The wordmark takes it too and is
+   * lifted back to full `--ink` in app CSS, so the brand outranks the nav rather than sitting level
+   * with it — a hierarchy the single `default` variant could not express at all.
+   */
+  const navVariant = 'quiet';
 
   const navLinks = NAV_ITEMS.map((item) => (
     <Link
@@ -269,7 +302,13 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
       className="pub-nav-link"
       aria-current={isCurrent(pathname, item.href) ? 'page' : undefined}
     >
-      {item.label}
+      {/* NO GLYPH. The bar was `<>` and a camera below 673px and words above it; it is words at
+          every width now, and on a narrow screen it shows only the section you are NOT on. Akhil:
+          *"on mobile, on header, im not liking the icons for photo/dev ... it's all too
+          cluttered."* The span is REMOVED rather than hidden — a `display: none` glyph would still
+          ship two SVGs and 0.6KB to every reader on every route to render nothing. `public-shell.css`
+          carries the measurements behind the choice. */}
+      <span className="pub-nav-text">{item.label}</span>
     </Link>
   ));
 
@@ -305,7 +344,32 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
      */
     return (
       <div className="pub-nav-plain">
-        <ThemeToggle size="lg" />
+        <ThemeToggle />
+      </div>
+    );
+  }
+
+  if (variant === 'rail') {
+    /*
+     * THE NAV ROW WITHOUT THE BAR AROUND IT — the split layout's arrangement.
+     *
+     * `Split Page Refinements.html` treatment A puts the identity in a left rail and says *"no top
+     * header at all"*, so the AppBar cannot render: its wordmark would be the second on the page.
+     * What the page still needs is the two destinations and the theme toggle.
+     *
+     * IT IS A VARIANT HERE RATHER THAN MARKUP IN THE PAGE, and the toggle is the reason. The shell's
+     * inline script binds it by DELEGATION — `closest('#pub-theme-toggle')` on a document listener —
+     * so a second implementation would work and would be a second implementation: two places that
+     * must both keep the id, both render both glyphs so the first painted frame is right, and both
+     * carry the state-neutral label. `ThemeToggle` is composed once and every arrangement gets it.
+     *
+     * `<nav>` with no `aria-label`, matching the bar: §6.6.4 wants no label, and an unlabelled nav
+     * is still a landmark. The toggle sits OUTSIDE it — it is a control, not a destination.
+     */
+    return (
+      <div className="pub-nav-rail wk-nav-rail">
+        <nav className="pub-nav-rail-links">{navLinks}</nav>
+        <ThemeToggle />
       </div>
     );
   }
@@ -327,7 +391,20 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
        */
       logo={
         showWordmark ? (
-          <Link href="/" variant="default" className="pub-logo">
+          <Link
+            href="/"
+            variant="quiet"
+            className="pub-logo"
+            /*
+             * THE SERIF IS PASSED, NOT OVERRIDDEN. `Link` builds its inline style as
+             * `{...baseStyle, ...variantInline, ...color, ...style}` — the `style` prop is spread
+             * LAST, so it beats `baseStyle.fontFamily: var(--font)` by the ordinary rules. Doing
+             * this from `src/styles/` instead would need `!important` to outrank an inline
+             * declaration, and that file tree is under a zero-`!important` policy. The component
+             * offered a door; this uses it.
+             */
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
             {siteTitle}
           </Link>
         ) : (
@@ -335,7 +412,7 @@ export function PublicNav({ siteTitle, pathname, variant = 'bar' }: PublicNavPro
         )
       }
       nav={navLinks}
-      actions={<ThemeToggle size="md" />}
+      actions={<ThemeToggle />}
     />
   );
 }

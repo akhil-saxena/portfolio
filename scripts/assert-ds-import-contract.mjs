@@ -563,6 +563,15 @@ if (scanned.length === 0 && failures.length === 0) {
   });
 }
 
+/*
+ * Every rule HIT, whether or not it became a failure. Reported on the PASS line below.
+ *
+ * It was written and then never read — biome's `noUnusedVariables` was right about the symptom and
+ * wrong about the cure. Deleting it would remove the only number that distinguishes "no rule
+ * matched anything" from "rules matched and every hit was permitted", and those are very different
+ * states for a gate whose whole job is an allow-list: the second says the allow-list is doing work,
+ * the first is what a broken matcher also looks like.
+ */
 let findingCount = 0;
 
 for (const file of scanned) {
@@ -664,6 +673,9 @@ if (failures.length > 0) {
 out('assert-ds-import-contract: PASS');
 out(`  scan targets: ${targets.join(', ')}${usingDefaultTargets ? ' (default)' : ''}`);
 out(`  scanned ${scanned.length} files (${bytesRead} bytes) matching ${SCAN_EXTENSIONS.join(' ')}`);
+out(
+  `  rule hits: ${findingCount} (a hit is a match; a hit on a permitted specifier is not a failure)`
+);
 out(
   `  self-test: ${RULES.length}/${RULES.length} rules flagged their canary and ignored their anti-canary; ${canariesChecked} canaries checked in total`
 );

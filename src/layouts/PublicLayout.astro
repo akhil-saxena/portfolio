@@ -77,6 +77,8 @@
  * wrong one instead of a visibly missing one.
  */
 
+import { Link } from '@akhil-saxena/design-system/components/Link';
+
 import SocialIcons from '../components/public/SocialIcons.astro';
 import homeConfig from '../../data/home_config.json';
 import { type PublicNavVariant, PublicNav } from '../components/public/PublicNav';
@@ -95,9 +97,39 @@ interface Props {
    * page that wants a plain row an edit to a file shared by every page that does not.
    */
   navVariant?: PublicNavVariant;
+  /**
+   * `bar` (the default, every route) draws the shell: the top bar and the footer. `rail` draws
+   * NEITHER, because the page is taking over both.
+   *
+   * ================================================================================================
+   * 🟠 THIS IS A DELIBERATE HOLE IN THE SHELL CONTRACT, AND IT IS THE COST OF THE SPLIT LAYOUT
+   * ================================================================================================
+   *
+   * `Split Page Refinements.html` treatment A puts the identity in a left rail — name, headline,
+   * intro, experience, contact — and says so in its own label: *"no top header at all"*. A layout
+   * that still rendered the bar would show the wordmark twice and the nav twice.
+   *
+   * WHAT IT COSTS, STATED HERE RATHER THAN DISCOVERED LATER:
+   *
+   *   - The bar is `transition:persist`, so on a route with no bar there is nothing to persist. That
+   *     only matters where a `ClientRouter` swaps documents, which is the photo pages, not this one.
+   *   - The theme toggle lives in the bar. Akhil: *"I need to ensure that the placement and
+   *     look/feel of dark/light mode toggle remains same on the hero page and all pages therein."*
+   *     A ships no toggle at all, so the page renders its own in the nav row — the same `PublicNav`
+   *     control, in the same order relative to the nav items, at a different place on the page. That
+   *     is a real divergence from "same placement", and it is the page's to justify, not the shell's.
+   *   - The footer's social marks and the copyright move into the rail. Two implementations of one
+   *     footer is exactly the duplication `PublicFooter` exists to prevent, so the rail composes the
+   *     same `SocialIcons` component rather than its own marks.
+   *
+   * IT IS A PROP, NOT A `pathname` TEST, for the reason `navVariant`'s note gives: the shell must not
+   * know which route is special, or the second page that wants a rail becomes an edit to a file every
+   * page shares.
+   */
+  chrome?: 'bar' | 'rail';
 }
 
-const { mainClass, navVariant = 'bar' } = Astro.props;
+const { mainClass, navVariant = 'bar', chrome = 'bar' } = Astro.props;
 
 /**
  * The footer's links are `data/home_config.json`'s `socialLinks`, mapped to `Footer`'s shape.
@@ -158,12 +190,134 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
       (function () {
         var d = document.documentElement;
         var s = null;
-        try {
-          s = localStorage.getItem('theme');
-        } catch (e) {
-          /* Safari private mode throws on access. Falling through leaves the default dark. */
-        }
-        if (s === 'light') d.classList.remove('dark');
+        var read = function () {
+          try {
+            return localStorage.getItem('theme');
+          } catch (e) {
+            /* Safari private mode throws on access. Returning null leaves the default dark. */
+            return null;
+          }
+        };
+        var apply = function () {
+          s = read();
+          if (s === 'light') d.classList.remove('dark');
+          else d.classList.add('dark');
+        };
+        apply();
+
+        /* THE THEME IS RE-APPLIED AFTER A VIEW TRANSITION, and without this the photograph routes
+           snap back to dark on every step. The `ClientRouter` on those pages swaps the document,
+           and `<html>`'s attributes come from the INCOMING one — which is prerendered carrying
+           `class="dark"`, because that is the default this block corrects at runtime. This script
+           runs once on first load and not again, so after a swap the correction was simply gone.
+
+           MEASURED: on load `dark`; after the toggle `""` with `localStorage.theme === "light"`;
+           after pressing next `dark` again, with the preference still stored. The preference was
+           never lost — it had stopped being applied.
+
+           `astro:after-swap` fires BEFORE the new document paints, so the theme is right on the
+           first frame and there is no flash. Registered here, inside the block that already owns
+           the selector contract, rather than as a second script: `gate:public-js`'s A4-COUNT
+           permits a routed document exactly two script blocks, the theme block and the router. */
+        document.addEventListener('astro:after-swap', apply);
+
+        /* ARROW KEYS STEP BETWEEN PHOTOGRAPHS, and this is the only page that gets them.
+           Akhil, on the accessibility audit: *"yes on photo page, not on grid."*
+
+           WHY IT LIVES IN THE THEME BLOCK rather than on the photo route. `gate:public-js`'s
+           A4-COUNT permits a routed document exactly TWO script blocks — this one and the
+           view-transition router's module — so an inline script on that page would be a third and
+           would fail the build. This block is the site's one inline script; it already owns the
+           theme contract, the print handlers and the toggle's click. The handler is a no-op
+           anywhere `.pd-nav` does not exist, which is every other route.
+
+           IT QUERIES AT KEYPRESS TIME, not at bind time. The router swaps the document on every
+           step, so the previous/next anchors are new elements after each move; a reference captured
+           now would be stale on the second press.
+
+           MODIFIED PRESSES ARE NOT OURS, and neither is typing. Arrow keys inside a field, or with
+           a modifier held, belong to the browser and to the reader — intercepting them is how a
+           page breaks text selection and browser shortcuts. `isContentEditable` and the tag test
+           are what keep this to the case it is for.
+
+           IT CLICKS THE LINK rather than assigning `location`: the anchors are real, the router is
+           listening for clicks on them, and going through them keeps arrow navigation and mouse
+           navigation on exactly one path. */
+        addEventListener('keydown', function (ev) {
+          if (ev.metaKey || ev.ctrlKey || ev.altKey || ev.shiftKey) return;
+          if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+          var t = ev.target;
+          if (t && (t.isContentEditable || /^(input|textarea|select)$/i.test(t.tagName))) return;
+          var rel = ev.key === 'ArrowLeft' ? 'prev' : 'next';
+          var link = document.querySelector('.pd-nav a[rel="' + rel + '"]');
+          if (!link) return;
+          ev.preventDefault();
+          link.click();
+        });
+
+        /* A SWIPE TURNS THE PAGE, ANYWHERE ON IT. Akhil, asked whether the gesture should be scoped
+           to the photograph or the whole document: *"anywhere on page."* The M4 layout is mostly
+           empty ground, and a reader on a phone should not have to aim at the print.
+
+           IT WAS DOING NOTHING BEFORE THIS. Verified with a real left swipe across the photograph at
+           390px on a touch context: `Haunted Mansion 02 / 16` before, `Haunted Mansion 02 / 16`
+           after. There was no touch handling anywhere in `src/` — the only mentions of swipe were
+           comments in `PhotoLightbox`, the overlay this page replaced, which no route renders. On a
+           gallery that is mostly read on a phone, PREV/NEXT and the back button were the whole
+           vocabulary, and the arrow keys added above serve the smaller half of the audience.
+
+           FOUR CONDITIONS, and each one is a false positive that would otherwise happen:
+
+             - HORIZONTAL INTENT: |dx| must exceed |dy|. Without it, scrolling down the page turns
+               the page, because a thumb drag is never perfectly vertical.
+             - DISTANCE: 50px, so a tap and the jitter around it navigate nothing.
+             - ONE FINGER: a second touch cancels the gesture, so a pinch-zoom on the photograph —
+               the thing a reader most wants to do to a photograph — is never a page turn.
+             - TIME: under 800ms. A slow drag across the screen is someone reading, not turning.
+
+           `{ passive: true }` AND NO `preventDefault`, deliberately: the browser keeps native
+           vertical scrolling and its momentum, which a non-passive touch listener would degrade
+           across the whole document. The cost is that this cannot suppress a scroll it loses to,
+           and it should not — the vertical gesture belongs to the page.
+
+           Like the arrow keys, it queries `.pd-nav` at GESTURE TIME: inert on every other route,
+           and correct after the router swaps the document. */
+        var sx = 0;
+        var sy = 0;
+        var st = 0;
+        var swiping = false;
+        addEventListener(
+          'touchstart',
+          function (ev) {
+            swiping = false;
+            if (ev.touches.length !== 1 || !document.querySelector('.pd-nav')) return;
+            sx = ev.touches[0].clientX;
+            sy = ev.touches[0].clientY;
+            st = Date.now();
+            swiping = true;
+          },
+          { passive: true },
+        );
+        addEventListener('touchcancel', function () {
+          swiping = false;
+        });
+        addEventListener(
+          'touchend',
+          function (ev) {
+            if (!swiping) return;
+            swiping = false;
+            var t = ev.changedTouches[0];
+            if (!t || Date.now() - st > 800) return;
+            var dx = t.clientX - sx;
+            var dy = t.clientY - sy;
+            if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+            var link = document.querySelector(
+              '.pd-nav a[rel="' + (dx < 0 ? 'next' : 'prev') + '"]',
+            );
+            if (link) link.click();
+          },
+          { passive: true },
+        );
         addEventListener('beforeprint', function () {
           d.classList.remove('dark');
         });
@@ -186,14 +340,61 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
   </head>
   <body>
     <div class="pub-shell">
-      <div class={navVariant === 'plain' ? 'pub-bar pub-bar-plain' : 'pub-bar'}>
-        <PublicNav
-          siteTitle={homeConfig.title}
-          pathname={Astro.url.pathname}
-          variant={navVariant}
-        />
-      </div>
-      <main class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
+      {
+        /*
+         * ================================================================================================
+         * THE SKIP LINK — THE FIRST FOCUSABLE THING ON EVERY ROUTE
+         * ================================================================================================
+         *
+         * MEASURED: on `/photography` a keyboard reader passes the wordmark, three nav items, the theme
+         * toggle and six filter pills — ELEVEN stops — before the first photograph, and pays it again on
+         * every navigation. One Tab and one Enter now replaces all eleven. Akhil, on the audit: *"add."*
+         *
+         * IT IS IN THE LAYOUT, so all ten routes get it from one element. The target is `<main>` rather
+         * than a per-page anchor for the same reason: every route already has exactly one.
+         *
+         * `tabindex="-1"` ON THE TARGET IS NOT OPTIONAL AND IS THE PART THAT IS USUALLY MISSING. Jumping
+         * to a fragment moves the SCROLL but not the FOCUS unless the destination is focusable — so
+         * without it the next Tab press returns to the wordmark and the skip link silently does nothing
+         * for the reader it exists to serve. `-1` makes `<main>` programmatically focusable without
+         * adding a twelfth tab stop.
+         *
+         * NOT `hidden`, NOT `display: none`, NOT `visibility: hidden` — all three remove an element from
+         * the focus order, which would make a skip link that can never be reached. It is positioned off
+         * the top edge instead, and `:focus-visible` brings it back. See `.pub-skip` in public-shell.css.
+         *
+         * `variant="footer"` because the design system has no skip-link variant and `footer` is its small
+         * standalone link — the one that is already sized for chrome rather than for body copy. Recorded
+         * as a finding rather than papered over with bespoke type.
+         */
+      }
+      <Link variant="footer" href="#pub-main" className="pub-skip">Skip to content</Link>
+      {
+        /*
+         * `transition:persist` — THE BAR AND THE FOOTER SURVIVE A VIEW TRANSITION AS THE SAME DOM
+         * NODES rather than being replaced. On the photograph routes, which carry a `ClientRouter`,
+         * that is what stops them re-rendering when you step between photographs: Astro moves these
+         * two elements across instead of rebuilding them.
+         *
+         * Inert everywhere else. With no router on the page there is no transition to take part in,
+         * so the attribute costs nothing on the routes that ship no JavaScript.
+         */
+      }
+      {
+        chrome === 'bar' && (
+          <div
+            transition:persist
+            class={navVariant === 'plain' ? 'pub-bar pub-bar-plain' : 'pub-bar'}
+          >
+            <PublicNav
+              siteTitle={homeConfig.title}
+              pathname={Astro.url.pathname}
+              variant={navVariant}
+            />
+          </div>
+        )
+      }
+      <main id="pub-main" tabindex="-1" class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
         <slot />
       </main>
       {
@@ -212,27 +413,29 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
         is what makes those attributes mean anything, and a mail link opens no browsing context.
       */
       }
-      <footer class="pub-footer pub-footer-row">
-        <p class="pub-copy">{copyright}</p>
-        <div class="pub-social">
-          {
-            homeConfig.socialLinks.map((link) => {
-              const external = !link.url.startsWith('mailto:');
-              return (
-                <a
-                  class="pub-social-link"
-                  href={link.url}
-                  aria-label={link.label}
-                  target={external ? '_blank' : undefined}
-                  rel={external ? 'noopener noreferrer' : undefined}
-                >
-                  <SocialIcons icon={link.icon} />
-                </a>
-              );
-            })
-          }
-        </div>
-      </footer>
+      {
+        chrome === 'bar' && (
+          <footer transition:persist class="pub-footer pub-footer-row">
+            <p class="pub-copy">{copyright}</p>
+            <div class="pub-social">
+              {homeConfig.socialLinks.map((link) => {
+                const external = !link.url.startsWith('mailto:');
+                return (
+                  <a
+                    class="pub-social-link"
+                    href={link.url}
+                    aria-label={link.label}
+                    target={external ? '_blank' : undefined}
+                    rel={external ? 'noopener noreferrer' : undefined}
+                  >
+                    <SocialIcons icon={link.icon} />
+                  </a>
+                );
+              })}
+            </div>
+          </footer>
+        )
+      }
     </div>
   </body>
 </html>

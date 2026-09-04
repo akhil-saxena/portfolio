@@ -46,19 +46,156 @@
  * 32px wider than the viewport — which presents as a horizontal scroll, i.e. the exact R-6
  * violation the ladder exists to close, reintroduced by the fix for it.
  *
- * Sites 3 and 5 reach a design-system class from app CSS. That is deliberate and it is layout, not
- * paint: `.ds-atom-appbar` ships `padding: 12px 20px` and `.ds-atom-footer[data-variant="compact"]`
+ * Sites 3 and 5 reach a design-system class from app CSS. That is deliberate. It is MOSTLY layout:
+ * `.ds-atom-appbar` ships `padding: 12px 20px` and `.ds-atom-footer[data-variant="compact"]`
  * ships `padding: 16px 32px`, both fixed, and neither component exposes a padding prop. The
  * override is scoped under the wrapper so it is (0,2,0) against the component's (0,1,0) and
  * therefore wins on SPECIFICITY rather than on source order — an equal-specificity override that
  * depends on import order is one stylesheet reshuffle away from silently losing. Only the INLINE
  * padding is touched; the block padding stays the component's.
+ *
+ * Site 3 also reaches the class for PAINT — it strips the bar's surface, blur and border so the
+ * header is seamless with the page. That is not layout and it is not a padding prop the component
+ * withheld; it is a deliberate design decision about what the bar is, argued at the rule itself.
  */
 
 /* ── 1a. The rungs. THE ONLY PLACE `--pub-gutter` IS DECLARED. ─────────────────────────────── */
 
 .pub-shell {
   --pub-gutter: var(--space-4);
+
+  /*
+   * ================================================================================================
+   * THE FOCUS RING IS 1px HELD OFF THE EDGE, NOT 3px LAID ON IT
+   * ================================================================================================
+   *
+   * Akhil: *"focus state is too dark, like the border is too dark and too weighty."* He is describing
+   * something real and MEASURED: in this brand `--focus` is not a hue. `themes/monochrome.css` maps
+   * `--amber-d` — which `--focus` derives from — onto the ink ramp, so the ring resolves to `#111114`
+   * in light and `#f2f2f4` in dark. The design system's default is therefore a 3px band of the
+   * DARKEST INK ON THE PAGE at 18.07:1 light / 17.37:1 dark. Nothing else on this site is that heavy;
+   * the ring was louder than the thing it was pointing at.
+   *
+   * THE GAP IS WHAT DOES THE WORK, NOT THE THICKNESS. A 1px line laid directly on an element reads as
+   * a border someone forgot to remove. Held 2px off, the same 1px reads as deliberate. Chosen from
+   * seven constructions rendered side by side on the real components in both themes: 1px/1px was too
+   * tight for the gap to register at all, 1px/3px and 1px/4px detached — on the round footer icon
+   * they read as a second ring rather than a state — and a muted 1px vanished in dark, which is
+   * exactly the size that can least afford a second reduction.
+   *
+   * CONTRAST IS UNCHANGED AND STILL 6x WHAT IS REQUIRED: the ring keeps `--focus`, so it stays at
+   * 18.07:1 / 17.37:1 against the page, against the 3:1 WCAG 1.4.11 asks of a non-text indicator.
+   * This is a change of WEIGHT, not of legibility — the rejected `color-mix` halo at 32% measured
+   * 2.06:1 light and 1.56:1 dark and would have been a real failure dressed up as restraint.
+   *
+   * THE GAP IS PAINTED IN `--bg`, so it is only invisible where the backdrop IS the page. Every
+   * focusable element on all ten routes was enumerated and its painted backdrop compared against
+   * `--bg` before this landed; see the note below this block for the one surface that differs.
+   *
+   * DEFINED ON `.pub-shell` RATHER THAN `:root` on purpose. Custom properties inherit, so every
+   * focusable descendant picks this up without a single `:focus-visible` rule being touched — the
+   * design system already spends the token at every point of use, which is what made a one-line
+   * override possible. `:root` would also reach the `<html>` element itself and anything a future
+   * portal renders outside the shell, which is scope this change has not measured.
+   *
+   * FILED UPSTREAM as a design-system finding: a monochrome brand inheriting a focus token shaped
+   * for an amber one is the system's problem, not this site's. The site override stands until the
+   * system carries a weight that survives the ink-ramp mapping.
+   */
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 3px var(--focus);
+
+  /*
+   * THE BAR'S RENDERED HEIGHT, and it has to be composed rather than read from a token.
+   *
+   * `--ds-appbar-h` is 57px and is a `min-height` FLOOR, not the height — primitives.css says so at
+   * that declaration: "min-height, NOT height ... The bar's height is content-determined". MEASURED
+   * at 1280: the bar renders 64px, because its 12px block padding sits around a 40px `lg`
+   * IconButton. 12 + 40 + 12 = 64.
+   *
+   * So this is `--space-3` twice (the design system's own 12px padding) plus `--space-10` (the
+   * toggle's 40px box). It is a SECOND ENCODING of a height that is really content-derived, which
+   * is a real cost — the day the toggle changes size, this number is wrong and the sticky
+   * sub-header on /photography overlaps or gaps by the difference. It is here rather than as a
+   * literal `64px` so that at least the parts are named.
+   *
+   * NO ASSERTION PINS IT YET, and that is a debt rather than an oversight: the right test measures
+   * the bar's rendered height in a browser and compares it to this computed value, so that changing
+   * the toggle's size fails loudly instead of nudging a pinned header 4px out of place. Owed while
+   * the suite is being brought back in line with this session's changes — do not let this comment
+   * become the record of a test that was never written.
+   */
+  /*
+   * ================================================================================================
+   * IT IS A `max()` OF THE FLOOR AND THE CONTENT, NOT A HAND-COMPOSED NUMBER — AND THAT IS A FIX
+   * ================================================================================================
+   *
+   * Akhil: *"the top line of the pills are cut off due to header."* MEASURED on a coarse pointer at
+   * both 390 and 744, scrolled: the bar renders 69px and `/photography`'s sticky rail parks at
+   * `top: 64px`, so the pills sit FIVE PIXELS UNDER the bar and lose their top edge. On a fine
+   * pointer the same page measures a 0px overlap, which is why this never showed on a desktop
+   * window narrowed to phone width — the rule that causes it is keyed on the POINTER, not the
+   * viewport.
+   *
+   * BOTH INPUTS MOVE, WHICH IS WHY NEITHER ALONE IS THE ANSWER:
+   *
+   *   `--ds-appbar-h` is a min-height FLOOR, and primitives.css says so at the declaration: "the
+   *   bar's height is content-determined". It reads 57px normally and 69px under
+   *   `:root:has(.ds-atom-appbar a)` on a coarse pointer.
+   *
+   *   The CONTENT is this site's theme toggle: 40px normally, and 44px on a coarse pointer, where
+   *   the design system floors every anchor inside the bar at the touch target. With 12px of block
+   *   padding either side that is 64px and 68px.
+   *
+   *   fine:    max(57, 12 + 40 + 12 = 64) = 64   ← measured 64
+   *   coarse:  max(69, 12 + 44 + 12 = 68) = 69   ← measured 69
+   *
+   * The floor wins on touch, the content wins on a mouse, and NEITHER of the two previous
+   * single-source versions could have been right for both: the old hand-composed 64 was 5px short
+   * on touch, and `var(--ds-appbar-h)` alone would be 7px short on a mouse. `max()` is not defensive
+   * padding here — it is the same rule the browser is applying to `min-height`, written down.
+   *
+   * THIS RETIRES THE SECOND-ENCODING HAZARD the previous comment here recorded — "the day the toggle
+   * changes size, this number is wrong and the sticky sub-header on /photography overlaps or gaps by
+   * the difference". That day arrived, on every touch device, and this is the version that survives
+   * it: the toggle's size is now named once, in `--pub-bar-toggle`, and the coarse case moves it
+   * rather than re-deriving the total.
+   */
+  --pub-bar-toggle: var(--space-10);
+  --pub-bar-h: max(var(--ds-appbar-h), calc(var(--space-3) * 2 + var(--pub-bar-toggle)));
+
+  /*
+   * THE FOOTER'S RENDERED HEIGHT, named beside the bar's and for the same reason: a route that has
+   * to fit a composition between the two needs both numbers, and neither is a token.
+   *
+   * `--space-5` twice is its own block padding (20px each) and `--space-10` is the 40px box every
+   * icon link carries — the same 40px hit box the bar's toggle uses, which is why the footer is
+   * 80px and not the 54px a bare line of `--text-2xs` would make it.
+   *
+   * MEASURED, and the measurement is the reason this exists: the photo page's height budget
+   * subtracted 55px for the footer, taken from a reading made while the footer was route-hidden and
+   * carrying no icons. With the default footer restored it is 80px, and the 25px shortfall pushed
+   * that page's photograph 1px ABOVE the sticky bar. Two numbers in two files disagreed; now there
+   * is one.
+   */
+  --pub-footer-h: calc(var(--space-5) * 2 + var(--space-10));
+
+  /*
+   * THE ONE FIXED WHITE ON THE SITE, and the only colour literal in `src/styles/`. Registered in
+   * `gate:app-css`'s debt list as DEBT-PRINT-PAPER rather than smuggled past it.
+   *
+   * It exists because the design system has no non-flipping light token: MEASURED, every
+   * light-looking one flips with the theme — `--cream`, `--cream-2`, `--cream-3`, `--paper`,
+   * `--paper-warm`, `--paper-deep`, `--ink-inverse` — while `--scrim`, correctly, does not flip and
+   * has no foreground partner. The design system hit the same wall in its own component and wrote
+   * the same literal: `.ds-atom-lightbox-caption { color: #ffffff }`. FILED as D-32.
+   *
+   * ONE CONSUMER TODAY — the photo page's print mat, which is white in both themes. It briefly had
+   * two: the gallery's hover caption used it while it was full-width shadowed text over a
+   * photograph, and stopped when that became a pill painted in `--ink-inverse`. It stays declared
+   * here rather than back inside `photo-detail.css` because the next thing to sit on an image will
+   * want it too, and because one named literal with one debt entry is easier to retire than two.
+   */
+  --paper-fixed: #ffffff;
 }
 
 @media (min-width: 375px) {
@@ -125,12 +262,644 @@ body {
 
 /* ── 1c. Sites 2 and 3 — the bar breaks out and pays back. ─────────────────────────────────── */
 
+/*
+ * ================================================================================================
+ * THE SKIP LINK — OFF-SCREEN, NOT HIDDEN, AND THAT DISTINCTION IS THE WHOLE RULE
+ * ================================================================================================
+ *
+ * `display: none`, `visibility: hidden` and the `hidden` attribute all remove an element from the
+ * FOCUS ORDER as well as from view. Any of the three would produce a skip link that no keyboard can
+ * ever reach — the classic way this feature ships broken. It is taken out of view by position
+ * instead: `fixed`, then translated up past its own height, so it occupies no layout anywhere and
+ * comes back on focus.
+ *
+ * `:focus` IS LISTED ALONGSIDE `:focus-visible` on purpose. The link is off-screen and cannot be
+ * clicked, so there is no mouse-focus case to suppress — and `<main>`'s programmatic focus after the
+ * jump is exactly the kind of focus some engines decline to call "visible".
+ *
+ * NO TRANSITION. A skip link that slides is a skip link the reader is waiting on.
+ */
+.pub-shell .pub-skip {
+  position: fixed;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 100;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-2);
+  transform: translateY(calc(-100% - var(--space-6)));
+}
+
+/* (0,3,0) — one class more than the design system's own `.ds-atom-link:focus-visible` (0,2,0),
+   which sets `border-radius: 2px`. A tie would have been decided by source order, and this file has
+   lost that argument four times. */
+.pub-shell .pub-skip:focus,
+.pub-shell .pub-skip:focus-visible {
+  transform: translateY(0);
+  border-radius: var(--radius-full);
+  /* RESTATED, and it is not redundant. The base rule above is (0,2,0) and sets `box-shadow` to
+     `--shadow-2`; the design system's `.ds-atom-link:focus-visible` is ALSO (0,2,0). A tie goes to
+     source order, this file loads second, and the measured result was the 1px surface ring instead
+     of the focus ring — the link came back on Tab with no visible focus at all. Fifth occurrence in
+     this file. */
+  box-shadow: var(--focus-ring);
+}
+
+/* `<main>` carries `tabindex="-1"` so the jump moves focus and not merely scroll. It is not an
+   interactive control, so it must not paint a ring when it receives that focus. */
+.pub-shell .pub-main:focus,
+.pub-shell .pub-main:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/*
+ * ================================================================================================
+ * THE OTHER HALF OF THE FOCUS CONTRACT — THE COMPONENTS THAT NEVER READ `--focus-ring`
+ * ================================================================================================
+ *
+ * The token override above reaches every component that spends `--focus-ring` in a `box-shadow`.
+ * MEASURED by focusing every focusable element on all ten routes in both themes and reading the
+ * computed style, three do not read the token at all:
+ *
+ *   `.ds-atom-segmented-btn` (the filter pills) and `.ds-atom-iconbtn` (the theme toggle) declare
+ *   `outline: 2px solid var(--focus)` directly and never touch `--focus-ring` — so they kept the
+ *   heavy 2px ring while every link around them went to 1px.
+ *
+ *   `.ph-tile` — the forty photographs — had no author focus style whatsoever and was still
+ *   painting Chrome's default `outline: auto 1px rgb(0, 95, 204)`. Handled in photography.css,
+ *   which owns that class.
+ *
+ * `outline` IS THE RIGHT CHANNEL FOR THESE, and not only because it is the one they already use:
+ * `outline-offset` leaves a TRUE TRANSPARENT gap, where the box-shadow form has to paint the gap in
+ * `--bg` and is therefore only correct where the backdrop IS the page. Measured, the thirteen links
+ * inside the glass cards on `/development` composite to `#151517` against a `#0d0d0f` page — a
+ * 1.06:1 difference, invisible, but real. An outline makes no such assumption anywhere.
+ *
+ * `Button` IS NOT IN THIS RULE, and the reason is worth recording because the obvious fix is wrong
+ * TWICE OVER. Its rendered `style` ATTRIBUTE contains `outline:none` INLINE, which beats every
+ * selector regardless of specificity — so adding `.ds-atom-btn` here would have done nothing at any
+ * specificity short of `!important`. And it needs nothing: `.ds-atom-btn:focus-visible` already
+ * spends `--focus-ring` through `box-shadow`, which is NOT written inline, so the token override
+ * above reaches it on its own. Verified at 1280 in both themes: `rgb(13,13,15) 0 0 0 2px,
+ * rgb(242,242,244) 0 0 0 3px`.
+ *
+ * A NOTE ON HOW THAT WAS VERIFIED, because the first reading of it was WRONG. Sampled immediately
+ * after the `Tab` keypress, the button computes `rgba(0,0,0,0) 0 0 0 0, rgba(0,0,0,0) 0 0 0 0` and
+ * looks exactly like a component with no focus indicator at all. It is not: `.ds-atom-btn` carries a
+ * transition, and that is the ring one frame into its fade, expressed as matching zero-size layers.
+ * Anything measuring focus styles on this site must settle the transition first.
+ *
+ * (0,3,0) — one class above the design system's own (0,2,0) rules, so the result does not depend on
+ * which stylesheet the bundler happens to emit second. Five separate fixes in this file have been
+ * lost to exactly that tie.
+ */
+.pub-shell .ds-atom-iconbtn:focus-visible,
+.pub-shell .ds-atom-segmented-btn:focus-visible {
+  outline: 1px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/*
+ * THE TOUCH TOGGLE IS 44px, NOT 40px, and this is the one line that has to know it. `primitives.css`
+ * floors every `a` inside `.ds-atom-appbar` at the 44px coarse-pointer target (its D-16-1 note), and
+ * the theme toggle is one of those anchors. Keyed on the pointer to match the rule that causes it —
+ * a 1440px touch laptop needs this and a 390px desktop window does not.
+ */
+@media (pointer: coarse) {
+  .pub-shell {
+    --pub-bar-toggle: var(--space-11);
+  }
+}
+
 .pub-bar {
   margin-inline: calc(var(--pub-gutter) * -1);
 }
 
 .pub-bar .ds-atom-appbar {
   padding-inline: var(--pub-gutter);
+
+  /*
+   * AND THE BAR CARRIES NO PAINT. Akhil, on the photography header: *"i don't want any divider
+   * line or color change, it should be seamless."* The bar is a row of links that happens to sit
+   * at the top of the page, not a surface the page scrolls under.
+   *
+   *   `background: transparent`  undoes `background: var(--surf-2)`, which is
+   *                              `rgba(255,255,255,0.055)` in this theme — a 5.5% white wash that
+   *                              reads as a distinctly lighter band above the page. This is the
+   *                              declaration doing the actual work.
+   *   `border-bottom: 0`         undoes `border-bottom: 1px solid transparent`. The colour was
+   *                              already transparent, but the 1px occupied the border box, so
+   *                              zeroing the WIDTH — not the colour — is what keeps the bar's
+   *                              height honest. Written as the shorthand set to `0` rather than
+   *                              `border-bottom-width`, because that is the form `gate:app-css`
+   *                              classifies (`['a border reset', 'border-bottom', '0']`).
+   *   `box-shadow: none`         already none; restated because the component ships
+   *                              `transition: all 0.2s ease`, which would animate a shadow in if
+   *                              a later rule ever added one.
+   *
+   * `backdrop-filter: blur(14px)` IS DELIBERATELY LEFT ALONE. It looks like it belongs in this
+   * list and it does not: with a transparent background on an in-flow bar, the only thing in the
+   * backdrop is the flat page colour, so there is nothing for the blur to smear. MEASURED in
+   * Chromium at 1280x400 — overriding it to `none` changes 1,117 of 153,600 pixels by a maximum
+   * of ONE channel value, worst point on the theme toggle's anti-aliased glyph edge. That is
+   * compositing rounding, not a visible effect. It becomes real the moment this bar goes
+   * `position: sticky`, because then page content passes behind it — so if sticky ever lands here,
+   * `backdrop-filter` has to be decided at the same time.
+   *
+   * Specificity: (0,2,0) here against the component's (0,1,0) — the same wins-on-specificity
+   * argument the padding above makes. The `[data-scrolled="true"]` rules that WOULD tie at (0,2,0)
+   * and repaint all of this cannot fire: `scrolled` is a consumer-driven prop and `PublicNav`
+   * never passes it, so the attribute is permanently `"false"`.
+   *
+   * This makes sites 3 and 5 in the ladder above no longer purely layout. The comment there says
+   * so.
+   */
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+}
+
+/* ── 1c-ii. The bar sticks, and the content dissolves under it. ────────────────────────────── */
+
+/*
+ * STICKY, AND THE SEPARATION IS A FADE RATHER THAN A COLOUR.
+ *
+ * Akhil: *"the header should be sticky, and to differentiate between header and content, we can
+ * simply have a fade, without a color change."* The two halves of that are one mechanism:
+ *
+ *   `background: var(--bg)` on the bar   is the PAGE's colour. At rest it is invisible — the bar
+ *                                        is still seamless, which is the whole point of the
+ *                                        previous block. Its only job is to be OPAQUE, so text
+ *                                        scrolling up stops at the bar instead of passing through
+ *                                        the wordmark. Until now the bar was transparent and could
+ *                                        afford to be, because it did not stick.
+ *   `::after`                            extends that same colour BELOW the bar as a gradient to
+ *                                        transparent. So content does not meet a hard edge or a
+ *                                        different surface; it fades into the page it is already
+ *                                        sitting on. There is no second colour anywhere.
+ *
+ * WHY IT IS NOT VISIBLE AT REST, WHICH IS THE ONLY REASON THIS NEEDS NO JAVASCRIPT. A gradient
+ * hanging under the bar would wash over the top of whatever is beneath it — dimming the top of the
+ * `<h1>` on a page nobody has scrolled. It does not, because it fits inside a gap that already
+ * exists: MEASURED at 1280x800, the STICKY ELEMENT — `.pub-bar`, the wrapper, 64px, not the 57px
+ * `.ds-atom-appbar` inside it — sits at y0..64 and `.pub-main` pads 44px (`--space-11`) beneath it,
+ * so the first content begins at y108 and a 32px fade occupies y64..96. Twelve pixels of
+ * clearance. The fade
+ * height and that padding are therefore COUPLED: raising the fade past `.pub-main`'s
+ * `padding-top` — `--space-6`, 24px — puts a wash on static content.
+ *
+ * `:not(.pub-bar-plain)` EXCLUDES HOME. Home zeroes that 44px padding
+ * (`.pub-main.pub-max-home`), so the clearance argument above does not hold there — and Home is
+ * one viewport with nothing to scroll, so it has nothing to stick for.
+ *
+ * `backdrop-filter: blur(14px)` STILL SURVIVES ON `.ds-atom-appbar`, and the note in the next block
+ * said this landing was the moment to decide it. Decided: it stays inert. The blur samples what is
+ * painted behind the element, and what is now behind it is this rule's opaque page-coloured
+ * backing — blurring a flat fill is a no-op, exactly as it was over the flat body.
+ */
+
+.pub-bar:not(.pub-bar-plain) {
+  position: sticky;
+  top: 0;
+  /* Above the tiles, which carry no `z-index` of their own; the lightbox portals above both. */
+  z-index: 10;
+  background: var(--bg);
+}
+
+.pub-bar:not(.pub-bar-plain)::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  /*
+   * `--space-4`, 16px. It was `--space-8` (32px) and Akhil's note on that was *"reduce fade, not so
+   * harsh, keep subtle, short"*. Worth recording the tension in the two words, because they pull
+   * opposite ways: a LONGER gradient is a softer dissolve, a SHORTER one is subtler but meets the
+   * header's opaque edge more abruptly. 16px takes the "short and subtle" reading — the band stops
+   * reading as a vignette. If the cut ever looks hard, this is the number to raise, and the
+   * clearance argument below is what caps it.
+   */
+  height: var(--space-4);
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  /* The fade sits over the content; a click in that band belongs to the photograph beneath it. */
+  pointer-events: none;
+}
+
+/*
+ * AND NOT ON /photography, WHERE A SECOND STICKY ELEMENT FOLLOWS. That route pins `.ph-head` — the
+ * title, the pills and the count — directly beneath the bar, so the bar's fade would hang OVER the
+ * top of that pinned block and wash the word "Photographs" as soon as the page moved. The fade
+ * belongs under whatever the LAST pinned element is, which there is `.ph-head`, and
+ * `photography.css` puts it there.
+ *
+ * `:has()` because the route marker is on `.pub-main`, a SIBLING of the bar — there is no ancestor
+ * that knows which route this is. primitives.css already relies on `:has()` for the same shape of
+ * problem (`:root:has(.ds-atom-appbar[data-variant="withSearch"])`).
+ */
+.pub-shell:has(.pub-max-photos) .pub-bar:not(.pub-bar-plain)::after {
+  content: none;
+}
+
+/* ── 1c-iii. r5: the chosen header. Wordmark left, nav right, toggle right. ────────────────── */
+
+/*
+ * `display: contents` ON A DESIGN-SYSTEM CLASS, and it is the load-bearing line.
+ *
+ * `AppBar` puts the logo AND the nav inside `.ds-atom-appbar-lead`, one flex item on the left, with
+ * `.ds-atom-appbar-actions` on the right. The chosen arrangement needs the nav on the RIGHT, beside
+ * the toggle — which no `AppBarVariant` produces and no prop reorders. Dissolving the lead group
+ * makes the wordmark and the nav direct flex children of the bar, at which point `margin-inline-end:
+ * auto` on the wordmark does the rest.
+ *
+ * This is layout, and it is a arrangement the component does not offer rather than paint it does.
+ * Recorded here because the alternative was a second bar component.
+ */
+
+.pub-bar .ds-atom-appbar-lead {
+  display: contents;
+}
+
+.pub-bar .pub-logo[data-variant="quiet"] {
+  /*
+   * The brand, not a third nav item: full ink against the nav's `--ink-3`, the serif against its
+   * sans (passed as a `style` prop in `PublicNav` — see the note there), and 17px against its 12.5.
+   * The size ratio is 1.36; at the 17/16 it shipped as, the ratio was 1.06 and the bar read flat.
+   */
+  color: var(--ink);
+  font-size: var(--text-lg);
+  letter-spacing: var(--ls-base);
+  margin-inline-end: auto;
+
+  /*
+   * ================================================================================================
+   * THE NAME NEVER BREAKS. NOT AT ANY WIDTH.
+   * ================================================================================================
+   *
+   * Akhil: *"i want to make sure no matter width, the brand, akhil saxena is never moved to 2
+   * lines."* MEASURED, and it was already happening: at 280px the bar renders
+   *
+   *     Akhil
+   *     Saxena
+   *
+   * because the wordmark is an ordinary flex item that had been given a shrinkable box, and
+   * `Akhil Saxena` has a space in it for the browser to break at. A name split across two lines is
+   * not a smaller wordmark — it is a different one.
+   *
+   * `nowrap` ALONE WOULD NOT HAVE HELD, which is why `min-width` is here too. The default
+   * `min-width: auto` on a flex item is a floor at its CONTENT width, but a shrinking flex line
+   * resolves that against the available space, and at 240px the measured logo box was 44px wide —
+   * a third of the 112px the name needs. `min-content` pins the floor to the widest unbreakable
+   * run, which with `nowrap` is the whole name; `flex-shrink: 0` stops the line from trying.
+   *
+   * WHAT GIVES INSTEAD: the nav. Below roughly 300px the bar's right-hand items are what run out of
+   * room, and that is the correct thing to sacrifice — they are two links and a toggle with a
+   * duplicate route elsewhere on the page, and the brand is the one element in the bar that cannot
+   * degrade without becoming a different mark. 320px (an iPhone SE) is the narrowest viewport this
+   * has to be honest at, and it is comfortable there: 112px of name against 320px of bar.
+   */
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: min-content;
+}
+
+.pub-bar .pub-nav-link[data-variant="quiet"] {
+  /*
+   * 12.5px, and `letter-spacing` is DELIBERATELY ABSENT. The approved design is +0.02em; the scale
+   * offers `--ls-base` -0.005em, `--ls-tight` -0.024em, `--ls-tighter` -0.038em and `--ls-wide`
+   * 0.1em — nothing positive short of five times the value wanted. `normal` is the nearest
+   * reachable answer and this ships 0.25px per character tighter than approved. FILED as D-26, not
+   * absorbed: `gate:app-css` refuses a literal here and is right to.
+   */
+  font-size: var(--text-sm);
+}
+
+.pub-bar .pub-nav-link[data-variant="quiet"][aria-current="page"] {
+  /* Where you are, said in weight of colour rather than with a rule or a pill. */
+  color: var(--ink);
+}
+
+.pub-bar .pub-logo[data-variant="quiet"]:hover,
+.pub-bar .pub-nav-link[data-variant="quiet"]:hover {
+  /*
+   * Colour only. `quiet` adds `text-decoration: underline` on hover, which would put the underline
+   * back on the very anchors this change removed it from, one pointer-move later. The toggle beside
+   * them brightens on hover; this matches that. It does NOT "draw nothing", which an earlier
+   * version of this comment claimed — MEASURED, `.ds-atom-iconbtn:hover` paints
+   * `rgba(255, 255, 255, 0.08)` at a specificity this file's `background-color: transparent` does
+   * not reach, so a 40px circle appears under the glyph. That is fine and it is why the button's
+   * BOX is what aligns to the gutter rather than its glyph — see the toggle's block.
+   */
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.pub-bar .ds-atom-appbar-nav {
+  /* 24px between two items at 12.5px. Smaller text needs more separation, not less. */
+  gap: var(--space-6);
+  margin-inline-end: var(--space-5);
+}
+
+/*
+ * ================================================================================================
+ * ON A NARROW SCREEN THE BAR NAMES THE PLACE YOU ARE *NOT*. ONE WORD. NO GLYPHS.
+ * ================================================================================================
+ *
+ * Akhil: *"on mobile, on header, im not liking the icons for photo/dev ... it's all too
+ * cluttered."* Six treatments were rendered in a real 390px touch viewport and this is `b`.
+ *
+ * WHY THE GLYPHS GO. A camera can mean *photographs*, *upload* or *contact me*, and `<>` is
+ * legible to developers and to nobody else. On a portfolio read by hiring managers that is a guess
+ * where a word costs nothing. The glyphs were never the clutter's cause either — three items in a
+ * 390px bar is, and two of them competing for the same corner is what made it read as noise.
+ *
+ * WHY THE CURRENT PAGE GOES RATHER THAN GETTING SMALLER. You do not need a link to the page you
+ * are on: `/photography`'s own `<h1>` says *Photographs* forty pixels below the bar, so removing
+ * the link removes a duplicate, not a wayfinder. That is what buys the room for a WORD.
+ *
+ * AND A WORD IS ALL THERE IS ROOM FOR — MEASURED. Showing both words at 390 (treatment `a`) pushed
+ * the wordmark onto two lines: 112px of name plus `development photography` plus the toggle
+ * overruns the bar. So "just use the words" was not available at mobile width until one of the
+ * three items left. One did.
+ *
+ * `display: none` IS CORRECT HERE and is not the accessibility mistake the note below warns about.
+ * That warning is about hiding a link's TEXT while keeping the link — a control named by nothing.
+ * This removes the whole control, and only for the route it points at, which is the one route a
+ * reader has no reason to navigate to. `aria-current` still marks it on wide screens.
+ *
+ * THE WORDS ARE THE BASE STATE NOW, so the technique below is inverted from what it was: the
+ * visually-hidden `.pub-nav-text` and the `@media (min-width: 673px)` block that reversed it are
+ * both gone. What the wide breakpoint does now is bring the SECOND item back.
+ */
+
+/*
+ * ================================================================================================
+ * A 60px GAP IS THE RULE. THE NUMBER OF DESTINATIONS IS WHAT BENDS TO IT.
+ * ================================================================================================
+ *
+ * Akhil: *"ensure minimum of Npx gap remains between text on header from right & left side, if
+ * lesser, remove the button, keep brand. for tablets, if space allows, keep both buttons."* The
+ * floor was 100 for one round and is now 60 — *"keep min 60px instead of 100"* — so the breakpoints
+ * below are DERIVED FROM IT rather than chosen, and re-derived when it moved.
+ *
+ * MEASURED by sweeping the real bar with a fresh context per width and reading the distance from
+ * the wordmark's right edge to the nearest nav word's left edge:
+ *
+ *     width   one word   both words
+ *      320        36          0
+ *      340        56          0
+ *      344        60          0      ← A
+ *      390        90          0
+ *      456       156         58
+ *      458       158         60      ← B
+ *      500       200        102
+ *
+ * A = 344 and B = 458, so the ladder is 344 and 460 (460 rather than 458 for a round number, at a
+ * cost of 2px from a 62px gap). 344 is not arbitrary either — it is the narrow width this project
+ * has measured the bar at since the nav's three-item days; see `NAV_ITEMS`.
+ *
+ *     below 344   the brand and the toggle, nothing else
+ *     344 - 459   ONE destination — the section you are not on
+ *     460 and up  BOTH, which is every tablet: "if space allows, keep both buttons"
+ *
+ * WHAT THE 100 -> 60 CHANGE BOUGHT, and it is the reason the floor moved: at 100 the middle rung
+ * started at 400px, which put 390 — iPhone 14 and 15, the most common phone width there is — in the
+ * bottom rung with NO section link in the bar at all. At 60 the same phone sits in the middle rung
+ * with a 90px gap, comfortably clear of the floor. The bottom rung now only catches viewports
+ * narrower than any current handset.
+ *
+ * THIS REPLACES THE 673px RUNG for the nav, and dropping it is the point: 673 was the rail's
+ * breakpoint borrowed for a different question, and it kept the second word off tablets that had
+ * 262px of clear space for it. The gap is the constraint; the width is only how the gap is reached.
+ *
+ * `/resume` MARKS NO NAV ITEM, which is why the middle rung needs two rules rather than one. The
+ * "hide where you are" rule removes nothing there, and MEASURED at 390 that left the wordmark and
+ * `development` TOUCHING at zero gap — the same defect the old mobile glyphs existed to solve,
+ * resurfacing on the one route the rule cannot reach. So when nothing is current, the last item
+ * goes and `development` survives: the useful half of the pair for a reader on a résumé.
+ *
+ * `:has()` reads a state the markup already publishes, rather than teaching `PublicNav` about a
+ * breakpoint. Scoped to `.ds-atom-appbar-nav` so it can only ever consider the bar's own links.
+ *
+ * A NOTE ON THE SPECIFICITY LADDER, because these three blocks all apply at once above 460px and a
+ * media query adds nothing to specificity. The `:not(:has(...))` rule is (0,5,0) — `:not()` takes
+ * the specificity of its argument, and `:has(.pub-nav-link[aria-current="page"])` is (0,2,0) — so
+ * the 460px block has to restate that exact selector to turn it back on. It does. Losing that is
+ * how "both words" would silently stay one word on `/resume` alone.
+ */
+
+.pub-bar .ds-atom-appbar-nav .pub-nav-link {
+  display: none;
+}
+
+@media (min-width: 344px) {
+  .pub-bar .ds-atom-appbar-nav .pub-nav-link:not([aria-current="page"]) {
+    display: block;
+  }
+
+  .pub-bar
+    .ds-atom-appbar-nav:not(:has(.pub-nav-link[aria-current="page"]))
+    .pub-nav-link:last-child {
+    display: none;
+  }
+}
+
+@media (min-width: 460px) {
+  .pub-bar .ds-atom-appbar-nav .pub-nav-link,
+  .pub-bar
+    .ds-atom-appbar-nav:not(:has(.pub-nav-link[aria-current="page"]))
+    .pub-nav-link:last-child {
+    display: block;
+  }
+}
+
+.pub-nav-text {
+  white-space: nowrap;
+}
+
+/*
+ * THE TRIO IS ALIGNED ON ITS INK, NOT ON ITS BOXES.
+ *
+ * Akhil: *"in desktop/mobile both, the text/icons at top right, all 3, dev, photos and toggle
+ * should be vertically aligned cleanly."*
+ *
+ * MOBILE WAS ALREADY EXACT and needed nothing: below 673px all three are 16px glyphs in identical
+ * 40px boxes, and their centres measure 32.00, 32.00, 32.00.
+ *
+ * DESKTOP WAS NOT, and the box geometry hid it. Every box centre measured 32. The INK did not:
+ * `development` centred on 32.88 and `photography` on 32.95 against the toggle glyph's 32.00 —
+ * both words are entirely lowercase WITH DESCENDERS (p, g, y) and no capitals, so their ink band
+ * hangs below the box centre while an icon's is geometric. Measured with canvas
+ * `actualBoundingBoxAscent`/`Descent` in the element own computed font, not estimated.
+ *
+ * The correction goes on the TEXT and not on the glyph. Nudging the glyph would move it off-centre
+ * inside its own 40px button, and that button paints a visible circle on hover
+ * (`rgba(255,255,255,0.08)`, measured) — the icon would sit low in its own halo. Moving type to
+ * meet an icon is the ordinary direction for this.
+ *
+ * -1px, NOT -0.9px. A whole pixel is crisp where a fraction is a blurred sub-pixel; it
+ * over-corrects by 0.1px, which is a seven-fold improvement on 0.9. Scoped to the width where the
+ * words exist at all.
+ *
+ * THE WORDMARK IS DELIBERATELY LEFT ALONE, and it is the LARGER discrepancy: its ink centres on
+ * 30.53, a pixel and a half ABOVE the toggle, because "Akhil Saxena" has capitals and NO
+ * descenders — the mirror image of the nav's problem. Akhil asked about the three items on the
+ * right; the brand on the left is a separate decision, and moving it unasked would be the wrong
+ * kind of thorough. Recorded so it is a choice rather than an oversight.
+ */
+@media (min-width: 673px) {
+  .pub-bar .pub-nav-text {
+    position: relative;
+    top: -1px;
+  }
+}
+
+@media (min-width: 673px) {
+  /* The nav's own rungs are 400 and 500 now, measured off the 100px gap — see that block. This
+     673 one is the rail's, and all it still owes the nav is letting a word break normally again. */
+  .pub-nav-text {
+    white-space: normal;
+  }
+}
+
+@media (pointer: coarse) {
+  /*
+   * THE 44px FLOOR, and it is not inherited. MEASURED at 12.5px the links are 79x16 — the design
+   * system grows `.ds-atom-appbar a` under `pointer: coarse`, but these carry `.pub-nav-link` and
+   * `.ds-atom-link` and the bar's own rule did not reach them at this size. The box grows; the type
+   * does not move.
+   */
+  /*
+   * PADDING, NOT `display: inline-flex`, AND THE CHANGE IS WHAT MAKES THE NARROW BAR POSSIBLE.
+   *
+   * This rule used to reach 44px with `display: inline-flex; align-items: center`, and that
+   * `display` was a landmine: at (0,4,0) it beat the (0,3,0) rule that hides the current-page link
+   * below 673px, so on a TOUCH device — and only on a touch device — both nav items still rendered.
+   * MEASURED: `display: flex`, width 74px, at 390px with a coarse pointer, against `none` and 0px
+   * in the same browser with a mouse. The one class of device the change was for was the one class
+   * it did not reach.
+   *
+   * `padding-block` reaches the same 44px without touching the layout mode, so this rule now
+   * changes SIZE ONLY and nothing downstream has to out-specify it to change visibility. 16px of
+   * line box plus 14px either side is 44px, and a block box centres its own line, so the ink lands
+   * where `align-items: center` was putting it. VERIFIED: the nav word and the toggle share a
+   * vertical centre to the pixel at 390px, which is the alignment Akhil asked for by name.
+   */
+  .pub-bar .pub-nav-link[data-variant="quiet"] {
+    box-sizing: border-box;
+    padding-block: 14px;
+    min-height: 44px;
+  }
+}
+
+/* ── 1c-iv. The theme toggle. ONE control, identical on all 53 documents. ──────────────────── */
+
+/*
+ * MOVED HERE FROM `home.css`, where these rules were `.pub-nav-plain .pub-toggle` and therefore
+ * Home's alone — `home.css` is imported by `src/pages/index.astro` and nothing else. Every other
+ * route rendered the design system's default: a bordered circle, at `md` rather than `lg`.
+ *
+ * Re-scoped to `.pub-shell`, which every route has, so the selector stays (0,2,0) and
+ * `.ds-atom-iconbtn` (0,1,0) loses exactly as it did before the move. `PublicNav` no longer takes a
+ * `size` at all.
+ *
+ * The circle and its edge are NOT drawn here. `.ds-atom-iconbtn` already carries
+ * `border: 1px solid transparent` and `border-radius: var(--radius-md)`; these re-point two
+ * existing properties at two existing tokens, which is a handover under QUAL-03.
+ */
+
+.pub-shell .pub-toggle {
+  border-radius: var(--radius-full);
+  border-color: transparent;
+  background-color: transparent;
+
+  /*
+   * NO OPTICAL PULL. This carried `margin-inline-end: calc(var(--space-3) * -1)` for one revision,
+   * to drag the 16px glyph out onto the gutter line from the middle of its 40px button. Akhil
+   * reversed it: *"the alignment should consider full button of toggle, even the hover states part.
+   * not just the icon."*
+   *
+   * He is right, and the reason is that the button is not invisible. It takes a hover and a
+   * focus-visible ring, and on the frame where either of those paints, the thing whose edge a
+   * reader sees is the BUTTON — 12px further out than the glyph. Aligning the glyph put the
+   * interactive box 12px past the content column, so the one state where alignment is actually
+   * visible was the one state where it was wrong.
+   *
+   * The glyphs still line up with each other: the footer's social links take the same 40x40 box
+   * below, so every icon on the site is a 16px glyph centred in a 40px hit box. Boxes on the
+   * gutter, glyphs 12px inside it, consistently.
+   */
+}
+
+/*
+ * LONGHANDS, NOT THE `transition` SHORTHAND. `gate:app-css` refuses the shorthand and is right to:
+ * its first term is a PROPERTY NAME, so the declaration can never be written token-only and the
+ * gate cannot tell a tokenised duration from a typed one inside it. `transition-property` is in the
+ * free set for that reason; the duration and easing come from tokens.
+ *
+ * Only the glyph transitions. The button itself has nothing left to animate.
+ */
+/*
+ * ONE MECHANISM FOR ALL THREE GLYPHS — the two nav icons and the theme toggle.
+ *
+ * Akhil: *"all 3 icons should be aligned cleanly, similar size, similar hover animation."* They
+ * were not: the nav glyphs inherited their anchor's COLOUR transition (`--ink-3` to `--ink`, from
+ * `Link variant="quiet"` plus the bar's own hover rule) while the toggle faded its OPACITY from
+ * 0.7 to 1. Two different properties animating to express the same thing, side by side in the same
+ * bar.
+ *
+ * Colour wins over opacity for the shared mechanism because opacity cannot express the ACTIVE
+ * state: a nav glyph on the current route has to read as selected, and `--ink` against `--ink-3`
+ * is how every other current-state on this site is said. A 0.7-opacity `--ink` is also not
+ * `--ink-3` — it is a fourth ink nobody chose.
+ */
+.pub-shell .pub-toggle {
+  color: var(--ink-3);
+}
+
+.pub-shell .pub-toggle:hover {
+  color: var(--ink);
+}
+
+/*
+ * THE FADE LIVES INSIDE THE MOTION QUERY, and PUB-13's assertion caught it outside — correctly.
+ *
+ * The hover state itself is NOT motion and stays out here: under `reduce` the glyph still goes to
+ * full strength, it just arrives instantly. Suppressing the state rather than the animation would
+ * take the affordance away from exactly the visitor who asked for less movement.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /*
+   * LONGHANDS, NOT THE `transition` SHORTHAND. `gate:app-css` refuses the shorthand and is right
+   * to: its first term is a PROPERTY NAME, so the declaration can never be written token-only.
+   *
+   * The same three declarations are on the nav glyphs below, so all three GLYPHS move at one speed
+   * — MEASURED at 390px, where they are the only things in the bar: `color/0.12s` on each.
+   *
+   * ON DESKTOP THE TOGGLE IS 30ms FASTER THAN THE WORDS BESIDE IT, and it cannot be made to match.
+   * `.ds-atom-link` ships `transition: color 0.15s, text-decoration-color 0.15s`, and 150ms is not
+   * a rung: the scale is `--dur-1` 120ms, `--dur-2` 180ms, `--dur-3` 240ms, `--dur-4` 360ms.
+   * `--dur-1` and `--dur-2` are equidistant from it, and `gate:app-css` refuses a literal in a
+   * tokenised dimension — correctly. `--dur-1` is the choice because faster is right for a hover.
+   *
+   * This is not a one-component slip: `0.15s` appears as a literal in TWENTY-TWO components'
+   * transitions (`input`, `checkbox`, `radio`, `card`, `copy`, `select`, `link`, `textarea`,
+   * `oauthbtn`, …). FILED as D-29.
+   */
+  .pub-shell .pub-toggle {
+    transition-property: color;
+    transition-duration: var(--dur-1);
+    transition-timing-function: var(--ease-out);
+  }
+}
+
+@media (pointer: coarse) {
+  .pub-shell .pub-toggle {
+    box-sizing: border-box;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 /* ── 1d. Sites 4 and 5 — the footer breaks out and pays back. ──────────────────────────────── */
@@ -205,11 +974,73 @@ body {
   flex-direction: column;
 }
 
+/*
+ * THE PHOTO PAGE IS BOUNDED TO ONE VIEWPORT, and `min-height` above is exactly why it needs its
+ * own rule rather than inheriting.
+ *
+ * `min-height: 100svh` resolves to `max(100svh, content)`, so a tall photograph makes the SHELL
+ * grow and `flex: 1` on the page below has an unbounded track to divide — nothing caps the image.
+ * MEASURED before this rule: `architecture-officegreens` (2000x3553) rendered 745x1325 on a
+ * 1280x800 desktop and the page scrolled, on a layout whose whole premise is that the photograph
+ * and its caption share one screen.
+ *
+ * `height` and not `max-height`: the two are equivalent here given the `min-height` above, and the
+ * single value says the intent once.
+ *
+ * `100svh` and never `dvh` or `vh` here — the shell's assertion allows `svh` only, and `svh` is
+ * the SMALL viewport, so the caption clears the mobile toolbar in its extended state rather than
+ * hiding under it.
+ *
+ * `:has()` because the route marker is on `.pub-main`, a descendant — the same shape of problem
+ * the sticky header's fade solves the same way, and primitives.css does too.
+ *
+ * NOTHING IS `overflow: hidden`. If a viewport is ever too short for the photograph and the
+ * caption together, the page SCROLLS. Clipping would put the title and the arrows out of reach.
+ */
+.pub-shell:has(.pd-page) {
+  height: 100svh;
+}
+
+/*
+ * NO FOOTER OVERRIDE FOR THE PHOTOGRAPH ROUTE — the site's one footer, on every page.
+ *
+ * It went through three states and came back: the social marks were hidden and the copyright
+ * centred, then the whole footer was hidden, then the footer was restored, and finally Akhil asked
+ * for the *"original default footer"*. So the two route-scoped rules are deleted rather than
+ * commented out; the photograph page now takes the same footer as everything else, copyright ranged
+ * left and the three marks at the trailing edge.
+ *
+ * The one thing that has to travel with this decision is the photo page's height arithmetic:
+ * restoring the footer took 80px back from `.pub-main`, and the composition overflowed UNDER the
+ * sticky bar — MEASURED at 1280x800, the card's top edge landed 3px ABOVE the bar's bottom. That is
+ * fixed where it belongs, in `photo-detail.css`, by making the stage account for the height that is
+ * actually available rather than only for the width.
+ */
+
 .pub-main {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  padding-top: var(--space-11);
+  /*
+   * `--space-6`, 24px. It was `--space-11` (44px), a gap sized when the bar was a translucent
+   * surface that needed visible separation from the content below it. The bar is seamless and
+   * pinned now, so 44px read as a hole between the wordmark and the page's own headline. Akhil:
+   * *"tighten space between header & photographs headline."*
+   *
+   * COUPLED TO THE FADE, and the coupling tightened with it: the bar's 16px fade hangs in this gap
+   * and must not reach static content, which leaves 8px of clearance rather than the 28px it had.
+   * Lowering this below `--space-4` would put a wash on a heading nobody has scrolled.
+   */
+  padding-top: var(--space-6);
+}
+
+/*
+ * And the middle track has to be allowed to shrink. A flex item defaults to `min-height: auto`,
+ * which refuses to go below its content — and the content here is an image whose intrinsic height
+ * is 3553px. Without this the cap above is inherited by a track that ignores it.
+ */
+.pub-shell:has(.pd-page) .pub-main {
+  min-height: 0;
 }
 
 /*
@@ -421,10 +1252,37 @@ body {
 .pub-social {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  /*
+   * `--space-1` (4px), down from `--space-4` (16px). Each link is now a 40px box around a 16px
+   * glyph, so it brings 12px of its own air to each side: 12 + 4 + 12 puts 28px of clear space
+   * between two glyphs, against the 16px the old bare boxes had. Keeping 16px here would have
+   * pushed them 40px apart and read as three unrelated icons.
+   */
+  gap: var(--space-1);
+
+  /*
+   * And the row's trailing edge is the LAST BOX's edge, which is the gutter — the 12px of air
+   * inside that box is what makes the last glyph sit level with the toggle's above it.
+   */
+  margin-inline-end: 0;
 }
 
 .pub-social-link {
+  /*
+   * THE SAME 40x40 HIT BOX AS THE TOGGLE AND THE NAV GLYPHS. It used to be a bare inline-flex
+   * wrapper, so the box WAS the glyph — 16x16 — and its right edge coincided with the glyph's.
+   * That made the footer icons the only ones on the site whose box and ink shared an edge, so
+   * either the boxes lined up with the toggle's or the glyphs did, never both.
+   *
+   * With one box size everywhere, both line up: MEASURED, every box right edge lands on the gutter
+   * and every glyph sits 12px inside it.
+   *
+   * It is also a bigger target for a mouse, which this row wanted anyway — three 16px squares are
+   * a hard click even with a pointer, and the `pointer: coarse` floor below only helps a finger.
+   */
+  box-sizing: border-box;
+  width: var(--space-10);
+  height: var(--space-10);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -434,6 +1292,24 @@ body {
 
 .pub-social-link:hover {
   color: var(--ink);
+}
+
+/*
+ * THE DESIGN SYSTEM'S FOCUS RING, NOT THE BROWSER'S. MEASURED during the accessibility audit: these
+ * three links were the only focusable elements on the site falling back to the UA default —
+ * `outline: auto 1px rgb(0, 95, 204)`, a blue that is in no palette here and sits at low contrast
+ * on `#0d0d0f`. Everything else has a designed indicator.
+ *
+ * They fall back because they are hand-rolled anchors, not `Link` — `SocialIcons.astro` exists
+ * precisely because the design system has no brand marks. `.ds-atom-link:focus-visible` is
+ * `outline: none; box-shadow: var(--focus-ring); border-radius: 2px`, so this restates that
+ * contract for the one element that cannot inherit it, using the system's own `--focus-ring` token
+ * rather than a second ring of its own.
+ */
+.pub-social-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-full);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -461,5 +1337,24 @@ body {
   font-family: var(--font);
   font-size: var(--text-2xs);
   line-height: var(--lh-normal);
-  color: var(--ink-5);
+  /*
+   * `--ink-3`, NOT `--ink-5`, AND IT WAS A CONTRAST FAILURE IN BOTH THEMES.
+   *
+   * MEASURED by axe-core across all three page templates at two widths — the only violation the
+   * audit found, `serious` impact, on every one of the six cells. `--ink-5` is `#68686e` on
+   * `#0d0d0f` in dark and `#8d8d93` on `#fafafb` in light: **3.51:1 and 3.16:1**, against the
+   * 4.5:1 WCAG AA requires for text under 18.66px. This line is 9.5px.
+   *
+   * `--ink-3` measures 8.21:1 dark and 7.44:1 light. `--ink-2` would also pass (10.61 / 9.57) but
+   * is brighter than the nav links beside it, which would make the copyright the loudest thing in
+   * the footer.
+   *
+   * THE SIZE WAS THE WRONG LEVER, and it was checked: above 18.66px the threshold drops to 3:1, so
+   * a 19px copyright "passes" at the same 3.51:1 while being no more readable and twice the size of
+   * the navigation. Compliance by threshold-hopping rather than by legibility.
+   *
+   * `--ink-3` is also what the gallery's count line and the footer's own icons already use, so this
+   * removes the one place on the site reaching for a fifth ink.
+   */
+  color: var(--ink-3);
 }

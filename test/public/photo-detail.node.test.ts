@@ -245,7 +245,10 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
        * belong, and did not both come from `title` — which is `deferred-items.md` D-24-1, a live
        * public defect on the legacy home page.
        */
-      const frame = page.html.match(/<div class="pd-frame"[\s\S]*?<\/div>/)?.[0] ?? '';
+      // `.pd-shot`, not `.pd-frame`. The M4 layout replaced the frame with a print MAT — Akhil: *"i
+      // want the images to feel like they're a print, so add a border in white around each image"* —
+      // and the class went with it. The claim is unchanged: the reviewed `alt` reached the `<img>`.
+      const frame = page.html.match(/<div class="pd-shot"[\s\S]*?<\/div>/)?.[0] ?? '';
       const alt = decodeEntitiesOnce(attr(frame, 'alt') ?? '');
       expect(alt, `${record.id}'s frame has no alt text`).toBe(record.alt);
       expect(alt, `${record.id} announces its title where its description belongs`).not.toBe(
@@ -257,7 +260,7 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
     report(`pages: ${checked} of ${manifest.length} answered 200, ${bytes} bytes of HTML in total`);
   });
 
-  it('ships no framework JavaScript (PUB-14, §5.1 route 4)', () => {
+  it('ships the router and nothing else — no island, no framework JS (PUB-14, §5.1 route 4)', () => {
     let islands = 0;
     let modules = 0;
     for (const record of manifest) {
@@ -269,7 +272,22 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
     report(
       `javascript: ${modules} module script(s), ${islands} island(s) across ${manifest.length} pages`
     );
-    expect(modules, 'a module script reached a photo page').toBe(0);
+    /*
+     * 🔴 EXACTLY ONE MODULE SCRIPT PER PAGE, AND IT USED TO BE ZERO.
+     *
+     * Akhil, stepping between photographs: *"it seems like header/footer and other elements are
+     * refreshing when i move across photos … keep those elements fixed."* The fix is Astro's
+     * `ClientRouter`, which ships one module script per document and swaps the body instead of
+     * reloading it — MEASURED afterwards: 0 document fetches across a four-photograph walk.
+     *
+     * So this route family is a THIRD class, not one of the original two: it hydrates NO component
+     * and still ships JavaScript. `gate:public-js` gained the same third class for the same reason.
+     * The assertion is an equality per page rather than a floor, so a second module script — an
+     * island arriving by accident, a stray inline import — turns it red.
+     */
+    expect(modules, 'expected exactly one module script per page: the router').toBe(
+      manifest.length
+    );
     expect(islands, 'a hydrated island reached a photo page').toBe(0);
   });
 
@@ -474,32 +492,50 @@ describe('previous and next are real anchors that wrap inside the category (§9.
     report(`cycles walked (category length): ${walked.join(' · ')}`);
   });
 
-  it('offers both back links, verbatim (§13.2)', () => {
+  /*
+   * 🔴 ONE BACK LINK NOW, NOT TWO, AND IT IS THE SECTION EYEBROW.
+   *
+   * This asserted a `<nav class="pd-back">` carrying `← All photographs` and `← {Category}`. The M4
+   * layout replaced it: the caption's own first line is the way back, rendered as `← ARCHITECTURE`
+   * above the title. Akhil specified the block character for character — *"← ARCHITECTURE, 07 OF 16
+   * / Statue of David / Florence, Italy / ← PREV / 07 / 10 / NEXT → / this"* — and then moved the
+   * counter down to the navigation row, leaving the eyebrow as section name alone.
+   *
+   * `← All photographs` went with the nav and was not replaced. It is not a loss worth asserting
+   * back into existence: the bar's `photography` item is marked current on this route and goes to
+   * exactly that page, so the unfiltered gallery is one click away from every photograph either way.
+   *
+   * WHAT IS ASSERTED INSTEAD is the half that carries the reader: the eyebrow is a real anchor, it
+   * points at the photograph's OWN category, it names that category, and it is labelled for a
+   * screen reader — an arrow plus a word is not a destination when it is read aloud.
+   */
+  it('offers one back link — the section eyebrow, pointing at its own category', () => {
     for (const category of siteConfig.categories) {
       const sequence = SEQUENCES.find((entry) => entry.id === category.id);
       expect(sequence?.photos.length, `category ${category.id} holds no photographs`).toBeTruthy();
       for (const record of sequence?.photos ?? []) {
         const html = pages.get(pageUrl(record))?.html ?? '';
-        const back = html.match(/<nav class="pd-back"[\s\S]*?<\/nav>/)?.[0] ?? '';
-        expect(back, `${record.id} has no back navigation`).not.toBe('');
+        const context = html.match(/<p class="pd-context"[\s\S]*?<\/p>/)?.[0] ?? '';
+        expect(context, `${record.id} has no context line`).not.toBe('');
 
-        const links = anchorTags(back).map((tag) => attr(tag, 'href'));
-        expect(links, `${record.id}'s back links`).toEqual([
-          '/photography',
-          `/photography/${category.id}`,
-        ]);
+        const anchors = anchorTags(context);
+        expect(anchors, `${record.id}'s context line holds no anchor`).toHaveLength(1);
+        const tag = anchors[0] as string;
 
-        const text = decodeEntitiesOnce(stripTags(back));
-        expect(text, `${record.id} is missing the all-photographs back link`).toContain(
-          '← All photographs'
-        );
-        expect(text, `${record.id} is missing its category back link`).toContain(
-          `← ${category.label}`
+        expect(attr(tag, 'href'), `${record.id}'s back link`).toBe(`/photography/${category.id}`);
+
+        const text = decodeEntitiesOnce(stripTags(context)).replace(/\s+/g, ' ').trim();
+        expect(text, `${record.id}'s eyebrow`).toBe(`← ${category.label.toUpperCase()}`);
+
+        // A LABEL, because the visible text is an arrow and a shouted word. Announced as "Back to
+        // Architecture" rather than "left arrow architecture".
+        expect(attr(tag, 'aria-label'), `${record.id}'s eyebrow is unlabelled`).toBe(
+          `Back to ${category.label}`
         );
       }
     }
     report(
-      `back links: 2 per page on all ${manifest.length} pages — "← All photographs" and "← {Category}"`
+      `back link: 1 per page on all ${manifest.length} pages — "← {CATEGORY}", labelled and linked`
     );
   });
 });
@@ -550,7 +586,7 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
         expect(
           page.html,
           `${href} answered, but with something that is not a photo page`
-        ).toContain('class="pd-frame"');
+        ).toContain('class="pd-shot"');
       }
     }
 

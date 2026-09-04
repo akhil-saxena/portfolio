@@ -221,17 +221,20 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
        *
        * The 16, 32 and 512 PNGs are deleted: a vector serves every one of those sizes exactly, and
        * `favicon-640.png` was never shipped because nothing consumes it.
+       *
+       * Named for the GROUND, not the glyph: `-on-dark` holds a LIGHT ampersand, matching the
+       * `cairn-mark-on-dark` / `ds-mark-on-light` pairs in `public/assets`.
        */
     }
     <link
       rel="icon"
-      href="/favicon-dark.svg"
+      href="/favicon-on-dark.svg"
       type="image/svg+xml"
       media="(prefers-color-scheme: dark)"
     />
     <link
       rel="icon"
-      href="/favicon-light.svg"
+      href="/favicon-on-light.svg"
       type="image/svg+xml"
       media="(prefers-color-scheme: light)"
     />

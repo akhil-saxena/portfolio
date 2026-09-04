@@ -70,7 +70,39 @@
  * ships in the scale and this page does not use it.
  */
 .wk-title {
-  margin: 0;
+  /*
+   * ================================================================================================
+   * THE HALF-LEADING ABOVE THE FIRST LINE IS PULLED BACK, SO THE INK ALIGNS WITH `Photographs`
+   * ================================================================================================
+   *
+   * Akhil: *"The place where photographs sit on title on /photography should be the same place the
+   * Thinsg word should sit on /development page."*
+   *
+   * MEASURED, and the boxes were ALREADY aligned — both `<h1>`s sit at left 80, top 88, 24px under
+   * the bar. The mismatch is inside the box:
+   *
+   *     /photography   line-height --lh-tight  (41.36px)   first line's ink starts 7px ABOVE box top
+   *     /development   line-height --lh-normal (66px)      first line's ink starts 5px BELOW box top
+   *
+   * 12px apart. A line box taller than its glyphs distributes the surplus as HALF-LEADING, half above
+   * the first line and half below the last — so the looser leading this heading needs pushes its
+   * first line down, and the tighter leading on the one-word title pulls its line up.
+   *
+   * BOTH LEADINGS ARE CORRECT AND NEITHER MOVES. `--lh-normal` is here because Akhil asked for it —
+   * *"increase line spacing in Things I design and build"* — and this heading wraps to four lines in
+   * a 30% rail, where `--lh-tight` was cramped. `Photographs` is one word and never wraps. The fix
+   * is to cancel the half-leading ABOVE the first line without touching the space BETWEEN lines.
+   *
+   * DERIVED FROM THE TWO TOKENS RATHER THAN TYPED AS -12px. Both are unitless multipliers, so the
+   * difference in half-leading is `(tight - normal) / 2` em — which scales with the font size and
+   * follows either token if it is ever re-tuned. A literal would be correct today at 44px and wrong
+   * at the next rung.
+   *
+   * `margin-block-start`, NOT `position: relative` + `top`: the heading is in flow above the rail's
+   * timeline, and shifting it visually while it still occupied the old height would leave a 12px gap
+   * under it. This moves the box.
+   */
+  margin: calc((var(--lh-tight) - var(--lh-normal)) / 2 * 1em) 0 0;
   font-family: var(--font-display);
   font-size: var(--text-4xl);
   /*

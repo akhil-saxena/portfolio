@@ -205,7 +205,14 @@ const homeCtas = ctas.map((cta) => {
 ---
 
 <PublicLayout mainClass="pub-max-home" navVariant="plain">
-  <Seo slot="head" title={`${title} — ${subtitle}`} description={description} canonical="/" />
+  {
+    /*
+     * `·`, NOT AN EM DASH. Akhil: *"don't use em dashes in text"*. A sweep of the built site found
+     * 93 distinct em-dash strings, almost all `<title>` tags from this template on five pages — and a
+     * browser tab truncates the title, so no screenshot of any page showed it and it shipped live.
+     */
+  }
+  <Seo slot="head" title={`${title} · ${subtitle}`} description={description} canonical="/" />
 
   {
     /*

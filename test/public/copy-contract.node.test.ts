@@ -189,13 +189,17 @@ type Pin = {
  */
 const PINS: readonly Pin[] = [
   {
-    what: '§13.2 Primary CTA — Résumé',
-    route: '/resume',
+    what: 'the résumé link on /development, which is now the only route to the PDF',
+    route: '/development',
     slice: /<a[^>]*href="\/resume\.pdf"[^>]*>([\s\S]*?)<\/a>/,
-    copy: 'Download the PDF',
+    copy: 'Resume (PDF)',
     why:
-      'the action the roadmap amendment put on this page rather than in the nav, "for the ' +
-      'recruiter who wants the file"',
+      'THE PIN MOVED WITH THE FILE IT NAMES. It read "Download the PDF" on `/resume`, the HTML ' +
+      'résumé page — removed on 2026-09-05, Akhil: *"delete page or hide page /resume for now"*. ' +
+      'The PDF still ships, and the only link to it is now the rail on `/development`, so that is ' +
+      'where the string is pinned. Deleting the pin instead would have left the last route to a ' +
+      '131KB asset unasserted; a reader who cannot find the file is the failure this row exists ' +
+      'to catch, and it does not care which page carries the link.',
   },
 ];
 

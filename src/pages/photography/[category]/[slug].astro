@@ -362,7 +362,8 @@ const sectionLabel = `← ${label.toUpperCase()}`;
 const gearLines = [displayCamera(photo.exif.camera), displayLens(photo.exif.lens)].filter(
   (line): line is string => typeof line === 'string' && line.length > 0,
 );
-const pageTitle = `${photo.title} — ${home.title}`;
+/* `·` and not an em dash — see the note in src/pages/index.astro. */
+const pageTitle = `${photo.title} · ${home.title}`;
 ---
 
 {

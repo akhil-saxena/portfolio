@@ -103,7 +103,12 @@ const GALLERY_ROUTES = [
 const ZERO_JS_ROUTES = [
   { name: '/', url: '/' },
   { name: '/development', url: '/development/' },
-  { name: '/resume', url: '/resume/' },
+  /*
+   * `/resume` was here. The route was removed on 2026-09-05 — Akhil: *"delete page or hide page
+   * /resume for now"* — and `/resume.pdf` is now the only résumé the site serves. A zero-JS
+   * assertion against a 404 would still pass (a 404 ships no island either), which is the kind of
+   * green that means nothing, so the entry is dropped rather than left pointing at a missing page.
+   */
   ...manifest.map((record) => ({ name: photoHref(record), url: `${photoHref(record)}/` })),
 ];
 
@@ -224,7 +229,13 @@ describe('exactly one route family hydrates, and it is the gallery (PUB-14, §5.
 
   it('reports the zero-island sweep it just ran, so a green line cannot mean an empty loop', () => {
     // Not a literal: the count is the manifest's plus the three singleton routes.
-    expect(ZERO_JS_ROUTES.length).toBe(manifest.length + 3);
+    /*
+     * `+ 2`, DOWN FROM `+ 3`: `/` and `/development` are the fixed routes now. `/resume` was the
+     * third until the route was removed on 2026-09-05. Derived from the manifest plus a NAMED
+     * count rather than from `ZERO_JS_ROUTES.length` itself, which would compare the list to itself
+     * and pass however many entries it lost.
+     */
+    expect(ZERO_JS_ROUTES.length).toBe(manifest.length + 2);
     expect(bodies.size).toBeGreaterThanOrEqual(ZERO_JS_ROUTES.length);
     report(
       `zero-island sweep: ${ZERO_JS_ROUTES.length} documents ` +

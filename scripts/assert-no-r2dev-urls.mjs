@@ -1,78 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * CONT-04 ship gate — refuse to ship an artefact that still points at the legacy R2
- * development origin, and refuse to pass when there is nothing left to check.
- *
- * Usage: node scripts/assert-no-r2dev-urls.mjs [repoRoot]
- *        (defaults to the current working directory)
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS PROTECTS
- *
- * Every photograph on the site used to be served from a development-only R2 subdomain that
- * Cloudflare documents as "for development purposes only": no CDN cache, no WAF, rate limited.
- * Plan 02-02 measured it — `cf-cache-status` was not MISS, it was ABSENT ENTIRELY across two
- * consecutive requests, with no `cache-control` and no `age`. Plan 03-01 moved all 156 manifest
- * URLs onto the cached custom domain. This gate is what stops one coming back.
- *
- * It has a positive half as well as a negative one, because "no legacy origin" is ALSO true of a
- * manifest whose URLs point at nothing at all, or of a manifest that has been deleted. A gate
- * that goes green when the thing under test disappears is not a gate.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THE SCOPE IS THE SHIPPED ARTEFACT SET AND NOT THE WHOLE REPOSITORY  (decision OD-1)
- *
- * ROADMAP success criterion 4 says no such URL remains "anywhere in the repository". Read
- * literally, satisfying it would require editing
- * `.planning/phases/02-astro-foundation-fail-closed-auth/02-DNS-R2-PREREQS.md`, a file whose
- * ENTIRE CONTENT is the measured before/after contrast between the two hostnames — the curl
- * transcripts showing the cache header absent, then MISS, then HIT. A blanket replace there would
- * delete the evidence that this migration was worth doing, in order to make a grep green.
- *
- * That is the 01-23 precedent, quoted from its summary: plan summaries and findings registers keep
- * their pre-rename names, because each records what was true on a date, and rewriting it would
- * falsify the record. A document is FALSIFIED by a blanket replace, not updated by one.
- *
- * So Akhil decided OD-1 as Option A: this gate scopes to the shipped artefact set. Every path in
- * the repository is classified below as either SCAN or SKIP, and every SKIP carries its reason on
- * the spot — because an exclusion whose justification lives in a plan file is an exclusion nobody
- * can evaluate in two years.
- *
- * The classification is EXHAUSTIVE and is itself enforced: a tracked path matching no rule is a
- * failure, not a silent pass. That is what keeps an allowlist honest. Add a new top-level
- * directory and this gate stops the build until someone decides, in writing, whether it ships.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THE PATTERN IS ASSEMBLED FROM FRAGMENTS RATHER THAN WRITTEN AS A LITERAL
- *
- * This file lives in `scripts/`, which it scans. Written as a literal, the hostname suffix in the
- * regex below would be a hit ON THIS FILE, and the gate would either fail against itself forever
- * or need to exclude its own source — and an exclusion for "the gate's own file" is a hole big
- * enough to hide a real URL in. Assembling the suffix from its two DNS labels means this file
- * contains no matchable occurrence, so it is scanned on exactly the same terms as everything else
- * and needs no exemption.
- *
- * DO NOT "simplify" this back into a literal. If you do, the gate goes red against itself, which
- * is at least loud — but the fix is to restore the fragments, not to add an exclusion.
- *
- * ---------------------------------------------------------------------------------------------
- * KNOWN BLIND SPOTS, FOUND BY TRYING TO WALK THROUGH THIS GATE (03-01, recorded not papered over)
- *
- *   1. AN UNTRACKED FILE IS NOT SCANNED. Measured: an untracked `src/lib/notes.md` containing the
- *      legacy hostname passes this gate; `git add -N` on the same file fails it. That follows from
- *      using `git ls-files`, which is deliberate — a directory walk would need an ignore list kept
- *      in step with .gitignore, and would descend into node_modules/.astro/.wrangler. The boundary
- *      is defensible because an untracked file cannot ship: it is not in the commit CI builds from,
- *      and the moment it is staged this gate sees it. If it were imported and built, the dist/ half
- *      below would catch the output. Do not "fix" this by walking the filesystem.
- *   2. COMPRESSED BINARY CONTENT IS NOT DECODED. `public/resume.pdf` is scanned as text, so a URL
- *      inside a compressed PDF stream would not be found. Out of scope: no image origin belongs in
- *      a résumé PDF, and Phase 5's dist/-scoped assertion is the check that would matter.
- *   3. dist/ IS ONLY AS GOOD AS THE LAST BUILD. It is scanned when present and reported as absent
- *      when not. Plan 03-08 wires this gate into the build so the two cannot drift.
- */
-
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -81,19 +8,10 @@ import { IMAGE_ORIGIN, REMOTE_URL_KEYS } from '../src/lib/image-origin.ts';
 
 const repoRoot = path.resolve(process.cwd(), process.argv[2] ?? '.');
 
-/** The two DNS labels of the legacy development origin's suffix. See the header. */
 const LEGACY_SUFFIX_LABELS = ['r2', 'dev'];
 
-/** `r2\.dev` — dots escaped, so the pattern cannot match an arbitrary character in their place. */
 const LEGACY_SUFFIX_RE = LEGACY_SUFFIX_LABELS.join('\\.');
 
-/**
- * Two alternatives, most specific first:
- *   1. the full `pub-<hex>` bucket subdomain, so the report names the exact legacy form;
- *   2. the bare suffix, which catches ANY host under it — a different bucket, a renamed one, or
- *      a hand-typed variant that branch 1 would miss.
- * Case-insensitive: hostnames are, and a capitalised copy in prose is still a copy.
- */
 const LEGACY_ORIGIN_PATTERN = new RegExp(
   `pub-[0-9a-f]+\\.${LEGACY_SUFFIX_RE}|\\.${LEGACY_SUFFIX_RE}`,
   'gi'
@@ -102,12 +20,7 @@ const LEGACY_ORIGIN_PATTERN = new RegExp(
 const MANIFEST_RELATIVE = 'data/portfolio_images.json';
 const EXPECTED_RECORDS = 39;
 
-/**
- * EXHAUSTIVE path classification. First matching rule wins. `test` receives a repo-relative
- * POSIX path. Every SKIP states its reason in `why`, which is printed when the gate reports.
- */
 const RULES = [
-  // ---------------------------------------------------------------------------------------- SCAN
   {
     scan: true,
     label: 'data/**',
@@ -164,7 +77,6 @@ const RULES = [
       'reading any secret at all; scanning .github/** closes the literal half only.',
   },
 
-  // ---------------------------------------------------------------------------------------- SKIP
   {
     scan: false,
     label: '.migration/**',
@@ -248,12 +160,6 @@ const RULES = [
 const failures = [];
 const notes = [];
 
-/* --------------------------------------------------------------------------------------------
- * 1. Resolve the tracked file set.
- *
- * `git ls-files` rather than a directory walk, so untracked scratch files and node_modules are
- * out by construction rather than by an ignore list that has to be kept in step with .gitignore.
- * -------------------------------------------------------------------------------------------- */
 let tracked;
 try {
   tracked = execFileSync('git', ['-C', repoRoot, 'ls-files', '-z'], { encoding: 'utf8' })
@@ -266,7 +172,6 @@ try {
   process.exit(1);
 }
 
-// GUARD AGAINST NOTHING (1/3): an empty tree must not be a clean tree.
 if (tracked.length === 0) {
   console.error(
     `assert-no-r2dev-urls: git ls-files returned no files in ${repoRoot}. There is nothing to ` +
@@ -277,13 +182,11 @@ if (tracked.length === 0) {
 
 const toScan = [];
 const skipped = new Map();
-/** Tracked files matched per SCAN rule. See GUARD AGAINST NOTHING (4) below. */
 const scannedByLabel = new Map(RULES.filter((r) => r.scan).map((r) => [r.label, 0]));
 
 for (const relative of tracked) {
   const rule = RULES.find((r) => r.test(relative));
   if (!rule) {
-    // An allowlist that silently ignores what it does not recognise is not an allowlist.
     failures.push({
       where: relative,
       detail: 'unclassified path',
@@ -301,17 +204,6 @@ for (const relative of tracked) {
   }
 }
 
-/* --------------------------------------------------------------------------------------------
- * GUARD AGAINST NOTHING (4/4): a SCAN rule that matched no tracked file is indistinguishable
- * from a SKIP rule, and it reports a clean result over a directory it never opened.
- *
- * Added by plan 04-02 with the `.github/**` reclassification, because that flip is worth exactly
- * nothing unless the rule actually reaches files: `scan: true` on a `test` that no longer matches
- * anything — a renamed directory, a typo, a repository that stopped shipping the thing — would
- * print PASS and mean nothing. It applies to EVERY scan rule, not just the new one: a rule that
- * matches nothing is either dead or wrong, and deleting it is a decision someone should have to
- * make in writing.
- * -------------------------------------------------------------------------------------------- */
 for (const [label, count] of scannedByLabel) {
   if (count === 0) {
     failures.push({
@@ -325,10 +217,6 @@ for (const [label, count] of scannedByLabel) {
   }
 }
 
-/* --------------------------------------------------------------------------------------------
- * 2. dist/ — build output, untracked by design (.gitignore), so git ls-files cannot see it.
- *    OD-1 puts it in scope "after a build", so it is walked from disk when present.
- * -------------------------------------------------------------------------------------------- */
 const distRoot = path.join(repoRoot, 'dist');
 if (fs.existsSync(distRoot)) {
   const walk = (dir) => {
@@ -346,14 +234,6 @@ if (fs.existsSync(distRoot)) {
   );
 }
 
-/* --------------------------------------------------------------------------------------------
- * 3. The negative half — scan for the legacy origin.
- *
- * OCCURRENCES ARE COUNTED, NOT LINES. `grep -c` reports 1 for a line carrying four hits, and a
- * count that undercounts is a count nobody can reconcile. Every hit is reported file:line:match.
- * Comments are deliberately NOT skipped: a hostname in a comment is a hostname in the repo, and
- * it is exactly how a value gets copy-pasted back into code later.
- * -------------------------------------------------------------------------------------------- */
 let occurrences = 0;
 
 for (const file of toScan) {
@@ -382,15 +262,9 @@ for (const file of toScan) {
   }
 }
 
-/* --------------------------------------------------------------------------------------------
- * 4. The positive half — the manifest must exist, be whole, and point at the canonical origin.
- *
- * Without this, deleting data/portfolio_images.json would make the gate greener, not redder.
- * -------------------------------------------------------------------------------------------- */
 const manifestPath = path.join(repoRoot, MANIFEST_RELATIVE);
 let manifestChecked = 0;
 
-// GUARD AGAINST NOTHING (2/3): a missing manifest is a failure, never an absence of findings.
 if (!fs.existsSync(manifestPath)) {
   failures.push({
     where: MANIFEST_RELATIVE,
@@ -418,7 +292,6 @@ if (!fs.existsSync(manifestPath)) {
         detail: 'not a top-level array',
         why: 'the manifest shape changed; this gate is asserting about something it does not know.',
       });
-      // GUARD AGAINST NOTHING (3/3): a truncated manifest must not pass by having fewer URLs.
     } else if (manifest.length < EXPECTED_RECORDS) {
       failures.push({
         where: MANIFEST_RELATIVE,
@@ -455,9 +328,6 @@ if (!fs.existsSync(manifestPath)) {
   }
 }
 
-/* --------------------------------------------------------------------------------------------
- * 5. Report. Exit 1 with one named failure per line, or exit 0 with a count. Never warn-and-pass.
- * -------------------------------------------------------------------------------------------- */
 if (failures.length > 0) {
   console.error('');
   console.error(

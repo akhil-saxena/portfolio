@@ -1,116 +1,3 @@
-/**
- * §13.2's contract table, asserted against the SERVED BYTES — the strings a reader navigates by.
- *
- * ================================================================================================
- * WHY THIS FILE EXISTS, AND WHAT IT DELIBERATELY DOES NOT DO
- * ================================================================================================
- *
- * 05-09 and 05-10 both recorded, in passing, that rewriting `/development`'s `<h1>` leaves the entire suite
- * green. 05-15 went looking and MEASURED the whole of it. §13.2's contract table has ten rows, one
- * of them `n/a`. **Three of them carried no assertion anywhere in `test/` or `scripts/`** — the
- * Home Act-2 secondary CTAs, `Download the PDF` and the empty-category state, five strings between
- * them — **and a fourth had never been built at all**, which is the `/photography` cross-link. 1,488
- * tests passed over a site whose navigation could be rewritten silently.
- *
- * (That sentence read "of §13.2's eleven contract rows, five had no assertion" in this file's first
- * commit. Ten rows, three of them unasserted, five strings. A string count wearing a row count's
- * units is a small error and it is exactly the kind this file exists to make expensive, so it is
- * corrected here rather than quietly.)
- *
- * Akhil's decision was to pin **the structural strings only**. This file is that decision, in one
- * place, because the finding was not "a string was wrong" — it was "nobody could tell which strings
- * were guarded". A reader of this file can tell.
- *
- * ------------------------------------------------------------------------------------------------
- * 🔴 2026-09-02 — FIVE OF THE SIX PINS WERE RETIRED, NOT DELETED. `RETIRED_PINS` IS WHY.
- * ------------------------------------------------------------------------------------------------
- *
- * Home became ONE SCREEN and Act 2 went with it, taking the elements that carried `ALL DEVELOPMENT
- * →`, `RÉSUMÉ →`, `View résumé`, `Development` and `The résumé`. All five reddened with this file's
- * own message: *"the element carrying this copy is gone, and a string assertion over a missing
- * element is not an assertion"*.
- *
- * Deleting the rows would have returned those five strings to the exact state this file was written
- * to end — unguarded, with nothing recording that they ever were guarded. So they moved to a second
- * table and their assertions INVERTED: the slice must match nothing, and no element on the route may
- * carry the copy as its full text. Each row also gains a `retired` field naming the date and the
- * decision, and a row with neither is refused.
- *
- * If Act 2 returns, all five red at once and say to move the row back into `PINS`. That is a
- * one-line edit — the same cost a pin has always carried, in the other direction.
- *
- * ------------------------------------------------------------------------------------------------
- * THE LINE BETWEEN PINNED AND FREE, STATED SO IT CAN BE ARGUED WITH
- * ------------------------------------------------------------------------------------------------
- *
- * **PINNED — a string that names a destination or an action.** `ALL WORK →` is not a sentence about
- * the work; it is the control that goes there. Its wording is part of the site's structure, an edit
- * to it is a navigation change, and a navigation change should be deliberate. These are asserted
- * character for character, and an intentional edit costs one line here.
- *
- * **FREE — prose.** Every `<h1>`, every sub-paragraph, every eyebrow that describes content rather
- * than pointing at a page. *"Things I design and build."* is Akhil's voice and he must be able to
- * change it on a Sunday without a test telling him not to. Nothing here asserts a word of it, and
- * that is the decision rather than an oversight — the full list is in this file's FREE section
- * below, with a reason for each, so "unguarded" is a recorded state and not a gap.
- *
- * **DERIVED — CMS content.** Home's title, subtitle and intro live in `data/home_config.json`,
- * which is content Akhil edits through `/admin`. Pinning them would red the build the day he
- * changes his own subtitle. They are asserted **against the file**, never against a literal: the
- * page must render exactly what the record says. Editing the record moves both sides together; the
- * string *disappearing* is still red. That is derivation, not pinning, and the distinction is the
- * whole reason those three are in a different section of this file.
- *
- * ------------------------------------------------------------------------------------------------
- * CHARACTER FOR CHARACTER, AND WHY THAT IS NOT PEDANTRY HERE
- * ------------------------------------------------------------------------------------------------
- *
- * **Astro drops the whitespace between two adjacent expressions** inside a framework component's
- * children. Written `{count} {noun}`, the category routes shipped `14photographs` — on all seven of
- * them, through a green build and 59 green assertions in `test/public/photography-routes.node.test.ts`.
- * It was found by an unrelated control, not by a test. A `toContain` would have passed. Only an
- * exact string catches it, which is why every assertion below is `toBe` over a decoded, tag-stripped
- * slice and never a substring check.
- *
- * The arrows are part of the copy and are asserted: `→` U+2192, `↓` U+2193, `←` U+2190. §13.2 puts
- * them inside the backticks for these rows, which is what distinguishes them from the table's own
- * `→ \`link text\`` marker — a reading `PhotoEmpty.tsx` records at length.
- *
- * ------------------------------------------------------------------------------------------------
- * WHAT IS ASSERTED ELSEWHERE, AND IS NOT DUPLICATED HERE
- * ------------------------------------------------------------------------------------------------
- *
- * A second copy of an assertion is a second thing to update, and the two disagree eventually.
- *
- *   the scroll cue                   RETIRED. `test/public/home.node.test.ts` now asserts its
- *                                     ABSENCE. The string was `SCROLL FOR THE WORK ↓` (05-16),
- *                                     then `↓ DEVELOPMENT` (05-17, the handoff's wording, arrow
- *                                     leading), then nothing — Home became one screen on
- *                                     2026-09-02 and there is nothing below to point at.
- *   `Photography →` `Development →`   `test/public/home.node.test.ts` — Act 1's two doors, the
- *                                     controls that REPLACED the cue and Act 2's band CTAs. They
- *                                     are navigational by any reading of the line below, and they
- *                                     are asserted there rather than duplicated into PINS because
- *                                     that file already owns the composition they sit in.
- *   `see the photographs →`          RETIRED 2026-09-04 — `development.node.test.ts` now asserts its
- *                                     ABSENCE, and `photography-routes.node.test.ts` asserts the
- *                                     same from the other side
- *   `← see the work`                 RETIRED — `photography-routes.node.test.ts` asserts its absence.
- *                                     §13.2's pair is gone in both directions; the bar carries them
- *   `← All photographs` · `← {Cat}`  `test/public/photo-detail.node.test.ts`
- *   `All · n` and `{Label} · n`      `test/public/photography-routes.node.test.ts`, derived
- *   the three 404 lines              `test/public/seo.node.test.ts`
- *   the empty-category copy          `test/public/photo-empty.unit.test.ts` — it CANNOT be asserted
- *                                    from here: `validateContentSet`'s RI-2 refuses a declared
- *                                    category no photograph uses, so no build can reach the branch
- *                                    and no route serves it. `PhotoEmpty.tsx` is a `.tsx` precisely
- *                                    so a test can render it, and until now none did.
- *
- * Evidence is written with `process.stdout.write`. MEASURED by 04-01: under this repository's
- * vitest setup `console.log` prints NOTHING, so a check reporting through it is indistinguishable
- * from a check that found nothing.
- */
-
 import { readFileSync } from 'node:fs';
 import { describe, expect, inject, it } from 'vitest';
 import { NAV_ITEMS } from '../../src/components/public/PublicNav';
@@ -123,11 +10,6 @@ const home = JSON.parse(
   readFileSync(new URL('../../data/home_config.json', import.meta.url), 'utf8')
 ) as HomeConfig;
 
-/**
- * ONE pass of entity decoding, which is what an HTML parser does. A second pass would turn a
- * double-encoded `&amp;amp;` back into `&` and hide the exact defect an exact comparison exists to
- * catch.
- */
 function decodeEntitiesOnce(value: string): string {
   return value.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (whole, body: string) => {
     if (body.startsWith('#x') || body.startsWith('#X'))
@@ -145,7 +27,6 @@ function decodeEntitiesOnce(value: string): string {
   });
 }
 
-/** The text a reader sees inside a slice of markup: tags removed, entities decoded once. */
 const text = (markup: string): string =>
   decodeEntitiesOnce(markup.replace(/<[^>]*>/g, ''))
     .replace(/\s+/g, ' ')
@@ -165,14 +46,6 @@ async function load(path: string): Promise<string> {
   return body;
 }
 
-/**
- * ONE pinned string.
- *
- * `slice` is a regular expression with ONE capture group: the markup the copy lives inside. It is
- * scoped rather than page-wide on purpose — 05-10 measured a page-wide `/<li/g` count on this site
- * that also matched `<link`, and a page-wide search for `The work` would be satisfied by the phrase
- * appearing anywhere, including inside a comment or a `<title>`.
- */
 type Pin = {
   readonly what: string;
   readonly route: string;
@@ -181,12 +54,6 @@ type Pin = {
   readonly why: string;
 };
 
-/*
- * ══ THE PINNED STRINGS ═══════════════════════════════════════════════════════════════════════════
- *
- * Every one names a destination or an action. To change any of them: change the page and change
- * the `copy` here, in the same commit. That is the cost, and it is the point.
- */
 const PINS: readonly Pin[] = [
   {
     what: 'the résumé link on /development, which is now the only route to the PDF',
@@ -203,40 +70,7 @@ const PINS: readonly Pin[] = [
   },
 ];
 
-/*
- * ══ THE RETIRED PINS — FIVE STRINGS WHOSE ELEMENT NO LONGER EXISTS ═══════════════════════════════
- *
- * 🔴 THESE ARE NOT DELETED, AND THE DECISION IS THE WHOLE POINT OF THE MECHANISM BELOW.
- *
- * Home became ONE SCREEN on 2026-09-02 — Akhil. Act 2 went with it: the development band, the
- * résumé band, the project grid, the `By day —` line. All five of the strings below lived in Act 2,
- * so all five reddened, with the same message: *"nothing matched … the element carrying this copy is
- * gone, and a string assertion over a missing element is not an assertion"*. That message is
- * correct, and it is exactly why the rows cannot simply be dropped.
- *
- * WHY NOT DELETE THEM.
- *
- *   1. THIS FILE EXISTS BECAUSE THREE OF §13.2's TEN ROWS HAD NO ASSERTION ANYWHERE. 1,488 tests
- *      passed over a site whose navigation could be rewritten silently. Deleting a row returns it
- *      to exactly that state — unguarded, and with nothing recording that it ever was guarded. The
- *      finding was never "a string was wrong"; it was "nobody could tell which strings were
- *      guarded".
- *   2. THE COPY IS A DECISION WITH A HISTORY. `ALL DEVELOPMENT →` was `ALL WORK →` until the route
- *      was renamed; `RÉSUMÉ →` carries its accent and its arrow deliberately; `Development` and
- *      `The résumé` were the ACCESSIBLE NAMES of two regions. If Act 2 returns, these are the
- *      strings it must return with, and re-deriving them from a git log is not the same as reading
- *      them here.
- *   3. THE ELEMENT MIGHT COME BACK WITHOUT THE COPY. `HomeActTwo.astro` is still on disk — modified
- *      rather than removed in the session that stopped rendering it, which reads as parked. A
- *      restored band carrying different wording is precisely the silent navigation change this file
- *      was written to make expensive.
- *
- * SO EACH ROW IS INVERTED IN PLACE: the slice must match NOTHING, and the copy must appear NOWHERE
- * on the route. If Act 2 is restored, all five red at once and the message says to move the row back
- * into `PINS` — which is a one-line edit and the same cost a pin has always carried.
- */
 type RetiredPin = Pin & {
-  /** When it was retired and by whose decision — so a row is never silently un-pinned. */
   readonly retired: string;
 };
 
@@ -291,38 +125,6 @@ const RETIRED_PINS: readonly RetiredPin[] = [
   },
 ];
 
-/*
- * ══ WHAT IS DELIBERATELY LEFT FREE, AND WHY ═════════════════════════════════════════════════════
- *
- * Recorded as PROSE and not as data, because a list of free strings held in a variable invites the
- * next person to loop over it and assert something — at which point they are pinned, and the
- * decision is reversed by accident.
- *
- *   `/development`   <h1>        "Things I design and build."   — Akhil’s voice, reviewed copy, his to change
- *   `/development`   sub-para    "Products shipped on my own …" — the same
- *   `/development`   eyebrows    "Professional experience", "Projects"
- *                                                        — they label content; they are not links
- *   `/development`   count line  "five — shipped on my own"     — DERIVED and already asserted by
- *                                                          work.node.test.ts against projects.json
- *   `/photography` <h1>        "Photographs"                  — describes the page, does not navigate
- *   `/photography` eyebrow     "40 photographs — all of them" — the COUNT is derived and asserted by
- *                                                          photos-routes.node.test.ts; the WORDING
- *                                                          is prose and stays free
- *   `/resume` eyebrows    "Experience", "Skills", "Education"
- *                                                        — content section labels
- *   Home      by-day line "By day — {role} at {company}." — GONE with Act 2 on 2026-09-02. It was
- *                                                          free, so nothing here reddened; recorded
- *                                                          so the list does not describe a page
- *                                                          that no longer exists.
- *   Home      résumé line "{n} roles and {m} projects."   — GONE with Act 2. It was derived, and
- *                                                          05-11 measured that string equality
- *                                                          cannot prove derivation, so it was never
- *                                                          asserted as a string anywhere.
- *
- * The `<h1>`s are the specific case 05-09 and 05-10 raised, and the answer is: still free, on
- * purpose, now written down.
- */
-
 let navMarkup = '';
 
 describe('§13.2 — the navigational strings, character for character on the served bytes', () => {
@@ -336,16 +138,10 @@ describe('§13.2 — the navigational strings, character for character on the se
         'string assertion over a missing element is not an assertion'
     ).not.toBeNull();
 
-    // The whole point. `toBe`, never `toContain`: `14photographs` passed a substring check on
-    // seven routes for two plans.
     expect(text((found as RegExpMatchArray)[1] as string)).toBe(pin.copy);
   });
 
   it('reports what it pinned, derived from the table rather than typed', async () => {
-    // ANTI-VACUITY: an empty table would make `it.each` register zero cases and the file would be
-    // reported green having asserted nothing at all. Five rows moved to RETIRED_PINS on
-    // 2026-09-02, so this dropped from six to one and the floor is what caught that it is still
-    // non-zero rather than that it is still six.
     expect(PINS.length, 'the pin table is empty — this file would assert nothing').toBeGreaterThan(
       0
     );
@@ -364,13 +160,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
     async (_name, pin) => {
       const page = await load(pin.route);
 
-      /*
-       * ANTI-VACUITY FIRST, AND IT IS NOT OPTIONAL HERE. Every assertion in this block is an
-       * ABSENCE, and an absence over a page that failed to load passes silently. `load` already
-       * throws on a non-200, so the page is real — but "real" is not "the page we mean", so this
-       * anchors on Home's `<h1>` marker, which is the one element `src/middleware.ts` and two other
-       * suites also treat as proof that `GET /` rendered.
-       */
       if (pin.route === '/') {
         expect(
           page,
@@ -378,7 +167,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
         ).toMatch(/<h1[^>]*data-home-marker="home-render-ok"/);
       }
 
-      // 1. THE ELEMENT IS GONE. The inverse of the pinned block's `.not.toBeNull()`.
       expect(
         page.match(pin.slice),
         `${pin.route}: ${pin.slice} MATCHED. This copy was retired — ${pin.retired} — so its ` +
@@ -386,41 +174,12 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
           'is a navigational string again and it must be asserted character for character.'
       ).toBeNull();
 
-      /*
-       * 2. AND NO ELEMENT ANYWHERE ON THE ROUTE HAS THAT COPY AS ITS TEXT. (1) is scoped to one
-       *    selector, so a band REBUILT WITH DIFFERENT MARKUP around the same words slips past it —
-       *    which is the more likely regression than the exact old markup returning.
-       *
-       *    IT IS A LEAF-TEXT EQUALITY, NOT `page.includes(copy)`, AND THAT IS A CORRECTNESS FIX
-       *    RATHER THAN A REFINEMENT. `Development` is one of the retired strings AND a substring of
-       *    the live door `Development →`, so a substring search over the document would red on
-       *    correct code — the same class of error as the `14photographs` false pass this file was
-       *    written for, in the opposite direction.
-       *
-       *    Comparison is through `text()`, so it survives Astro's whitespace and one pass of entity
-       *    decoding: `RÉSUMÉ →` and `ALL DEVELOPMENT →` carry an accent and a U+2192 that are copy.
-       */
       const leaves = [...page.matchAll(/>([^<>]+)</g)].map((m) => text(m[1] as string));
-      /*
-       * ANTI-VACUITY: a document whose leaf text did not parse would satisfy the check below for
-       * every row at once. Anchored on the two DOORS rather than on a count — they are the copy
-       * that REPLACED Act 2's bands, they are extracted by the same `leaves` expression the
-       * absence check uses, and if either is missing the instrument is broken rather than the page.
-       */
       if (pin.route === '/') {
         expect(
           leaves.filter((leaf) => leaf === 'Photography →' || leaf === 'Development →'),
           'the leaf-text extractor found neither door — it is the same expression the absence ' +
             'check below reads, so every retired row would pass on nothing'
-          /*
-           * ORDER MATTERS HERE ONLY BECAUSE THIS IS AN EQUALITY, and the order changed on
-           * 2026-09-04: Akhil *"hero page to have primary and secondary cta. primary being
-           * development"*, so `Development →` leads in the DOM as well as in weight — tab order
-           * follows the DOM, and a primary door reached second is only primary to the eye.
-           * `home.node.test.ts` owns that claim; this row only needs the extractor to have found
-           * both doors, so it is compared as a SET to stop a future reorder reddening an
-           * anti-vacuity anchor that does not care.
-           */
         ).toEqual(expect.arrayContaining(['Photography →', 'Development →']));
       }
       expect(
@@ -434,12 +193,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
   );
 
   it('reports what it retired, and refuses a row with no date and no reason', () => {
-    /*
-     * ANTI-VACUITY for the table itself: `it.each([])` registers ZERO cases and reports the file
-     * green. That is the exact failure this file's header records for its first commit — a
-     * derivation check wearing a pin's description — so the retired table gets the same floor the
-     * live one has.
-     */
     expect(
       RETIRED_PINS.length,
       'the retired table is empty. Rows are RETIRED here, never deleted — see the block comment.'
@@ -448,8 +201,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
     for (const pin of RETIRED_PINS) {
       expect(pin.copy.length, `${pin.what} retires the empty string`).toBeGreaterThan(0);
       expect(pin.why.length, `${pin.what} carries no reason`).toBeGreaterThan(20);
-      // The date-and-decision half. A retirement with no attribution is indistinguishable from
-      // someone deleting an assertion they could not make pass.
       expect(
         pin.retired.length,
         `${pin.what} was retired with no date and no decision recorded`
@@ -457,7 +208,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
       expect(pin.retired, `${pin.what} names no date`).toMatch(/\d{4}-\d{2}-\d{2}/);
     }
 
-    // No string may be in both tables — that would assert its presence and its absence at once.
     const live = new Set(PINS.map((pin) => `${pin.route} ${pin.copy}`));
     for (const pin of RETIRED_PINS) {
       expect(
@@ -471,34 +221,6 @@ describe('§13.2 — the retired strings, asserted as absences on the same serve
   });
 });
 
-/*
- * ══ THE APPBAR'S THREE NAV LABELS ═══════════════════════════════════════════════════════════════
- *
- * The most navigational strings on the site: they are the site's top-level map, on all fifty-two
- * documents. §13.2 does not have a row for them — its table is about page copy — and Akhil's
- * instruction was "any equivalent navigational string you find", which these plainly are.
- *
- * 🔴 THE FIRST VERSION OF THIS BLOCK COULD NOT FAIL, AND A PLANT CAUGHT IT.
- *
- * It imported `NAV_ITEMS` from the component and asserted the served bar matched it, with a comment
- * congratulating itself for not keeping a second list. Planted with `photographs` shortened to
- * `photos` — the exact edit `05-AUDIT.md`'s decision 2 contemplates — it reported **10 passed**.
- * Of course it did: both sides of the comparison came from the same edited constant. It was a
- * derivation check wearing a pin's description, which is the failure this whole file exists to fix,
- * reproduced inside the fix.
- *
- * So the labels are a LITERAL here, and both halves are asserted separately:
- *
- *   1. `NAV_ITEMS` — the source constant — equals this table. A relabel in the component reds.
- *   2. the SERVED bar's anchors equal this table. A relabel that arrives any other way reds too.
- *
- * Neither implies the other, and only (2) is a fact about what ships.
- *
- * 🔴 AND IT HAS A LIVE INTERACTION WORTH KNOWING ABOUT. D-21 measures the bar overflowing 344px by
- * 14px on every route, and decision 2 names the only consumer-side lever: shortening `photographs`
- * — 94px of the 310px group — to `photos`, which measured under 344. That edit is now two lines
- * instead of one: the component, and this table. That is what a pin costs and it is the point.
- */
 const NAV_CONTRACT: ReadonlyArray<{ readonly href: string; readonly label: string }> = [
   { href: '/development', label: 'development' },
   { href: '/photography', label: 'photography' },
@@ -507,34 +229,11 @@ const NAV_CONTRACT: ReadonlyArray<{ readonly href: string; readonly label: strin
 describe('the AppBar’s nav labels — the most navigational strings on the site', () => {
   it('pins the source constant: NAV_ITEMS is exactly the contract, in order', () => {
     expect(NAV_CONTRACT.length, 'the nav contract is empty').toBeGreaterThan(0);
-    // Structural equality over the whole array, so a reorder, an addition and a relabel are all
-    // red.
-    //
-    // THE COUNT IS TWO, not the three OQ-6b resolved. Akhil cut `résumé` on 2026-08-30, with the
-    // hero's Resume button, so the CV is reached from Act 2's `RÉSUMÉ →` link instead. The
-    // approved design carries two and says why: "No résumé button on home hero; résumé linked
-    // from Act-2 strip." OQ-6b's three was the rebuild's addition, not the design's.
     expect(NAV_ITEMS.map((item) => ({ href: item.href, label: item.label }))).toEqual([
       ...NAV_CONTRACT,
     ]);
   });
 
-  /**
-   * 05-17 — THIS READS `/development`, NOT `/`, AND THE CHANGE IS THE FINDING RATHER THAN A REPAIR.
-   *
-   * Home no longer has an AppBar. Akhil: *"the header is not required for such a page"*, and the
-   * approved prototype has none — the row there is two `Link`s and an `IconButton` composed
-   * directly on the page background (see `src/components/public/PublicNav.tsx`).
-   *
-   * `/development` is now the representative route for the BAR arrangement, and it is a better subject
-   * for this assertion than `/` ever was: the bar is site-wide furniture on 51 documents and Home
-   * was always the one route with an exception in it (the wordmark, suppressed by 05-16). Pinning
-   * navigational copy to the page that opts out of the navigation was a latent trap.
-   *
-   * The PLAIN arrangement's three labels are asserted from the same `NAV_CONTRACT` in
-   * `test/public/home.node.test.ts`, so neither arrangement can drift from the contract or from
-   * the other.
-   */
   it('pins the served bar: the same labels, hrefs and order, in the shipped bytes', async () => {
     const page = await load('/development');
     const bar = page.match(/<header class="ds-atom-appbar"[\s\S]*?<\/header>/);
@@ -546,9 +245,6 @@ describe('the AppBar’s nav labels — the most navigational strings on the sit
       label: text(m[2] as string),
     }));
 
-    // The logo is an anchor too and is not a nav item — it is asserted separately below, as CMS
-    // content. Filtering by the CONTRACT's hrefs (not by NAV_ITEMS') keeps the two claims apart
-    // without reintroducing the dependency that made this block unfailable.
     const nav = anchors.filter((a) => NAV_CONTRACT.some((item) => item.href === a.href));
     expect(nav).toEqual([...NAV_CONTRACT]);
 
@@ -557,71 +253,15 @@ describe('the AppBar’s nav labels — the most navigational strings on the sit
 });
 
 describe('Home’s three CMS strings — DERIVED from home_config.json, never pinned', () => {
-  /*
-   * These are the strings Akhil edits through `/admin`, and §13.2 does not list them for exactly
-   * that reason. What is asserted is that the page renders WHAT THE RECORD SAYS — so editing the
-   * record is free and both sides move together, while the string vanishing, or the page rendering
-   * a hardcoded copy of it, is red.
-   *
-   * That second failure is not hypothetical on this project: `05-UI-SPEC.md` §13.3 records a
-   * component count that went stale three times in nine days because a derived figure had been
-   * typed out somewhere, and 04-09 turned `main` red with a literal `39`.
-   */
   it('renders the title, the subtitle and the intro exactly as data/home_config.json holds them', async () => {
     const page = await load('/');
 
-    /*
-     * The slices are the elements as they actually SHIP, read off `dist/client/index.html` rather
-     * than guessed from the source: the `<h1>` carries no `hm-*` class at all — it is the design
-     * system's `Heading` plus `data-home-marker` — and the intro is `class="ds-atom-text hm-intro"`,
-     * so an `class="hm-intro"` equality would have matched nothing and this test would have failed
-     * on correct code. `\b…\b` around the class, so the inline `<style>` block's own `hm-intro{…}`
-     * cannot satisfy it either.
-     *
-     * 🔴 THE SUBTITLE'S SLICE WAS `class="hm-subtitle"` — AN EQUALITY — AND 05-16 HAD TO WIDEN IT.
-     * That is a change to the SLICE and not to the ASSERTION, and the distinction is the whole
-     * point of this file: the string is still compared with `toBe` against the record. The subtitle
-     * used to be a hand-written `<p>`, which is why an equality worked; it is now a design-system
-     * `Text` — the Core Value, on the one Act-1 line that was still bypassing the design system —
-     * and `Text` prepends `ds-atom-text` to every `className` it is given. Left as an equality this
-     * test would have failed on correct code, exactly as it would have for the intro. It is now the
-     * same shape as the intro's, which is the shape a `className`-concatenating component needs.
-     */
     const fields: ReadonlyArray<[string, string, RegExp]> = [
       ['title', home.title, /<h1[^>]*data-home-marker="[^"]*"[^>]*>([\s\S]*?)<\/h1>/],
       ['subtitle', home.subtitle, /<p[^>]*class="[^"]*\bhm-subtitle\b[^"]*"[^>]*>([\s\S]*?)<\/p>/],
       ['intro', home.intro, /<p[^>]*class="[^"]*\bhm-intro\b[^"]*"[^>]*>([\s\S]*?)<\/p>/],
     ];
 
-    /*
-     * 🔴 THE ANTI-VACUITY FLOOR BECAME A CONDITIONAL ON 2026-09-02, AND THE DISTINCTION MATTERS.
-     *
-     * This loop asserted `expected.length > 0` for all three fields — a real floor, and the right
-     * one: "the page renders what the record says" is satisfied trivially by an emptied record and
-     * a blank page, so a derivation check MUST refuse to compare against `''`.
-     *
-     * Then Akhil emptied `intro`. From `src/schemas/home.ts`: the phrase "everything else"
-     * subordinated the photography to the development, while Act 1 IS six photographs filling the
-     * screen — the words and the picture led with different things, and `Interfaces & Imagery`
-     * already names both as equals. The FIELD stays (no `.min(1)`, deliberately) so he can restore
-     * the line from `/admin` without a schema change.
-     *
-     * SO THE FLOOR IS NOW PER-FIELD, DERIVED FROM THE SCHEMA RATHER THAN ASSUMED:
-     *
-     *   title, subtitle   `.min(1)` in `HomeConfigSchema` — the build refuses an empty one, so the
-     *                     floor is real and stays. Emptying either is caught by the schema, not
-     *                     here, which is where it belongs.
-     *   intro             no `.min(1)`. Both directions are asserted instead: an empty record must
-     *                     render NO ELEMENT — an empty `<p>` still takes its
-     *                     `padding-block-start`, so the gap under the subtitle would be wrong with
-     *                     nothing visible to explain it — and a filled record must render exactly
-     *                     what it holds.
-     *
-     * This is the same shape `test/public/home.node.test.ts` uses for the other emptied field
-     * (`renders exactly the CTAs data/home_config.json declares`), and for the same reason: an
-     * assertion that simply stopped mentioning the intro would let a restored line ship in the
-     * wrong face at the wrong size with the suite green.
-     */
     const OPTIONAL = new Set(['intro']);
 
     for (const [name, expected, slice] of fields) {
@@ -637,8 +277,6 @@ describe('Home’s three CMS strings — DERIVED from home_config.json, never pi
         continue;
       }
 
-      // ANTI-VACUITY, per field: for everything not in OPTIONAL the record must be non-empty, or
-      // a comparison against `''` would pass over a blank page. `HomeConfigSchema` requires these.
       expect(
         expected.length,
         `home_config.json's ${name} is empty. It is not in OPTIONAL, so HomeConfigSchema requires ` +

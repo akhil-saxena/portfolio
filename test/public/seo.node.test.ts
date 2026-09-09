@@ -1,54 +1,3 @@
-/**
- * The SEO surface, asserted over HTTP against the built artefact served by real `workerd`.
- * Plan 05-13, tasks 1 and 3.
- *
- * ================================================================================================
- * WHY EVERY CLAIM HERE IS ABOUT SHIPPED BYTES
- * ================================================================================================
- *
- * A sitemap is not a rendering; it is a file a crawler fetches. A canonical is not a component's
- * return value; it is an attribute in a document somebody else's scraper reads. Neither is
- * observable from a unit test, and the prerender that produces them runs inside `workerd` — no
- * filesystem, `process.cwd()` is `/bundle`, `import.meta.url` is undefined (MEASURED, 05-01). The
- * `integration` project's `globalSetup` runs a real `astro build` and serves the output through
- * `@cloudflare/vite-plugin`, which is genuine workerd, so this suite reads `dist/client/` for the
- * artefact and fetches `previewBaseUrl` for what the origin actually answers.
- *
- * ================================================================================================
- * NOT ONE ROUTE COUNT IN THIS FILE IS A LITERAL — AND THAT IS THE POINT OF THE FILE
- * ================================================================================================
- *
- * There is no `4`, no `7`, no `39`, no `40`, no `49` and no `51` below. The plan's own
- * `<interfaces>` prints a 51-URL census and the UI-SPEC §12.3 still says 49; the corpus moved to 40
- * records when Phase 4 published `wildlife-gentlegiants`, and 03-01's `--verify` hardcoded 39 and
- * turned `main` red the day the 40th landed. So:
- *
- *   - the fixed public routes are ENUMERATED FROM `src/pages/`, by walking it — a route added
- *     tomorrow is covered without editing this file;
- *   - the category routes come from `data/site_config.json`;
- *   - the photo routes come from `data/portfolio_images.json` through `photoHref`, the ONE
- *     definition of that path (05-08 imports the same function, so a disagreement is impossible
- *     rather than merely unlikely).
- *
- * Every derived set is preceded by an ANTI-VACUITY refusal. A suite that derives an empty expected
- * set from an emptied fixture and then compares it against an empty sitemap passes having proven
- * nothing, which is the failure this phase's register is full of.
- *
- * ================================================================================================
- * THE SITEMAP IS PROVEN BY FETCHING, NOT BY COMPARING TWO DERIVATIONS
- * ================================================================================================
- *
- * "A sitemap that lists a route the site does not serve" is SEO-03's named failure mode and threat
- * T-05-13-02's whole content. It cannot be closed by checking the sitemap against the same data the
- * sitemap was generated from — that is self-confirming. So every URL the sitemap claims is FETCHED
- * VERBATIM from the running origin and its status asserted, the way 05-08 proved its tile→page join
- * by fetching all 80 hrefs rather than comparing two derivations of the slug.
- *
- * Evidence is written with `process.stdout.write`. MEASURED by 04-01 with a probe: under this
- * repository's vitest setup `console.log` and `console.info` print NOTHING, so a check reporting
- * through them is indistinguishable from a check that found nothing.
- */
-
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, describe, expect, inject, it } from 'vitest';
@@ -73,30 +22,9 @@ function readJson<T>(relative: string): T {
 const manifest = readJson<Photo[]>('data/portfolio_images.json');
 const siteConfig = readJson<SiteConfig>('data/site_config.json');
 
-/* ============================================================================================= */
-/* The configured origin — read from the one file that defines it, never typed twice.             */
-/* ============================================================================================= */
-
-/**
- * `astro.config.mjs` sets `site`, and `@astrojs/sitemap` and `<Seo>` (via `Astro.site`) both read
- * that same field. Restating the origin here would be a third definition, and Phase 8's cutover
- * moves it — so it is read out of the config's source text.
- *
- * It is read rather than imported because importing the config would execute the `content-gate`
- * integration's module graph, which resolves `./src/schemas/index.ts` through Vite's extensionless
- * re-export handling (see the config's own first comment). A regex over the source has one job and
- * cannot have a side effect.
- */
 function readConfiguredSite(): string {
   const source = readFileSync(new URL('astro.config.mjs', repoRoot), 'utf8');
 
-  // EVERY `site:` assignment, then the ones whose value is an absolute http(s) URL — not the
-  // first match. The first version of this reader took `/^\s*site:\s*(['"])(.+?)\1,/m` and got
-  // `'./data/site_config.json'`, because `CONTENT_FILES` in that same config has a key called
-  // `site` and it is declared ~120 lines ABOVE the one this wants. It failed loudly here
-  // (`TypeError: Invalid URL`) only by luck: a config that happened to declare a second absolute
-  // URL first would have made every origin assertion below compare against the wrong host and
-  // pass. So the candidates are filtered by shape and the count is asserted.
   const candidates = [...source.matchAll(/\bsite:\s*(['"])([^'"]+)\1/g)]
     .map((match) => match[2] as string)
     .filter((value) => /^https?:\/\//.test(value));
@@ -115,26 +43,6 @@ function readConfiguredSite(): string {
 const SITE_ORIGIN_HREF = readConfiguredSite();
 const SITE_ORIGIN = new URL(SITE_ORIGIN_HREF).origin;
 
-/* ============================================================================================= */
-/* The route census — three derivations, each from its own source                                 */
-/* ============================================================================================= */
-
-/**
- * Every fixed public route, by WALKING `src/pages/`. Not a list.
- *
- * A hand list stops covering the site the day a route is added, and this phase adds routes in six
- * separate plans. The exclusions are each a measured property of the tree rather than a guess:
- *
- *   - a path segment containing `[` is a dynamic route; its instances come from the data below,
- *     and the template itself is not a URL;
- *   - `404.astro` is not a sitemap entry by definition (SEO-03) and is asserted absent separately;
- *   - a page carrying `export const prerender = false` is served by the Worker, not by Static
- *     Assets. `/admin` is the only one today and it is behind Cloudflare Access — MEASURED: an
- *     unfiltered `sitemap()` listed `https://akhilsaxena.com/admin/`, a route that emits no file
- *     under dist/client at all. That is what the config's filter now removes;
- *   - `src/pages/api/` holds `.ts` endpoints, which this walk never sees because it takes `.astro`
- *     only.
- */
 function enumerateFixedPublicRoutes(): string[] {
   const found: string[] = [];
 
@@ -164,33 +72,14 @@ function enumerateFixedPublicRoutes(): string[] {
 
 const FIXED_ROUTES = enumerateFixedPublicRoutes();
 
-/** `/photography/<category>/` — one per category record. */
 const CATEGORY_ROUTES = siteConfig.categories
   .map((category) => `/photography/${category.id}/`)
   .sort();
 
-/**
- * `/photography/<category>/<slug>/` — one per photograph, through `photoHref`.
- *
- * `photoHref` is the single definition of this path (BL-8). Recomputing `id.replace(category, '')`
- * here would be a second one, and 05-08's own header records what two derivations of that slug
- * cost: every tile 404ing against a page that exists under a different name, with a green build.
- */
 const PHOTO_ROUTES = manifest.map((photo) => `${photoHref(photo)}/`).sort();
 
-/** The full expected set, deduplicated and sorted. Derived three ways, typed zero. */
 const EXPECTED_PATHS = [...new Set([...FIXED_ROUTES, ...CATEGORY_ROUTES, ...PHOTO_ROUTES])].sort();
 
-/* ============================================================================================= */
-/* Reading the built artefact                                                                     */
-/* ============================================================================================= */
-
-/**
- * Every `.html` under `dist/client/`, as root-relative URL paths with Astro's trailing slash.
- *
- * `grep` on a missing file exits 2 and an `if` reads that as clean (this phase's register, twice),
- * so this refuses outright rather than returning an empty list.
- */
 function builtHtmlPaths(): string[] {
   if (!existsSync(distClient)) {
     throw new Error(
@@ -218,13 +107,10 @@ function builtHtmlPaths(): string[] {
 
 const BUILT_HTML_PATHS = builtHtmlPaths();
 
-/** The 404 document's own path, named once so the exclusions below cannot disagree about it. */
 const NOT_FOUND_PATH = '/404/';
 
-/** Every built HTML document that is a public page — i.e. everything except the 404. */
 const PUBLIC_HTML_PATHS = BUILT_HTML_PATHS.filter((path) => path !== NOT_FOUND_PATH);
 
-/** `<loc>` values, in document order. XML entity decoding is one pass, like a parser's. */
 function locsIn(xml: string): string[] {
   return [...xml.matchAll(/<loc>([\s\S]*?)<\/loc>/g)].map((match) =>
     (match[1] as string)
@@ -236,8 +122,6 @@ function locsIn(xml: string): string[] {
       .trim()
   );
 }
-
-/* ============================================================================================= */
 
 const fetched = new Map<string, { status: number; body: string; contentType: string }>();
 
@@ -254,19 +138,12 @@ async function get(path: string) {
   return entry;
 }
 
-/* ============================================================================================= */
-/* SEO-03 — the sitemap                                                                           */
-/* ============================================================================================= */
-
 describe('SEO-03 · the sitemap', () => {
-  /** Populated by the first test and read by the rest; each guards against its being empty. */
   let indexLocs: string[] = [];
   let sitemapUrls: string[] = [];
   let sitemapPaths: string[] = [];
 
   beforeAll(() => {
-    // ANTI-VACUITY, BEFORE ANYTHING ELSE. Three derivations feed the census and an empty one
-    // would make the comparison below trivially true against an empty sitemap.
     if (FIXED_ROUTES.length === 0) {
       throw new Error(
         `seo: walking ${fileURLToPath(pagesDir)} found no fixed public route at all. The expected ` +
@@ -403,11 +280,6 @@ describe('SEO-03 · the sitemap', () => {
   it('the 404 is absent from the sitemap, and its absence is asserted against a page that exists', () => {
     expect(sitemapPaths.length).toBeGreaterThan(0);
 
-    // THE GUARD THAT MAKES THIS AN ASSERTION RATHER THAN A TAUTOLOGY. `/404` is only worth
-    // excluding if the build emits one; against a build with no 404 document the check below
-    // would pass having proven nothing. MEASURED and recorded in astro.config.mjs: @astrojs/sitemap
-    // drops the 404 route by itself, so this is NOT evidence that the config's filter works — it is
-    // evidence of the OUTCOME SEO-03 requires, which is what the requirement asks for.
     expect(
       BUILT_HTML_PATHS,
       'dist/client emitted no 404 document, so "the sitemap excludes it" is vacuously true'
@@ -421,10 +293,6 @@ describe('SEO-03 · the sitemap', () => {
   it('no protected route is advertised', () => {
     expect(sitemapPaths.length).toBeGreaterThan(0);
 
-    // MEASURED: with a bare `sitemap()` and no filter, `https://akhilsaxena.com/admin/` WAS listed
-    // — the Access-gated CMS, which emits no file under dist/client at all. This is the control
-    // that keeps the config's filter honest, and unlike the 404 exclusion it genuinely fires when
-    // the filter is removed.
     const protectedPrefixes = ['/admin', '/api', '/_actions'];
     const offenders = sitemapPaths.filter((path) =>
       protectedPrefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))
@@ -464,38 +332,9 @@ describe('SEO-03 · the sitemap', () => {
   });
 });
 
-/* ============================================================================================= */
-/* SEO-05 — the legacy redirect, and the 404 as the origin actually serves it                     */
-/* ============================================================================================= */
-
-/**
- * These assertions live in the suite rather than in a hand-run `curl` because a status code
- * measured once by a person is not protected against anything. The plan verifies SEO-05 by asking
- * the executor to run `curl -sI` and quote the line; that proves it worked on the day, and says
- * nothing about the day somebody switches to `astro.config`'s `redirects` key.
- *
- * 🔴 THE PLAN IS WRONG ABOUT THE RUNTIME, AND IT IS WRONG IN THE DIRECTION THAT COSTS.
- *
- * It says: *"`astro preview` does not [serve `_redirects`] — it is a plain static server … Do not
- * substitute `astro preview` — it is a plain static server and will 404, which would read as a
- * failure of correct code."*
- *
- * MEASURED, against this repository's `astro preview`:
- *
- *     HTTP/1.1 301 Moved Permanently
- *     location: /photography
- *
- * Under `@astrojs/cloudflare`, `astro preview` is NOT a static server: its preview entrypoint
- * starts a Vite preview server with `@cloudflare/vite-plugin` attached, which runs the built Worker
- * inside genuine `workerd`. `test/setup/preview-server.ts` says so in its own header, and it is why
- * every `*.node.test.ts` in this phase counts as evidence about the runtime that ships. Had the
- * plan's instruction been followed, SEO-05 would have been verified by hand against a separate
- * `wrangler dev` and left ungated here.
- */
 describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
   const REDIRECTS_FILE = new URL('_redirects', distClient);
 
-  /** Both forms, because a rule does NOT match its own trailing-slash variant — measured below. */
   const LEGACY_PATHS = ['/portfolio', '/portfolio/'];
   const REDIRECT_TARGET = '/photography';
 
@@ -528,9 +367,6 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
       expect(code, `the rule for ${path} is not a 301`).toBe('301');
     }
 
-    // T-05-13-01. A capture placed into the DESTINATION is what turns a redirects file into an
-    // open redirect; a literal source to a literal same-origin target cannot be one. Asserted
-    // rather than merely intended, because the wildcard form is the one a future edit reaches for.
     const withCaptures = rules.filter((line) =>
       /:splat|:[a-z]\w*|\*/i.test(line.split(/\s+/)[1] ?? '')
     );
@@ -539,16 +375,6 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
       'a redirect destination carries a capture — the open-redirect construct'
     ).toEqual([]);
 
-    // 🔴 THE ONE ASSERTION THAT PINS THE MECHANISM, and it exists because a control produced a
-    // FALSE PASS without it. MEASURED: with public/_redirects deleted and `redirects: {...}` set in
-    // astro.config instead, every other check in this describe block stayed GREEN —
-    // @astrojs/cloudflare compiles that config key into this same file, as real 301s, emitting no
-    // HTML page at all. So "no /portfolio document was emitted" cannot tell the two mechanisms
-    // apart here, and on its own this block would have certified the rejected mechanism.
-    //
-    // A byte comparison can tell them apart. It also catches the collision case, MEASURED: with
-    // BOTH mechanisms present the adapter APPENDS its rules to the copied file, silently yielding
-    // four rules where two were reviewed, two of them duplicates, with no warning anywhere.
     const sourceFile = new URL('../../public/_redirects', import.meta.url);
     expect(
       existsSync(sourceFile),
@@ -577,9 +403,6 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
       expect(response.status, `${path} did not answer 301`).toBe(301);
       expect(response.headers.get('location')).toBe(REDIRECT_TARGET);
 
-      // THE DISCRIMINATOR. A meta-refresh page is a 200 with an HTML body; a rewrite is a 200 with
-      // the target's body. Only a real redirect returns a status in the 3xx range AND nothing to
-      // render — so the body is asserted empty rather than merely asserted not to contain a tag.
       expect(
         body.length,
         `${path} returned a ${body.length}-byte body with its 301 — a real redirect has nothing to render`
@@ -600,23 +423,7 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
     say(`follow: ${LEGACY_PATHS[0]} -> ${new URL(followed.url).pathname} -> ${followed.status}`);
   });
 
-  /**
-   * 🔴 RECORDED AS NON-DISCRIMINATING RATHER THAN DELETED — it is the plan's own check, and the
-   * next reader deserves to be told it carries no weight here rather than re-derive that.
-   *
-   * The plan's `<done>` treats "no dist/client/portfolio/ HTML page was emitted" as the proof that
-   * the meta-refresh mechanism was not used. MEASURED: under `adapter: cloudflare()` the config
-   * key emits no HTML page either, so this check passes under BOTH mechanisms and can never fire.
-   * It is kept because it WOULD fire if the adapter were ever dropped and the config key left
-   * behind, and because a check silently deleted is a check nobody knows was considered.
-   *
-   * The weight is carried by two assertions that ARE discriminating: the byte comparison above,
-   * and the 0-byte-body assertion below — a meta-refresh page is a 200 with an HTML body, and a
-   * real redirect is a 3xx with nothing to render.
-   */
   it('no /portfolio document was emitted (non-discriminating under this adapter — see above)', () => {
-    // ANTI-VACUITY. An absence assertion over a tree that does not exist is true and worthless,
-    // and this phase has shipped that shape before. So the presence of siblings is asserted first.
     expect(
       BUILT_HTML_PATHS.length,
       'dist/client holds no HTML at all — this absence proves nothing'
@@ -637,9 +444,6 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
     expect(response.status, `${nonsense} did not answer 404`).toBe(404);
 
-    // The status alone would also be satisfied by a bare platform response, which is exactly what
-    // `assets.not_found_handling: "404-page"` exists to replace. So the BODY is compared against
-    // the built artefact — this is the site's own document, not the platform's.
     const built = readFileSync(new URL('404.html', distClient), 'utf8');
     expect(body, 'the origin answered 404 with something other than the built 404 document').toBe(
       built
@@ -656,20 +460,6 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
     expect(html).toMatch(/<meta\s+name="robots"\s+content="noindex"\s*\/?>/);
 
-    /*
-     * ==============================================================================================
-     * THE COPY IS P2's, AND THE HOME LINK IS ASSERTED ABSENT
-     * ==============================================================================================
-     *
-     * This pinned `Not found.` / `There is nothing at this address.` / `Go to the home page`. The
-     * page was rebuilt to design P2 — "the photograph that isn't" — on 2026-09-05, and Akhil asked
-     * for no home button: *"Use p2 to build 404 page ... dont add home button."*
-     *
-     * The third line is INVERTED rather than dropped. A home link is the obvious thing for the next
-     * person to add back to a 404, and it was removed on purpose: the wordmark in the bar is already
-     * a link home on every route, so a button repeating it is a second way to say one thing. Only
-     * asserting the new copy would let it return silently.
-     */
     for (const line of [
       '404 · Not found',
       'Nothing to see here',
@@ -681,43 +471,17 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
 
     expect(html, 'the retired 404 copy is back').not.toContain('Go to the home page');
 
-    /*
-     * NO EM DASH IN THE COPY, including the `<title>`, which read `Not found — Akhil Saxena` until
-     * this rebuild. Akhil: *"don't use em dashes in text."* The title is the one place a visual
-     * check misses it: a browser tab truncates, and no screenshot of the page shows it.
-     *
-     * 🔴 SCOPED TO THE RENDERED TEXT, NOT THE RAW BYTES. The first version searched the whole
-     * document and failed — on the theme script's own COMMENT in `PublicLayout`, which ships inline
-     * on every page and contains a perfectly ordinary prose dash. The instruction is about text a
-     * reader sees; asserting over source comments would have made this test refuse correct pages and
-     * taught the next person to delete it.
-     */
     const rendered = html
       .replace(/<script[\s\S]*?<\/script>/g, '')
       .replace(/<style[\s\S]*?<\/style>/g, '')
       .replace(/<!--[\s\S]*?-->/g, '')
       .replace(/<[^>]+>/g, ' ');
     expect(rendered, 'an em dash is back in the 404 copy').not.toContain('—');
-    // The <title> is stripped with its tags above, so it is checked on its own.
     expect(
       /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '',
       'the title carries an em dash'
     ).not.toContain('—');
 
-    /*
-     * ==============================================================================================
-     * THE PAGE'S OWN CONTENT CARRIES NO ACTIONS, AND THAT IS ASSERTED RATHER THAN LEFT TO CHANCE
-     * ==============================================================================================
-     *
-     * Akhil: *"do i need buttons there? on 404 page. we have header already. it's duplicacy."* Same
-     * rule that removed the home button, applied to all three links instead of one: the shell's nav
-     * ships `development` and `photography` on every route, so buttons repeating them under the
-     * prose are a third copy of a menu already on screen.
-     *
-     * A 404 WITH NO VISIBLE WAY OUT READS LIKE AN OVERSIGHT, which is exactly why the absence is
-     * pinned — and why the second half asserts the way out still EXISTS, in the bar. Checking only
-     * "no buttons" would pass on a page that had also lost its nav.
-     */
     const main = html.slice(html.indexOf('<main'), html.indexOf('</main>'));
     expect(main, 'the 404 grew action buttons again; the bar already carries both').not.toContain(
       'ds-atom-btn'
@@ -726,12 +490,8 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
     expect(html, 'the 404 has no route to /development at all').toContain('href="/development"');
     expect(html, 'the 404 has no route to /photography at all').toContain('href="/photography"');
 
-    // It carries the shell — the nav and the footer, so a reader who mistypes a URL has a way back
-    // that is not the browser's back button. The Phase 2 placeholder this replaced had neither.
     expect(html, 'the 404 does not carry the public shell').toContain('ds-atom-appbar');
 
-    // NOT an oversight: a canonical on a 404 declares the not-found URL to be a canonical page of
-    // this site, which is the definition of a soft 404. See the route file's own docstring.
     expect(html, 'the 404 declares a canonical, which makes it a soft 404').not.toMatch(
       /rel="canonical"/
     );
@@ -751,33 +511,9 @@ describe('SEO-05 · /portfolio 301s, and the 404 belongs to this site', () => {
   });
 });
 
-/* ============================================================================================= */
-/* SEO-01 — the cross-page audit                                                                  */
-/* ============================================================================================= */
-
-/**
- * THIS BLOCK CREATES NOTHING. `src/lib/site-meta.ts` and its wiring into `<Seo>`'s defaults were
- * built in plan 05-06 so that five wave-3 route plans could consume one constant and no later plan
- * would edit a route file it does not own. This verifies the RESULT on every built page.
- *
- * 🔴 THE PLAN'S OWN PREDICATE FOR THIS TASK IS DEFECTIVE, AND IT FAILS ON CORRECT CODE.
- *
- * It says: *"Every `og:image` and every canonical is absolute and on the configured `site`
- * origin."* MEASURED on the built artefact: every `og:image` on the site is on
- * `https://images.akhilsaxena.com` — never on `https://akhilsaxena.com` — because the manifest's
- * `urls.*` are absolute against the image CDN (`src/lib/image-origin.ts`, `IMAGE_ORIGIN`), which is
- * a different host by design and the whole point of `migrate-photo-origin.mjs`. Asserted as
- * written, that predicate reds all 51 pages of a completely correct site.
- *
- * So the two are asserted against their OWN origins, each imported rather than typed:
- *   - canonical and `og:url`  →  the `site` origin, read from astro.config.mjs
- *   - `og:image`              →  `IMAGE_ORIGIN`, imported from src/lib/image-origin.ts
- */
 describe('SEO-01 · every built public page', () => {
-  /** The `large` variant, from the table rather than from a typed `-lg`. */
   const LARGE = VARIANTS.find((variant) => variant.urlKey === 'large');
 
-  /** Photo detail pages, keyed by the path they are served at. Derived through `photoHref`. */
   const PHOTO_BY_PATH = new Map(manifest.map((photo) => [`${photoHref(photo)}/`, photo]));
 
   interface Audited {
@@ -788,16 +524,6 @@ describe('SEO-01 · every built public page', () => {
 
   const audited: Audited[] = [];
 
-  /**
-   * 🔴 QUOTE-AWARE, AND THAT IS A REPAIR SOMEBODY ELSE ALREADY PAID FOR.
-   *
-   * `attr=["']([^"']*)["']` — the obvious shape, treating EITHER quote as a terminator — truncates
-   * at an apostrophe. 05-08 measured it turning `alt="Phantom Manor's mansard roof, …"` into
-   * `Phantom Manor` and reddening a correct page; **8 of the 40 records carry an apostrophe** in
-   * their `alt` or `title`, and Astro does not escape one inside a double-quoted attribute because
-   * it has no need to. `og:image:alt` on every photo detail page IS that `alt`, so this file walks
-   * straight into it. The opening quote is captured and back-referenced instead.
-   */
   function attr(tag: string, name: string): string | null {
     return tag.match(new RegExp(`\\b${name}=(["'])([\\s\\S]*?)\\1`))?.[2] ?? null;
   }
@@ -999,11 +725,9 @@ describe('SEO-01 · every built public page', () => {
       if (entry.tags['og:image:alt'] !== photo.alt) {
         wrong.push(`${entry.path} og:image:alt did not equal the record's alt`);
       }
-      // §9.6: a photo detail page is an article, not a website.
       if (entry.tags['og:type'] !== 'article') {
         wrong.push(`${entry.path} og:type=${entry.tags['og:type']} expected article`);
       }
-      // The "large variant" claim itself, proven through VARIANTS rather than a typed `-lg`.
       if (
         !new URL(photo.urls.large).pathname.endsWith(`${(LARGE as { suffix: string }).suffix}.webp`)
       ) {

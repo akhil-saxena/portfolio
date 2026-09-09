@@ -27,9 +27,7 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
 <html lang="en" data-brand="monochrome" class="dark">
   <head>
     <meta charset="utf-8" />
-    {}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    {}
     <link
       rel="icon"
       href="/favicon-on-dark.svg"
@@ -131,9 +129,7 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
   </head>
   <body>
     <div class="pub-shell">
-      {}
       <Link variant="footer" href="#pub-main" className="pub-skip">Skip to content</Link>
-      {}
       {
         chrome === 'bar' && (
           <div
@@ -151,7 +147,6 @@ const copyright = `© ${new Date().getFullYear()} ${homeConfig.title}`;
       <main id="pub-main" tabindex="-1" class={mainClass ? `pub-main ${mainClass}` : 'pub-main'}>
         <slot />
       </main>
-      {}
       {
         chrome === 'bar' && (
           <footer transition:persist class="pub-footer pub-footer-row">

@@ -1,57 +1,9 @@
-/**
- * The network-free half of the PIPE-04 liveness verifier's proof (plan 04-03).
- *
- * WHAT THIS FILE IS FOR
- * ---------------------
- * `scripts/verify-photo-urls.mjs` is the only thing in this repository that can see a manifest
- * which LIES ABOUT THE BUCKET — a fully schema-valid record whose four R2 objects do not exist.
- * `04-RESEARCH.md` §6 measured that hole by planting one: `npx astro sync` exits 0 reporting
- * `PASS · 40 photo(s) · RI-1…RI-6`, and `gate:origin` passes too, because it validates each URL's
- * ORIGIN and never its liveness.
- *
- * The half of that verifier which needs a live CDN is proven by running it (plan 04-03 Task 3
- * records the four-step defect-planting proof verbatim in its SUMMARY). This file proves the other
- * half — TARGET ASSEMBLY, THE FLOORS AND THE ARGV CONTRACT — with no socket opened at all, so it
- * can run in CI, on a plane, and in the same second as everything else in the `unit` project.
- *
- * The floors are the point. The verifier's URL count is DERIVED (`records.length *
- * REMOTE_URL_KEYS.length`) rather than asserted against a constant, because it has to keep working
- * as the corpus grows past the 39 records `migrate-photo-origin.mjs --verify` is pinned to. A
- * derived count is only safe if "nothing to check" is a refusal: `0 === 0 * 4` is arithmetically
- * true, so a naive count check is satisfied by an empty manifest. Phase 3 shipped ten gates that
- * could not fail; every assertion below is about this one being unable to join them.
- *
- * WHY IT RE-IMPLEMENTS THE EXPECTED URL LIST
- * -----------------------------------------
- * The suite convention, stated in `photo-enrichment.unit.test.ts`: *"Importing the merge's own
- * parser would make this file assert that the merge agrees with itself."* So the expected
- * `{ id, key, url }` list below is built from the manifest and `REMOTE_URL_KEYS` DIRECTLY, never by
- * calling the script's own composer. Only `IMAGE_ORIGIN` and `REMOTE_URL_KEYS` are shared, and
- * deliberately: a test holding its own copy of the hostname could assert an origin the data does
- * not use and still pass, which is the failure mode `src/lib/image-origin.ts` exists to prevent.
- *
- * WHAT IT CANNOT SEE
- * ------------------
- * Whether any URL actually resolves. Nothing here makes a request — `globalThis.fetch` is replaced
- * with a spy that THROWS, and the tests assert it was never called, so a future edit that made
- * assembly fetch something would fail here rather than quietly turn a unit test into a flaky
- * network test. Liveness, content-type and cache-control are the live verifier's job.
- *
- * FILENAME CONTRACT
- * -----------------
- * `*.unit.test.ts` under `test/` — the three Vitest project globs are MUTUALLY EXCLUSIVE and a file
- * matching none is silently never run.
- */
-
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-// The script is a .mjs importing a .ts; Vitest resolves both. Its CLI is behind an
-// `invokedDirectly` guard keyed on process.argv[1], so importing it here runs no CLI and — as the
-// fetch spy below proves — opens no socket.
 import {
   assembleTargets,
   checkTarget,
@@ -81,15 +33,8 @@ interface Photo {
 
 const manifest: Photo[] = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
-/**
- * The floor this file is allowed to assume about the corpus. NOT 39: the pipeline this phase builds
- * adds records, and an equality here would make the test fail on correct work the first time a
- * photo is published. A floor still catches the case that matters — a manifest that lost its
- * records, which would make every assertion below vacuously true.
- */
 const MIN_RECORDS = 30;
 
-/** Built independently of the script. See the header. */
 function expectedTargets(records: Photo[]): { id: string; key: string; url: string }[] {
   const out: { id: string; key: string; url: string }[] = [];
   for (const record of records) {
@@ -100,7 +45,6 @@ function expectedTargets(records: Photo[]): { id: string; key: string; url: stri
   return out;
 }
 
-/** A minimal record shaped like the real thing, for the negative cases. */
 function makeRecord(id: string, overrides: Partial<PhotoUrls> = {}): Photo {
   const [category, slug] = id.split('-');
   return {
@@ -121,8 +65,6 @@ let fetchCalls = 0;
 const realFetch = globalThis.fetch;
 
 beforeAll(() => {
-  // Not a mock that records and returns — one that THROWS. If assembly or argv parsing ever
-  // reaches the network, these tests must fail loudly rather than pass slowly.
   globalThis.fetch = ((...args: unknown[]) => {
     fetchCalls++;
     throw new Error(`no test in this file may make a request. Attempted: ${String(args[0])}`);
@@ -149,7 +91,6 @@ describe('target assembly over the committed manifest', () => {
     const targets = assembleTargets(manifest, { manifestPath: MANIFEST_PATH });
     expect(REMOTE_URL_KEYS.length).toBe(4);
     expect(targets.length).toBe(manifest.length * 4);
-    // 156 at the time of writing, stated as an arithmetic identity rather than a constant.
     expect(targets.length).toBe(expectedTargets(manifest).length);
   });
 
@@ -165,27 +106,6 @@ describe('target assembly over the committed manifest', () => {
   });
 
   it('keeps a directory segment in every pathname — a basename rewrite would 404 plausibly', () => {
-    /*
-     * 🔴 THE SEGMENT IS NO LONGER THE RECORD'S `category`, AND THAT IS A FINDING RATHER THAN A
-     * BROKEN TEST.
-     *
-     * This assertion used to read `startsWith(`/photos/${category}/`)`. The taxonomy was
-     * re-authored from seven categories to five — Akhil: *"5 is better"* — and that rewrote every
-     * record's `id` and `category`. It did NOT rewrite the R2 keys, because renaming forty objects
-     * in a bucket is a migration with a failure mode, and the keys are physical storage rather than
-     * editorial structure. MEASURED on the committed manifest: `architecture-intothemist` carries
-     * `…/photos/abstract/intothemist.webp` — a record in `architecture` living under the retired
-     * `abstract` prefix, which is correct and deliberate.
-     *
-     * So the invariant "the URL's directory is the record's category" is FALSE BY DESIGN now, and
-     * asserting it would be asserting that the re-author had not happened.
-     *
-     * WHAT STILL PROTECTS AGAINST THE ORIGINAL HAZARD — a basename rewrite that drops the
-     * directory and 404s plausibly — is that all five variants of ONE record share ONE directory.
-     * That is strictly stronger than the old form against the thing it was written for: a rewrite
-     * that flattened `photos/abstract/x-md.webp` to `photos/x-md.webp` passed the old check only if
-     * it also renamed the directory, and fails this one outright.
-     */
     const targets = assembleTargets(manifest, { manifestPath: MANIFEST_PATH });
     const byId = new Map(manifest.map((r) => [r.id, r]));
     const dirsById = new Map<string, Set<string>>();
@@ -193,8 +113,6 @@ describe('target assembly over the committed manifest', () => {
     for (const target of targets) {
       expect(byId.get(target.id), `no record for ${target.id}`).toBeTruthy();
       const segments = new URL(target.url).pathname.split('/').filter(Boolean);
-      // `photos/<dir>/<basename>` — three segments, and the first is the bucket prefix the
-      // 2026-08-30 route rename deliberately left alone.
       expect(segments[0]).toBe('photos');
       expect(segments).toHaveLength(3);
       expect(segments[1]).toMatch(/^[a-z][a-z0-9-]*$/);
@@ -202,7 +120,6 @@ describe('target assembly over the committed manifest', () => {
       (dirsById.get(target.id) as Set<string>).add(segments[1] as string);
     }
 
-    // ANTI-VACUITY: no records would make the loop above assert nothing.
     expect(dirsById.size).toBeGreaterThan(0);
     const split = [...dirsById.entries()].filter(([, dirs]) => dirs.size !== 1);
     expect(split.map(([id, dirs]) => `${id} → ${[...dirs].join(', ')}`)).toEqual([]);
@@ -223,8 +140,6 @@ describe('thumb is excluded by construction, not by a filter', () => {
   });
 
   it('every record HAS a thumb that a naive "skip what is not a URL" filter would have included', () => {
-    // This is the whole reason exclusion is by name. A data: URI parses perfectly well as a URL,
-    // so the careful-looking filter is the broken one.
     let checked = 0;
     for (const record of manifest) {
       expect(typeof record.urls.thumb, `${record.id}.thumb`).toBe('string');
@@ -245,7 +160,6 @@ describe('thumb is excluded by construction, not by a filter', () => {
 
 describe('the floors — "nothing to check" is a refusal, never a pass', () => {
   it('refuses an empty manifest rather than reporting zero targets as fine', () => {
-    // 0 === 0 * 4 is true, which is exactly why this needs its own floor.
     expect(() => assembleTargets([], { manifestPath: '/tmp/empty.json' })).toThrow(VerifierRefusal);
     let message = '';
     try {
@@ -305,13 +219,9 @@ describe('the origin check fires before any request (T-04-10)', () => {
     expect(message).toContain('https://evil.example.com');
     expect(message).toContain(IMAGE_ORIGIN);
     expect(message).toContain('not requested');
-    // The afterEach fetch-count assertion is the other half of this claim.
   });
 
   it('reports a data: URI planted in a REMOTE key as a foreign origin, not as a target', () => {
-    // The walk-through attempt: a data: URI parses, so a filter-based verifier would accept it.
-    // `new URL('data:...').origin` is "null", which is not IMAGE_ORIGIN, so the origin check
-    // catches it before any request.
     const record = makeRecord('landscape-example', {
       original: 'data:image/webp;base64,UklGRhICAABXRUJQ',
     });
@@ -338,8 +248,6 @@ describe('--only, whose refusal 04-10 depends on', () => {
   });
 
   it('refuses an id that matches no record, naming the id', () => {
-    // 04-10's criterion-1 gate is only meaningful if this is a refusal: a single-record check that
-    // silently found nothing would let a live-run gate go green over a run that never happened.
     const unknown = 'a-photo-id-that-does-not-exist';
     let message = '';
     let threw = false;
@@ -434,9 +342,6 @@ describe('the argv contract, including the HEAD/GET rule', () => {
   });
 
   it('--cache switches the METHOD to GET as part of the same decision', () => {
-    // Measured in 04-RESEARCH §4 and reproduced on 2026-08-27: a HEAD against this origin returns
-    // cf-cache-status: DYNAMIC and NO cache-control at all, on an object a GET reports as cached
-    // with max-age=14400. A HEAD-mode cache assertion would report a result it did not measure.
     const parsed = parseArgv(['--cache']);
     expect(parsed.mode.method).toBe('GET');
     expect(parsed.mode.assertCacheControl).toBe(true);
@@ -461,8 +366,6 @@ describe('the argv contract, including the HEAD/GET rule', () => {
   });
 
   it('refuses an unknown flag rather than ignoring it', () => {
-    // A dropped `--onlyy` would run the whole corpus while the caller believed it had scoped to one
-    // record — or, in the pipeline, look like a one-record check that was really 156.
     let message = '';
     try {
       parseArgv(['--onlyy', 'landscape-example']);
@@ -485,21 +388,7 @@ describe('the argv contract, including the HEAD/GET rule', () => {
   });
 });
 
-/**
- * The retry path, driven with a stubbed `fetch` — no socket, no real backoff.
- *
- * This block exists because of a MEASUREMENT taken during this plan's own four-step failure proof:
- * a full 156-URL run reported `HTTP 502` for `architecture-hauntedmansionjpg.small`, and ten
- * immediate re-probes of that exact URL (5x HEAD + 5x GET) all returned `200 image/webp`. The origin
- * emits the occasional 5xx blip, and the first version of the verifier reported it as a finding.
- *
- * A retry is the fix and also a risk: the obvious wrong version retries EVERYTHING, which would
- * turn the 404 this gate was built to catch into three slow 404s and then — one careless edit later —
- * into a pass. So both halves are asserted: transient statuses recover, and a status that persists
- * is still REPORTED.
- */
 describe('the retry path cannot mask a real failure', () => {
-  /** A minimal Response stand-in: only what checkTarget reads. */
   const respond = (status: number, headers: Record<string, string> = {}) => ({
     status,
     headers: { get: (name: string) => headers[name.toLowerCase()] ?? null },
@@ -514,7 +403,6 @@ describe('the retry path cannot mask a real failure', () => {
   const HEAD_MODE = parseArgv([]).mode;
   const NO_WAIT = { backoffMs: 0 };
 
-  /** Replaces the throwing spy for the duration of one call, then restores it. */
   async function withFetch(
     queue: ReturnType<typeof respond>[],
     run: () => Promise<string | null>
@@ -585,14 +473,6 @@ describe('the retry path cannot mask a real failure', () => {
   });
 });
 
-/**
- * The exit contract, spawned. Both cases refuse BEFORE any request is issued, so this describe
- * block is still network-free — and the `spawnSync` calls below are the only place a process is
- * created, because asserting on stdout is a worse test than calling the function when the function
- * is available. Output is asserted NON-EMPTY BEFORE its content: `expect('').toContain('x')` fails,
- * but a `grep -c`-shaped check over an empty capture is how 03-07 shipped a gate that could not
- * fail, and the same shape in a test is worth refusing explicitly.
- */
 describe('the CLI exit contract on refusals', () => {
   const run = (args: string[]) => {
     const result = spawnSync(process.execPath, [SCRIPT_PATH, ...args], {
@@ -617,7 +497,6 @@ describe('the CLI exit contract on refusals', () => {
     expect(status).toBe(1);
     expect(stderr).toContain('a-photo-id-that-does-not-exist');
     expect(stderr).toContain('matched no record');
-    // And it must NOT have printed a PASS report alongside the refusal.
     expect(stdout).not.toContain('PASS');
   });
 });

@@ -1,52 +1,3 @@
-/**
- * The Lighthouse run `05-UI-SPEC.md` §7.2 and §9.2 were both waiting on, and the measurement
- * behind the project's "Lighthouse 95+ on public pages" constraint.
- *
- * ================================================================================================
- * WHAT THIS MEASURES, AND WHY IT IS A LOCAL RUN RATHER THAN A GATE
- * ================================================================================================
- *
- * Six route FAMILIES, not six URLs: `/`, `/photography`, one `/photography/[category]`, one
- * `/photography/[category]/[slug]`, `/development`, `/resume`. Every other route in the build is one of these
- * six with different content, so a seventh URL would cost a minute and add no information.
- *
- * It is deliberately NOT chained into `npm test` or `npm run build`, for the same reason
- * `audit:public` is not (see the `//audit:public` sibling key in `package.json`): a Lighthouse
- * score is deterministic PER MACHINE, not per platform. CPU contention, thermal state and the
- * remote image origin all move it. Phase 8 owns whether any of it becomes a CI gate under QUAL-01.
- *
- * ================================================================================================
- * THE ORIGIN IS SERVED HERE, GZIPPED, AND THAT IS A FIDELITY DECISION
- * ================================================================================================
- *
- * `test/audit/serve-dist.mjs` exists and serves the same artefact, but it answers `no-store` and
- * sends every byte uncompressed — both correct for a geometry audit, both wrong here:
- *
- *   - Cloudflare compresses text assets. Serving `/photography`'s document uncompressed presents
- *     Lighthouse with ~106 KB where production sends ~20 KB, and simulated throttling turns
- *     transfer bytes directly into FCP and LCP milliseconds. The score would be a measurement of
- *     this server rather than of the site.
- *   - `dist/client/_headers` declares `Cache-Control: public, max-age=31536000, immutable` for
- *     `/_astro/*`. It is replicated below so the cache-policy audit reads what will ship.
- *
- * Images are NOT served from here and must not be: `IMAGE_ORIGIN` is
- * `https://images.akhilsaxena.com`, so the 39 gallery photographs are fetched from the real CDN
- * exactly as a visitor fetches them. That is the point — the gallery's weight is the thing under
- * measurement, and a local copy of it would measure a fiction.
- *
- * ================================================================================================
- * MEDIAN OF THREE, AND THE BROWSER IS PINNED
- * ================================================================================================
- *
- * A single Lighthouse run is not a measurement; TBT and LCP move several points between
- * consecutive runs on an unloaded machine. Three runs per route per preset, median reported,
- * spread printed — so a wide spread is visible rather than averaged away.
- *
- * `CHROME_PATH` defaults to Playwright's pinned Chrome for Testing, the same binary
- * `npm run audit:public` drives. Using the developer's own Chrome would put extensions, a warm
- * profile and an auto-update channel inside the measurement.
- */
-
 import {
   createReadStream,
   existsSync,
@@ -69,7 +20,6 @@ const OUT_DIR = resolve('lighthouse-report');
 const PORT = Number(process.env.LH_PORT ?? 4400);
 const RUNS = Number(process.env.LH_RUNS ?? 3);
 
-/** The six route families. `label` is what the report table is keyed on. */
 const ROUTES = [
   { label: 'Home', path: '/' },
   { label: 'Photos (39-photo gallery)', path: '/photography' },
@@ -89,13 +39,6 @@ if (!existsSync(join(ROOT, 'index.html'))) {
   process.exit(1);
 }
 
-/* ══ 1. WHICH BUNDLE IS BEING MEASURED — printed, never assumed ════════════════════════════════
- *
- * Plan 05-14 measured that a build run under `NODE_ENV=test` resolves React through the
- * `development` export condition and leaves 411,410 B of React devtools plumbing in `dist/` —
- * 197 KB that never ships. A score taken against that artefact is not a score of this site, so
- * the run states which artefact it read and proves it by the absence of React's dev-only strings.
- */
 const DEV_ONLY_STRINGS = ['Invalid hook call', 'Each child in a list'];
 function bundleProvenance() {
   const dir = join(ROOT, '_astro');
@@ -109,8 +52,6 @@ function bundleProvenance() {
   }
   return { sizes, devMarkers, total: Object.values(sizes).reduce((a, b) => a + b, 0) };
 }
-
-/* ══ 2. THE ORIGIN ════════════════════════════════════════════════════════════════════════════ */
 
 const TYPES = new Map([
   ['.html', 'text/html; charset=utf-8'],
@@ -128,10 +69,8 @@ const TYPES = new Map([
   ['.txt', 'text/plain; charset=utf-8'],
 ]);
 
-/** Cloudflare compresses these and not the already-compressed ones (woff2, webp, png). */
 const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.xml', '.txt']);
 
-/** `/development` -> `dist/client/development/index.html`; a miss is a loud 404, never an empty 200. */
 function resolveFile(pathname) {
   const clean = normalize(decodeURIComponent(pathname)).replace(/^(\.\.[/\\])+/, '');
   const base = resolve(join(ROOT, clean));
@@ -153,8 +92,6 @@ const server = createServer((req, res) => {
   const ext = extname(file);
   const headers = {
     'content-type': TYPES.get(ext) ?? 'application/octet-stream',
-    // Replicates dist/client/_headers. Everything else gets the Cloudflare default for an
-    // unconfigured asset, which is a short revalidating TTL rather than no-store.
     'cache-control': url.pathname.startsWith('/_astro/')
       ? 'public, max-age=31536000, immutable'
       : 'public, max-age=0, must-revalidate',
@@ -170,8 +107,6 @@ const server = createServer((req, res) => {
   res.writeHead(200, headers);
   createReadStream(file).pipe(res);
 });
-
-/* ══ 3. THE RUN ═══════════════════════════════════════════════════════════════════════════════ */
 
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
@@ -196,8 +131,6 @@ async function scoreOnce(chrome, url, preset) {
       CLS: Math.round((lhr.audits['cumulative-layout-shift'].numericValue ?? 0) * 1000) / 1000,
       SI: Math.round(lhr.audits['speed-index'].numericValue),
     },
-    // The two audits §7.2 and §9.2 turn on, carried through so the answer is in the record
-    // rather than re-derived from a score.
     unsizedImages: lhr.audits['unsized-images']?.score ?? null,
     unsizedImageCount: lhr.audits['unsized-images']?.details?.items?.length ?? null,
     failedAudits: Object.values(lhr.audits)
@@ -229,9 +162,6 @@ async function main() {
   await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
   process.stdout.write(`lighthouse-run: ${ROOT} on http://127.0.0.1:${PORT} (gzip)\n\n`);
 
-  // Playwright's pinned Chrome for Testing, resolved through its own API rather than by pasting
-  // a cache path that carries a build number. `undefined` lets chrome-launcher find a system
-  // Chrome, which is the documented fallback and is stated in the output either way.
   const chromePath = process.env.CHROME_PATH ?? chromium.executablePath();
   const usePinned = Boolean(chromePath) && existsSync(chromePath);
   process.stdout.write(
@@ -278,9 +208,6 @@ async function main() {
     }
   }
 
-  // `chrome-launcher`'s `kill()` is typed as returning void in the version installed here, so
-  // `await` on it draws ts(80007) under `astro check`, which runs over `scripts/**`. It is
-  // synchronous in effect; called without await rather than suppressed with a comment directive.
   chrome.kill();
   server.close();
 

@@ -1,140 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * assert-public-routes-ship-no-js — PUB-14 and DS-09, asserted over the BUILT artefact.
- *
- * Usage: node scripts/assert-public-routes-ship-no-js.mjs [distRoot]   (default ./dist/client)
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IT CLAIMS
- *
- * Four of the five public route patterns ship ZERO framework JavaScript; the fifth — `/photography`
- * plus `/photography/<category>`, ONE pattern by OQ-6c — ships exactly one Lightbox island. No public
- * chunk carries a forbidden design-system family, none carries the photo pipeline, and the whole
- * of `dist/client` stays under three byte ceilings.
- *
- * ---------------------------------------------------------------------------------------------
- * THE §5.2 / §5.3 RECONCILIATION — READ THIS BEFORE "FIXING" AN ASSERTION
- *
- * `05-UI-SPEC.md` §5.3 spells assertions 1 and 3 as `<script type="module" src=`, and §5.2 as
- * "at most one `<script is:inline>`". BOTH SPELLINGS ARE WRONG AGAINST ASTRO 7, measured by
- * plan 05-12 and re-measured here on every run (the census prints the module-script count):
- *
- *   - A hydrated `/photography` document carries **zero** `<script type="module">`. Astro 7 emits
- *     `<astro-island component-url=… component-export=… renderer-url=…>` plus classic
- *     attribute-less `<script>` blocks, the last of which reaches the chunk through a dynamic
- *     `import()`. So §5.3's assertion 1 is VACUOUSLY TRUE on a page shipping 209 KB of React,
- *     and its assertion 3 is RED against a correct build.
- *   - A gallery route carries THREE `<script>` blocks: the authored theme block and two of
- *     Astro's own hydration bootstraps. §5.2's rule, read literally, refuses the one route it
- *     exists to permit.
- *
- * The repair, in both cases, is to ENUMERATE THE PERMITTED SHAPE rather than deny a spelling:
- *
- *   A1  a zero-JS document has no `<astro-island>`, no `<script src>`, no `type="module"`, and
- *       names no `/_astro/*.js` — so its reachable chunk bytes are 0. Stated four ways because
- *       any one of them alone is a spelling somebody can route around.
- *   A2  the set of inline script TEXTS across the artefact must be exactly three: the theme
- *       block, on every document, and two bootstrap blocks, on the hydrating documents and
- *       nowhere else. A fourth distinct text anywhere is a second authored script and fails.
- *       The theme text is IDENTIFIED AS THE ONE TEXT PRESENT ON EVERY DOCUMENT, not read from
- *       `index.html` and not kept as a copy in this file — so pages are compared against each
- *       other, and a second script added to the shared layout shows up as what it is: a second
- *       universal text. See the note beside the derivation for the control that forced this.
- *   A6  and, underneath all of it, a byte ceiling — because a spelling argument cannot be won
- *       and a byte total cannot be argued with.
- *
- * ---------------------------------------------------------------------------------------------
- * ASSERTION 6 — THE CEILING'S UNIT, AND WHY IT IS THE ONE IT IS
- *
- * RAW BYTES ON DISK, not gzip and not brotli. Three reasons, in order of weight:
- *
- *   1. Compression ratio is a property of the SERVING EDGE, not of the artefact. Cloudflare picks
- *      the encoding from `Accept-Encoding` and picks the quality level itself. A ceiling over
- *      `brotli -q11` measures a tool version as much as it measures the bundle, and it would move
- *      under this project when nothing in this project changed.
- *   2. Raw bytes are a deterministic function of the committed source plus the lockfile, so the
- *      number a developer sees is the number CI sees. That is the whole reason to have a ceiling.
- *   3. What PUB-14 actually cares about is main-thread cost, and parse/compile time scales with
- *      RAW bytes — the browser decompresses before it parses. TBT does not care what the wire
- *      carried.
- *
- * THREE CEILINGS, NOT ONE, because one number cannot both catch an order-of-magnitude event and
- * catch a 2 KB regression:
- *
- *   APP     every chunk ANY document names as an island `component-url` — the island ENTRY
- *           chunks, and deliberately not their transitive imports. Collected from every document,
- *           permitted or not, so that an unauthorised island's chunk is blamed on the island
- *           rather than on React. This is the unit this repository
- *           controls. TIGHT on purpose: today 17,451 B against a 19,000 B ceiling, i.e. 1,549 B
- *           of headroom.
- *           Plan 05-12 shipped a build-time helper alongside its island and Rolldown did not
- *           tree-shake it — 19,336 B against 17,435 B, a 1,901 B regression with no symptom.
- *           THIS CEILING IS SET BELOW THAT DELTA SO THAT EXACTLY THAT EVENT IS A RED BUILD.
- *   VENDOR  everything else under `dist/client/**\/*.js` — React and `@astrojs/react`'s client
- *           runtime, today 191,717 B. Fixed cost of having any island at all; a second framework
- *           runtime, or a duplicated React, blows it.
- *   TOTAL   every `.js` under `dist/client`, today 209,168 B. The backstop. A chunk that is
- *           neither named by a document nor imported by one — a bare dynamic `import()` target —
- *           is invisible to APP and VENDOR and still lands here.
- *
- * The ceilings are on the ARTEFACT, not per route, and that is deliberate: a chunk that exists is
- * a chunk some route can reach, and per-route reachability is exactly the thing an import
- * spelling can be used to argue about. The per-route number IS asserted, but as an equality
- * against zero (A1) rather than against a budget.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS GATE CANNOT SEE — found by walking through it, not by imagining failures
- *
- *  1. IT READS `dist/client`, AND `dist/client` IS ONLY AS GOOD AS THE LAST BUILD. This is
- *     `gate:origin`'s blind spot 3 in a second place. `npm run build` ends with `gate:content`,
- *     so the local path is covered; CI re-runs the chain AFTER `npm test`, because
- *     `test/setup/preview-server.ts` runs `astro build` directly and leaves an artefact no
- *     dist-scoped gate has looked at. Do not delete that step.
- *  2. IT CANNOT DISTINGUISH AN AUTHORED SCRIPT FROM ASTRO'S OWN by reading it — nothing in the
- *     text says who wrote it. A2 closes this by counting: exactly two non-theme texts, present on
- *     the hydrating documents and on no other. A third one fails whoever wrote it. What gets
- *     through: nothing, at this count. What WOULD get through if the count were relaxed to "at
- *     most": an authored script planted only in the gallery template. The count is exact for that
- *     reason.
- *  3. A4 IS A TEXT MATCH ON MINIFIED OUTPUT, and minified Rollup output does not reliably carry
- *     npm package names. Measured here, not assumed: a chunk carrying `components/Sortable` holds
- *     `dndKit`, `DndContext`, `droppable` and `Draggable item` and holds NO `dnd-kit` at all. That
- *     is why there are two family patterns and why A6 exists. A4 alone is not evidence.
- *  3a. A4 IS CASE-INSENSITIVE AND THEREFORE MATCHES `lowLight`, a plausible identifier. Found by
- *     this gate's own self-test, which flagged the anti-canary the first time it ran; kept rather
- *     than narrowed, for the reason written beside the A4 canary.
- *  3b. THE BARREL IMPORT IS NOT A USABLE POSITIVE CONTROL FOR A4 OR A6 IN THIS REPOSITORY, and
- *     the plan that commissioned this gate assumed it was. MEASURED 2026-08-29: replacing the
- *     island's four subpath imports with `import { Eyebrow, Lightbox, Text } from
- *     '@akhil-saxena/design-system'` moves the artefact from 209,168 B to 209,707 B — plus 539 B —
- *     and NEITHER A4 NOR A6 fires. Rolldown tree-shakes the barrel completely here, which is the
- *     behaviour `STATE.md` recorded from a different repository and which §1.1 explicitly declines
- *     to rely on. §1.1's 416,590 B is the barrel entry's SOURCE MODULE GRAPH, not what any chunk
- *     ends up containing.
- *
- *     CONSEQUENCE, and it is the important one: THE ARTEFACT IS THE WRONG LAYER AT WHICH TO CATCH
- *     A BARREL IMPORT. `scripts/assert-ds-import-contract.mjs` (`gate:ds`) catches it AT SOURCE —
- *     verified, exit 1, `PhotoLightbox.tsx:126: [DS-BARREL]` — and that is the control that must
- *     not be weakened. A4 and A6 are proven able to fire by §1.1's OTHER two named controls, which
- *     genuinely pull the families in: `components/RichText` (A4 x3 AND all three ceilings) and
- *     `components/Sortable` (A6 only, A4 silent — see item 3).
- *  4. IT NEVER SHELLS OUT TO `grep`. A literal control character makes a file invisible to grep,
- *     so every grep gate over it passes vacuously. Everything here is read as text in JavaScript.
- *  5. `client:only` IS NOT SPECIAL-CASED and does not need to be — it emits an `<astro-island>`
- *     with no SSR output, so A1 catches it by the same predicate as `client:load`. Recorded
- *     because it looks like a hole.
- *  6. IT SAYS NOTHING ABOUT `public/`. A hand-written `.js` under `public/` is copied to
- *     `dist/client` verbatim and WOULD count against TOTAL, but no document would name it, so it
- *     would land in VENDOR and be blamed on React. There is no such file today.
- *
- * Reported with `process.stdout.write`. `console.log` and `console.info` print NOTHING under this
- * repository's vitest setup — verified with a probe by 04-01 — and a gate reporting through them
- * is indistinguishable from a gate that found nothing.
- *
- * Requirements PUB-14, DS-09. Sections 1.1, 5.1, 5.2, 5.3, 7.3. OQ-6c.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -152,41 +17,14 @@ const rel = (p) => {
   return !r || r.startsWith('..') ? p : r;
 };
 
-/* The ceilings. Each is a named sum with its measurement beside it; see the header for the unit. */
 const CEILINGS = {
   app: {
-    /*
-     * RAISED 19,000 -> 21,000 on 2026-09-02, deliberately, and the invariant is what was preserved
-     * rather than the number.
-     *
-     * The gallery's filter moved from routing to the client: `/photography/<category>` used to be
-     * eight prerendered documents and a click on a pill was a full page load. `usePhotoFilter` now
-     * runs inside the one island, which took the app total from 17,451 B measured to 20,032 B —
-     * about 1.9 KB of listener, index remapping and derived copy.
-     *
-     * The ceiling's PURPOSE is unchanged and is not "keep the island small": it is to make the
-     * 1,901 B un-tree-shaken-helper regression 05-12 measured go red. That needs headroom BELOW
-     * 1,901 B, and 21,000 - 20,032 = 968 B of it — slightly tighter than the 895 B the old pair
-     * left, so the regression this gate was built for is still caught by the same margin.
-     *
-     * Raising it to fit a feature is the thing a budget is for. Raising it to fit a regression is
-     * not, and the arithmetic above is what tells the two apart the next time this line is edited.
-     */
     limit: 21_000,
     measured: 20_032,
     what: 'the island entry chunks a document names as `component-url` (not their imports)',
     why: 'set 968 B below measured, which is under the 1,901 B un-tree-shaken-helper regression 05-12 measured, so that event is still red',
   },
   router: {
-    /*
-     * Astro's view-transition router, on the 40 photograph documents. MEASURED 16,338 B raw /
-     * 5,635 gzipped, and it is ONE shared chunk however many photographs there are.
-     *
-     * The ceiling is deliberately close to the measurement: this bucket exists so the router can
-     * ship, not so that arbitrary JavaScript can arrive under cover of it. A second module script
-     * on those routes is refused by A4-MODULE-COUNT before it reaches here; this is the second
-     * fence.
-     */
     limit: 20_000,
     measured: 16_338,
     what: "Astro's view-transition router, the one module script a routed document may name",
@@ -206,27 +44,6 @@ const CEILINGS = {
   },
 };
 
-/* §5.3 assertion 4 / DS-09, in TWO patterns, and the second one is not decoration.
- *
- * MEASURED 2026-08-29, by planting each of §1.1's two named positive controls into the island and
- * reading the emitted chunk — not by reasoning about what a minifier does:
- *
- *   plant `components/RichText` (§1.1: 6 x @tiptap)   -> 143,597 B chunk.
- *       /prosemirror/i  -> "ProseMirror" @51616   FIRES
- *       /tiptap/i       -> "tiptap"      @70603   FIRES
- *   plant `components/Sortable` (§1.1: 3 x @dnd-kit) ->  68,427 B chunk.
- *       /dnd-kit/i      -> ABSENT                 DOES NOT FIRE
- *       but `dndKit` @48218, and `DndContext`, `droppable`, `Draggable item` are all PRESENT.
- *
- * So §5.3's assertion 4 AS SPELLED CANNOT FIRE ON dnd-kit — the hyphenated npm name does not
- * survive minification and the camelCased runtime identifier does. That is a gate that could not
- * fail for a case that the roadmap calls a STOP. The spec's five names are kept verbatim in
- * FAMILY_NPM_NAMES, and FAMILY_MINIFIED_IDENTIFIERS carries the identifiers measured above.
- * Each is canaried against the string that was actually read out of a chunk.
- *
- * Neither pattern is sufficient on its own and neither is trusted on its own — that is what
- * assertion 6 is for. The barrel control that was supposed to prove this method bites does NOT:
- * see the header note under `WHAT THIS GATE CANNOT SEE`, item 3b. */
 const FAMILY_NPM_NAMES = /prosemirror|tiptap|lowlight|highlight\.js|dnd-kit/i;
 const FAMILY_MINIFIED_IDENTIFIERS =
   /\bdndKit\b|\bDndContext\b|\buseDroppable\b|\buseDraggable\b|\bSortableContext\b/;
@@ -239,69 +56,18 @@ const FAMILY_RULES = [
   },
 ];
 
-/* §5.3 assertion 5 / §7.3. Two markers, because a bundler may rename one and not the other:
-   the module path, and the Node built-in the module reaches. */
 const PIPELINE_MARKERS = [
   { id: 'PIPELINE-PATH', pattern: /photo-pipeline/i },
   { id: 'PIPELINE-CRYPTO', pattern: /node:crypto|createHash/ },
 ];
 
-/**
- * A6 IS A CLAIM ABOUT THE PRODUCTION ARTEFACT, so the gate has to know which one it is holding.
- *
- * MEASURED 2026-08-29. Vitest sets `NODE_ENV=test`, and Vite resolves React through the
- * `development` export condition for anything that is not `production`. Until plan 05-14 fixed
- * `test/setup/preview-server.ts`, the artefact `npm test` left behind was React's DEVELOPMENT
- * bundle — minified, but development — and CI's "Re-assert the gates" step ran against it:
- *
- *     npm run build   PhotoLightbox 17,451  client 180,630  react-dom 11,087  =  209,168 B
- *     npm test        PhotoLightbox 28,141  client 353,843  react-dom 29,426  =  411,410 B
- *
- * Comparing that against a production ceiling produces "over the ceiling by 171,410 B", which
- * names the symptom and hides the cause. So the ceilings are SKIPPED and a finding is raised that
- * says what actually happened. It is still a refusal — a development React bundle under
- * `dist/client` is a defect in its own right, because Cloudflare would serve it — but it is a
- * refusal a reader can act on.
- *
- * Both marker sets were read out of real chunks, not invented. The dev markers are absent from
- * the production build and the prod marker is absent from the development one; React ships full
- * message text in development and an error-code URL in production.
- */
 const DEV_BUILD_MARKERS = [/Invalid hook call/, /Each child in a list/, /unique "key"/];
 const PROD_BUILD_MARKER = /Minified React error/;
 
-/* The island the one hydrating route pattern is permitted to carry. */
-/*
- * THE ONE ISLAND IS `PhotoFilters` NOW, NOT `PhotoLightbox`, and the change of name is the record
- * of a design decision rather than a rename.
- *
- * The gallery's single island used to be the lightbox: clicking a tile opened the photograph as an
- * overlay. Akhil replaced that with the M4 photo PAGE on 2026-09-02 — *"build this in place of
- * lightbox, allow nav, scroll etc."* — so a tile click is now an ordinary navigation to a
- * prerendered document, and the island that was intercepting it is deleted.
- *
- * The filter rail is what still needs JavaScript, so `PhotoFilters` is hydrated and hosts the
- * `usePhotoFilter` hook that used to live inside the lightbox. Still exactly one island per
- * document — the assertion below is unchanged in shape, only in which component it names.
- *
- * The canaries further down carry the new name too; a stale canary would prove the gate could fail
- * for a component that no longer ships.
- */
-/* The one module script a ROUTED document may name. Astro emits the view-transition router under
-   this name; the pattern is anchored so a differently-named chunk on that route still fails. */
 const ROUTER_URL = /^\/_astro\/ClientRouter\.[A-Za-z0-9_.-]+\.js$/;
 
 const ISLAND_EXPORT = 'PhotoFilters';
 const ISLAND_URL = /^\/_astro\/PhotoFilters\.[A-Za-z0-9_-]+\.js$/;
-
-/* ---------------------------------------------------------------------------------------------
- * 1. Tiny HTML readers.
- *
- * Attribute values are read with the QUOTE CHARACTER THE ATTRIBUTE OPENED WITH, never with
- * `["']([^"']*)["']` — that character class truncates at the first apostrophe, and 8 of the 40
- * photograph records contain one (05-13 measured it). An island's `props` attribute carries the
- * whole manifest.
- * ------------------------------------------------------------------------------------------- */
 
 function scriptBlocks(html) {
   return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)].map((m) => ({
@@ -310,11 +76,6 @@ function scriptBlocks(html) {
   }));
 }
 
-/** Islands, counted on a document with every `<script>` and comment REMOVED FIRST.
- *  Astro's bootstrap contains `customElements.define("astro-island", …)`, so a bare substring
- *  count reads the runtime that DEFINES the element as further instances of it — it measures 7
- *  where the truth is 1. That is 05-08's `grep -c 'pd-exif'` returning 5 on a page rendering
- *  none, in a third place. */
 function stripScriptsAndComments(html) {
   return html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '').replace(/<!--[\s\S]*?-->/g, '');
 }

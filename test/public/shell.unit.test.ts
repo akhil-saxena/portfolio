@@ -1,51 +1,3 @@
-/**
- * The public shell's standing assertions. Plan 05-06, Task 3.
- *
- * ================================================================================================
- * WHAT THIS FILE CAN AND CANNOT ASSERT, STATED BEFORE THE ASSERTIONS RATHER THAN AFTER
- * ================================================================================================
- *
- * The plan offers two ways to check `<Seo>`'s output: Astro's container API, or the built HTML.
- * NEITHER IS AVAILABLE TO A STANDING TEST IN THIS REPOSITORY TODAY, and both reasons were measured
- * rather than assumed:
- *
- *   1. THE CONTAINER API NEEDS THE ASTRO VITE PLUGIN, AND THE `unit` PROJECT HAS NONE BY DESIGN.
- *      `import Seo from '../../src/components/public/Seo.astro'` under `vitest.unit.config.ts`
- *      fails in `vite:import-analysis`:
- *
- *          Failed to parse source for import analysis because the content contains invalid JS
- *          syntax.  File: src/components/public/Seo.astro:132:22   <title>{title}</title>
- *
- *      `vitest.unit.config.ts`'s own header states "NO `globalSetup`, NO plugins and NO
- *      `environment` override", and it is a deliberate decision with reasons written next to it.
- *      Adding the Astro plugin to reach one component would change module resolution for the
- *      thirty-odd unit files already in that project. Not worth it, and not this plan's to spend.
- *
- *   2. THERE IS NO BUILT HTML TO READ. `<Seo>` and `PublicLayout` are consumed by no route until
- *      wave 4 (05-07 … 05-11); this plan's own `<verification>` block forbids touching
- *      `src/pages/**`. A test that read `dist/` today would read nothing, and a test that passes
- *      over nothing is the exact failure class this repository has paid for nineteen times.
- *
- * So this file asserts three things it CAN assert honestly, and names the fourth it cannot:
- *
- *   A. `src/lib/site-meta.ts` — BEHAVIOURAL. Real imports, real manifest, and all four refusals
- *      driven by mocking the manifest module. Nothing here is source-shaped.
- *   B. `src/components/public/Seo.astro` — STRUCTURAL, over the source. It catches a deleted tag,
- *      a hard-coded value where an expression belongs, a removed refusal, and any `set:html`. It
- *      does NOT catch a wrong runtime value.
- *   C. `src/layouts/PublicLayout.astro` — STRUCTURAL, over the source. The PUB-14 / §5.2 script
- *      budget, and the single-CSS-import rule, both of which are properties of the source.
- *
- *   D. NOT ASSERTED HERE: that a BUILT page carries exactly one inline script, no module script,
- *      an absolute canonical and an absolute og:image. That is 05-14's §5.3 assertion 2, over
- *      `dist/`, and it becomes possible the moment the first route uses the layout. Plan 05-06
- *      verified all of it against a real build with a temporary probe route and recorded the
- *      emitted HTML in its SUMMARY; that was a measurement, not a standing gate.
- *
- * Every assertion below counts its input before judging it. A `readFileSync` that returned an
- * empty string would otherwise satisfy every `not.toContain` in this file.
- */
-
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,7 +8,6 @@ import { SITE_OG_IMAGE, SITE_OG_IMAGE_ALT, SITE_OG_IMAGE_ID } from '../../src/li
 
 const read = (relative: string): string => {
   const text = readFileSync(fileURLToPath(new URL(`../../${relative}`, import.meta.url)), 'utf8');
-  // ANTI-VACUITY. An empty read satisfies every absence assertion in this file.
   expect(text.length, `${relative} is empty, so nothing below checked anything`).toBeGreaterThan(
     500
   );
@@ -68,25 +19,6 @@ const LAYOUT_SRC = 'src/layouts/PublicLayout.astro';
 const NAV_SRC = 'src/components/public/PublicNav.tsx';
 const SHELL_CSS = 'src/styles/public-shell.css';
 
-/**
- * EVERY ABSENCE ASSERTION IN THIS FILE RUNS OVER COMMENT-STRIPPED SOURCE, AND THAT IS NOT
- * FASTIDIOUSNESS — the first draft of this test had NINE failures and every one of them was the
- * test matching PROSE in a file header rather than code:
- *
- *   `not.toContain('set:html')`           fired on the paragraph explaining why there is none
- *   `not.toContain('https://akhilsaxena.com')`  fired on the paragraph explaining Astro.site
- *   `<script>` counted 2                  the frontmatter comment says the word
- *   the inline script measured 157 lines  `indexOf('<script')` found the prose occurrence first
- *   the `@media print` block had no @page the first occurrence of the string is in the header
- *
- * That is the eighth-plus instance of this class in this project (05-05 hit it counting `'-'`
- * literals, 04-02 and 03-06 before that). A rule that fires on its own rationale is a rule that
- * gets deleted.
- *
- * A CHARACTER SCANNER, NOT A REGEX. A regex block-comment stripper deletes everything between a
- * `/*` that lives inside a STRING and the next `*` + `/`, which silently removes real code. The
- * scanner below tracks string state, and its canaries are checked as real tests further down.
- */
 function stripComments(source: string): string {
   let kept = '';
   let i = 0;
@@ -131,7 +63,6 @@ function stripComments(source: string): string {
   return kept;
 }
 
-/** `{ frontmatter, template }` for an `.astro` file, split at the real closing fence. */
 function splitAstro(source: string): { frontmatter: string; template: string } {
   const lines = source.split('\n');
   expect(lines[0].trim(), 'the file does not open with a frontmatter fence').toBe('---');
@@ -143,10 +74,8 @@ function splitAstro(source: string): { frontmatter: string; template: string } {
   };
 }
 
-/** The template half. Comments intact — the script budget counts the bytes that SHIP. */
 const templateOf = (source: string): string => splitAstro(source).template;
 
-/** The whole file with comments removed, for every absence assertion. */
 const codeOf = (source: string): string => stripComments(source);
 
 describe('the comment stripper this file depends on', () => {
@@ -170,14 +99,8 @@ describe('the comment stripper this file depends on', () => {
   });
 });
 
-/* ============================================================================================
- * A. src/lib/site-meta.ts — behavioural
- * ========================================================================================== */
-
 describe('site-meta — the site-wide OG image (OQ-6a)', () => {
   it('resolves to the chosen photograph, read from the manifest rather than pasted', () => {
-    // The expectation is DERIVED from the same data the module reads, but by a separately written
-    // lookup. It never restates the URL: a literal here would agree with a pasted literal there.
     expect(manifest.length, 'the manifest is empty').toBeGreaterThanOrEqual(39);
     const record = manifest.find((entry) => entry.id === SITE_OG_IMAGE_ID);
     expect(record, `no record with id ${SITE_OG_IMAGE_ID}`).toBeDefined();
@@ -196,8 +119,6 @@ describe('site-meta — the site-wide OG image (OQ-6a)', () => {
   });
 
   it('carries the photograph own alt, not a summary and not a placeholder', () => {
-    // The floor is 05-04's measured shortest real alt (83 characters), halved. It is a floor and
-    // not an equality, so a 41st photograph cannot turn this red.
     expect(SITE_OG_IMAGE_ALT.length).toBeGreaterThan(40);
     expect(SITE_OG_IMAGE_ALT.toLowerCase()).not.toContain('portfolio');
   });
@@ -236,15 +157,7 @@ describe('site-meta — every refusal, driven by replacing the manifest', () => 
   });
 });
 
-/* ============================================================================================
- * B. src/components/public/Seo.astro — structural
- * ========================================================================================== */
-
 describe('Seo.astro — SEO-01 emits the whole tag set, once, from props', () => {
-  /**
-   * §12.3's list, in full. A test that checked "some og tags are present" would pass a component
-   * missing `og:image:alt`, which is the one nobody notices because it is only ever read aloud.
-   */
   const REQUIRED_META = [
     ['og:title', 'property'],
     ['og:description', 'property'],
@@ -275,8 +188,6 @@ describe('Seo.astro — SEO-01 emits the whole tag set, once, from props', () =>
       REQUIRED_META.length
     );
     const literal = contentAttrs.filter((v) => v.startsWith('"'));
-    // `twitter:card` is the one legitimate literal: `summary_large_image` is a fixed vocabulary
-    // value, not content. Anything else being literal means a page cannot set it.
     expect(literal).toEqual(['"summary_large_image"']);
   });
 
@@ -285,19 +196,11 @@ describe('Seo.astro — SEO-01 emits the whole tag set, once, from props', () =>
   });
 
   it('never names Astro raw-HTML directive at all, in code OR in prose', () => {
-    /* RAW source, not comment-stripped, and deliberately stronger than the rest of this file:
-       `assert-no-raw-html-sinks.mjs` matches by string anywhere in a scanned file, comments
-       included. MEASURED — a paragraph in this component's own header explaining why it avoids
-       the directive failed the build with two findings, both prose. So the standing rule for this
-       file is that the token does not appear, full stop, and this test holds the same line the
-       gate does rather than a weaker version of it. */
     expect(read(SEO_SRC)).not.toContain(['set', 'html'].join(':'));
   });
 
   it('keeps its three build-time refusals', () => {
     const source = read(SEO_SRC);
-    // Each is matched by the message it throws, so renaming a variable does not silently pass
-    // while deleting the guard does not silently fail.
     expect(source).toMatch(/Astro\.site` is not set/);
     expect(source).toMatch(/canonical must be a root-relative path/);
     expect(source).toMatch(/og:image must be an ABSOLUTE URL/);

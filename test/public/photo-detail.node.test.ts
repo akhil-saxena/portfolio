@@ -1,60 +1,3 @@
-/**
- * The forty photograph pages, over HTTP, against the built site served by real `workerd`.
- * Plan 05-08, Task 3. (PUB-07, PUB-08, PUB-09, SEO-01; §9.3, §9.5, §9.6, §13.2.)
- *
- * ================================================================================================
- * WHY THIS IS AN HTTP SUITE AND NOT A RENDER TEST
- * ================================================================================================
- *
- * Every claim below is about SHIPPED BYTES. 05-01 measured that the Astro prerender executes inside
- * `workerd` — `import.meta.url` undefined, `process.cwd()` `/bundle`, no filesystem — and that a
- * module passing thirteen unit tests can detonate on the first real page. This plan re-measured the
- * same class from the other direction: its first revision passed `astro check` and died in the
- * prerender with `ReferenceError: ROUTE_ROOT is not defined`, because `getStaticPaths` is hoisted
- * out of the component module and cannot see its frontmatter. A green unit run is not evidence
- * about the runtime that ships. The `integration` project builds the site and serves it through
- * `@astrojs/cloudflare`'s preview entrypoint, so these assertions read bytes off a socket.
- *
- * ================================================================================================
- * 🔴 THE JOIN. THIS IS THE CHECK NEITHER 05-07 NOR 05-08 COULD WRITE ALONE (BL-8)
- * ================================================================================================
- *
- * `photoHref` in `src/lib/photo-srcset.ts` is the single definition of `/photography/<category>/<slug>`.
- * 05-07's `PhotoTile.astro` builds every gallery tile from it and 05-08's `getStaticPaths` builds
- * every page from it — but both plans are wave 4, neither could read the other's output, and NO
- * GATE IN THE PHASE compares an emitted tile href against an emitted page. Two derivations that
- * disagree produce every tile 404ing against a page that exists under a different address, with a
- * green build, a green suite and a green gate.
- *
- * So the last describe block below does not consult `photoHref` at all for its expectations. It
- * reads the `href` attribute off every `a.ph-tile` in the eight BUILT gallery documents — the bytes
- * a reader's browser would follow — and requires each one to be answered 200 by a page carrying the
- * photo-detail markup. That is an end-to-end join between two plans' artefacts, and it is the only
- * assertion in this repository that can observe the disagreement.
- *
- * ================================================================================================
- * EVERY EXPECTATION IS DERIVED AT CHECK TIME. THERE IS NO COUNT IN THIS FILE.
- * ================================================================================================
- *
- * No 40, no 7, no per-category number, no `-lg`. Page counts, cycle lengths, the large variant's
- * suffix and the raw camera and lens strings all come from `data/` and from `src/lib/` when the
- * test runs, so the day a 41st photograph or an eighth category lands this file strengthens instead
- * of turning red. §13.3's rule applies to tests as much as to copy: 03-01's `--verify` hardcoded 39
- * and stopped being true the day the 40th landed, and a hardcoded 39 turned `main` red in Phase 4.
- *
- * Every derived expectation is preceded by an ANTI-VACUITY assertion that the fixture is
- * non-trivial. A suite that derives `0` from an emptied fixture and then passes zero comparisons is
- * the failure this phase's register is full of.
- *
- * ================================================================================================
- * REPORTING IS `process.stdout.write`, NEVER `console.log`
- * ================================================================================================
- *
- * 04-01 measured it with a probe: under this repository's vitest setup `console.log` and
- * `console.info` print NOTHING, so a check reporting its findings through them is
- * indistinguishable from one that found nothing.
- */
-
 import { beforeAll, describe, expect, inject, it } from 'vitest';
 
 import manifest from '../../data/portfolio_images.json';
@@ -68,11 +11,6 @@ const report = (line: string) => process.stdout.write(`${line}\n`);
 
 type Record_ = (typeof manifest)[number];
 
-/*
- * ANTI-VACUITY, BEFORE ANY EXPECTATION IS BUILT. An empty manifest or an empty category list would
- * make every loop below iterate zero times and every assertion pass, and `it()` blocks that never
- * run are reported as a green file.
- */
 if (!Array.isArray(manifest) || manifest.length === 0) {
   throw new Error('photo-detail: data/portfolio_images.json holds no records; nothing to check.');
 }
@@ -80,12 +18,6 @@ if (!Array.isArray(siteConfig.categories) || siteConfig.categories.length === 0)
   throw new Error('photo-detail: data/site_config.json declares no categories; nothing to check.');
 }
 
-/**
- * The large variant, READ FROM THE MODULE. §9.6 makes `urls.large` the `og:image` because it is the
- * 1200w file and 1200 is the Open Graph recommended width; the suffix that identifies it on disk is
- * `VARIANTS`'s, not a string typed here. Refused rather than defaulted: if the table ever loses the
- * key, this file must stop rather than assert against `undefined`.
- */
 const LARGE = VARIANTS.find((variant) => variant.urlKey === 'large');
 if (!LARGE || LARGE.suffix.length === 0) {
   throw new Error(
@@ -94,7 +26,6 @@ if (!LARGE || LARGE.suffix.length === 0) {
   );
 }
 
-/** Every category, with its own photographs in the order the routes render them (§7.1, §9.6). */
 const SEQUENCES: ReadonlyArray<{ id: string; photos: Record_[] }> = siteConfig.categories.map(
   (category) => ({
     id: category.id,
@@ -104,13 +35,10 @@ const SEQUENCES: ReadonlyArray<{ id: string; photos: Record_[] }> = siteConfig.c
   })
 );
 
-/** The eight gallery documents the join reads its hrefs out of. Derived, never listed. */
 const GALLERY_URLS: readonly string[] = [
   '/photography/',
   ...siteConfig.categories.map((category) => `/photography/${category.id}/`),
 ];
-
-/* ------------------------------------------------------------------------------------------- */
 
 const pages = new Map<string, { status: number; html: string; redirected: boolean }>();
 
@@ -127,8 +55,6 @@ async function get(pathname: string) {
   return entry;
 }
 
-/** ONE pass of entity decoding, which is what an HTML parser does. A second pass would hide a
- * double-encoded value, which is the exact defect a text comparison exists to catch. */
 function decodeEntitiesOnce(value: string): string {
   return value.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (whole, body: string) => {
     if (body.startsWith('#x') || body.startsWith('#X'))
@@ -148,22 +74,6 @@ function decodeEntitiesOnce(value: string): string {
 
 const stripTags = (value: string) => value.replace(/<[^>]*>/g, '');
 
-/**
- * 🔴 THE ATTRIBUTE READERS ARE QUOTE-AWARE, AND THAT IS A REPAIR, NOT A FLOURISH.
- *
- * The first version of this file read a value with `attr=["']([^"']*)["']` — the obvious shape,
- * and the one that treats EITHER quote character as a terminator. MEASURED: it truncated
- * `alt="Phantom Manor's mansard roof, …"` to `Phantom Manor` at the apostrophe, and the suite went
- * red against a page that was completely correct. **8 of the 40 records carry an apostrophe in
- * their `alt` or `title`**, and Astro does not escape one inside a double-quoted attribute (it has
- * no need to). The failure direction was lucky here; the same pattern reading a value it merely
- * searches for — a raw camera string, say — silently reads a shorter string and finds nothing.
- *
- * So the opening quote is captured and back-referenced, and the tag scanner below tracks quoting
- * rather than stopping at the first `>`: an attribute value containing a `>` would otherwise cut a
- * tag in half. Both are properties of the corpus, not hypotheticals — `alt` is reviewed English
- * prose written by a person.
- */
 function attr(tag: string, name: string): string | null {
   return tag.match(new RegExp(`\\b${name}=(["'])([\\s\\S]*?)\\1`))?.[2] ?? null;
 }
@@ -238,16 +148,6 @@ describe('every photograph has its own prerendered page (PUB-09)', () => {
       const headingText = decodeEntitiesOnce(stripTags(headings[0] ?? '')).trim();
       expect(headingText, `${record.id}'s <h1> is not its title`).toBe(record.title);
 
-      /*
-       * The frame's own image, not any image on the page. `PhotoSchema` already enforces
-       * `alt !== title` case- and whitespace-insensitively, so this is a rendering claim rather
-       * than a content one: it asserts that the two reviewed strings reached the two places they
-       * belong, and did not both come from `title` — which is `deferred-items.md` D-24-1, a live
-       * public defect on the legacy home page.
-       */
-      // `.pd-shot`, not `.pd-frame`. The M4 layout replaced the frame with a print MAT — Akhil: *"i
-      // want the images to feel like they're a print, so add a border in white around each image"* —
-      // and the class went with it. The claim is unchanged: the reviewed `alt` reached the `<img>`.
       const frame = page.html.match(/<div class="pd-shot"[\s\S]*?<\/div>/)?.[0] ?? '';
       const alt = decodeEntitiesOnce(attr(frame, 'alt') ?? '');
       expect(alt, `${record.id}'s frame has no alt text`).toBe(record.alt);
@@ -475,11 +375,6 @@ describe('previous and next are real anchors that wrap inside the category (§9.
         expect(next, `${current} has no next anchor to follow`).toBeTruthy();
         current = next as string;
       }
-      /*
-       * ONE assertion covering wrapping, ordering and length at once. It closes at `size` steps
-       * only if every hop advanced by exactly one AND the last one wrapped; a clamp at the end
-       * stops short, a skip closes early, and a duplicate shows up in `visited`.
-       */
       expect(
         current,
         `following next ${size} times in ${sequence.id} did not return to the start`
@@ -492,23 +387,6 @@ describe('previous and next are real anchors that wrap inside the category (§9.
     report(`cycles walked (category length): ${walked.join(' · ')}`);
   });
 
-  /*
-   * 🔴 ONE BACK LINK NOW, NOT TWO, AND IT IS THE SECTION EYEBROW.
-   *
-   * This asserted a `<nav class="pd-back">` carrying `← All photographs` and `← {Category}`. The M4
-   * layout replaced it: the caption's own first line is the way back, rendered as `← ARCHITECTURE`
-   * above the title. Akhil specified the block character for character — *"← ARCHITECTURE, 07 OF 16
-   * / Statue of David / Florence, Italy / ← PREV / 07 / 10 / NEXT → / this"* — and then moved the
-   * counter down to the navigation row, leaving the eyebrow as section name alone.
-   *
-   * `← All photographs` went with the nav and was not replaced. It is not a loss worth asserting
-   * back into existence: the bar's `photography` item is marked current on this route and goes to
-   * exactly that page, so the unfiltered gallery is one click away from every photograph either way.
-   *
-   * WHAT IS ASSERTED INSTEAD is the half that carries the reader: the eyebrow is a real anchor, it
-   * points at the photograph's OWN category, it names that category, and it is labelled for a
-   * screen reader — an arrow plus a word is not a destination when it is read aloud.
-   */
   it('offers one back link — the section eyebrow, pointing at its own category', () => {
     for (const category of siteConfig.categories) {
       const sequence = SEQUENCES.find((entry) => entry.id === category.id);
@@ -551,11 +429,6 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
       const gallery = await get(url);
       expect(gallery.status, `${url} did not answer 200`).toBe(200);
 
-      /*
-       * The hrefs are read out of the BUILT gallery document — not composed here — so this
-       * compares 05-07's artefact against 05-08's. Reading them through `photoHref` would make
-       * the check agree with itself and it could never observe the disagreement it exists for.
-       */
       const hrefs = anchorTags(gallery.html)
         .filter((tag) => (attr(tag, 'class') ?? '').split(/\s+/).includes('ph-tile'))
         .map((tag) => attr(tag, 'href') ?? '');
@@ -571,15 +444,6 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
           generated.has(href),
           `${url} links to ${href}, which no page was generated for`
         ).toBe(true);
-        /*
-         * FETCHED VERBATIM — no trailing slash added, because the point is the path a reader's
-         * browser actually follows. MEASURED: the emitted href answers 307 to the slashed form and
-         * then 200, so a tile costs one redirect hop and lands on the page. The first version of
-         * this block appended the slash before fetching, which is the shape that would have PASSED
-         * had the un-slashed form 404'd — it would have missed the exact defect a reader clicking a
-         * tile would hit. `fetch` follows the hop, so `status` is the end of the chain and
-         * `redirected` records that there was one.
-         */
         const page = await get(href);
         expect(page.status, `the tile href ${href} is not answered by a page`).toBe(200);
         if (page.redirected) redirected += 1;
@@ -590,8 +454,6 @@ describe('🔴 the join: every gallery tile resolves to a page this route genera
       }
     }
 
-    // The unfiltered gallery carries every photograph, so the union of tile hrefs must be the
-    // whole generated set — an orphan page would otherwise pass unseen.
     expect(seen.size, 'the tiles do not cover every generated page').toBe(generated.size);
     report(
       `join: ${tiles} tile href(s) across ${GALLERY_URLS.length} built gallery documents, ` +

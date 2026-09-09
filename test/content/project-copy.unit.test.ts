@@ -1,55 +1,3 @@
-/**
- * The proof for the `00-COPY/one-liners.md` → `data/projects.json` migration (OQ-1, plan 05-02).
- *
- * WHAT THIS FILE IS FOR
- * ---------------------
- * Five records, three fields each. A transposed one-liner, a dropped substitution or a status
- * quietly taken from the wrong project is invisible in a diff that small, so "I read the diff" is
- * not evidence. Nothing below is asserted against a re-typed literal of the copy: every claim is a
- * comparison between two artefacts that exist independently of this file — the reviewed markdown,
- * the committed JSON, and the pre-migration git revision.
- *
- * THE FOUR CLAIMS
- * ---------------
- *   1. VERBATIM. The stored copy is what the script's own extractor reads out of
- *      `00-COPY/one-liners.md`. Hand-edit either side and this goes red.
- *   2. THE TOKENS ARE THE ONLY DEPARTURE. Mask every `{{…}}` and every digit run on BOTH sides and
- *      the two strings must be identical — so the substitutions changed nothing except the
- *      positions where the source held a figure.
- *   3. LOSSLESS. Against the newest revision of `data/projects.json` that has no `status` key,
- *      found by walking the file's own log, every pre-migration field is byte-identical.
- *   4. THE BUDGETS HOLD ON THE RESOLVED STRING. Not on the stored one — see below.
- *
- * WHY THE EXTRACTOR IS IMPORTED AND THE MASKING IS NOT
- * ----------------------------------------------------
- * Claim 1 imports `parseCopySource` and `applyTokenRules` from the migration script, deliberately.
- * A second copy of those regexes here would agree with itself: it would prove that two identical
- * parsers parse identically, which is not a fact about the data. What claim 1 actually tests is
- * that neither ARTEFACT has been hand-edited away from the other.
- *
- * Claim 2 is where the independence lives, and it is written from scratch: it never names `79`,
- * `10`, `components` or `categories`. It masks tokens and digits on both sides and demands
- * character-for-character equality of everything else. A migration that "helpfully" fixed a typo,
- * dropped a clause or re-cased a word fails claim 2 even though the script and the test share an
- * extractor.
- *
- * WHY THE 60–110 / 120–200 BUDGETS ARE NOT ZOD REFINEMENTS
- * --------------------------------------------------------
- * MEASURED: the design-system one-liner is 97 characters in `00-COPY/one-liners.md`; tokenised it
- * is stored at 116, because `{{ds.componentCount}}` is 19 characters longer than the figure it
- * replaced; and it RESOLVES back to 97. A `.max(110)` on the stored string would refuse correct
- * data. The budget is a fact about what a reader sees, so it is asserted here, after
- * `resolveDsTokens` has run — the only place the rendered string exists.
- *
- * AND WHY THE RESOLVED STRING IS NEVER FED BACK THROUGH THE SCHEMA
- * ----------------------------------------------------------------
- * The resolved design-system copy contains the literal `81 components`, which `ProjectSchema`'s
- * OD-6 refusal would reject. That is CORRECT and expected, and it is stated here so that nobody
- * "hardens" this by validating the output: the schema guards the STORED string, which is the one a
- * human or the Phase 7 admin can type a stale figure into. The resolved string is derived from the
- * installed package's own README on every build and cannot go stale.
- */
-
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -68,20 +16,6 @@ import { resolveDsTokens } from '../../src/lib/ds-component-count.ts';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const PROJECTS_REL = 'data/projects.json';
 
-/*
- * The fields this proof READS, declared; everything else falls through the index signature.
- *
- * `tech` and `badges` were not here, because the migration proof only ever indexed them
- * generically (`project[key]`) inside a loop driven by the old record's own keys — and indexing
- * through `[key: string]: unknown` is legal. The narrowed claims now access them by NAME, which the
- * index signature types as `unknown`, so they are declared rather than cast at each use.
- *
- * NOT imported from `src/schemas/projects.ts`. That module imports `astro/zod` and re-exports
- * through extensionless relative specifiers only a bundler resolves — the same reason
- * `migrate-project-copy.mjs` restates the OD-6 refusal instead of importing it. The schema is still
- * the authority: this suite runs the REAL `ProjectSchema` over the shipped file elsewhere, so a
- * divergence between this shape and the schema's fails there rather than passing silently here.
- */
 interface Project {
   id: string;
   title: string;
@@ -94,13 +28,6 @@ interface Project {
   [key: string]: unknown;
 }
 
-/**
- * The shape `data/projects.json` had before this migration, as a set of key names.
- *
- * Asserted rather than assumed: if the pre-migration revision turns out to hold some other key,
- * the byte-identity loop below would silently not check it, and "nothing else was touched" would
- * be a claim about a field this file never looked at.
- */
 const PRE_MIGRATION_KEYS = [
   'id',
   'title',
@@ -112,28 +39,10 @@ const PRE_MIGRATION_KEYS = [
   'badges',
 ];
 
-/** The two tokens the migration is permitted to introduce. Any third is a finding. */
 const DOCUMENTED_TOKENS = ['{{ds.componentCount}}', '{{ds.categoryCount}}'];
 
-/**
- * The number of SUBSTITUTED SITES in the corpus.
- *
- * THREE, NOT TWO — and plan 05-02's task 2 says "exactly 2, both on design-system", which is
- * wrong. It counts RULES (there are two: the component figure and the category figure), not the
- * places they fire. The design-system ONE-LINER carries one component figure, and the design-system
- * CARD carries a component figure AND a category figure. The plan's own `<interfaces>` table is
- * consistent with three and not with two: it gives the stored card as 197 against a 160-character
- * source, a delta of 37, which is +19 for `{{ds.componentCount}}` PLUS +18 for
- * `{{ds.categoryCount}}`. One site could not produce it.
- *
- * This is an exact number rather than a floor on purpose. It is an invariant over five records of
- * reviewed copy, not a dataset size that grows — the rule broken by 04-09 (hardcoding a record
- * count that a real photograph later changed) does not apply, and a fourth site appearing silently
- * is exactly what this is here to catch.
- */
 const EXPECTED_SUBSTITUTION_SITES = 3;
 
-/** §13.1, measured on the RESOLVED string. `[min, max]`, inclusive. */
 const BUDGETS: Record<'oneLiner' | 'description', [number, number]> = {
   oneLiner: [60, 110],
   description: [120, 200],
@@ -141,13 +50,6 @@ const BUDGETS: Record<'oneLiner' | 'description', [number, number]> = {
 
 const ANY_TOKEN = /\{\{[^{}]*\}\}/g;
 
-/**
- * Mask every token and every digit run, on both sides of a comparison.
- *
- * Written without reference to the migration's regexes, and without naming a figure or a noun from
- * the copy: it cannot agree with `TOKEN_RULES` by construction. Tokens are masked first so that a
- * token containing digits collapses to one mask rather than several.
- */
 function mask(text: string): string {
   return text.replace(ANY_TOKEN, '00').replace(/\d+/g, '00');
 }
@@ -156,19 +58,6 @@ function tokensIn(text: string): string[] {
   return [...text.matchAll(ANY_TOKEN)].map((match) => match[0]);
 }
 
-// ---------------------------------------------------------------------------------------------
-// The pre-migration revision
-// ---------------------------------------------------------------------------------------------
-
-/**
- * Parse a candidate revision into the pre-migration record array, or return `null` if that
- * revision cannot serve as evidence.
- *
- * Split out and separately exercised below, because a comparison against nothing is the failure
- * this project has shipped repeatedly: a proof whose "previous revision" resolves to an empty
- * string, to a non-array, or to a revision that ALREADY carries `status` iterates zero meaningful
- * assertions and goes green while proving nothing.
- */
 function parsePreMigration(raw: string | null | undefined): Project[] | null {
   if (typeof raw !== 'string' || raw.trim() === '') return null;
 
@@ -180,32 +69,12 @@ function parsePreMigration(raw: string | null | undefined): Project[] | null {
   }
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
   if (!parsed.every((record) => typeof record === 'object' && record !== null)) return null;
-  // The defining property of a PRE-migration revision. A revision where even one record already
-  // carries `status` is at best mid-migration and cannot be the "before" picture.
   if (parsed.some((record) => 'status' in record || 'oneLiner' in record)) return null;
   if (!parsed.every((record) => typeof (record as Project).id === 'string')) return null;
 
   return parsed as Project[];
 }
 
-/**
- * Walk `data/projects.json`'s own log, newest-first, and return the newest revision that has no
- * `status` key on any record.
- *
- * Deliberately NOT `HEAD~1`. `STATE.md` records that "`HEAD~1` is never a safe evidence revision in
- * a parallel wave" — 03-03 detonated it and 03-05 was repaired pre-dispatch — and this plan runs in
- * a wave of three, two of which are committing to `main` while this file is being written. `HEAD~1`
- * has already stopped being this migration's parent (05-04 landed `e923e0b` after it). The search
- * is stable regardless of what else commits, and CI can run it because
- * `.github/workflows/ci.yml` already sets `fetch-depth: 0` for the four Phase 3 proofs.
- *
- * THROWS when it finds none. It does not skip and it does not pass: a losslessness proof with
- * nothing to compare against must be loud.
- *
- * @param limit optionally consider only the newest `limit` revisions — the seam that lets the
- *   refusal itself be proven, by pointing the search at a window that provably contains no
- *   pre-migration revision.
- */
 function findPreMigrationRevision(limit?: number): {
   ref: string;
   records: Project[];

@@ -1,79 +1,3 @@
-/**
- * CRITERION 3 — what survives a failure at each boundary of the ten-step job.
- * (Phase 4, plan 04-09 — PIPE-04, and the evidence the whole plan exists to produce.)
- *
- * The real `scripts/process-photo.mjs` is run as a real child process, in a real git clone with a
- * real bare repository as `origin`, against a real `astro sync`, a real `sharp` derivation and the
- * real record producer. Two things are faked, both deliberately and both narrowly:
- *
- *   - `scripts/lib/r2.mjs` is replaced by `test/pipeline/fixtures/fake-r2.mjs`, a bucket on local
- *     disk that logs every operation and can be told to throw at a chosen boundary;
- *   - `scripts/verify-photo-urls.mjs` is replaced by `test/pipeline/fixtures/verifier-shim.mjs`,
- *     which imports the REAL verifier's `parseArgv`, `readManifest` and `assembleTargets` — every
- *     refusal floor, the origin equality check and the frozen mode table all still run — and
- *     replaces exactly one line: the `fetch` becomes a lookup in the fake bucket.
- *
- * Nothing here dispatches a workflow, writes to R2 or pushes to `main`. That is plan 04-10's, and
- * it is behind a blocking human checkpoint for credentials.
- *
- * ---------------------------------------------------------------------------------------------
- * THE THREE ASSERTIONS EVERY NEGATIVE CASE MAKES, AND WHY THE THIRD IS NOT ENOUGH ON ITS OWN
- *
- *   1. the exit code, which must be the one that means THIS failure and not another;
- *   2. that the INJECTED THROW ACTUALLY FIRED — the fake writes an `inject` entry to its log
- *      before throwing, and the case asserts that entry is there;
- *   3. the state of the world: manifest bytes, put count, delete count, branch tip.
- *
- * (2) is the anti-vacuity clause and it is not optional. A case that only checked (1) and (3)
- * would be satisfied by an entrypoint that failed instantly for an unrelated reason — a typo in
- * an import, a missing fixture — and would go green while proving nothing. 03-04 shipped the
- * neighbouring version of this mistake: an idempotence gate that read the 55 additions the merge
- * had just made and reported `FAIL: not idempotent` on correct code, because it measured
- * convergence rather than work.
- *
- * The HAPPY PATH is asserted FIRST in this file for the same reason. Without a passing happy path,
- * every negative case below is satisfiable by an entrypoint that cannot run at all — the
- * `Cannot find module` trap that `test/content/build-fails-loudly.node.test.ts` documents in its
- * own header.
- *
- * ---------------------------------------------------------------------------------------------
- * TWO HAZARDS FROM THIS PROJECT'S REGISTER, HONOURED HERE
- *
- *  1. **A worktree copied without `.git` fabricates failures.** Four tests in this repository walk
- *     `git log` and THROW rather than pass vacuously. Every sandbox below is built with
- *     `git clone --bare --no-hardlinks` followed by `git clone --no-hardlinks`, never a `cp -r`,
- *     so history is intact. Do not "simplify" that.
- *  2. **Never `git show HEAD~1:<file>` as a before-state.** `HEAD~1` is the previous COMMIT, which
- *     is the previous revision OF A FILE only when nothing else was committed in between — and
- *     this phase adds a third commit writer to `main`. Where this file needs a before-state it
- *     CAPTURES THE BYTES BEFORE THE RUN, in the test, from the file itself.
- *
- * And a third, local: `console.log` and `console.info` are SWALLOWED by this repository's vitest
- * setup (measured: 0 occurrences against 1 for `process.stdout.write`). Every diagnostic below
- * uses `process.stdout.write`, because a gate reporting through a swallowed channel is
- * indistinguishable from a gate that found nothing.
- *
- * ---------------------------------------------------------------------------------------------
- * ONE DEPARTURE FROM THE PLAN, MEASURED RATHER THAN CHOSEN
- *
- * The plan asks case 3 to force a step-6 rejection "by supplying inputs that produce a
- * schema-invalid record — e.g. a category that does not resolve (RI-1)". THAT IS UNREACHABLE, and
- * finding out why is worth more than the case would have been: `scripts/lib/dispatch-input.mjs`
- * validates `category` against `data/site_config.json` AT STEP 1, and its `alt` rules are a strict
- * SUPERSET of `PhotoSchema`'s. So no dispatch that survives step 1 can produce a record the gate
- * refuses — the two layers are ordered correctly, and the "invalid record" this case wanted
- * cannot be built through the front door.
- *
- * The reachable equivalent, used below, plants the defect in the CONTENT SET instead: a category
- * declared in `site_config.json` that no photograph uses fires RI-2. The properties under test are
- * unchanged — the gate refuses, the manifest is restored byte-for-byte, nothing is uploaded — and
- * the case additionally asserts the gate's own photograph census, which proves the candidate
- * manifest really was written and really was read before being rolled back. Without that, "the
- * manifest is byte-identical" would also be satisfied by a job that never wrote it. The census is
- * DERIVED from the sandbox manifest the job started from, never written as a literal — see the
- * comment at the assertion for the red-on-main this cost.
- */
-
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
   chmodSync,
@@ -100,10 +24,6 @@ const SITE_CONFIG = 'data/site_config.json';
 const FIXTURES = join(REPO_ROOT, 'test', 'pipeline', 'fixtures');
 const BRANCH = 'main';
 
-/**
- * The dispatch. `alt` clears every rule in `altRefusalReason` and in `PhotoSchema`: 15+
- * characters, not the title, not the file name, no role prefix, no placeholder marker.
- */
 const TEMP_KEY = 'temp/partialfailure.jpg';
 const CATEGORY = 'landscape';
 const TITLE = 'Reeds At First Light';
@@ -140,53 +60,20 @@ type FakeState = {
   log: LogEntry[];
 };
 
-/* ============================================================================================ *
- * git — argv arrays only, never a shell string
- * ============================================================================================ */
-
 const GIT_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', LANG: 'C' };
 
 function git(cwd: string, argv: readonly string[]): string {
   return execFileSync('git', [...argv], { cwd, encoding: 'utf8', env: GIT_ENV }).trim();
 }
 
-/**
- * The same, UNTRIMMED, and it exists because trimming corrupted this suite.
- *
- * `git status --porcelain` encodes the status in the first TWO COLUMNS, and a
- * worktree-only modification is `" M path"` — a LEADING SPACE that carries meaning. `.trim()`
- * removed it, `line.slice(3)` then returned "cripts/process-photo.mjs", and the overlay below
- * skipped a file it could not find. MEASURED: with that bug, all seven planted defects in
- * `scripts/process-photo.mjs` were invisible and the whole suite stayed green while testing the
- * last COMMITTED entrypoint instead of the edited one.
- */
 function gitRaw(cwd: string, argv: readonly string[]): string {
   return execFileSync('git', [...argv], { cwd, encoding: 'utf8', env: GIT_ENV });
 }
 
 const tipOf = (sandbox: Sandbox): string => git(sandbox.origin, ['rev-parse', BRANCH]);
 
-/* ============================================================================================ *
- * the sandbox
- * ============================================================================================ */
-
 const sandboxes: string[] = [];
 
-/**
- * A git hook that lands a commit on `origin` from a rival clone. Used by cases 6 and 6b, which
- * differ ONLY in which hook it is installed as — and that difference decides which of two real,
- * distinguishable rejections the remote produces. See those cases.
- *
- * TWO THINGS HERE WERE MEASURED, NOT ASSUMED:
- *
- *  1. **The hook must unset git's own environment.** Git exports `GIT_DIR`, `GIT_INDEX_FILE` and
- *     friends to every hook it runs, so a hook that `cd`s elsewhere and calls `git add` is still
- *     operating on the CALLING repository's index. Measured here: the first version corrupted the
- *     work clone's index and the job died on `error: invalid object 100644 … for 'README.md'`,
- *     which looks like a bug in the pipeline and is a bug in the test.
- *  2. **It is bash**, spelled explicitly. Actions steps run bash; the interactive shell on this
- *     machine is zsh. Nothing here relies on either one's word-splitting.
- */
 function rivalHook(rival: string): string {
   return [
     '#!/usr/bin/env bash',
@@ -204,7 +91,6 @@ function rivalHook(rival: string): string {
   ].join('\n');
 }
 
-/** Clone a rival that can push to the same origin, configured to commit without ceremony. */
 function makeRival(sandbox: Sandbox): string {
   const rival = join(sandbox.root, 'rival');
   git(sandbox.root, ['clone', '--no-hardlinks', sandbox.origin, rival]);
@@ -214,15 +100,6 @@ function makeRival(sandbox: Sandbox): string {
   return rival;
 }
 
-/**
- * Overlay the working tree's version of any tracked-but-modified pipeline source onto the clone.
- *
- * A clone carries HEAD, so without this the suite would silently test the last COMMITTED
- * entrypoint while the author edited the file in front of them — green on code that is not the
- * code under test. What it copies is printed rather than inferred, and a clean tree prints that
- * it copied nothing, so the overlay can never be a silent difference between the sandbox and the
- * repository.
- */
 function overlayWorkingTree(work: string): void {
   const status = gitRaw(REPO_ROOT, [
     'status',
@@ -240,7 +117,6 @@ function overlayWorkingTree(work: string): void {
     if (code.includes('D')) continue; // a deletion is not something to overlay
 
     if (relative.startsWith('"')) {
-      // git quotes paths containing special characters. Rather than half-parse one, refuse.
       throw new Error(
         `partial-failure: cannot overlay the quoted path ${relative} from \`git status\`. ` +
           `Refusing rather than skipping it, because a skipped overlay means the sandbox is ` +
@@ -249,9 +125,6 @@ function overlayWorkingTree(work: string): void {
     }
     const from = join(REPO_ROOT, relative);
     if (!existsSync(from)) {
-      // A THROW, never a `continue`. The `continue` that used to be here is precisely what let a
-      // one-character parse bug disarm the entire suite: the path was wrong, the file was "not
-      // found", the overlay reported nothing to do, and every planted defect went green.
       throw new Error(
         `partial-failure: \`git status --porcelain\` named ${JSON.stringify(relative)}, which ` +
           `does not exist under ${REPO_ROOT}. The status line was ${JSON.stringify(line)}. ` +
@@ -259,14 +132,6 @@ function overlayWorkingTree(work: string): void {
           `not happening, and the sandbox would then be testing HEAD while the author edits.`
       );
     }
-    // `git status --porcelain` reports a WHOLLY-UNTRACKED DIRECTORY as one entry ending in `/`
-    // (`?? src/styles/`) rather than one entry per file inside it. `copyFileSync` on a directory
-    // throws ENOENT, which took the whole suite down the moment plan 05-01 added `src/styles/`.
-    //
-    // This is not specific to that directory: every remaining Phase 5 plan creates new folders
-    // under `src/`, so the next one would have hit it too. Recurse instead — and keep the
-    // refuse-rather-than-skip discipline, because an empty recursion is the same silent no-op
-    // the `continue` above was removed for.
     if (statSync(from).isDirectory()) {
       const before = copied.length;
       const walk = (relativeDir: string): void => {
@@ -305,25 +170,6 @@ function overlayWorkingTree(work: string): void {
   );
 }
 
-/**
- * `git status --porcelain` for `data/`, in the sandbox.
- *
- * 🔴 WHY THE ASSERTIONS COMPARE IT INSTEAD OF REQUIRING IT EMPTY. Three cases below used to read
- * `expect(git(work, ['status','--porcelain','--','data'])).toBe('')`, and that is only the same
- * claim when the AUTHOR's tree is clean. `overlayWorkingTree` above deliberately copies every
- * tracked-but-modified file — including `data/*.json` — onto the clone, so a sandbox built while
- * the manifest is edited starts dirty by design. MEASURED: the three data files carrying the
- * category re-author made cases 1 and 3 fail with `expected 'M data/home_config.json…' to be ''`,
- * on a pipeline that had done nothing wrong.
- *
- * The claim these cases make is "THE RUN changed nothing", not "the tree is pristine". Snapshotting
- * before and comparing after says exactly that, and says it on a dirty tree too.
- *
- * `makeSandbox` now COMMITS the overlay, so the base is in fact clean again and both forms would
- * pass today. The comparison form stays: it is the claim these cases actually make, it cannot be
- * quietly falsified by whatever the sandbox's base happens to be, and the empty-string form has now
- * broken once for a reason that had nothing to do with the pipeline.
- */
 function dataStatus(work: string): string {
   return git(work, ['status', '--porcelain', '--', 'data']);
 }
@@ -337,25 +183,8 @@ function makeSandbox(): Sandbox {
   const hooks = join(root, 'hooks');
   mkdirSync(hooks);
 
-  // NEVER a cp -r: hazard 3. Two clones, so `work`'s origin is the throwaway bare repository and
-  // never this repository — a pushing bug must not be able to reach the real `main`.
   git(root, ['clone', '--bare', '--no-hardlinks', REPO_ROOT, origin]);
 
-  // CONSTRUCT `BRANCH` IN THE SANDBOX RATHER THAN INHERITING IT.
-  //
-  // `clone --bare` copies whatever refs REPO_ROOT happens to have. In CI the checkout is on a
-  // branch, so `main` comes along and everything below works. In the DEPLOY job it does not:
-  // `deploy.yml` pins `ref: ${{ github.event.workflow_run.head_sha }}`, which is a DETACHED HEAD
-  // with no local branch — so the bare clone has no `refs/heads/main`, and every `rev-parse main`
-  // in this file dies with `ambiguous argument 'main'`.
-  //
-  // Measured, and this is why it looked like a flake: the SAME commit is green in CI and red in
-  // Deploy, and Deploy has failed identically since 5f8a451 at 03:06 — before any 04-10 work
-  // existed. Nothing about the pipeline was wrong; the fixture was reading the ambient checkout's
-  // branch state as if it were its own.
-  //
-  // A fixture constructs its own refs. Point BRANCH at whatever HEAD was cloned and make it the
-  // default, so the second clone checks it out regardless of how the outer repo is checked out.
   git(origin, ['branch', '--force', BRANCH, 'HEAD']);
   git(origin, ['symbolic-ref', 'HEAD', `refs/heads/${BRANCH}`]);
 

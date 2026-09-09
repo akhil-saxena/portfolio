@@ -1,145 +1,12 @@
-/**
- * The ONE definition of how a photograph becomes a URL, and of how the pipeline is asked to
- * make one. (Phase 4, plan 04-02 — the interface-first plan.)
- *
- * Modelled on `src/lib/image-origin.ts`: this file is the only place in the repository that
- * says
- *
- *   - what the STAGING prefix and bucket are (`STAGING_PREFIX`, `STAGING_BUCKET`),
- *   - what a PUBLISHED object key looks like (`PUBLISHED_PREFIX`, `publishedKey`),
- *   - what `Cache-Control` a published object carries (`OBJECT_CACHE_CONTROL`),
- *   - what the `workflow_dispatch` interface is called (`DISPATCH_INPUTS`),
- *   - what a publishable `alt` may not be (`altRefusalReason`),
- *   - where the pipeline commits and how often it retries (`PUBLISH_BRANCH`,
- *     `PUBLISH_RETRY_LIMIT`).
- *
- * ONE THING IT NO LONGER SAYS ITSELF, and the amendment is the point rather than a footnote.
- * **The variant table is no longer declared here.** `VARIANTS`, `THUMB`, `PHOTO_ID_SEPARATOR` and
- * the two `VariantTable*` types moved DOWN into `src/lib/photo-variants.ts`, a module with zero
- * `node:` imports, and are RE-EXPORTED from §3 below. So this file is still the one definition of
- * everything EXCEPT the table — of which there is still exactly one definition, one file down.
- *
- * WHY, since nothing here was broken: prerendered public pages need those numbers, and importing
- * them from this module puts `node:crypto` in a page's module graph. `05-UI-SPEC.md` §7.4 named
- * the fix ("never a second copy of the numbers") and §5.3 assertion 5 requires that boundary to be
- * PROVABLE rather than currently-true. Plan 05-05 measured it first: a probe page importing
- * `VARIANTS` from here BUILT CLEANLY and shipped no `node:crypto` to `dist/client`. That is the
- * hazard, not the reassurance — `wrangler.jsonc` sets `nodejs_compat`, so the mistake this header
- * warns about two paragraphs down would succeed quietly. The full measurement is in
- * `photo-variants.ts`'s header, with the OD-1 / OD-11 rationale that travelled with the constants.
- *
- * Plans 04-05, 04-06, 04-07, 04-08, 04-09 and 04-10 IMPORT from here. None of them re-derives
- * any of it. A constant whose rationale lives in a plan file is one nobody can evaluate in two
- * years, so every decision below carries its OD number and the measurement behind it, here, in
- * the file.
- *
- * ---------------------------------------------------------------------------------------------
- * THE DECISIONS THIS MODULE ENCODES  (all taken by Akhil in review on 2026-08-26; the
- * resolutions block at the head of `04-RESEARCH.md` § Open decisions is the record)
- *
- * OD-1 · CACHE VERSIONING = CONTENT-HASHED KEYS (option A).
- *   Measured in 04-RESEARCH §4: a GET of an existing photo returns `cf-cache-status: HIT` with
- *   `cache-control: max-age=14400` — a FOUR-HOUR BROWSER cache injected by the zone, not by the
- *   R2 object (the object carries no `Cache-Control` of its own). No server-side purge can reach
- *   a browser cache that already holds that. So the only fix that works is a URL that changes
- *   when the bytes do: `photos/<category>/<slug>-<hash8><suffix>.webp`. This is also the PIPE-04
- *   half of the argument — bytes at a URL never change, so a re-run cannot half-overwrite an
- *   object a live page is reading.
- *   Costs, recorded rather than glossed: superseded objects stay in the bucket on a re-upload,
- *   and the OLD id invariant breaks (see PHOTO_ID_SEPARATOR, re-exported in §3 below and
- *   declared in `photo-variants.ts`).
- *
- * OD-2 · `alt` IS A REQUIRED `workflow_dispatch` INPUT (option A), validated BEFORE any R2 read
- *   so a bad value costs nothing. `alt` cannot be machine-generated: all 39 existing values were
- *   written from viewing the photographs and reviewed on 2026-08-23, and the public gallery ships
- *   zero framework JS, so `alt` is the entire non-visual experience of the gallery.
- *   `gh workflow run -F alt=@alt.txt` reads the value from a file, so length is not a constraint.
- *
- * OD-2b · PLACEHOLDER-SHAPED `alt` IS REFUSED. New requirement, asked for explicitly in the same
- *   review, and it closes a MEASURED gap rather than a hypothetical one: `alt: "TODO"` passes
- *   `min(1)` and all four of `PhotoSchema`'s `superRefine` rules (04-08 Task 3 asserts exactly
- *   that), so without this refusal a hurried dispatch ships a photograph announced to a screen
- *   reader as "TODO" and nothing else in the phase stops it. See `altRefusalReason`, whose
- *   comment carries the false-positive reasoning — a refusal that rejects real alt text would be
- *   worse than no refusal at all.
- *
- * OD-3 · THE PIPELINE NEVER READS `R2_PUBLIC_URL` (option A). It imports `IMAGE_ORIGIN` from
- *   `src/lib/image-origin.ts`, whose header states it is the only place the hostname is written,
- *   so this module structurally CANNOT emit a non-canonical origin — there is no hostname literal
- *   in this file, and plan 04-02's `done` greps for its absence — the hostname is not even spelled
- *   in the paragraph you are reading, because the contract test asserts its absence from the whole
- *   file rather than from the code half. The secret is dated 2026-03-28, five months before the
- *   custom image domain was provisioned, so it very likely still holds the legacy value; and no
- *   gate in this repository can see a wrong value INSIDE a secret, because a workflow contains a
- *   reference, not a literal. Whether the secret is deleted is a `user_setup` item in 04-10, not
- *   something this module can do.
- *
- * OD-6 · STAGING PREFIX = `temp/` (option A), matching the legacy `/api/dispatch` contract. The
- *   lifecycle rule (`--expire-days STAGING_EXPIRE_DAYS`) is created ONCE by Akhil in 04-10 and
- *   asserted thereafter by comparing the rule's prefix to `STAGING_PREFIX` byte-for-byte. R2
- *   lifecycle granularity is DAYS and removal lags up to 24 h, so expiry cannot be observed
- *   inside a session; "a lifecycle rule exists" would pass against a rule scoped to the wrong
- *   prefix, which is why the assertion is on the prefix and never on a deletion.
- *
- * OD-7 · THE PIPELINE COMMITS DIRECTLY TO `main` (option A) with a bounded
- *   re-derive-and-retry — never a rebase, never a force. A textual rebase of an appended JSON
- *   array element is a conflict waiting to happen and resolves `order` incorrectly even when it
- *   succeeds. See `PUBLISH_BRANCH` / `PUBLISH_RETRY_LIMIT`; the loop itself is 04-06's.
- *
- * OD-11 · `dimensions` IS THE INTRINSIC SIZE OF THE SOURCE, not of `urls.original`. The contract
- *   is written where the field is declared — `src/schemas/photo.ts`, above
- *   `PhotoDimensionsSchema` — because that is where a reader looks for it.
- *
- * ---------------------------------------------------------------------------------------------
- * WHERE THIS MODULE RUNS, AND WHY THAT CONSTRAINS ITS IMPORTS
- *
- * It runs on a NODE RUNNER inside GitHub Actions, imported from `scripts/**` the same way
- * `scripts/assert-no-r2dev-urls.mjs` already imports `src/lib/image-origin.ts` — by relative path
- * WITH the `.ts` extension, resolved by Node 22's built-in type stripping, no bundler involved.
- *
- * That is why the import below carries `.ts`, and it is also why this file does NOT import from
- * `src/schemas/photo.ts`. MEASURED 2026-08-27, plain `node` against this repository:
- *
- *     import { PhotoUrlsSchema } from 'src/schemas/photo.ts'
- *     → ERR_MODULE_NOT_FOUND: .../src/lib/image-origin
- *
- * `photo.ts` imports the origin EXTENSIONLESS (`'../lib/image-origin'`), which Vite and
- * `astro check` resolve and Node's ESM resolver does not. So an import of `photo.ts` from here
- * would make every wave-5 Actions script unloadable, and adding the extension inside `photo.ts`
- * would break `test/content/schemas.unit.test.ts`'s assertion that the import path ends at
- * `lib/image-origin`. The thumb-prefix agreement is therefore asserted in the CONTRACT TEST,
- * which runs under Vitest and can import both sides — see `THUMB` and plan 04-02's SUMMARY.
- *
- * `node:crypto` is imported here and nowhere else under `src/`. Nothing under `src/` imports this
- * module — `photo-variants.ts` is a LEAF that this file imports, never the reverse, which is what
- * lets a prerendered page reach the table without reaching this file — so it never enters the
- * Worker bundle; the contract test asserts that boundary, because
- * `wrangler.jsonc` sets `nodejs_compat`, which means an accidental import would NOT fail loudly —
- * it would just quietly ship the pipeline into the Worker.
- */
-
 import { createHash } from 'node:crypto';
 import { IMAGE_ORIGIN } from './image-origin.ts';
 import { PHOTO_ID_SEPARATOR, VARIANTS } from './photo-variants.ts';
 
-/* ==============================================================================================
- * 0. Small shared helpers. Regexes are BUILT from the constants below rather than typed out, so
- *    a constant and the pattern that validates it cannot disagree.
- * ============================================================================================ */
-
-/** Escape a literal for inclusion in a `RegExp` source. */
 const escapeForRegExp = (literal: string): string => literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-/**
- * The slug grammar, character for character the one `src/schemas/photo.ts` enforces on `id`,
- * `category` and (through them) `slug`. It is spelled here as a SOURCE FRAGMENT because these
- * patterns are composed into the published-key pattern; the schema stays the authority on the
- * committed record, and the contract test asserts the two agree rather than assuming it.
- */
 const SLUG_SOURCE = '[a-z0-9-]+';
 const SLUG_RE = new RegExp(`^${SLUG_SOURCE}$`);
 
-/** Keep a hostile value out of an error message at full length. */
 const quoteForError = (value: unknown): string => {
   const text = typeof value === 'string' ? value : String(value);
   return JSON.stringify(text.length > 200 ? `${text.slice(0, 200)}…` : text);
@@ -155,61 +22,20 @@ const assertSlugLike = (value: string, label: string): void => {
   }
 };
 
-/* ==============================================================================================
- * 1. STAGING — where an upload waits before the pipeline reads it.  (OD-6)
- * ============================================================================================ */
-
-/**
- * The R2 bucket both halves of the pipeline use. Its single other source is `wrangler.jsonc`
- * (`"r2_buckets": [{ "binding": "PORTFOLIO_BUCKET", "bucket_name": … }]`) and the contract test
- * reads that file and asserts the two are byte-equal — so this is a shared constant, not a second
- * source of truth. Exported in WAVE 1 on purpose: 04-10 needs it, and a wave-5 plan adding an
- * export to a wave-1 file would be a backwards dependency.
- */
 export const STAGING_BUCKET = 'portfolio-photos';
 
-/**
- * The staging TTL, in days, that 04-10's lifecycle assertion compares against — so the assertion
- * reads a constant rather than an unsourced `7`. Granularity is days and removal lags up to 24 h
- * (see OD-6 in the header): the rule's PREFIX is what is asserted, never a deletion.
- */
 export const STAGING_EXPIRE_DAYS = 7;
 
-/**
- * The staging prefix. The workflow, the input validator, the delete step and the lifecycle
- * assertion all read THIS string. Nothing else may spell it.
- */
 export const STAGING_PREFIX = 'temp/';
 
-/**
- * One path segment of a staging key: it must START with an alphanumeric, which is what makes a
- * `..` segment (and a bare `.`, and a leading-dot dotfile) unmatchable rather than blocklisted.
- * Backslashes are absent from the class, so a Windows-style separator is refused too.
- */
 const STAGING_SEGMENT = '[A-Za-z0-9][A-Za-z0-9._-]*';
 
-/**
- * Anchored at BOTH ends and rooted at `STAGING_PREFIX`, so `/temp/x`, `../temp/x`, `Temp/x`
- * (case), `temp/` (empty remainder) and `temp/../secrets` all fail.
- *
- * Deliberately STRICTER than the legacy `/api/dispatch` validator, which was
- * `/^temp\/[a-zA-Z0-9._\/-]+$/` — that pattern accepts `temp/../secrets`, because `.` and `/`
- * are both in its character class. This is threat T-04-04: `temp_key` is caller-supplied text
- * that becomes a key in a bucket the pipeline holds write credentials for.
- */
 export const STAGING_KEY_RE = new RegExp(
   `^${escapeForRegExp(STAGING_PREFIX)}${STAGING_SEGMENT}(?:/${STAGING_SEGMENT})*$`
 );
 
-/** R2's documented object-key ceiling, in UTF-8 bytes. A longer key is a rejected PUT, not a key. */
 export const STAGING_KEY_MAX_LENGTH = 1024;
 
-/**
- * Refuse anything that is not a staging key, naming `STAGING_PREFIX` and the offending value.
- *
- * An assertion signature rather than a `boolean` return, so a caller that has narrowed
- * `process.argv[2]` from `unknown` keeps the narrowing instead of casting it back.
- */
 export function assertStagingKey(key: unknown): asserts key is string {
   if (typeof key !== 'string') {
     throw new Error(
@@ -218,8 +44,6 @@ export function assertStagingKey(key: unknown): asserts key is string {
       )}. Got ${typeof key}.`
     );
   }
-  // TextEncoder, not Buffer: the byte count is what R2 limits, and `Buffer` is a Node global
-  // this module has no other reason to reach for.
   const byteLength = new TextEncoder().encode(key).length;
   if (byteLength > STAGING_KEY_MAX_LENGTH) {
     throw new Error(
@@ -237,45 +61,14 @@ export function assertStagingKey(key: unknown): asserts key is string {
   }
 }
 
-/* ==============================================================================================
- * 2. THE PUBLISHED KEY.  (OD-1, OD-3)
- * ============================================================================================ */
-
-/** Everything the pipeline publishes lives under this prefix. There is no `private/` counterpart
- * here, deliberately: T-04-09 (the 39 unwatermarked masters currently readable at
- * `private/<category>/<slug>-clean.webp`) is DEFERRED TO PHASE 8, and defining a helper for that
- * path here would let a later plan compose one from this contract while the hole is still open.
- * What a new run uploads is OD-9, decided in 04-07. */
 export const PUBLISHED_PREFIX = 'photos/';
 
-/**
- * Bytes of the sha256 digest kept in a key. FOUR BYTES = 32 bits = eight hex characters.
- *
- * READ THE UNIT. This constant is a BYTE count; the key carries `CONTENT_HASH_HEX_LENGTH`
- * CHARACTERS, which is twice it. `contentHash()` already returns a string of exactly that
- * length, so nothing downstream should ever slice its output — and `publishedKey` refuses a hash
- * that is not `CONTENT_HASH_RE`, so a `hash.slice(0, CONTENT_HASH_BYTES)` mistake fails loudly
- * at the first key composition instead of silently shortening every URL in the manifest.
- *
- * COLLISION REASONING, since 32 bits sounds small: the hash is scoped to ONE slug in ONE
- * category, so a collision requires two different byte sequences for the SAME photograph. The
- * failure mode of that collision is a re-upload continuing to serve the old bytes — the same
- * outcome as not versioning at all, never a wrong photograph at a right URL. sha256 comes from
- * `node:crypto`; it is never hand-rolled (ASVS V6).
- */
 export const CONTENT_HASH_BYTES = 4;
 
-/** Hex characters of `contentHash` output, and of the `<hash8>` field in a published key. */
 export const CONTENT_HASH_HEX_LENGTH = CONTENT_HASH_BYTES * 2;
 
-/** Lower-case hex, exactly `CONTENT_HASH_HEX_LENGTH` characters. Built from the constant. */
 export const CONTENT_HASH_RE = new RegExp(`^[0-9a-f]{${CONTENT_HASH_HEX_LENGTH}}$`);
 
-/**
- * Content-address a byte sequence. Deterministic by construction: identical bytes give an
- * identical hash, so a re-run is reproducible and idempotent (PIPE-03), and two different byte
- * sequences give two different keys, which IS the CONT-05 mechanism.
- */
 export function contentHash(bytes: Uint8Array | string): string {
   return createHash('sha256').update(bytes).digest('hex').slice(0, CONTENT_HASH_HEX_LENGTH);
 }
@@ -647,7 +440,6 @@ export function altRefusalReason(candidate: {
   return null;
 }
 
-/** The throwing form of `altRefusalReason`, for a call site that has nowhere to put a reason. */
 export function assertPublishableAlt(candidate: {
   readonly alt: unknown;
   readonly title?: string;
@@ -659,19 +451,6 @@ export function assertPublishableAlt(candidate: {
   }
 }
 
-/* ==============================================================================================
- * 7. PUBLISHING.  (OD-7)
- * ============================================================================================ */
-
-/** The pipeline commits here directly — criterion 1, verbatim. */
 export const PUBLISH_BRANCH = 'main';
 
-/**
- * Attempts at the re-derive-and-retry loop before it fails loudly (04-06 owns the loop).
- *
- * NEVER a rebase and never a force: a textual rebase of an appended JSON array element is a
- * conflict waiting to happen, and resolves `order` incorrectly even when it succeeds. Recovery is
- * fetch → re-read the fetched manifest → re-run the upsert against the NEW maxima → re-validate
- * → commit → push.
- */
 export const PUBLISH_RETRY_LIMIT = 3;

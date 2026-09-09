@@ -1,48 +1,3 @@
-/**
- * The six-field EXIF mapping, the all-null path, and what `date` means.
- * (Phase 4, plan 04-07, Task 3 — PIPE-01, OD-10, OD-12.)
- *
- * THE TRAP THIS FILE EXISTS TO PIN
- * --------------------------------
- * `exifr` (the legacy reader) and `exif-reader` (OD-12 option B) DISAGREE ON A TAG NAME. EXIF tag
- * `0x8827` is `ISO` in `exifr` and `ISOSpeedRatings` in `exif-reader`. A verbatim port of the
- * legacy mapper reads `d.ISO`, gets `undefined`, and writes `iso: null` into EVERY future
- * record — schema-valid, and invisible to every gate in this repository
- * (`04-VALIDATION.md` hazard 11, found by 04-04's cross-library differential).
- *
- * So this file does not check the mapping against the legacy code and does not check it against
- * `exifr`. It checks every name against `exif-reader` SPECIFICALLY, twice over:
- *
- *   1. by parsing real bytes and asserting which key the value arrives under, and
- *   2. by feeding the mapper a synthetic parsed object under the WRONG (exifr) name and
- *      requiring the field to come back null — because a mapper that read either name would
- *      pass (1) while still being one rename away from silent data loss.
- *
- * `DateTimeOriginal` gets the same treatment. OD-10 makes `date` depend on it, and a silent
- * rename there would write the ingestion date forever while looking perfectly correct.
- *
- * WHY THE SYNTHETIC OBJECTS
- * -------------------------
- * `04-04` (wave 2) generated the fixtures and wrote exactly seven tags into them: `Make`,
- * `Model`, `LensModel`, `FNumber`, `ExposureTime`, `ISOSpeedRatings`, `FocalLength`. No date
- * tag, and this plan's `<files>` does not include the generator — requiring a date-bearing
- * fixture would invert the waves. `test/pipeline/fixtures/README.md` also names the one mapping
- * branch the fixtures cannot reach: the `>= 1s` shutter. Both are covered here by handing the
- * mapper a parsed object built in this file, in `exif-reader`'s own shape.
- *
- * WHICH OD-12 PROOF WAS AVAILABLE
- * -------------------------------
- * NOT the differential one. `04-RESEARCH.md` made a 39-record differential mandatory for option
- * B, and 04-04 Task 1 measured that the corpus does not exist: all 39 served originals — and the
- * three unwatermarked masters it also probed — are single-chunk `VP8` WebP with no `EXIF`, `XMP`
- * or `ICCP`, verified three ways. The legacy encoder never called `withMetadata()`, sharp strips
- * by default, and the camera sources were never committed. The committed `exif` blocks are the
- * OUTPUT of an extraction, not an input any extraction can be re-run against. The available
- * proof is therefore the fixtures plus these synthetic cases, and it is weaker in one stated
- * way: it shows the mapper reads what `exif-reader` produces, not that it agrees with 39
- * photographs a human reviewed in 2026-03.
- */
-
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +18,6 @@ const FIXTURES = join(HERE, 'fixtures');
 const RICH = readFileSync(join(FIXTURES, 'rich-exif.jpg'));
 const BARE = readFileSync(join(FIXTURES, 'no-exif.jpg'));
 
-/** The expectation table 04-04 emits. Read, never re-typed — that is its whole job. */
 const expected = JSON.parse(readFileSync(join(FIXTURES, 'expected-exif.json'), 'utf8')) as {
   fields: {
     camera: string | null;
@@ -75,21 +29,14 @@ const expected = JSON.parse(readFileSync(join(FIXTURES, 'expected-exif.json'), '
   };
 };
 
-/** Fixed, so nothing here depends on the day the suite runs. */
 const INGESTION_DATE = '2026-08-27';
 
-/**
- * A parsed object in `exif-reader`'s OWN shape — `{ Image, Photo }`, tags under their TIFF
- * names. Written by hand rather than produced by a reader, so the mapper is checked against the
- * library's contract instead of against itself.
- */
 const parsedExif = (image: Record<string, unknown>, photo: Record<string, unknown>) => ({
   bigEndian: false,
   Image: image,
   Photo: photo,
 });
 
-/** The seven tags `rich-exif.jpg` carries, in `exif-reader`'s names, as a synthetic object. */
 const FULL_IMAGE = { Make: 'NIKON CORPORATION', Model: 'NIKON D5300' };
 const FULL_PHOTO = {
   LensModel: '18.0-55.0 mm f/3.5-5.6',
@@ -114,8 +61,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-/* ============================================================================================ */
-
 describe('the tag names, verified against exif-reader and nothing else', () => {
   it('surfaces EXIF 0x8827 as ISOSpeedRatings — `ISO`, the exifr name, is undefined', () => {
     const parsed = exifReader(richMeta.exif as Buffer) as {
@@ -138,8 +83,6 @@ describe('the tag names, verified against exif-reader and nothing else', () => {
   });
 
   it('surfaces EXIF 0x9003 as Photo.DateTimeOriginal, already parsed to a Date', async () => {
-    // A round trip through real bytes, because OD-10 depends on this name and a rename would
-    // be silent: `date` would quietly become the ingestion date on every future record.
     const withDate = await sharp({
       create: { width: 32, height: 32, channels: 3, background: { r: 1, g: 2, b: 3 } },
     })
@@ -154,8 +97,6 @@ describe('the tag names, verified against exif-reader and nothing else', () => {
   });
 
   it('reads exif-reader names and NOT exifr names — the mapper, proven per trap tag', () => {
-    // `ISO` is the exifr spelling. A mapper that accepted it would be one rename from writing
-    // null forever, and this repo has no gate that can see a schema-valid null.
     const wrong = mapExifFields(parsedExif({}, { ISO: 200 }));
     expect(wrong.iso).toBeNull();
     const right = mapExifFields(parsedExif({}, { ISOSpeedRatings: 200 }));
@@ -163,13 +104,9 @@ describe('the tag names, verified against exif-reader and nothing else', () => {
   });
 });
 
-/* ============================================================================================ */
-
 describe('rich-exif.jpg maps to the six fields the expectation table declares', () => {
   const of = () => extractExif(richMeta, { ingestionDate: INGESTION_DATE }).fields;
 
-  // Field by field, each named. A single toEqual over the object would say something regressed
-  // without saying which of six independent branches did.
   it('camera', () => expect(of().camera).toBe(expected.fields.camera));
   it('lens', () => expect(of().lens).toBe(expected.fields.lens));
   it('aperture', () => expect(of().aperture).toBe(expected.fields.aperture));
@@ -185,8 +122,6 @@ describe('rich-exif.jpg maps to the six fields the expectation table declares', 
     expect(Object.keys(of())).toEqual([...EXIF_FIELDS]);
   });
 });
-
-/* ============================================================================================ */
 
 describe('no-exif.jpg yields six nulls, and the reader is proven to have run', () => {
   it('has no exif for the reader to find — the premise of the all-null case', () => {
@@ -230,13 +165,8 @@ describe('no-exif.jpg yields six nulls, and the reader is proven to have run', (
   }, 60_000);
 });
 
-/* ============================================================================================ */
-
 describe('a corrupt EXIF segment does not fail the job (T-04-33)', () => {
   it('returns the all-null object on ANY throw from the reader, and logs it', () => {
-    // console.log and console.info print NOTHING under this vitest setup (04-VALIDATION.md
-    // hazard 7), so the module writes its warning with process.stderr.write — which is both
-    // visible on an Actions runner and observable here.
     const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
     const corrupt = { exif: Buffer.from('not an exif segment at all', 'utf8') };
     const { fields, probe } = extractExif(corrupt, { ingestionDate: INGESTION_DATE });
@@ -257,16 +187,12 @@ describe('a corrupt EXIF segment does not fail the job (T-04-33)', () => {
   });
 });
 
-/* ============================================================================================ */
-
 describe('the shutter mapping fires both branches', () => {
   it('renders a sub-second exposure as 1/N', () => {
     expect(mapExifFields(parsedExif({}, { ExposureTime: 1 / 250 })).shutter).toBe('1/250');
   });
 
   it('renders a >= 1s exposure as Ns — the branch NO fixture reaches', () => {
-    // `fixtures/README.md` names this as the one gap: the generated files carry a 1/500
-    // exposure, so the long branch is unreachable through them and is 04-07's to cover.
     expect(mapExifFields(parsedExif({}, { ExposureTime: 2 })).shutter).toBe('2s');
   });
 
@@ -274,8 +200,6 @@ describe('the shutter mapping fires both branches', () => {
     expect(mapExifFields(parsedExif({}, { ExposureTime: 1 })).shutter).toBe('1s');
   });
 });
-
-/* ============================================================================================ */
 
 describe('every field is independently nullable — partial EXIF is the norm', () => {
   it('camera is null, not the empty string, when both Make and Model are absent', () => {
@@ -291,9 +215,6 @@ describe('every field is independently nullable — partial EXIF is the norm', (
     );
   });
 
-  // The measured census across the 39 committed records is camera=1, lens=11, aperture=2,
-  // shutter=2, iso=2, focalLength=2 null. Six cases, one per field, each dropping exactly one
-  // tag and requiring the other five to survive.
   const DROP: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['camera', ['Make', 'Model']],
     ['lens', ['LensModel']],
@@ -327,8 +248,6 @@ describe('every field is independently nullable — partial EXIF is the norm', (
   });
 });
 
-/* ============================================================================================ */
-
 describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
   it('takes the capture date when the source carries one', () => {
     const parsed = full();
@@ -344,10 +263,6 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
   });
 
   it('reads the tag the camera wrote, not the runner local day', () => {
-    // exif-reader parses the naive EXIF timestamp AS UTC, so the UTC parts are exactly the
-    // digits the camera wrote. A local-getter implementation shifts the day for any evening
-    // exposure east of Greenwich; TZ is forced here so the assertion does not depend on where
-    // the suite happens to run.
     const original = process.env.TZ;
     try {
       process.env.TZ = 'Asia/Kolkata';
@@ -369,8 +284,6 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
   });
 
   it('accepts the raw EXIF string form as well as the parsed Date', () => {
-    // `exif-reader`'s own typings declare `DateTimeOriginal` as a Date in the Exif sub-IFD and
-    // as a string in IFD0, so both shapes are reachable and both are handled.
     const parsed = parsedExif({ DateTimeOriginal: '2021:11:02 06:15:00' }, {});
     expect(captureDate(parsed, INGESTION_DATE)).toBe('2021-11-02');
   });
@@ -403,27 +316,6 @@ describe('OD-10 option B · date is DateTimeOriginal ?? ingestionDate', () => {
   }, 60_000);
 });
 
-/* ============================================================================================ */
-
-/**
- * THE ONE CORPUS-DRIVEN PROOF THAT IS STILL AVAILABLE.
- *
- * OD-12 made a 39-record differential mandatory and 04-04 measured the corpus out of existence:
- * the served bytes carry no EXIF, so the READING half can never be re-run. But the RENDERING half
- * can. Every non-null `aperture`, `shutter`, `focalLength` and `iso` in the reviewed manifest is a
- * string this mapper's own formula must be able to produce, so each committed value is turned back
- * into the tag it came from and pushed through the mapper, which must return the committed string
- * character for character.
- *
- * It is honestly weaker than the lost proof and the difference is stated rather than blurred: it
- * shows the mapper AGREES WITH 39 REVIEWED VALUES ON FORMAT, not that `exif-reader` reads the same
- * numbers `exifr` read in 2026-03. `camera` and `lens` are excluded because they are free strings
- * whose `Make`/`Model` split cannot be recovered from the joined value.
- *
- * Anti-vacuity is driven by the expectation, not by the data (fixtures/README.md, control 2): the
- * committed manifest is DECLARED to hold at least these many non-null values per field, so an
- * empty or truncated read refuses to pass instead of agreeing with itself about nothing.
- */
 describe('the mapper reproduces the format of every reviewed value in the manifest', () => {
   type ManifestRecord = {
     exif: {
@@ -437,7 +329,6 @@ describe('the mapper reproduces the format of every reviewed value in the manife
     readFileSync(join(HERE, '..', '..', 'data', 'portfolio_images.json'), 'utf8')
   ) as ManifestRecord[];
 
-  /** Floors, not exact counts — the manifest grows. Measured on the 39 committed records. */
   const FLOOR = { aperture: 37, shutter: 37, focalLength: 37, iso: 37 };
 
   it('reads a manifest big enough to be worth checking', () => {
@@ -475,9 +366,6 @@ describe('the mapper reproduces the format of every reviewed value in the manife
       checked += 1;
     }
     expect(checked).toBeGreaterThanOrEqual(FLOOR.shutter);
-    // Recorded, not asserted as a requirement: the reviewed corpus contains NO >= 1s exposure,
-    // which is why fixtures/README.md names that branch as unreachable through the data and why
-    // the synthetic case above is the only thing covering it.
     expect(longExposures).toBe(0);
   });
 
@@ -508,8 +396,6 @@ describe('the mapper reproduces the format of every reviewed value in the manife
   });
 });
 
-/* ============================================================================================ */
-
 describe('OD-9 option A · no emitted upload descriptor is under `private/`', () => {
   it('emits descriptors at all, THEN emits none under that prefix', async () => {
     const assets = await deriveAssets({
@@ -518,8 +404,6 @@ describe('OD-9 option A · no emitted upload descriptor is under `private/`', ()
       slug: 'od-nine',
       ingestionDate: INGESTION_DATE,
     });
-    // Anti-vacuity FIRST. An empty list satisfies "no key starts with private/" trivially, and
-    // this repository has shipped exactly that failure before (fixtures/README.md, control 2).
     expect(assets.descriptors.length).toBeGreaterThan(0);
     for (const descriptor of assets.descriptors) {
       expect(descriptor.key.startsWith('private/')).toBe(false);

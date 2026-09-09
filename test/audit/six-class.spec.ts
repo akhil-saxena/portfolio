@@ -1,102 +1,8 @@
-/**
- * The six-class audit — the measurements no static gate can see. Plan 05-15, tasks 1 and 2.
- *
- * ================================================================================================
- * WHAT THIS FILE IS FOR, AND WHY IT IS NOT IN `npm test`
- * ================================================================================================
- *
- * `05-UI-SPEC.md` §16 lists eight measurements the executor owes *beyond* the gates, and notes
- * that each has already been wrong once in this project. Four of them need a real browser:
- *
- *   - a page's scoped CSS silently not reaching a component's root (Astro's `data-astro-cid-*`),
- *   - an inline style beating an app rule while jsdom implements no CSS specificity at all,
- *   - a full-viewport section whose `calc()` is invalid at computed-value time and resolves `auto`,
- *   - a font falling back to Georgia while the stylesheet looks correct.
- *
- * None is visible to a grep and none is visible to jsdom. Hence Chromium, and hence a separate
- * script: `npm run audit:public`. It is deliberately NOT chained into `npm test` — see the reason
- * beside the script in `package.json`.
- *
- * ================================================================================================
- * THE ANTI-VACUITY RULE THIS FILE IS BUILT ON  (threat T-05-15-01)
- * ================================================================================================
- *
- * The one integrity concern in an audit is a pass it did not measure. Every measurement below
- * therefore does three things:
- *
- *   1. **Refuses a missing subject.** `measureHome` throws naming which selector was absent; a
- *      route that failed to load reports a hard error rather than an empty geometry.
- *   2. **Records the number**, not a verdict. Everything is appended to a JSONL file so the audit
- *      document is written FROM the measurements rather than beside them.
- *   3. **Carries its own control where a control exists.** The two state-A mutations are
- *      permanent test cases, not a one-off plant: a control that stops firing reds the suite.
- *
- * ================================================================================================
- * TWO MUTATION CONTROLS, AND WHY BOTH ARE MANDATORY  (§16.2)
- * ================================================================================================
- *
- * "State A is exactly one viewport" is TWO requirements wearing one declaration, and each fails in
- * its own direction:
- *
- *     a `60svh`  mutation must break **fills**    — state A no longer reaches the fold
- *     a `160svh` mutation must break **departs**  — one viewport of scroll no longer clears it
- *
- * Phase 0's plan specified only the second, and it could not fail: a SHORTER state A departs more
- * easily, not less. 05-11 then measured that the FIRST is also mis-stated — a one-sided `fills`
- * ("the prompt is above the fold") stays true under `60svh` at every class, because a shorter
- * state A keeps the prompt on screen and simply brings the work band up with it. Both corrections
- * are carried here: `fills` is two-sided, and each control asserts what it breaks AND what it must
- * NOT break.
- *
- * ================================================================================================
- * 🔴 05-16 — `departs` IS NOW AN OCCLUSION, BECAUSE THE MECHANISM CHANGED AND THE REQUIREMENT DID
- * NOT
- * ================================================================================================
- *
- * Home's Act-2 transition was `scroll-snap-type: y proximity` and is now a STICKY Act 1 that Act 2
- * scrolls over. The change was made on a measurement — snap skipped the second half of the reveal
- * (worst coverage step 49 points against sticky's 25, 6 of 6 classes) and did so only under
- * `no-preference`, so the default path jumped and the accessible path was already smooth. The run
- * is in `src/styles/home.css` §5 and is reproduced by `the Act-2 reveal is continuous` below.
- *
- * The consequence for this file is that `departs` could no longer be a GEOMETRY. Akhil's
- * requirement is *"whole first page goes away to reveal second page in full"*; 05-15 proved it as
- * `peekGrid.getBoundingClientRect().bottom <= 0`, i.e. Act 1 physically left the viewport. Under a
- * sticky reveal Act 1 does not move — it is COVERED — so `peekBottom` reads +546 at one viewport of
- * scroll while the requirement is fully met.
- *
- * The predicate is therefore restated to the question the requirement actually asks — **is any
- * photograph VISIBLE?** — and answered by HIT-TESTING rather than by pixels: a 5x5 lattice of
- * points inside the peek grid's own rect, each passed to `document.elementFromPoint`, and the
- * count of points still answered by an element inside `.hm-peek`. MEASURED at one viewport of
- * scroll: 0 of 25 at all six classes in both motion settings.
- *
- * **This is a WEAKER kind of proof than a geometric one and the difference is worth naming: it
- * depends on Act 2 being opaque.** A transparent `.hm-b` would show the photographs through the
- * work band at every offset and `peekBottom` would not notice. That is why `.hm-b`'s
- * `background-color`, `position` and `z-index` are asserted — here as computed styles, and in
- * `test/public/home.node.test.ts` as declarations.
- *
- * The mutation is injected at RUNTIME (`page.addStyleTag`) rather than planted in
- * `src/styles/home.css` and rebuilt. That is a narrower claim, stated so nobody reads it as a
- * wider one: it proves the PREDICATE is two-sided and would catch a wrong height. It does not
- * re-prove the source→artefact path, which 05-11 proved by source plant and byte-identical
- * restore (`src/styles/home.css` sha256 `1b8cc50d…`). Runtime injection was chosen because a
- * permanent control that runs on every audit is worth more than a control that ran once, and
- * because a plant in the working tree is the thing that killed an agent in this phase.
- *
- * Specificity: the injected `.hm-a { min-height: … }` is (0,1,0), identical to the rule it
- * replaces, and later in document order — so it wins by order, with no `!important` anywhere.
- */
-
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import sharp from 'sharp';
-// The import attribute is REQUIRED here and is not decoration: Playwright's ESM loader refuses a
-// JSON module without it ("needs an import attribute of \"type: json\""), where Astro's Vite
-// pipeline does not — so the same specifier that works in `index.astro` fails in this file.
 import manifest from '../../data/portfolio_images.json' with { type: 'json' };
 import { BREAKPOINTS, GUTTER_RUNGS, gutterAt } from '../../src/lib/layout-ladder.ts';
 import { photoHref, photoSlug } from '../../src/lib/photo-srcset.ts';
@@ -105,46 +11,20 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, '..', '..');
 const PHASE_DIR = join(REPO, '.planning', 'phases', '05-public-site');
 
-/**
- * Where the measurements land. Outside the repository by default — a run's raw record is scratch,
- * and the deliverable is `05-AUDIT.md`, which is written from it.
- */
 const OUT = process.env.AUDIT_OUT ?? join(process.env.TMPDIR ?? '/tmp', '05-15-audit');
 mkdirSync(OUT, { recursive: true });
 const LOG = join(OUT, 'measurements.jsonl');
 if (!existsSync(LOG)) writeFileSync(LOG, '');
 
-/** Append one measurement. Written eagerly, because a suite that dies mid-run must not lose them. */
 function record(kind: string, fields: Record<string, unknown>): void {
   appendFileSync(LOG, `${JSON.stringify({ kind, at: Date.now(), ...fields })}\n`);
 }
 
-/* ══ THE SIX CANONICAL VIEWPORTS ═══════════════════════════════════════════════════════════════
- *
- * `00-RESPONSIVE-CONTRACT.md` §1, and its §2 "resolved mode and density" table for the pointer.
- * ONE declared table; no viewport literal appears anywhere else in this file.
- *
- * 🔴 THE PLAN'S `key_links` ENTRY IS WRONG AND IS CORRECTED HERE, NOT SILENTLY SATISFIED.
- * It says "the six canonical viewports and the breakpoints come from the module
- * `src/lib/layout-ladder.ts`, pattern `BREAKPOINTS`". `BREAKPOINTS` is `[375, 673, 1024]` — the
- * three widths at which the GUTTER steps. It does not contain a viewport and never did; the
- * viewports are the user's approved device matrix and live in the responsive contract. What the
- * module really owns is the gutter in force at a width, so the link is made load-bearing the only
- * way it can be: `gutterAt(width)` is asserted against the value Chromium actually computes at
- * every class, and the matrix is asserted to straddle every rung. A decorative import would have
- * satisfied the letter of the link and measured nothing.
- *
- * Class 5 is `ambiguous` in the contract — a 1024px tablet and a 1024px laptop window want
- * opposite answers, which is why §2.3 forbids gating on width. It is walked as COARSE here,
- * because coarse is the case that has a floor to miss; the fine half of class 5 is class 6's
- * geometry at a shorter viewport and is covered by class 6's assertions.
- */
 type DeviceClass = {
   readonly n: number;
   readonly label: string;
   readonly width: number;
   readonly height: number;
-  /** The contract's primary pointer. Emulated with `hasTouch`; see `POINTER EMULATION` below. */
   readonly coarse: boolean;
 };
 
@@ -157,13 +37,6 @@ const CLASSES: readonly DeviceClass[] = [
   { n: 6, label: 'laptop', width: 1440, height: 900, coarse: false },
 ];
 
-/* ══ THE SIX ROUTES, DERIVED FROM THE DATA ═════════════════════════════════════════════════════
- *
- * The category and the photograph are DERIVED — first by `order` — rather than named, so the
- * audit follows the content. `photoHref` is imported rather than composed: 05-08 recorded that a
- * hand-rolled `/photography/${category}/${id.split('-')[1]}` produces a plausible slug and a 404 at a
- * URL nothing in the build checks.
- */
 type PhotoRecord = { readonly id: string; readonly category: string; readonly order?: number };
 const PHOTOS = manifest as readonly PhotoRecord[];
 
@@ -194,28 +67,10 @@ const ROUTES: readonly Route[] = [
   { id: 'resume', path: '/resume', shot: 'resume-populated' },
 ];
 
-/** The eight gallery routes §8.2 asks for exactly one `aria-current="page"` on. */
 const GALLERY_ROUTES: readonly string[] = [
   '/photography',
   ...[...new Set(PHOTOS.map((p) => p.category))].sort().map((c) => `/photography/${c}`),
 ];
-
-/* ══ POINTER EMULATION — MEASURED, BECAUSE THE OBVIOUS OPTION MOVES THE LAYOUT ═════════════════
- *
- * `hasTouch: true` alone resolves `(pointer: coarse)` in Chromium: MEASURED at 390 × 844,
- * `matchMedia('(pointer: coarse)').matches` is `false` by default and `true` with `hasTouch`, and
- * `.ds-atom-appbar` renders 67px against 69px across that switch — the design system's own coarse
- * rule firing.
- *
- * `isMobile: true` ALSO resolves coarse and was NOT used: it installs a mobile layout viewport,
- * and the same page measured `aBottom` 847 under it against 865 without — an 18px difference in
- * the exact quantity the height budget is judged on. The emulation must not move the measurement.
- *
- * Each class asserts its own pointer before measuring anything, so an emulation that silently
- * stopped working reports itself instead of reporting 44px controls as 40px ones.
- */
-
-/* ══ THE HOME MEASUREMENT ══════════════════════════════════════════════════════════════════════ */
 
 type HomeAtLoad = {
   scrollY: number;
@@ -233,7 +88,6 @@ type HomeAtLoad = {
 type HomeAfterScroll = {
   scrollY: number;
   peekBottom: number;
-  /** 05-16 — the occlusion lattice. See this file's header for why geometry no longer answers it. */
   gallerySampled: number;
   galleryVisible: number;
   actTwoCover: number;
@@ -247,11 +101,6 @@ type HomeAfterScroll = {
   renderedGapWorkToResume: number;
 };
 
-/**
- * State A at first paint. THROWS if any of the three subjects is missing rather than returning
- * zeroes — a `null` rect coerced to 0 would report `fills: false` as a layout failure when the
- * real failure was that the page never rendered.
- */
 async function measureAtLoad(page: Page): Promise<HomeAtLoad> {
   return await page.evaluate(() => {
     const need = (sel: string): HTMLElement => {
@@ -283,14 +132,10 @@ async function measureAtLoad(page: Page): Promise<HomeAtLoad> {
   });
 }
 
-/** Act 2, after exactly one viewport of scroll. */
 async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
   await page.evaluate(() => {
     window.scrollTo(0, window.innerHeight);
   });
-  // `scroll-behavior: smooth` is declared on `html` under `no-preference`, so the scroll is
-  // ANIMATED in the normal run and instant under `reduce`. Waiting for it to settle is the
-  // difference between measuring the departure and measuring the middle of it.
   await page.waitForTimeout(600);
   return await page.evaluate(() => {
     const need = (sel: string): HTMLElement => {
@@ -302,18 +147,6 @@ async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
     const band = need('.hm-b');
     const work = need('.hm-work').getBoundingClientRect();
 
-    /*
-     * THE OCCLUSION LATTICE. 25 points on a 5x5 grid inside the peek block's own rect, each asked
-     * `document.elementFromPoint`. A point answered by anything inside `.hm-peek` is a photograph
-     * (or its frame) the reader can still see; a point answered by anything else is covered.
-     *
-     * Points outside the viewport are SKIPPED rather than counted as covered, and `sampled` is
-     * reported alongside `visible` so the two cases stay distinguishable: under a mechanism that
-     * moves Act 1 out of view entirely, `sampled` is 0 and the geometric `peekBottom` is the
-     * proof; under the sticky reveal `sampled` is 25 and `visible` must be 0. A predicate that
-     * silently returned "0 visible" for both would call an off-screen gallery and a covered one
-     * the same measurement, and only one of them depends on Act 2 being opaque.
-     */
     const peekRegion = need('.hm-peek');
     let gallerySampled = 0;
     let galleryVisible = 0;
@@ -328,7 +161,6 @@ async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
       }
     }
 
-    /** The fraction of the viewport Act 2 occupies, in points. The reveal's own quantity. */
     const bandRect = band.getBoundingClientRect();
     const actTwoCover = Math.round(
       (Math.max(0, Math.min(window.innerHeight, bandRect.bottom) - Math.max(0, bandRect.top)) /
@@ -356,62 +188,11 @@ async function measureAfterOneViewport(page: Page): Promise<HomeAfterScroll> {
   });
 }
 
-/** `fills` — TWO-SIDED, per 05-11. One-sided, it cannot fail; see this file's header. */
 const fillsOf = (m: HomeAtLoad): boolean => m.promptBottom <= m.vh && m.aBottom >= m.vh;
 
-/**
- * `departs` — one viewport of scroll leaves no photograph ON SCREEN.
- *
- * 05-16: an OCCLUSION, not a geometry. See this file's header. Both terms are kept because they
- * answer different halves and the mechanism decides which one carries the proof:
- *
- *   - `galleryVisible === 0` is the claim itself, and it is the one that survives a mechanism in
- *     which Act 1 stays put and is covered.
- *   - `peekBottom <= 0` is the stronger, geometric form, and it is still TRUE under any mechanism
- *     that moves Act 1 out of view. It is recorded rather than required, so that a change back to
- *     such a mechanism is visible in the JSONL rather than silently equivalent.
- */
 const departsOf = (m: HomeAfterScroll): boolean => m.galleryVisible === 0;
 
-/**
- * ================================================================================================
- * THE VISIBILITY PROOF — A DIFFERENTIAL RENDER, AND IT NEEDS NO THRESHOLD
- * ================================================================================================
- *
- * 🔴 THE OCCLUSION LATTICE ABOVE MEASURES HIT-TESTING, NOT SIGHT, AND THE DIFFERENCE IS A REAL
- * HOLE. `document.elementFromPoint` returns the topmost element whether or not it is opaque, so a
- * fully TRANSPARENT Act 2 answers all 25 points and `galleryVisible` reads 0 while every
- * photograph is plainly visible through it. That was found by trying to write the control for it:
- * the control could not fail, which is the same defect this whole file exists to prevent, one
- * level up.
- *
- * So the claim "no photograph is visible" is proved by asking the renderer instead:
- *
- *   1. screenshot the peek block's rect, clipped to the viewport;
- *   2. `visibility: hidden` the gallery — which removes its PAINT and keeps its LAYOUT, so nothing
- *      else on the page can move;
- *   3. screenshot the identical rect again;
- *   4. compare the two raw buffers byte for byte.
- *
- * **If hiding the photographs changes not one byte of what the browser painted, then not one pixel
- * of them was visible.** There is no threshold, no tolerance and no reference image to go stale —
- * the comparison is against the same page one declaration apart, on the same machine, in the same
- * frame. MEASURED:
- *
- *     unmutated                       0 differing bytes    6 of 6 classes
- *     `.hm-b` background transparent  269,766 – 799,969    max delta 241
- *     `.hm-b` z-index/position unset  269,766 – 804,386    max delta 242
- *
- * A stdev-threshold version was written first and rejected: the region is not flat when the
- * requirement is MET either — Act 2's own cards and headings are painted there — so it separated
- * 24–33 from 81–91 and needed a magic number in between. This needs none.
- *
- * 🔴 THIS MUTATES THE PAGE AND MUST BE THE LAST THING DONE TO IT. The injected `visibility` rule is
- * not removed, because a Playwright context is discarded per test and re-showing it would be a
- * second state nobody measures.
- */
 type GalleryPaint = {
-  /** `null` when the peek block's rect is entirely outside the viewport — a GEOMETRIC departure. */
   clip: { x: number; y: number; width: number; height: number } | null;
   differingBytes: number;
   maxDelta: number;
@@ -446,7 +227,6 @@ async function measureGalleryPaint(page: Page): Promise<GalleryPaint> {
       if (d > maxDelta) maxDelta = d;
     }
   }
-  // A length mismatch would make the loop compare a prefix and report 0 on two different images.
   if (painted.length !== hidden.length) {
     throw new Error(
       `six-class audit: the two clipped renders differ in SIZE (${painted.length} vs ` +
@@ -457,7 +237,6 @@ async function measureGalleryPaint(page: Page): Promise<GalleryPaint> {
   return { clip, differingBytes, maxDelta };
 }
 
-/** Load Home and let the webfonts settle; every geometry here is font-dependent. */
 async function openHome(page: Page): Promise<void> {
   await page.goto('/', { waitUntil: 'load' });
   await page.evaluate(async () => {
@@ -465,8 +244,6 @@ async function openHome(page: Page): Promise<void> {
   });
   await page.waitForTimeout(120);
 }
-
-/* ══ THE PER-CLASS SUITE ═══════════════════════════════════════════════════════════════════════ */
 
 for (const c of CLASSES) {
   test.describe(`class ${c.n} — ${c.label}, ${c.width} × ${c.height}, ${c.coarse ? 'coarse' : 'fine'}`, () => {
@@ -492,8 +269,6 @@ for (const c of CLASSES) {
       expect(ptr.fine, `class ${c.n} must resolve (pointer: fine) === ${!c.coarse}`).toBe(
         !c.coarse
       );
-      // The viewport itself, asserted: a config that silently fell back to 1280 × 720 would make
-      // every number below a measurement of the wrong device.
       expect(ptr.vw, 'the layout viewport is not the class width').toBe(c.width);
       expect(ptr.vh, 'the layout viewport is not the class height').toBe(c.height);
     });
@@ -652,36 +427,6 @@ for (const c of CLASSES) {
           `(max delta ${paint.maxDelta})`
       ).toBe(0);
 
-      /*
-       * THE SELF-SCROLL AT FIRST PAINT — FIXED, AND NOW ASSERTED AT ZERO IN BOTH RUNS.
-       *
-       * WHAT THIS ASSERTION USED TO BE, AND WHY IT WAS RIGHT AT THE TIME. `.hm-a` carried
-       * `scroll-snap-align: start` with a 116px outset that was supposed to clamp state A's snap
-       * position to scroll offset 0. It did not hold: 116px of outset against 113px of chrome left
-       * `proximity` close enough to pull the initial offset, and the page scrolled ITSELF 8–20px at
-       * first paint. Under `reduce` — the one setting that removes snap — it was 0 every time.
-       * This line therefore asserted only `loadY < barHeight` under `no-preference`, because an
-       * equality against a real intermittency is a flake, and a flaky assertion teaches a re-run.
-       *
-       * WHAT CHANGED. Akhil's decision after reading the audit was to drop state A's snap point and
-       * keep `#work`'s. Re-measured 8 loads per class per motion setting, over the built artefact,
-       * by this suite's own method:
-       *
-       *     before   `no-preference`  15 of 48 loads self-scrolled (8, 18, 20 px), 5 of 6 classes
-       *     before   `reduce`          0 of 48
-       *     after    `no-preference`   0 of 48
-       *     after    `reduce`          0 of 48
-       *
-       * `fills` and `departs` stayed 6/6 in both settings across the change, which is the half that
-       * says the mechanism did not pay for the fix.
-       *
-       * SO THE EQUALITY IS NOW THE HONEST ASSERTION, and it is the same one in both runs: with no
-       * snap area within a viewport of the document top there is nothing left to pull. If this ever
-       * goes red under `no-preference` it is a FINDING — the mechanism returned — and not a reason
-       * to re-run. One load per class cannot see a 12.5% intermittency, which is exactly how 05-11
-       * measured `loadY = 0` at 7 of 7 and missed this; the 48-load re-measurement is recorded in
-       * `05-AUDIT.md` §2 and is what this line stands on.
-       */
       expect(
         at.scrollY,
         `the page must not scroll itself at first paint (AppBar ${at.barHeight}px; there is no ` +
@@ -703,9 +448,6 @@ for (const c of CLASSES) {
         fills,
         `60svh must break fills at class ${c.n}: A ${at.aBottom} against vh ${at.vh}`
       ).toBe(false);
-      // The half that makes it a CONTROL rather than a second copy of the other one. A shorter
-      // state A departs MORE easily, so this must stay true — if it ever goes false, the two
-      // controls have collapsed into one and "exactly one viewport" is proven in one direction.
       expect(departs, `60svh must NOT break departs at class ${c.n}`).toBe(true);
     });
 
@@ -723,29 +465,6 @@ for (const c of CLASSES) {
 
       expect(fills, `160svh must break fills at class ${c.n} (from above)`).toBe(false);
 
-      /*
-       * ✅ §16.2's SECOND CONTROL NOW WORKS AS ORIGINALLY SPECIFIED, AFTER THREE CORRECTIONS AND A
-       * MECHANISM CHANGE. THE HISTORY IS KEPT BECAUSE IT IS THE REASON TO TRUST THE PRESENT LINE.
-       *
-       * §16.2 says "a `160svh` mutation must break **departs**". Phase 0 wrote it; 05-11 measured
-       * that it broke departs at only 5 of 7 classes; 05-15 measured WHY — under `reduce` it broke
-       * departs at 0 of 6, and the failures under `no-preference` were `scroll-snap-type: y
-       * proximity` pulling the programmatic scroll back short of a full viewport (class 6:
-       * `scrollTo(0, 900)` settled at 665). A control that fires through the mechanism it is not
-       * testing is not a control, so it was demoted to a `fills`-from-above control and a separate
-       * short-document control was constructed for `departs`.
-       *
-       * 05-16 removed snap and made `departs` an occlusion, and BOTH halves of that change make
-       * this control real. A 160svh state A pushes Act 2's document offset to `111 + 1.6vh`, so one
-       * viewport of scroll leaves Act 2's top at `111 + 0.6vh` — well below the fold — while the
-       * stuck Act 1 keeps the photographs at the top of the viewport, visible. The mutation now
-       * breaks the requirement for the reason the requirement is about, in BOTH motion settings,
-       * with no snap artefact anywhere in the causal chain.
-       *
-       * Asserted in both projects rather than under `reduce` alone: the two settings are now
-       * identical by construction, and asserting only one of them would leave the claim that they
-       * are identical resting on nothing.
-       */
       expect(
         departs,
         `160svh must break departs at class ${c.n}: ${after.galleryVisible} of ` +
@@ -757,37 +476,6 @@ for (const c of CLASSES) {
     test('CONTROL — a transparent Act 2 breaks the visibility proof and nothing else', async ({
       page,
     }, ti) => {
-      /*
-       * ================================================================================================
-       * THE CONTROL FOR THE EXACT DEPENDENCY THE MECHANISM RESTS ON, AND IT REPLACES ONE THAT WENT
-       * INERT
-       * ================================================================================================
-       *
-       * WHAT WAS HERE BEFORE, AND WHY IT IS GONE. 05-15 constructed a `.hm-b { min-height: 0;
-       * padding-block: 0 }` control, because under the SNAP mechanism `departs` had a second term
-       * — the document running out of scroll before it ran out of viewport — and that was §6.2's
-       * documented failure at 768 × 1024. 05-16 replaced snap with a sticky Act 1 and `departs`
-       * with an occlusion, and the old control stopped being able to fail: MEASURED, with Act 2
-       * shortened, `departs` stayed TRUE at class 6 (`scrollMax 718, peek bottom 594`) because Act
-       * 2's own content still covers the viewport. Under a covering mechanism a short document is
-       * simply not the failure mode any more. A control that cannot fail is the thing this file
-       * exists to prevent, so it was replaced rather than retuned.
-       *
-       * WHAT THE NEW MECHANISM ACTUALLY RESTS ON is stated in `src/styles/home.css` §5 as its own
-       * weakness: **the occlusion proof holds only because `.hm-b` is opaque.** That is one
-       * declaration — `background-color: var(--cream)` — and it is invisible to every other
-       * assertion in this suite, because a transparent Act 2 changes no geometry, no scroll
-       * position and no hit-test. So this control removes exactly that declaration and requires the
-       * proof to fail.
-       *
-       * MEASURED, unmutated 0 differing bytes at 6 of 6; transparent 269,766 – 799,969 differing
-       * bytes with a max channel delta of 241. The separation is not a threshold, it is zero
-       * against hundreds of thousands.
-       *
-       * The half that makes it a CONTROL rather than a second copy of the main test: it must break
-       * NOTHING ELSE. `fills` stays true, the lattice still reads zero (which is the hit-test hole
-       * this control exists to cover), and Act 2 still covers the viewport geometrically.
-       */
       await openHome(page);
       await page.addStyleTag({ content: '.hm-b { background-color: transparent }' });
       await page.waitForTimeout(150);
@@ -886,21 +574,6 @@ for (const c of CLASSES) {
       });
       record('reveal', { project: ti.project.name, class: c.n, ...reveal });
 
-      /*
-       * THE ASTRO SCOPING TRAP, WHICH A GREP CANNOT SEE (§6.5).
-       *
-       * `#work` is `HomeActTwo.astro`'s root and `.hm-b` is its class. A bare `.hm-b { }` written
-       * in `index.astro`'s `<style>` block is scoped with THAT file's `data-astro-cid-*` and
-       * matches nothing, so the computed value reads `static` while the source reads `relative`.
-       * This defect has appeared twice in this project in two costumes and passed a grep gate both
-       * times. The only instrument that sees it is a computed-style read in a real browser, and
-       * these four lines are it.
-       *
-       * All four are load-bearing and none is defensive. Without `position` the `z-index` does
-       * nothing; without `z-index` Act 2 paints under the stuck Act 1; without an OPAQUE background
-       * the photographs show through the work band at every offset — and the occlusion proof that
-       * replaced the geometric `departs` rests entirely on that opacity.
-       */
       expect(reveal.aPosition, "state A's position, read in a browser").toBe('sticky');
       expect(
         reveal.aTop,
@@ -910,13 +583,6 @@ for (const c of CLASSES) {
       expect(reveal.workPosition, "Act 2's position, read in a browser").toBe('relative');
       expect(Number(reveal.workZIndex), "Act 2's stacking order").toBeGreaterThanOrEqual(1);
 
-      /*
-       * ASSERTED AGAINST `<body>`'s OWN COMPUTED BACKGROUND, never against a literal `rgb(...)`.
-       * `.hm-b` takes `var(--cream)`, which is the same token `public-shell.css` §1b puts on the
-       * page surface, so the two must resolve to the same colour in BOTH themes and after the next
-       * design-system release. A hard-coded `rgb(13, 13, 15)` here would go stale on a theme change
-       * and would also pass for a DIFFERENT opaque colour, which is a visible seam.
-       */
       expect(
         reveal.workBackground,
         'Act 2 is transparent — the stuck Act 1 shows through'
@@ -926,21 +592,11 @@ for (const c of CLASSES) {
         "Act 2's surface must be the page's own token, not a second opaque colour"
       ).toBe(reveal.bodyBackground);
 
-      /*
-       * SNAP IS GONE, IN BOTH MOTION SETTINGS, AND THAT IS ASSERTED AS AN ABSENCE ON THE COMPUTED
-       * VALUES. 05-16 measured it as the thing that skipped the second half of the reveal — a
-       * 239px involuntary pull, 27% of the viewport, at 6 of 6 classes under `no-preference` only.
-       * Re-adding a snap point on `#work` "as well" would reintroduce exactly that, which is why
-       * this is a flat refusal in both projects rather than a shape check in one.
-       */
       expect(reveal.htmlType, 'no snap type survives anywhere').toBe('none');
       expect(reveal.aSnapAlign, 'state A carries no snap alignment').toBe('none');
       expect(reveal.workSnapAlign, '#work carries no snap alignment').toBe('none');
 
       if (ti.project.name === 'reduce') {
-        // §12.2, and this is the only motion-conditional left on the page's transition. Smooth
-        // scrolling is `public-shell.css` §4's and must be REAL, not merely declared inside a
-        // query — which is what a source grep would have confirmed either way.
         expect(reveal.htmlBehavior, 'smooth scrolling must be gone under `reduce`').not.toBe(
           'smooth'
         );
@@ -952,41 +608,6 @@ for (const c of CLASSES) {
     test('the Act-2 reveal is CONTINUOUS — the measurement that chose the mechanism', async ({
       page,
     }, ti) => {
-      /*
-       * ================================================================================================
-       * THIS IS THE MEASUREMENT 05-16 DECIDED THE MECHANISM ON, KEPT AS A STANDING TEST
-       * ================================================================================================
-       *
-       * Akhil asked for *"2 pages … when i scroll, whole first page goes away to reveal second page
-       * in full"*. Two candidates were built and measured here, at all six classes, in both motion
-       * settings: two `100svh` sections with `scroll-snap-type: y proximity`, and a sticky Act 1
-       * that Act 2 scrolls over.
-       *
-       * The quantity is CONTINUITY: the page is scrolled to 0, ¼, ½, ¾ and one viewport and the
-       * fraction of the viewport occupied by Act 2 recorded at each. A continuous reveal steps 25
-       * points per quarter.
-       *
-       *     snap,   no-preference    1%  26%  51% 100% 100%    worst step 49   6 of 6 classes
-       *     snap,   reduce           1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
-       *     sticky, no-preference    1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
-       *     sticky, reduce           1%  26%  51%  76% 100%    worst step 25   6 of 6 classes
-       *
-       * Snap skipped the second half of the transition and did so ONLY under `no-preference` —
-       * because snap correctly lives inside that query — so the DEFAULT path was the one that
-       * jumped and the accessible path was already smooth. That is backwards, and it is why the
-       * mechanism changed rather than being tuned.
-       *
-       * THE BOUND IS 30 AND NOT 25. The four samples land on quarters of the viewport and the
-       * arithmetic gives 25 exactly, but `actTwoCover` is rounded to whole points and Act 2's
-       * document offset is `--hm-above` short of a whole number of viewports, so a step of 26 or 27
-       * is the correct answer at some classes (see the 51 -> 77 row). 30 admits that rounding and
-       * still fails a snap-shaped 49 by nineteen points. An equality here would be a flake; a bound
-       * at 45 would pass the very mutation this exists to catch.
-       *
-       * `behavior: 'instant'`, so this measures the LAYOUT of the reveal and not the duration of
-       * `scroll-behavior: smooth` — which is a different property, is the shell's, and is asserted
-       * as a computed value in the test above.
-       */
       await openHome(page);
       const covers: number[] = [];
       for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
@@ -1017,8 +638,6 @@ for (const c of CLASSES) {
         worst,
       });
 
-      // ANTI-VACUITY: a reveal that never happened would have every step at 0 and a worst of 0,
-      // which would pass a bound-only assertion while proving nothing.
       expect(covers[0], `Act 2 must be off-stage at scroll 0 (class ${c.n})`).toBeLessThanOrEqual(
         5
       );
@@ -1057,31 +676,10 @@ for (const c of CLASSES) {
 
       expect(colours.theme, 'the public default is dark').toContain('dark');
 
-      /*
-       * §4.6a: `Link` sets `color` as an INLINE style on `inline`, `footer` and `action`; an app
-       * rule at (0,1,0) loses to it and every jsdom test still passes, because jsdom implements no
-       * CSS specificity. Three consecutive Phase 1 plans hit this.
-       *
-       * The nav uses `variant="default"`, which IS stylesheet-only — so it lands on §4.2's ramp:
-       * `--ink-2` = `#bfbfc5` = rgb(191, 191, 197), 10.61 : 1 on the dark page. Confirmed here.
-       */
       expect(colours.nav.color, "the nav link's colour is §4.2's --ink-2").toBe(
         'rgb(191, 191, 197)'
       );
 
-      /*
-       * 🔴 §4.6b's PREDICTION, CONFIRMED IN A BROWSER, AND IT SHIPS.
-       *
-       * §4.6b says Phase 5 "uses `variant='default'` in the footer, which is stylesheet-only and
-       * therefore correct". THAT ESCAPE DOES NOT EXIST: `Footer`'s own `renderLink` hardcodes
-       * `<Link variant="footer">` and exposes no per-item hook, so every consumer gets the inline
-       * `text-decoration-color: rgba(0,0,0,.25)`. On `#0d0d0f` that underline is invisible. The
-       * link TEXT is `--ink` (#f2f2f4) and correct, so this degrades appearance, not function.
-       *
-       * Asserted at the WRONG value on purpose, with the finding named (D-4). The day
-       * `2.0.0-beta.2` moves the variant's colour into the stylesheet, this line fails and tells
-       * you the good news.
-       */
       expect(colours.footer.color, "the footer link's text colour is --ink and is correct").toBe(
         'rgb(242, 242, 244)'
       );
@@ -1112,20 +710,6 @@ for (const c of CLASSES) {
         if (h1 === null) throw new Error('six-class audit: the page has no <h1>.');
         const h1Family = getComputedStyle(h1).fontFamily;
 
-        /*
-         * THE WIDTH COMPARISON, AND THE TRAP IT WALKED INTO ONCE ALREADY.
-         *
-         * A family NAME in the computed style is not evidence that a file loaded — the computed
-         * value is the declared list, resolved or not. So a fixed string is measured in the h1's
-         * OWN resolved family stack and against Georgia; equal widths mean a silent fallback.
-         *
-         * The first version of this probe wrote `font-family: "Playfair Display"` and measured
-         * 1025.109375px — IDENTICAL to `font-family: serif`. The loaded family is "Playfair
-         * Display **Variable**", so the probe had silently fallen back to Times and would have
-         * reported a fallback as a pass. The h1's own computed stack is used instead, and a
-         * deliberately absent family is measured as a third control: if the instrument cannot
-         * tell a fallback from a hit, `absent` and `georgia` will not be equal.
-         */
         const widthIn = (family: string): number => {
           const el = document.createElement('span');
           el.textContent = 'Handgloves 0123456789';
@@ -1146,8 +730,6 @@ for (const c of CLASSES) {
       });
       record('fonts', { project: ti.project.name, class: c.n, ...fonts, files });
 
-      // §1.2's UNVERIFIED, answered: the bare `@import "@fontsource-variable/…"` specifiers inside
-      // the design system's own stylesheet DO resolve through Vite from a transitive dependency.
       expect(fonts.loaded, 'exactly three families load').toEqual([
         'DM Sans Variable',
         'IBM Plex Mono',
@@ -1160,8 +742,6 @@ for (const c of CLASSES) {
         'Playfair Display'
       );
 
-      // The instrument's own control: an absent family MUST fall through to Georgia and measure
-      // exactly Georgia's width. If this fails, the width comparison below proves nothing.
       expect(
         fonts.wAbsent,
         'the fallback control must measure Georgia exactly, or the instrument cannot see a fallback'
@@ -1194,8 +774,6 @@ for (const c of CLASSES) {
       record('hit-areas', { project: ti.project.name, class: c.n, coarse: c.coarse, ...boxes });
 
       if (!c.coarse) {
-        // Class 6 is fine-pointer; §2.3's floor does not bind and the drawn geometry is the
-        // design. Recorded rather than asserted, so the numbers exist for the audit document.
         expect(boxes.nav, 'a nav link still has a box on a fine pointer').toBeGreaterThan(0);
         return;
       }
@@ -1209,27 +787,6 @@ for (const c of CLASSES) {
         'the Footer link meets the coarse floor (primitives.css:5763)'
       ).toBeGreaterThanOrEqual(44);
 
-      /*
-       * ✅ OQ-4 / D-3 — THE SHORTFALL IS FIXED UPSTREAM, AND THIS LINE IS HOW WE FOUND OUT.
-       *
-       * Against 2.0.0-beta.1 this asserted 40 — the shortfall itself, not ">= 44" and not
-       * ">= 40" — precisely so that the day the upstream fix landed it would fail and say so.
-       * It did: `2.0.0-beta.2` added
-       *
-       *     @media (pointer: coarse) { .ds-atom-segmented-btn { min-height: 44px } }
-       *
-       * at `primitives.css:3742`, this line redded on all ten coarse cells (alongside D-21's two),
-       * and the twelve failures were the good news. It now asserts 44 for the same reason it once
-       * asserted 40: an equality reports a regression in EITHER direction, where ">= 44" would go
-       * quietly green if a future release raised the floor to 48 and silently green if it kept 44
-       * by accident.
-       *
-       * The rule wins by `max(min-height, height)` over `[data-size="lg"]`'s `height: 40px` at
-       * (0,3,0) — a different property, so no specificity contest — which is why the drawn geometry
-       * is unchanged and only the hit box grew.
-       *
-       * Class 6 is fine-pointer and returns above; the pill is 40 there and the floor does not bind.
-       */
       expect(
         boxes.pill,
         'OQ-4 / D-3: the filter pill must meet the 44px coarse floor (fixed in 2.0.0-beta.2)'
@@ -1238,31 +795,12 @@ for (const c of CLASSES) {
   });
 }
 
-/* ══ THE MEASUREMENTS THAT ARE NOT PER-CLASS ═══════════════════════════════════════════════════ */
-
 test.describe('the whole gallery, in a real DOM', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   test('`aria-current="page"` appears exactly once IN THE RAIL on each gallery route', async ({
     page,
   }, ti) => {
-    /*
-     * Re-confirmed here in a PARSED DOM because a static string count and a parsed document can
-     * disagree: `aria-current` inside a comment, an attribute value or a `<script>` counts in a
-     * grep and does not exist to a screen reader. 05-07 asserted the string counts; this asserts
-     * the elements.
-     *
-     * 🔴 SCOPED TO THE RAIL, AND THE SCOPE IS THE FINDING. §16 item 6 says "exactly once" and the
-     * DOCUMENT carries TWO on every gallery route: the FilterNav's active pill, and the AppBar's
-     * own "photographs" link, which `PublicNav` marks current on every route under `/photography`.
-     * Written document-wide first, this assertion failed at 2 on all eight routes — independently
-     * reproducing the correction 05-07 already recorded in
-     * `test/public/photography-routes.node.test.ts`. Both numbers are asserted, so §16's sentence is
-     * recorded as wrong about the document and right about the rail.
-     *
-     * Markup is not viewport-dependent, so this runs at one class rather than six — stated rather
-     * than left to be inferred from the absence of the other five.
-     */
     expect(GALLERY_ROUTES.length, 'the gallery route set must be non-trivial').toBeGreaterThan(1);
     for (const route of GALLERY_ROUTES) {
       await page.goto(route, { waitUntil: 'load' });
@@ -1271,9 +809,6 @@ test.describe('the whole gallery, in a real DOM', () => {
       const inPage = await page.locator('[aria-current="page"]').count();
       record('aria-current', { project: ti.project.name, route, inRail, inPage });
 
-      // The count is asserted BEFORE the href is read. Reading an attribute off a locator that
-      // resolves to nothing waits out the whole 60s timeout and reports a timeout instead of
-      // "there is no current pill" — measured, on the vacuity run.
       expect(inRail, `${route}: exactly one pill in the rail is current`).toBe(1);
       const href = await rail.first().getAttribute('href');
       record('aria-current-href', { project: ti.project.name, route, href });

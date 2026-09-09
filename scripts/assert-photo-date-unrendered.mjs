@@ -1,103 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * §9.4 — `photo.date` may not be referenced from anything that renders a photograph.
- *
- * Usage: node scripts/assert-photo-date-unrendered.mjs [scanRoot ...]
- *        (with no argument, scans DEFAULT_SCAN_ROOTS below)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THE FIELD IS UNRENDERABLE, WHICH IS NOT THE SAME AS "NOT WORTH RENDERING"
- *
- * MEASURED on the committed manifest: forty records carry THREE distinct dates. That is an ingest
- * window, not a capture history. §9.4 measured two when the corpus was 39; the number moved and
- * the conclusion did not, which is the point — nothing here counts them.
- *
- * `REQUIREMENTS.md` §Out of Scope settled it: *"Photo date display or sorting — The stored dates
- * are ingest dates from a 10-day window, not capture dates — showing them would misrepresent the
- * work."*
- *
- * The reason it needs a GATE rather than a note is the permanent split the field carries: existing
- * records mean "published", future records will mean "taken". A renderer that displayed it would
- * imply ONE meaning for both, and there is no backfill that could reconcile them — the information
- * to tell the two apart was never captured. So the failure mode of a future edit is not an ugly
- * page; it is a page that makes a false claim about when forty photographs were made, and looks
- * completely correct while doing it. That is what a standing refusal is for.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IT REFUSES, AND WHY THESE FOUR FORMS
- *
- *   R1  `.date`               — the ordinary access, `photo.date` / `record.data.date`
- *   R2  `["date"]` `['date']` `[\`date\`]`  — the computed access, all three quote styles
- *   R3  `{ date }` `{ date: x }`  — the destructure, and the object literal that names the field
- *
- * ALL THREE QUOTE STYLES ARE READ. 03-06 shipped four predicates that could not fire because they
- * matched only double quotes in a repository whose formatter enforces single ones — a gate that
- * cannot fire is indistinguishable from a clean tree, and this project has shipped nineteen of them.
- *
- * `\b` after `date` is what keeps the rule from being a substring match on the four letters:
- * `updatedAt`, `dateFormatter`, `.dateModified` and `dates` are all left alone, and each is an
- * anti-canary below. A rule that reddened legitimate code would be turned off within a day, which
- * is the failure mode where a gate is worse than no gate.
- *
- * ---------------------------------------------------------------------------------------------
- * THE COMMENT LAYER IS REPORTED, NOT FAILED — AND THAT IS THE HARDEST DECISION HERE
- *
- * This repository's recurring defect class is a text matcher reading its own explanation as the
- * violation: 05-06 (`Seo.astro` vs `gate:sinks`), 05-07 (`gate:schema` refusing the comment that
- * explained why the condition was phrased as it was), 05-08 (`grep -c 'pd-exif'` returning 5 on a
- * page that renders none). Every route this gate scans carries a comment saying the field is never
- * rendered, and 05-12's own island header quotes the rule. A gate that fired on those would be
- * disabled the first time it ran.
- *
- * So the file is split into a CODE layer and a COMMENT layer. Findings on the code layer are a
- * REFUSAL. Findings on the comment layer are PRINTED as residuals with their line and text, and
- * exit 0 — visible, auditable, and not a red build. The walk-through in the plan's `<done>` asks
- * for exactly that disclosure rather than a claim of completeness.
- *
- * THE SPLIT IS LINE-BASED, WITH A BLOCK TRACKER, and it is canaried in both directions. It is not
- * a JavaScript parser and does not pretend to be:
- *
- *   - a line inside a block comment, or whose trimmed form opens with `*`, `//`, `/*` or `<!--`,
- *     is COMMENT;
- *   - on a code line, a trailing `//` outside quotes is cut and the tail joins the comment layer.
- *
- * A full-string tokeniser was written first and REJECTED on measurement: an apostrophe in template
- * prose (`Phantom Manor's mansard roof` — 8 of the 40 records carry one, 05-08's finding) opens a
- * string the tokeniser never closes, and everything after it silently becomes "inside a string",
- * i.e. invisible. A hiding failure is worse than a noisy one, and the line-based split cannot hide
- * a whole file behind one apostrophe.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IT CANNOT SEE. Each was found by trying to walk THROUGH it, not by imagining.
- *
- *  W1. A SPLIT KEY. `photo['da' + 'te']` carries no literal `date`, so no textual rule reaches it.
- *      Closing it needs an AST pass with constant folding. RECORDED, NOT CLOSED — and the same
- *      residual `assert-ds-import-contract.mjs` records for `'@akhil-saxena/design-' + 'system'`.
- *  W2. A DYNAMIC KEY. `photo[k]` where `k` is computed. Same reason, same disposition.
- *  W3. THE COMMENT LAYER, by construction — see above. Printed rather than refused.
- *  W4. A REFERENCE FROM OUTSIDE THE SCAN ROOTS. A component elsewhere that took `date` as a prop
- *      and was rendered by a photo route would not be seen. The roots are the answer to "what
- *      renders a photograph" as of plan 05-12; widening them is a one-line edit below.
- *
- * ---------------------------------------------------------------------------------------------
- * IT REFUSES TO PASS ON NOTHING. Three separate ways a run can check nothing and look green are
- * each a named refusal: a scan root that does not exist, a scan root that matches zero files, and
- * a set of files that are all empty. `! grep` passes on a missing path and that shape has appeared
- * three times in this project.
- *
- * A LITERAL CONTROL CHARACTER MAKES A SOURCE FILE INVISIBLE TO `grep`, which is why this reads
- * files as text and matches in JavaScript. Any C0 control character other than tab, newline or
- * carriage return is a REFUSAL naming the file and the offset, rather than a file quietly skipped.
- *
- * Reporting is `process.stdout.write`, never `console.log`: 04-01 measured with a probe that under
- * this repository's vitest setup both console markers print nothing and the stdout marker prints
- * once, and a gate reporting through a swallowed channel is indistinguishable from one that found
- * nothing.
- *
- * NOT WIRED INTO package.json. Plan 05-14 owns the chaining.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -105,22 +7,6 @@ import process from 'node:process';
 const out = (s) => process.stdout.write(`${s}\n`);
 const err = (s) => process.stderr.write(`${s}\n`);
 
-/**
- * §9.4 names `src/pages/photography*` and `src/components/Photo*`. The third entry is a deliberate
- * widening by plan 05-12 and is recorded rather than slipped in: it is the module that decides
- * which fields reach the gallery island, so it is exactly the place a `date` would be added by
- * someone who thought they were only touching a data shape.
- *
- * 🔴 THAT MODULE CHANGED, AND THE GATE CAUGHT IT — which is the whole reason it refuses a missing
- * root instead of skipping one. It was `src/lib/photo-lightbox.ts`; the overlay that module served
- * was replaced by the `/photography/<category>/<slug>` document and both were deleted. The build
- * refused with *"scan root does not exist. A PASS here would be a statement about an empty set"*
- * rather than quietly narrowing its own coverage by a third.
- *
- * `src/lib/photo-filter.ts` inherits the role: it is what the island and the page BOTH read to
- * decide what a category shows, and `src/lib/photo-srcset.ts` is where a record becomes markup.
- * Both are named, because the field could be leaked from either.
- */
 const DEFAULT_SCAN_ROOTS = [
   { root: 'src/pages/photography', match: /./ },
   { root: 'src/components/public', match: /^Photo/ },
@@ -130,15 +16,10 @@ const DEFAULT_SCAN_ROOTS = [
 
 const SCAN_EXTENSIONS = ['.astro', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'];
 
-/* ---------------------------------------------------------------------------------------------
- * The rules.
- * ------------------------------------------------------------------------------------------- */
-
 const RULES = [
   {
     id: 'DATE-DOT',
     what: 'a `.date` property access',
-    // `\b` is load-bearing: without it this matches `dateFormatter` and `dateModified`.
     pattern: /\.date\b/g,
   },
   {
@@ -149,17 +30,10 @@ const RULES = [
   {
     id: 'DATE-BINDING',
     what: 'a `{ date }` destructure, or an object literal naming the field',
-    // `[{,]` anchors it to a property position, so a bare local named `date` elsewhere is not
-    // matched; the trailing `[,}:]` is what keeps `{ dateFormatter }` out.
     pattern: /[{,]\s*date\s*[,}:]/g,
   },
 ];
 
-/* ---------------------------------------------------------------------------------------------
- * The code / comment split.
- * ------------------------------------------------------------------------------------------- */
-
-/** True when `index` in `line` sits inside a quoted run. Cheap, and only used to place `//`. */
 function insideQuotes(line, index) {
   let quote = null;
   for (let i = 0; i < index; i++) {
@@ -177,10 +51,6 @@ function insideQuotes(line, index) {
   return quote !== null;
 }
 
-/**
- * Split a file into its code lines and its comment lines. Both layers keep 1-based line numbers,
- * so a finding can name a line whichever layer it came from.
- */
 export function splitLayers(text) {
   const code = [];
   const comment = [];
@@ -194,7 +64,6 @@ export function splitLayers(text) {
       comment.push({ lineNumber, text: raw });
       if (trimmed.includes('*/')) {
         inBlock = false;
-        // Anything after `*/` on the closing line is code again.
         const tail = raw.slice(raw.lastIndexOf('*/') + 2);
         if (tail.trim().length > 0) code.push({ lineNumber, text: tail });
       }
@@ -212,7 +81,6 @@ export function splitLayers(text) {
       return;
     }
 
-    // A code line that opens a block comment part-way through: keep the head, defer the tail.
     const blockAt = raw.indexOf('/*');
     if (blockAt !== -1 && !insideQuotes(raw, blockAt)) {
       code.push({ lineNumber, text: raw.slice(0, blockAt) });
@@ -221,7 +89,6 @@ export function splitLayers(text) {
       return;
     }
 
-    // A trailing line comment on a code line. `https://` lives inside quotes and is not one.
     let cut = -1;
     for (let j = 0; j < raw.length - 1; j++) {
       if (raw[j] === '/' && raw[j + 1] === '/' && !insideQuotes(raw, j)) {
@@ -240,7 +107,6 @@ export function splitLayers(text) {
   return { code, comment };
 }
 
-/** Every rule hit in a layer, with the rule that found it and the text of the line. */
 function findings(layer) {
   const hits = [];
   for (const { lineNumber, text } of layer) {
@@ -256,11 +122,6 @@ function findings(layer) {
 
 const codeFindings = (text) => findings(splitLayers(text).code);
 const commentFindings = (text) => findings(splitLayers(text).comment);
-
-/* ---------------------------------------------------------------------------------------------
- * 0. The self-test. A rule that cannot fire is not a rule; a rule that fires on anything is not
- *    one either, and the second is how a gate gets disabled.
- * ------------------------------------------------------------------------------------------- */
 
 const CANARIES = [
   ['a plain access', 'const d = photo.date;\n', 'DATE-DOT'],
@@ -321,8 +182,6 @@ for (const [label, body] of ANTI_CANARIES) {
   }
 }
 
-// The comment layer must still SEE what it declines to fail on — otherwise the residual report is
-// itself vacuous and nobody would know the gate is blind there.
 if (commentFindings('// never read photo.date here\n').length === 0) {
   selfTestFailures.push(
     'the comment layer reported nothing for a comment that plainly names the field, so the residual report cannot be trusted.'
@@ -334,10 +193,6 @@ if (selfTestFailures.length > 0) {
   for (const f of selfTestFailures) err(`  x ${f}`);
   process.exit(1);
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 1. Resolve the scan roots.
- * ------------------------------------------------------------------------------------------- */
 
 const args = process.argv.slice(2);
 const usingDefaults = args.length === 0;
@@ -402,26 +257,10 @@ if (refusals.length > 0) {
   process.exit(1);
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 2. The scan.
- * ------------------------------------------------------------------------------------------- */
-
 const failures = [];
 const residuals = [];
 let bytesRead = 0;
 
-// Everything C0 except tab (09), newline (0A) and carriage return (0D). A literal control
-// character makes a file invisible to grep; here it is a named refusal instead of a silent skip.
-/**
- * The first C0 control character in `text` other than tab, newline or carriage return, or `null`.
- *
- * A CODEPOINT SCAN RATHER THAN A REGULAR EXPRESSION, and that is not style. Biome's
- * `lint/suspicious/noControlCharactersInRegex` refuses a character class holding them — correctly,
- * for almost every other file — and it fires on the `\u0000` escapes as readily as on the literal
- * characters. Suppressing the rule in the one gate whose job is to FIND control characters would
- * mean carrying a standing exemption for a hazard; counting codepoints needs no exemption at all,
- * and it can report the code and the offset, which a class match cannot.
- */
 function firstControlCharacter(text) {
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);
@@ -477,18 +316,7 @@ if (scanned.length > 0 && bytesRead === 0) {
   });
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 3. Report.
- * ------------------------------------------------------------------------------------------- */
-
 if (failures.length > 0) {
-  /*
-   * TWO BANNERS, AND THE SPLIT IS A REPAIR. The first revision printed "a photo route references
-   * photo.date" over EVERY refusal, so control 3c — a scan root whose only file was empty — was
-   * announced as a rendered date. The diagnostic underneath was correct and the headline was a
-   * different, false claim, which is the shape of message a reader trusts and then debugs the
-   * wrong thing from. Found by running the control, not by reading the code.
-   */
   const references = failures.filter((f) => f.kind === 'reference');
   const vacuity = failures.filter((f) => f.kind !== 'reference');
   err('');

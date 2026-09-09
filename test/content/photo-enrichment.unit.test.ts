@@ -1,59 +1,3 @@
-/**
- * The byte-identity proof for the 00-PHOTO-CONTENT.md → data/portfolio_images.json merge
- * (CONT-01, plan 03-04).
- *
- * WHAT THIS FILE IS FOR
- * ---------------------
- * The 39 `alt` strings were written by looking at every photograph and reviewed with Akhil on
- * 2026-08-23. The public gallery ships zero framework JS, so `alt` is delivered on the `<img>`
- * element and is the entire non-visual experience of 39 images — there is no hover, no tooltip
- * and no later interaction that could supply a description, because there is no JavaScript on
- * the page to implement one. A string that was re-wrapped, curly-quote-normalised, truncated or
- * "improved" in transit is no longer the string that was reviewed, and a diff of 55 added lines
- * of prose is not evidence that it survived: nobody proof-reads 39 sentences against a markdown
- * table by eye. So this file compares them character for character.
- *
- * WHY IT PARSES THE BRIEF ITSELF
- * ------------------------------
- * It does NOT import `scripts/merge-photo-content.mjs`, and the duplicated parser below is
- * deliberate rather than an oversight. Importing the merge's own parser would make this file
- * assert that the merge agrees with itself — green for any consistent misreading of the table,
- * including one that dropped a column or mistook a header for a row. Two independent parsers
- * that disagree about where a cell ends is exactly the failure worth catching.
- *
- * WHAT IT CANNOT SEE
- * ------------------
- * Nothing here can check whether an alt value is TRUE OF THE PHOTOGRAPH. That is what the
- * 2026-08-23 review was for and no gate replaces it. Nor can it see whether `alt` ever reaches a
- * rendered `<img>`: no page renders a photo until Phase 5, so today this is a string in a JSON
- * file. Phase 5 must assert the attribute on rendered HTML.
- *
- * THE THREE CLASSES, AND WHY THIS FILE NO LONGER HOLDS A LITERAL 39 (plan 04-01)
- * ------------------------------------------------------------------------------
- * Phase 4 builds a pipeline that APPENDS records to `data/portfolio_images.json`. Measured on
- * 2026-08-27: appending one schema-valid 40th record turned 9 assertions in this file red while
- * `astro sync` stayed green at `40 photo(s)`. Bumping 39 → 40 would have been the wrong repair,
- * and the block at `categoryOrder agrees with the global order it was derived from` said so in
- * its own failure message: *"re-scope or retire this block rather than weakening it."*
- *
- * So every count-shaped assertion here now declares which of three things it is, beside itself:
- *
- *   COHORT     It proves something about the 39 photographs the 03-04 merge moved. A photograph
- *              published afterwards was never in scope, so the claim is iterated over the BRIEF's
- *              row set — never over `manifest` — and a 40th record cannot falsify it.
- *   FLOOR      It exists only to stop the corpus silently emptying. Spelled
- *              `toBeGreaterThanOrEqual(COHORT.size)`, the shape `scripts/assert-no-r2dev-urls.mjs`
- *              already uses at its `manifest.length < EXPECTED_RECORDS` guard.
- *   INVARIANT  It is true of every record the schema will ever accept. Iterated over the WHOLE
- *              manifest, always paired with the floor so an emptied file still fails.
- *
- * THE DIRECTION OF DERIVATION IS THE WHOLE POINT. `COHORT` comes from the brief. Deriving it from
- * `manifest` instead would make every cohort assertion below circular — it would compare the
- * manifest against a set computed from the manifest, and renaming a record would silently rename
- * the thing checking it. Proof step 4 of plan 04-01 is exactly that walk-through attempt: rename
- * one cohort id and the cohort blocks must fail naming the id that went missing.
- */
-
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -63,34 +7,16 @@ const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const MANIFEST_PATH = `${REPO_ROOT}data/portfolio_images.json`;
 const BRIEF_PATH = `${REPO_ROOT}.planning/phases/00-design-ideation/00-PHOTO-CONTENT.md`;
 
-/** The pending-value markers. A marker that reached the manifest is the failure, not the fix. */
 const ALT_MARKER = '[AKHIL-ALT]';
 const OPT_MARKER = '[AKHIL-OPT]';
-/** Matched as a PREFIX so a marker that was mangled on the way in still fails. */
 const MARKER_PREFIX = '[AKHIL-';
 
-/** The brief's table header, in order. Every data row must produce exactly this many cells. */
 const COLUMNS = ['id', 'title', 'category', 'date', 'alt', 'place', 'description', 'tags'] as const;
 
-/** Brief rule 3: a screen reader announces the role before it reads the string. */
 const ROLE_PREFIXES = ['image of', 'photo of', 'picture of'];
 
-/**
- * EXPECTED_PLACES — COHORT. 16 OF THE 39 COHORT RECORDS carry a `place`, because 16 brief rows
- * filled that cell. It is not a fact about the manifest: a photograph the pipeline publishes may
- * carry a place, or not, without making this wrong. The complement is COMPUTED as
- * `COHORT.size - EXPECTED_PLACES` below rather than written out as 23, so the two figures cannot
- * drift apart.
- */
 const EXPECTED_PLACES = 16;
 
-/**
- * COHORT_BASELINE — DATED BASELINE, pinned to a frozen document. `00-PHOTO-CONTENT.md` lives under
- * `.planning/` and describes a review that happened on 2026-08-23; it does not change. So the
- * number of rows in it is a constant, and asserting it once (in the first `it` below) is what stops
- * a parser regression from shrinking the cohort silently. It is deliberately NOT compared against
- * `manifest.length`: that equality is what broke at 40 records, and it was never the claim.
- */
 const COHORT_BASELINE = 39;
 
 interface Photo {
@@ -106,13 +32,6 @@ interface Photo {
 
 type BriefRow = Record<(typeof COLUMNS)[number], string>;
 
-/**
- * Parse the brief's seven tables. Row-level split on `|`, then trim the markdown cell padding —
- * and nothing else. Deliberately NOT a CSV parse and NOT a whole-file regex: the alt strings are
- * real sentences full of commas, parentheses, em dashes and apostrophes, every one of which
- * breaks a naive `\|(.*?)\|` sweep, and a parser that silently loses a row would make the
- * comparison below pass on the rows that survived.
- */
 function parseBrief(text: string): BriefRow[] {
   const rows: BriefRow[] = [];
   for (const line of text.split('\n')) {
@@ -132,15 +51,12 @@ function parseBrief(text: string): BriefRow[] {
   return rows;
 }
 
-/** An optional cell is "absent" when it is empty or still holds a pending marker. */
 const isAbsent = (cell: string) => cell === '' || cell === OPT_MARKER || cell === ALT_MARKER;
 
-/** Case- and whitespace-insensitive comparison key, matching check-photo-content.mjs's `norm`. */
 const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 
 const manifest: Photo[] = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
 
-/** The declared category ids, read from the config rather than counted by hand. */
 const SITE_CATEGORY_IDS: string[] = (
   JSON.parse(readFileSync(`${REPO_ROOT}data/site_config.json`, 'utf8')) as {
     categories: { id: string }[];
@@ -149,107 +65,40 @@ const SITE_CATEGORY_IDS: string[] = (
 const rows = parseBrief(readFileSync(BRIEF_PATH, 'utf8'));
 const rowById = new Map(rows.map((r) => [r.id, r]));
 
-/**
- * THE COHORT: the id set the 03-04 merge moved, read from the brief and from nowhere else.
- *
- * Every assertion tagged COHORT below iterates this set or `rows`. None of them may be derived
- * from `manifest`, for the reason spelled out in the header — a cohort computed from the manifest
- * cannot detect a manifest that changed.
- */
 const COHORT: ReadonlySet<string> = new Set(rows.map((r) => r.id));
 
-/**
- * ================================================================================================
- * 🔴 THE JOIN IS BY SLUG, NOT BY ID, AND THE BRIEF IS NOT ALLOWED TO BE EDITED TO FIX THAT
- * ================================================================================================
- *
- * Every record's `id` changed. The taxonomy was re-authored from seven categories to five — Akhil,
- * after a pass over all forty photographs: *"5 is better"* — and because an id is
- * `category + "-" + slug`, moving a photograph between sections RENAMES it:
- * `nature-acrossthetrees` became `landscape-acrossthetrees`.
- *
- * `00-PHOTO-CONTENT.md` is a FROZEN, DATED planning document under `.planning/phases/00-*`. Its
- * whole evidential value is that it is the artefact Akhil reviewed on 2026-08-23; editing its ids
- * to match today's manifest would destroy exactly the property this file rests on. So the brief
- * keeps its ids and the JOIN moves.
- *
- * THE SLUG IS THE STABLE HALF. It is the photograph's identity — the object key in R2 has not moved
- * either — while the prefix is editorial and has now changed once. Joining on it keeps the claim
- * this file exists to make (every reviewed `alt` survived byte for byte) and makes that claim
- * survive the NEXT re-categorisation too.
- *
- * IT IS STILL NOT DERIVED FROM THE MANIFEST. `COHORT` is the brief's own id set, unchanged; the map
- * below only says which manifest record each brief row is ABOUT. A row whose slug matches nothing
- * still fails, which is the bijection assertion below.
- */
 const slugOf = (id: string, category?: string): string =>
   category !== undefined && id.startsWith(`${category}-`) ? id.slice(category.length + 1) : id;
 
-/** slug → the manifest record that carries it. Slugs are unique across the corpus; asserted below. */
 const bySlug = new Map(manifest.map((p) => [slugOf(p.id, p.category), p]));
 
-/** True when a manifest record is one of the thirty-nine the frozen brief described. */
 const inCohort = (p: Photo): boolean => briefSlugs.has(slugOf(p.id, p.category));
 
-/** The manifest record a brief row describes, matched on the slug both sides share. */
 const recordFor = (rowId: string): Photo | undefined => {
-  // The brief's ids carry a RETIRED prefix, so the slug is whatever follows the first hyphen.
   const slug = rowId.slice(rowId.indexOf('-') + 1);
   return bySlug.get(slug);
 };
 
-/** Manifest ids the frozen brief never described — the pipeline's output, and out of every COHORT claim. */
 const briefSlugs = new Set([...COHORT].map((id) => id.slice(id.indexOf('-') + 1)));
 const outOfCohortIds = (): string[] => manifest.filter((p) => !inCohort(p)).map((p) => p.id);
 
-/**
- * Print a line that a PASSING run actually shows. `process.stdout.write`, not `console.log`.
- *
- * MEASURED, 2026-08-27, `vitest 4.1.10`, `--project unit`: a throwaway test emitting all three of
- * `console.log`, `console.info` and `process.stdout.write` printed ONLY the last one. The first
- * draft of the out-of-cohort report below used `console.info` and produced nothing at all — an
- * exclusion whose justification was written down and then never displayed, which is the same
- * failure as one that lives in a plan file. Do not "tidy" this back to `console.log`: run the probe
- * again first.
- *
- * This is a REPORT, not an assertion. Records outside the cohort are legitimate — they are what
- * Phase 4's pipeline produces — so they must be visible without being a failure.
- */
 const report = (line: string): void => {
   process.stdout.write(`${line}\n`);
 };
 
 describe('the merge read something', () => {
-  /**
-   * The vacuous-pass guard, and the reason it is first. Every assertion in this file is a loop
-   * over `rows`, over `COHORT`, or over `manifest`; a parser that matched nothing, or a manifest
-   * that failed to load, would make all of them iterate zero times and report green. This project
-   * has shipped that failure before, so the sizes are asserted before anything is compared.
-   */
   it('parses exactly the cohort the frozen brief describes, and it is not zero', () => {
-    // COHORT + DATED BASELINE. `manifest.length` is deliberately absent: the brief's row count and
-    // the manifest's record count were equal on 2026-08-23 and Phase 4 makes them diverge on
-    // purpose. Asserting the equality would have been asserting the corpus can never grow.
     expect(rows.length).toBe(COHORT_BASELINE);
     expect(rowById.size).toBe(COHORT_BASELINE); // no duplicate ids collapsing the map
     expect(COHORT.size).toBe(COHORT_BASELINE);
-    // ANTI-VACUITY. Every COHORT loop below is over this set. Zero is never a pass.
     expect(COHORT.size).toBeGreaterThan(0);
   });
 
   it('has a manifest record for every brief row, and names the records outside the cohort', () => {
-    // COHORT BIJECTION, ONE DIRECTION. A brief row with no manifest record is a reviewed
-    // photograph that was lost, which is a failure in any phase. Matched on the SLUG, because the
-    // brief's ids carry retired category prefixes — see `recordFor`.
     expect(rows.filter((r) => recordFor(r.id) === undefined).map((r) => r.id)).toEqual([]);
 
-    // …and the same claim stated on the manifest side, so a duplicate id cannot satisfy the
-    // direction above while the manifest holds two records for one brief row.
     expect(manifest.filter(inCohort)).toHaveLength(COHORT.size);
 
-    // THE REVERSE DIRECTION IS REPORTED, NOT FAILED. Phase 4's pipeline appends records the frozen
-    // brief never described; that is the feature, not a defect. The partition identity below is
-    // what keeps the report honest — it fails if the two halves do not account for every record.
     const outside = outOfCohortIds();
     expect(COHORT.size + outside.length).toBe(manifest.length);
     if (outside.length > 0) {
@@ -263,16 +112,10 @@ describe('the merge read something', () => {
 
 describe('alt survived the crossing byte for byte', () => {
   it('every cohort record carries the brief cell for its id, character for character', () => {
-    // COHORT. The loop is over `rows`, not over `manifest`: the brief holds no cell for a
-    // photograph published after 2026-08-23, so a byte-comparison against it is not a claim that
-    // exists for such a record. Reversing the iteration is what makes the block survive growth
-    // without losing a single character of what it checked.
     let compared = 0;
     for (const row of rows) {
       const photo = recordFor(row.id);
       expect(photo, `no manifest record for cohort id ${row.id}`).toBeDefined();
-      // toBe on strings is === : no normalisation, no trim, no case folding. An en dash that
-      // became a hyphen, or a curly apostrophe that became straight, fails here.
       expect((photo as Photo).alt, `alt mismatch on ${row.id}`).toBe(row.alt);
       compared += 1;
     }
@@ -281,8 +124,6 @@ describe('alt survived the crossing byte for byte', () => {
   });
 
   it('has a non-empty alt on every record in the manifest', () => {
-    // INVARIANT. `PhotoSchema.alt` is `z.string().min(1)` plus a whitespace-only superRefine, so
-    // this is true of every record the schema will ever accept — the pipeline's output included.
     const missing = manifest
       .filter((p) => typeof p.alt !== 'string' || (p.alt as string).trim() === '')
       .map((p) => p.id);
@@ -290,14 +131,10 @@ describe('alt survived the crossing byte for byte', () => {
     expect(manifest.filter((p) => typeof p.alt === 'string' && p.alt.trim() !== '')).toHaveLength(
       manifest.length
     );
-    // FLOOR. Without this, an emptied manifest satisfies the two assertions above trivially.
     expect(manifest.length).toBeGreaterThanOrEqual(COHORT.size);
   });
 
   it('contains no pending marker anywhere in the manifest, in any field', () => {
-    // INVARIANT. Whole-record serialisation rather than a per-field check: a marker that landed in
-    // `description`, or in a tag, is the same defect wearing a different key. A record the pipeline
-    // wrote is as capable of carrying `[AKHIL-` as one the merge wrote.
     const leaked = manifest
       .filter((p) => JSON.stringify(p).includes(MARKER_PREFIX))
       .map((p) => p.id);
@@ -308,9 +145,6 @@ describe('alt survived the crossing byte for byte', () => {
 
 describe('place is present exactly where the brief filled it, and ABSENT elsewhere', () => {
   it('has 16 cohort place keys, each byte-identical to its brief cell', () => {
-    // COHORT. 16 OF THE 39 COHORT RECORDS, not 16 of the manifest. The final assertion is scoped to
-    // cohort members for that reason: a photograph the pipeline publishes with a real `place` is
-    // not evidence that the merge invented one, and before this scoping it would have read as such.
     const expected = rows.filter((r) => !isAbsent(r.place));
     expect(expected).toHaveLength(EXPECTED_PLACES); // the brief itself still says 16
     for (const row of expected) {
@@ -322,22 +156,12 @@ describe('place is present exactly where the brief filled it, and ABSENT elsewhe
   });
 
   it('gives the remaining cohort records NO place key at all — not an empty string', () => {
-    // COHORT for the absence claim. The complement is COMPUTED — `COHORT.size - EXPECTED_PLACES`
-    // rather than the literal 23 — so the brief gaining or losing a filled cell cannot leave two
-    // hardcoded halves that no longer sum.
-    //
-    // `'place' in record` and not `!record.place`. The distinction is the whole point: an empty
-    // string is falsy, so a truthiness check would call `place: ""` absent and let it through —
-    // and `""` renders as a real, empty element where the brief's rule is "nothing at all: no em
-    // dash, no gap".
     const absentInBrief = rows.filter((r) => isAbsent(r.place)).map((r) => r.id);
     expect(absentInBrief).toHaveLength(COHORT.size - EXPECTED_PLACES);
     expect(absentInBrief.length).toBeGreaterThan(0); // ANTI-VACUITY for the loop below
     const stillKeyed = manifest.filter((p) => absentInBrief.includes(p.id) && 'place' in p);
     expect(stillKeyed.map((p) => p.id)).toEqual([]);
 
-    // INVARIANT, and it stays whole-manifest: `place: z.string().min(1).optional()` forbids the
-    // empty string on every record forever, so a pipeline record carrying `""` must fail here too.
     const emptyString = manifest
       .filter((p) => 'place' in p && String(p.place).trim() === '')
       .map((p) => p.id);
@@ -347,15 +171,7 @@ describe('place is present exactly where the brief filled it, and ABSENT elsewhe
 });
 
 describe("the brief's own rules, re-asserted after the strings left the file that guards them", () => {
-  /**
-   * `check-photo-content.mjs` enforces rules 2 and 3 inside 00-PHOTO-CONTENT.md. The merge is the
-   * first time these strings leave that file's jurisdiction, and from here on the manifest is the
-   * authority. Re-asserting rather than trusting is the point: a future hand-edit to the manifest
-   * is not reachable by the brief's gate at all.
-   */
   it('has no alt that merely repeats its own title', () => {
-    // INVARIANT. This is `PhotoSchema`'s second `superRefine` rule, so it holds of every record the
-    // schema accepts — whole manifest, and the pipeline's records are subject to it too.
     const echoes = manifest
       .filter((p) => typeof p.alt === 'string' && norm(p.alt) === norm(p.title))
       .map((p) => p.id);
@@ -364,7 +180,6 @@ describe("the brief's own rules, re-asserted after the strings left the file tha
   });
 
   it('has no alt opening with "Image of" / "Photo of" / "Picture of"', () => {
-    // INVARIANT. `PhotoSchema`'s third `superRefine` rule, for the same reason.
     const prefixed = manifest
       .filter(
         (p) =>
@@ -377,25 +192,6 @@ describe("the brief's own rules, re-asserted after the strings left the file tha
   });
 });
 
-// ---------------------------------------------------------------------------------------------
-// D-22: the per-category order (plan 03-04, task 2)
-// ---------------------------------------------------------------------------------------------
-
-/**
- * Locate the last revision of the manifest that PREDATES this migration — the newest one in which
- * no record carries `categoryOrder` — and return its global `order` per id. That revision is, by
- * definition, the ordering the ranks were derived from.
- *
- * Deliberately NOT `HEAD~1`. Plan 03-05 is committing to this branch in the same wave, so `HEAD~1`
- * stops being this migration's parent the moment it lands, and the comparison would silently start
- * reading an already-migrated revision — comparing the shipped ranks against themselves. Searching
- * the file's own log for the last pre-migration revision is stable regardless of what else commits,
- * and it is the pattern `site-config-migration.unit.test.ts` already established here.
- *
- * Every rejection below returns `null` rather than an empty map, and exhausting the log throws.
- * A "previous revision" that resolves to nothing would make the loop over its ids run zero times
- * and the file go green having compared nothing — the failure this project has shipped repeatedly.
- */
 function parsePreMigrationOrder(raw: string | null | undefined): Map<string, number> | null {
   if (typeof raw !== 'string' || raw.trim() === '') return null;
   let parsed: unknown;
@@ -406,7 +202,6 @@ function parsePreMigrationOrder(raw: string | null | undefined): Map<string, num
   }
   if (!Array.isArray(parsed) || parsed.length === 0) return null;
   const records = parsed as Photo[];
-  // Post-migration revisions are not evidence about what the migration derived from.
   if (records.some((p) => 'categoryOrder' in p)) return null;
   if (!records.every((p) => typeof p.id === 'string' && Number.isInteger(p.order))) return null;
   const orders = new Map<string, number>(records.map((p) => [p.id, p.order]));
@@ -446,21 +241,9 @@ function findPreMigrationOrder(): { ref: string; orders: Map<string, number> } {
 }
 
 describe('categoryOrder is dense and unique inside every category', () => {
-  /**
-   * A gap or a duplicate is a reorder bug that surfaces as two photographs fighting for one slot
-   * in the filtered view. `n` is taken from the group's own size rather than from a table of
-   * expected counts, so publishing a photograph does not make this assertion wrong — but a group
-   * that silently lost a member would otherwise be dense over its survivors, so the totals below
-   * are still guarded. 04-01 changed HOW: the guard was an equality on 39, which forbade a 40th
-   * photograph; it is now a FLOOR at `COHORT.size` plus `counted === manifest.length`, which
-   * catches a shrunken corpus and a loop that skipped records without pinning the corpus size.
-   */
   it('gives every record an integer categoryOrder', () => {
-    // INVARIANT. `categoryOrder: z.number().int().positive()` is required on every record.
     const notInteger = manifest.filter((p) => !Number.isInteger(p.categoryOrder)).map((p) => p.id);
     expect(notInteger).toEqual([]);
-    // FLOOR, replacing an equality on EXPECTED_RECORDS. The equality was doing the anti-vacuity
-    // job and nothing else, and a floor does that job without forbidding a 40th photograph.
     expect(manifest.length).toBeGreaterThanOrEqual(COHORT.size);
   });
 
@@ -471,11 +254,6 @@ describe('categoryOrder is dense and unique inside every category', () => {
       group.push(photo);
       byCategory.set(photo.category, group);
     }
-    /*
-     * DERIVED FROM THE CONFIG. This read `7` — "the seven real categories, per OD-2" — and the
-     * taxonomy is five. The claim is that every category the CONFIG declares is ranked 1…n, so the
-     * config is where the count belongs; a literal here restates a number owned by another file.
-     */
     expect(byCategory.size).toBe(SITE_CATEGORY_IDS.length);
     expect(byCategory.size).toBeGreaterThan(0);
     let counted = 0;
@@ -485,46 +263,20 @@ describe('categoryOrder is dense and unique inside every category', () => {
       expect(ranks, `ranks in ${category} are not dense 1…n`).toEqual(dense);
       counted += group.length;
     }
-    // INVARIANT. `counted` is compared to what the file actually holds, so the loop is proven to
-    // have visited every record without the total being a hardcoded corpus size. Density inside a
-    // category is exactly the property RI-6 also enforces, and it is true forever.
     expect(counted).toBe(manifest.length);
     expect(manifest.length).toBeGreaterThanOrEqual(COHORT.size); // FLOOR
   });
 });
 
 describe('categoryOrder agrees with the global order it was derived from', () => {
-  /**
-   * The assertion that carries the information. Density alone is satisfied by shuffling every
-   * category's ranks — the file would look perfectly valid while the filtered gallery Akhil has
-   * already looked at had quietly rearranged itself.
-   *
-   * SCOPE, AND READ THIS BEFORE DELETING IT. This describe block is true OF THIS MIGRATION ONLY.
-   * D-22 exists precisely because the two orderings are allowed to diverge, and Phase 7's
-   * `/admin/photography` reorders photographs inside an active category filter — which changes
-   * `categoryOrder` without changing the global `order` and WILL make this red on purpose. When
-   * that happens, retire this block by name, with the reason written beside it, and leave the
-   * density block above alone: density and uniqueness stay true forever. Weakening this assertion
-   * in place, rather than retiring it deliberately, is how a real reorder bug would get through.
-   */
   const previous = findPreMigrationOrder();
 
   it('found a pre-migration revision holding the whole cohort', () => {
-    // COHORT. The evidence revision must hold every cohort member, because the ranks were derived
-    // from ITS global order. `toBe(COHORT.size)` rather than `> 0`: an accidentally-truncated
-    // evidence revision must fail rather than quietly shrink the proof.
     expect(previous.ref).toMatch(/^[0-9a-f]{40}$/);
     expect(previous.orders.size).toBe(COHORT.size);
   });
 
   it('covers the whole cohort — a photo published after the migration is reported, not failed', () => {
-    // COHORT, and THIS IS THE BLOCK whose old failure message demanded re-scoping rather than
-    // weakening. It used to iterate `manifest`, which meant every record the pipeline appends
-    // would be reported as a rank this migration failed to derive — true, and not a defect.
-    //
-    // Re-scoped: the claim is COHORT ⊆ previous.orders. Iterating COHORT (from the BRIEF) rather
-    // than `previous.orders` (from git) keeps the two sources independent, so a truncated evidence
-    // revision fails here instead of silently checking fewer ids.
     let checked = 0;
     const uncovered: string[] = [];
     for (const id of COHORT) {
@@ -536,12 +288,9 @@ describe('categoryOrder agrees with the global order it was derived from', () =>
       `these cohort ids did not exist at ${previous.ref.slice(0, 7)}, so this migration did not derive their rank; re-scope or retire this block rather than weakening it`
     ).toEqual([]);
 
-    // ANTI-VACUITY, both halves: a cohort of zero, or a loop that visited nothing, is not a pass.
     expect(COHORT.size).toBeGreaterThan(0);
     expect(checked).toBe(COHORT.size);
 
-    // REPORTED, NOT FAILED. Out-of-cohort records are named so the exclusion stays visible in the
-    // run rather than being invisible in a filter predicate.
     const outside = outOfCohortIds();
     if (outside.length > 0) {
       report(

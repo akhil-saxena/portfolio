@@ -151,10 +151,7 @@ const gearLines = [displayCamera(photo.exif.camera), displayLens(photo.exif.lens
 const pageTitle = `${photo.title} · ${home.title}`;
 ---
 
-{}
 <PublicLayout mainClass="pub-max-photos pd-page">
-  {}
-  {}
   <ClientRouter slot="head" />
 
   <Seo
@@ -167,14 +164,11 @@ const pageTitle = `${photo.title} · ${home.title}`;
     imageAlt={photo.alt}
   />
 
-  {}
   <div
     class="pd-body"
     data-orient={photo.dimensions.width >= photo.dimensions.height ? 'landscape' : 'portrait'}
   >
-    {}
     <div class="pd-im">
-      {}
       <div class="pd-shot">
         <img
           src={photo.urls.large}
@@ -190,9 +184,7 @@ const pageTitle = `${photo.title} · ${home.title}`;
       </div>
     </div>
 
-    {}
     <div class="pd-col" data-tech="off">
-      {}
       <p class="pd-context">
         <Link
           href={categoryHref}
@@ -206,7 +198,6 @@ const pageTitle = `${photo.title} · ${home.title}`;
 
       <Heading level={1} size="2xl" weight="regular" className="pd-title">{photo.title}</Heading>
 
-      {}
       <p class="pd-place" aria-hidden={photo.place ? undefined : 'true'}>{photo.place}</p>
 
       {
@@ -265,5 +256,4 @@ const pageTitle = `${photo.title} · ${home.title}`;
       </nav>
     </div>
   </div>
-  {}
 </PublicLayout>

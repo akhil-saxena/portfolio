@@ -1,94 +1,13 @@
 #!/usr/bin/env node
 
-/**
- * CONT-03 structural gate — no raw-HTML sink exists anywhere under `src/`, in the React spelling,
- * the Astro one, or the plain-DOM one.
- *
- * Usage: node scripts/assert-no-raw-html-sinks.mjs [scanRoot]     (scanRoot defaults to ./src)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS FILE EXISTS AT ALL
- *
- * The legacy stored-XSS class in this repository was ENTIRELY a rendering defect. `Timeline.tsx:48`
- * plus three admin components passed résumé bullet strings to `dangerouslySetInnerHTML`, and there
- * was no sanitiser anywhere in the repository. ADR-001's answer was not to add one: 03-02 made the
- * stored shape unable to express a tag and 03-06 made the schema reject one.
- *
- * But a correct store with a careless renderer reproduces the hole exactly. `src/components/
- * Bullets.tsx` is the safe renderer; this gate is what makes the unsafe alternative FAIL rather
- * than merely being un-chosen. Those are different claims, and only the second one survives a
- * future author who has not read ADR-001.
- *
- * `set:html` is here even though this plan writes no `.astro` component. It is Astro's spelling of
- * the same mistake, Phase 5 writes the first pages, and a gate added after those pages exist is a
- * gate added after the mistake became available to make. The `.astro` control is run INDEPENDENTLY
- * of the `.tsx` one in the plan's verification for exactly this reason: a scanner that only reads
- * `.ts`/`.tsx` passes the React control while being blind to every page Phase 5 will write, and a
- * combined control hides precisely that.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS GATE CANNOT SEE
- *
- * Written here, in the gate's own source, because a boundary that lives in a plan file is a
- * boundary nobody can evaluate in two years. Each was found by trying to WALK THROUGH this gate —
- * looking for an input that satisfies it while violating its intent — not by imagining failures.
- *
- *  1. IT READS TEXT, NOT SYNTAX. A sink assembled dynamically is invisible:
- *     `el["inner" + "HTML"] = x`, `const K = "dangerously" + "SetInnerHTML"; props[K] = …`,
- *     `Reflect.set(el, ATTR, html)`. This is a real, demonstrated hole — the plan's renderer
- *     hygiene control was walked through with exactly the second form. Closing it needs an AST
- *     pass or a CSP, neither of which is in Phase 3's scope; it is recorded rather than hidden.
- *
- *  2. IT SCANS ONE ROOT, AND THAT ROOT IS `src/` BY DEFAULT. `public/` ships JavaScript straight
- *     to the browser and is NOT scanned. It contains no `.js` today (a PDF, an SVG and three
- *     PNGs), so widening now would assert about an empty set; the moment `public/` gains a script,
- *     this list must grow. `scripts/` and `test/` are also unscanned, deliberately — this file
- *     names all three sinks in prose and would flag itself.
- *
- *  3. ITS EXTENSION LIST IS FINITE. A sink inside a `.svelte`, `.vue`, `.html` or `.md` file under
- *     `src/` is invisible. None exists; the list is one line and should grow with the stack.
- *
- *  4. IT CANNOT TELL A MENTION FROM A USE — so it does not try to. It matches inside comments and
- *     strings ON PURPOSE: a scanner that skips comments is defeated the day a commented-out line
- *     is uncommented. The two genuine documentation mentions in this repository are ALLOWLISTED
- *     BY NAME below, each with its reason on the same entry, and an allowlisted occurrence is
- *     still refused if it appears in USE form (`dangerouslySetInnerHTML=` / `:`). The allowlist can
- *     therefore never forgive an actual sink — only prose about one.
- *
- *  5. IT SAYS NOTHING ABOUT WHETHER THE SAFE RENDERER IS USED. Nothing renders a bullet until
- *     Phase 5. This gate proves the unsafe path fails; it does not prove the safe path is taken.
- *
- * ---------------------------------------------------------------------------------------------
- * THE SELF-TEST, WHICH RUNS ON EVERY INVOCATION
- *
- * Phase 3 has now shipped NINE gates that could not fail — a grep matching prose, a loop iterating
- * zero groups that still printed "OK 7 categories", four predicates in 03-06 that matched
- * double-quoted specifiers in a repository whose formatter enforces single quotes. Every one was
- * found by an executor detonating the gate rather than reading it.
- *
- * So every rule below carries a CANARY it must flag and an ANTI-CANARY it must leave alone, and
- * both are checked before the real scan on every run. A rule that fails either aborts the gate, so
- * a silently-broken regex cannot present as a clean tree. The scan additionally refuses to pass if
- * it visited zero files, if the scan root is absent, if every file it read was empty, or if an
- * allowlist entry no longer matches anything — a stale exemption is an exemption nobody is
- * reviewing.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-/** Scan root. Defaults to `src/`; overridable so the "empty root" control can be run. */
 const DEFAULT_SCAN_ROOT = 'src';
 const scanRootArg = process.argv[2];
 const usingDefaultRoot = scanRootArg === undefined;
 
-// An argument that is PRESENT but empty is not the same as no argument: `path.resolve(cwd, '')`
-// silently returns cwd, so `node assert-no-raw-html-sinks.mjs ""` would scan the whole repository
-// — including vendored material nobody ships — while looking like a deliberate narrow scan. Found
-// by a probe harness that passed `"${4:-}"` for an unset positional; the gate reported real hits
-// in design_handoff_portfolio/ for a caller that had asked about src/. A caller that got its own
-// argument wrong must be told, not quietly given a different scan.
 if (scanRootArg !== undefined && scanRootArg.trim().length === 0) {
   console.error('assert-no-raw-html-sinks: REFUSED — the scan root argument is present but empty.');
   console.error(
@@ -101,23 +20,13 @@ if (scanRootArg !== undefined && scanRootArg.trim().length === 0) {
 
 const scanRoot = path.resolve(process.cwd(), scanRootArg ?? DEFAULT_SCAN_ROOT);
 
-/** Report paths relative to cwd when that is shorter and readable, absolute when it is not. */
 const display = (absolute) => {
   const relative = path.relative(process.cwd(), absolute);
   return relative === '' || relative.startsWith('..') ? absolute : relative;
 };
 
-/**
- * Wider than the plan's `.ts/.tsx/.astro/.js/.mjs`. A sink written in `.cjs` or `.jsx` under
- * `src/` would otherwise be invisible for no reason other than its extension. See blind spot 3.
- */
 const SCAN_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.astro'];
 
-/**
- * The rules. `find` returns one entry per OCCURRENCE, never per line: `grep -c` counts lines, so
- * three sinks on one line report 1, and "1 finding" beside a three-sink line is how a partial fix
- * looks like a complete one.
- */
 const RULES = [
   {
     id: 'REACT-RAW-HTML',
@@ -149,7 +58,6 @@ const RULES = [
       'the plain-DOM spelling, reachable from the delegated inline-script pattern ' +
       'research/ARCHITECTURE.md Pattern 3 recommends for the theme toggle. Use textContent, or ' +
       'build nodes with createElement.',
-    // `=` but not `==`/`===`, so a comparison or a read is left alone. `+=` is included.
     pattern: /\.\s*(?:inner|outer)HTML\s*(?:\+=|=(?!=))/g,
     canary: 'el.innerHTML = markup;\n',
     antiCanary: 'if (el.innerHTML === markup) { const s = el.outerHTML; }\n',
@@ -174,24 +82,7 @@ const RULES = [
   },
 ];
 
-/**
- * THE ALLOWLIST. Every entry carries its reason on the entry itself, per the plan: a blanket
- * comment-skipping rule is what this replaces, because it would also skip a commented-out sink
- * waiting to be uncommented.
- *
- * `context` is matched against the OFFENDING LINE, not against a line number — line numbers drift
- * the moment anything above them is edited, and an allowlist that silently stops applying is
- * worse than no allowlist. An allowlisted occurrence is STILL refused if it is in use form (see
- * `usePattern` above), so nothing here can forgive an actual sink.
- */
 const ALLOWLIST = [
-  {
-    rule: 'REACT-RAW-HTML',
-    file: 'src/lib/bullets.ts',
-    context: 'The legacy app rendered these strings through',
-    reason:
-      "prose in the grammar module's header, recording the legacy defect this whole shape exists to close. Deleting the sentence to satisfy a grep would delete the reason the shape is the shape.",
-  },
   {
     rule: 'REACT-RAW-HTML',
     file: 'src/schemas/resume.ts',
@@ -200,10 +91,6 @@ const ALLOWLIST = [
       "the zod refinement's own error message, which tells whoever trips it WHY bold-only markdown is the stored shape. An error message that explains itself is worth more than a clean grep.",
   },
 ];
-
-/* --------------------------------------------------------------------------------------------
- * 0. SELF-TEST. Runs before the scan, on every invocation. A rule that cannot fire is not a rule.
- * -------------------------------------------------------------------------------------------- */
 
 function occurrences(rule, text) {
   rule.pattern.lastIndex = 0;
@@ -265,10 +152,6 @@ if (selfTestFailures.length > 0) {
   process.exit(1);
 }
 
-/* --------------------------------------------------------------------------------------------
- * 1. The scan.
- * -------------------------------------------------------------------------------------------- */
-
 const failures = [];
 const scanned = [];
 let bytesRead = 0;
@@ -301,7 +184,6 @@ if (!fs.existsSync(scanRoot) || !fs.statSync(scanRoot).isDirectory()) {
   walk(scanRoot);
 }
 
-// GUARD AGAINST NOTHING. Three separate ways a run can check nothing and still look clean.
 if (scanned.length === 0 && failures.length === 0) {
   failures.push({
     where: display(scanRoot),
@@ -337,7 +219,6 @@ for (const file of scanned) {
           entry.file === file.relative &&
           hit.lineText.toLowerCase().includes(entry.context.toLowerCase())
       );
-      // An exemption never forgives a USE, only prose about one.
       const isUse = rule.usePattern ? rule.usePattern.test(hit.lineText) : true;
       if (exemption && !isUse) {
         allowlistHits.set(exemption, allowlistHits.get(exemption) + 1);
@@ -361,8 +242,6 @@ if (scanned.length > 0 && bytesRead === 0) {
   });
 }
 
-// A stale exemption is an exemption nobody is reviewing. Only enforced on the default root,
-// because scanning a subdirectory legitimately will not contain every allowlisted file.
 if (usingDefaultRoot && failures.length === 0) {
   for (const [entry, hits] of allowlistHits) {
     if (hits === 0) {
@@ -377,10 +256,6 @@ if (usingDefaultRoot && failures.length === 0) {
     }
   }
 }
-
-/* --------------------------------------------------------------------------------------------
- * 2. Report. One named failure per line; never warn-and-exit-0.
- * -------------------------------------------------------------------------------------------- */
 
 if (failures.length > 0) {
   console.error('');

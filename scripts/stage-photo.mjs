@@ -1,107 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * PIPE-02, the half nothing else owned: how a photograph gets INTO staging from a command line.
- * (Phase 4, plan 04-10, Task 1.)
- *
- * Usage:
- *   node scripts/stage-photo.mjs --file <path> --category <id> [--dry-run] [--name <stem>]
- *
- * `.github/workflows/process-photos.yml` documents how the pipeline is *dispatched*; it takes a
- * `temp_key` and assumes an object is already sitting behind it. Until this file existed, the
- * only way to put one there was an admin UI that does not exist yet, or a hand-typed `wrangler`
- * line — and a hand-typed `wrangler` line is precisely the thing that goes wrong silently (see
- * the `--remote` section below). So this is the documented command a person can run, and the
- * dispatch line it prints at the end is copy-pasteable.
- *
- * ---------------------------------------------------------------------------------------------
- * `--remote` IS NOT OPTIONAL, AND ITS ABSENCE IS SILENT
- *
- * Measured on the installed wrangler (4.123.0), 04-VALIDATION hazard 21: with neither `--local`
- * nor `--remote`, `wrangler r2 object put|get|delete` operates on LOCAL miniflare storage. A GET
- * of a key that certainly exists in the real bucket reports "The specified key does not exist";
- * a PUT writes a file under `.wrangler/` on this laptop and **exits 0 with a success banner**.
- *
- * So a staging command that forgot the flag would report a staged photograph, and the dispatch
- * that followed would fail at step 2 having burned a workflow run — or worse, if the key happened
- * to exist from an earlier correct run, would process the WRONG bytes. Nothing downstream can
- * see the difference. The flag is therefore appended by `wranglerPutArgv()` and by nothing else,
- * and `assertRemote()` re-reads the composed argv immediately before spawning. Two layers,
- * because one of them is a line somebody could delete while "simplifying".
- *
- * This is a second copy of the control that `scripts/lib/r2.mjs` already carries, and that is a
- * deliberate, recorded cost rather than an oversight: `r2.mjs` calls `assertCredentials()` at
- * MODULE SCOPE, so importing it would make `--dry-run` — whose entire purpose is to be reviewable
- * before anything touches a live bucket — require live credentials. `r2.mjs` also exposes no
- * staging PUT: `putVariant` runs `parsePublishedKey` on its key, which makes a staging key
- * structurally unwritable there (correctly — it is the module that must never write outside the
- * published prefix). Lifting a `putStagedObject` into `r2.mjs` is the right consolidation and is
- * recorded in the plan summary as a follow-up, not smuggled in here from a later wave.
- *
- * What is NOT duplicated: on the real path this file dynamically imports `r2.mjs`, so the
- * credential check that fires is the canonical one, with the canonical message, and the child's
- * output is passed through `redactCredentials` from the same module.
- *
- * ---------------------------------------------------------------------------------------------
- * THE KEY, AND WHY ITS FILE NAME IS LOAD-BEARING
- *
- * The composed key is
- *
- *     <STAGING_PREFIX><category>/<stem><ext>
- *
- * and `STAGING_PREFIX` is IMPORTED from `src/lib/photo-pipeline.ts`. It is not spelled anywhere
- * in this file, on purpose: 04-10 Task 3 asserts that the R2 lifecycle rule's prefix is
- * byte-equal to that constant, and a second copy here would let the two drift while every check
- * still agreed with itself. Grep this file for a quoted staging prefix and you will find none.
- *
- * `<stem>` is NOT cosmetic. `slugFromStagingKey()` in `scripts/process-photo.mjs` derives the
- * record's slug from the staged file's name, and `photoIdFor()` joins that to the category to
- * make the record id that `upsertRecord` keys on. So the name chosen here decides the identity of
- * the published record, and two consequences follow that a caller must be able to see:
- *
- *   1. RE-STAGING THE SAME PHOTOGRAPH MUST REUSE THE SAME NAME. There is no timestamp and no
- *      nonce in this key, deliberately. A timestamped key would give every re-stage a new slug,
- *      hence a new id, hence an INSERT beside the record it was meant to replace — the OD-4
- *      upsert would never fire and CONT-05's "re-upload replaces the photograph" would silently
- *      become "re-upload duplicates the photograph". The key is a pure function of
- *      (category, file name, decoded format).
- *   2. THE NAME IS NORMALISED TO THE SLUG GRAMMAR HERE. `<stem>` is lower-cased with every run of
- *      non-alphanumerics collapsed to a single `-`, which is what `slugFromStagingKey` will do to
- *      it anyway. Doing it up front makes that function the IDENTITY on this stem, which is what
- *      lets this script print the resulting record id honestly instead of guessing at it.
- *
- * That coupling is real and no runtime gate enforces it — `slugFromStagingKey` cannot be imported
- * here, because it lives in `process-photo.mjs`, which imports `r2.mjs`, which needs credentials.
- * `test/pipeline/stage-photo.unit.test.ts` therefore re-implements the slug rule INDEPENDENTLY
- * (the convention this suite states in `photo-enrichment.unit.test.ts`: importing the producer's
- * own helper would only prove the module agrees with itself) and asserts the identity property.
- * If somebody changes `slugFromStagingKey`, that test goes red here rather than a wrong id going
- * quietly into the manifest.
- *
- * `<ext>` is read from the DECODED FORMAT, never from the supplied filename. An extension is a
- * claim; `sharp(...).metadata().format` is a magic-byte reading. This mirrors the allowlist in
- * `photo-derive.mjs`, whose `ALLOWED_SOURCE_FORMATS` is imported rather than restated, so a file
- * this laptop accepts is one the runner will accept and the operator finds out in 200 ms instead
- * of after a dispatch.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IS VALIDATED BEFORE A SINGLE BYTE IS SENT
- *
- *   - the source path exists and is a regular file
- *   - it is under `MAX_SOURCE_BYTES` and non-empty (imported cap, checked BEFORE the decoder, so
- *     a crafted header cannot spend this laptop on a decompression bomb — same order as the
- *     runner)
- *   - it DECODES, and its format is in `ALLOWED_SOURCE_FORMATS`
- *   - the category is a declared id in `data/site_config.json`, read via `readCategoryIds` so
- *     there is no stale copy of the list here
- *   - the composed key satisfies `assertStagingKey` — anchored at both ends and rooted at the
- *     imported prefix, so `..`, a leading `/`, a backslash and a different case of the prefix are
- *     all unmatchable rather than blocklisted (T-04-42)
- *
- * A refusal names the offending value and exits non-zero. It never normalises an input into
- * validity: a `--name` that reduces to nothing is a refusal, not a silently invented stem.
- */
-
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -118,19 +16,12 @@ import {
 import { DEFAULT_SITE_CONFIG_PATH, readCategoryIds } from './lib/dispatch-input.mjs';
 import { ALLOWED_SOURCE_FORMATS, MAX_SOURCE_BYTES } from './lib/photo-derive.mjs';
 
-/* ==============================================================================================
- * Output. `console.log` is swallowed under the vitest setup this repository uses (hazard 7:
- * measured 0 occurrences for console.log/info against 1 for process.stdout.write), and this file
- * is exercised as a child process from a test, so everything it wants seen is written directly.
- * ============================================================================================ */
-
 /** @param {string} line */
 const say = (line) => process.stdout.write(`${line}\n`);
 
 /** @param {string} line */
 const warn = (line) => process.stderr.write(`${line}\n`);
 
-/** A refusal this script raised itself, as opposed to a crash. Carries no credential. */
 export class StagingRefusal extends Error {
   /** @param {string} message */
   constructor(message) {
@@ -139,21 +30,6 @@ export class StagingRefusal extends Error {
   }
 }
 
-/* ==============================================================================================
- * 1. The extension table — cosmetic, and self-checked so it cannot go stale.
- * ============================================================================================ */
-
-/**
- * The extension written onto a staged key for each format the runner will decode.
- *
- * It is COSMETIC: `slugFromStagingKey` strips the final extension before deriving the slug, and
- * `photo-derive.mjs` reads the format from the bytes. It exists so the bucket is legible to a
- * human browsing it, and so a staged object opens in an image viewer when downloaded.
- *
- * The keys are checked against the imported allowlist at module load. If plan 04-07 (or its
- * successor) adds a format to `ALLOWED_SOURCE_FORMATS`, this file fails LOUDLY on the next run
- * rather than composing a key ending in the four characters `undefined`.
- */
 const EXTENSION_FOR_FORMAT = Object.freeze({
   jpeg: '.jpg',
   png: '.png',
@@ -188,10 +64,6 @@ export function extensionForFormat(format) {
   return extension;
 }
 
-/* ==============================================================================================
- * 2. The key.
- * ============================================================================================ */
-
 /**
  * Reduce a file name to the slug grammar `/^[a-z0-9-]+$/`.
  *
@@ -207,12 +79,6 @@ export function stemFrom(name) {
   if (typeof name !== 'string') {
     throw new StagingRefusal(`stage-photo: the name must be a string; got ${typeof name}.`);
   }
-  // T-04-42, and the reason this is a REFUSAL rather than part of the reduction below. The
-  // reduction cannot emit a separator or a dot in any case — its output alphabet is [a-z0-9-] —
-  // so traversal is structurally unrepresentable in a composed key, and `assertStagingKey` is a
-  // second backstop after that. But silently turning `../../etc/passwd` into `etc-passwd` would
-  // upload a photograph under a name its author never chose and never saw refused. The recorded
-  // stance is to refuse traversal rather than normalise it, so the refusal is explicit and named.
   if (/[/\\]/.test(name) || /^\.+$/.test(name)) {
     throw new StagingRefusal(
       `stage-photo: the name ${JSON.stringify(name)} contains a path separator or a parent-` +

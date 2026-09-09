@@ -1,147 +1,3 @@
-/**
- * THE DERIVER. One uploaded photograph in; four WebP variants, a watermark on each, a 40px
- * inline LQIP, the SOURCE dimensions and four upload descriptors out.
- * (Phase 4, plan 04-07 — PIPE-01, criterion 1.)
- *
- * ---------------------------------------------------------------------------------------------
- * WHERE THIS RUNS — DEPENDENCY TIER (threat T-04-15)
- *
- * ACTIONS RUNNER ONLY, NEVER IN `workerd`. It imports `sharp`, a native binary that cannot load
- * in the Workers runtime at any version. Nothing under `src/` may import this file and this file
- * may not be imported by anything under `src/`. `scripts/lib/photo-record.mjs` is the pure half
- * of the same job — no filesystem, no network, no encoder — and this is the impure half; the
- * split is what lets 04-09 validate a whole candidate manifest before its first side effect.
- *
- * The import of `../../src/lib/photo-pipeline.ts` carries an explicit `.ts` and is resolved by
- * Node 22's built-in type stripping, exactly as `photo-record.mjs` and `git-publish.mjs` already
- * do. The real floor for that is Node 22.18.0; `.nvmrc` pins 22.22.3 and all three workflows read
- * it. (`package.json`'s `engines.node` still says `>=22.12.0` — logged in this phase's
- * `deferred-items.md`, not fixed here.)
- *
- * ---------------------------------------------------------------------------------------------
- * IT OWNS NO NUMBER
- *
- * Every width, every quality and every suffix comes from `VARIANTS` and `THUMB` in
- * `src/lib/photo-pipeline.ts`, which that file's header states is the only place the scheme is
- * written. There is no size table here, no `-lg`, no key prefix and no hostname. 04-07's `done`
- * block greps this file for a re-typed literal in an assignment position; the load-bearing check
- * is `test/pipeline/variants.unit.test.ts`, which decodes every emitted buffer and compares its
- * width against the table.
- *
- * The two ratios below (`0.01` for the mark's size, `0.015` for its inset) are NOT variant
- * numbers — they are the watermark's own geometry, they exist nowhere else, and they are stated
- * here beside the function that uses them rather than in a plan file nobody can evaluate later.
- *
- * ---------------------------------------------------------------------------------------------
- * THE `CLAUDE.md` PROSE ABOUT THE WATERMARK IS WRONG, AND WAS WRONG WHEN IT WAS WRITTEN
- *
- * `CLAUDE.md`'s Architecture section says the legacy pipeline applied the watermark to "original
- * and medium (not thumb)". The legacy code contradicts its own comment: `addWatermark()` is
- * called INSIDE `for (const variant of VARIANTS)`, so it ran on ALL FOUR
- * (`git show legacy/nextjs-portfolio:scripts/process-images.js`). Only the 40px thumb, and the
- * unwatermarked master described below, skipped it. This module implements the CODE's behaviour —
- * all four marked, thumb unmarked — and the tests prove it by comparing decoded pixels rather
- * than by counting calls, because a comment is exactly what could not be trusted here.
- *
- * ---------------------------------------------------------------------------------------------
- * OD-9 · THIS MODULE EMITS NO UNWATERMARKED MASTER. THE ABSENCE IS THE ENFORCEMENT.
- *
- * (Option A, decided by Akhil in review on 2026-08-26; the resolutions block at the head of
- * `04-RESEARCH.md` § Open decisions is the record.)
- *
- * The legacy pipeline uploaded a fifth object per photograph — an unwatermarked 2000px master
- * under a key prefixed with the word "private" — and 04-04 measured all 39 of them returning
- * HTTP 200 with real image bytes to anyone who can derive the URL from the committed manifest.
- * That prefix is a PATH, not a permission: the bucket is fronted by a public custom domain.
- *
- * The exposure is pre-existing and was DEFERRED BY AKHIL to the cutover phase (Phase 8); this
- * module neither fixes it nor enlarges it. Akhil's source files live on his own disk and the
- * bucket was never a backup, so the new pipeline simply stops adding to the pile.
- *
- * There is therefore NO CODE PATH HERE THAT COMPOSES SUCH A KEY, and — the way
- * `src/schemas/photo.ts` says it about `tags` — the absence is the decision. Every key this
- * module emits is composed by `publishedKey()`, which can only produce the published prefix. The
- * assertion that carries the decision lives in the tests: `descriptors.length > 0` first, so an
- * empty list cannot satisfy it, then that no descriptor's key begins with that word.
- *
- * ---------------------------------------------------------------------------------------------
- * ONE LOSSY ENCODE PER VARIANT — A DELIBERATE DEPARTURE FROM THE LEGACY CODE SHAPE
- *
- * Legacy encoded each variant to WebP at the table's quality, then re-opened that WebP,
- * composited the mark and called `.toBuffer()` with no format method — which makes sharp re-encode
- * to WebP at ITS OWN DEFAULT quality. So the bytes actually served for all four live variants are
- * a second-generation encode at the default, and the "q85/85/85/80" in the requirement was never
- * true of the delivered file.
- *
- * Here the resize output is taken as RAW PIXELS, the mark is composited onto those pixels, and
- * WebP is encoded ONCE at the variant's own quality. Same visual specification, one generation of
- * loss instead of two, and the quality column of `VARIANTS` becomes true of the emitted bytes.
- * Raw is also what makes the mark's geometry exact: the SVG has to be the size of the resized
- * image, and `info.height` off the raw buffer is the real height rather than a rounded guess.
- *
- * ---------------------------------------------------------------------------------------------
- * OD-12 · THE READER IS `exif-reader`, FED FROM THE BUFFER `sharp` ALREADY PRODUCED
- *
- * (Option B, decided 2026-08-26.) One read of the staged object, one decode, and the EXIF comes
- * off `metadata().exif` rather than out of a second open of the file — a second read is a second
- * thing that can disagree with the first.
- *
- * THE MANDATORY DIFFERENTIAL PROOF WAS NOT AVAILABLE, AND THAT IS RECORDED RATHER THAN GLOSSED.
- * `04-RESEARCH.md` made option B conditional on re-extracting EXIF from the 39 live originals and
- * reproducing every committed value. 04-04 Task 1 measured that corpus out of existence: all 39
- * served objects, AND the three unwatermarked masters it also probed, are single-chunk `VP8` WebP
- * with no `EXIF`, `XMP` or `ICCP` — verified by a raw chunk walk, by `metadata().exif` and by the
- * container header. The legacy encoder never called `withMetadata()`, sharp strips by default, and
- * the camera sources were never committed. The committed `exif` blocks are the OUTPUT of an
- * extraction, not an input one can be re-run against. What was available instead: the generated
- * fixtures, the expectation table beside them, and a cross-library differential run once in a
- * throwaway directory. Weaker, in one stated way — it shows the mapper reads what `exif-reader`
- * produces, not that it agrees with 39 photographs a human reviewed in 2026-03.
- *
- * AND THE MAPPING IS THIS MODULE'S OWN. The six fields are `PhotoExifSchema`'s contract, not the
- * library's, so no library helper composes them. Every tag name below was checked against
- * `exif-reader` SPECIFICALLY — not against the legacy code and not against `exifr` — because the
- * two libraries disagree: EXIF tag `0x8827` is `ISO` in `exifr` and `ISOSpeedRatings` here. A
- * verbatim port reads `d.ISO`, gets `undefined`, and writes `iso: null` into every future record:
- * schema-valid, and invisible to every gate in this repository (`04-VALIDATION.md` hazard 11).
- *
- * ---------------------------------------------------------------------------------------------
- * OD-10 · `date` IS `DateTimeOriginal ?? ingestionDate`
- *
- * (Option B, decided 2026-08-26.) The capture date when the file carries one, the ingestion date
- * when it does not. `DateTimeOriginal` was verified under that exact name in `exif-reader` before
- * anything was built on it, for the same reason as the ISO tag: a silent rename would write the
- * ingestion date forever while looking perfectly correct.
- *
- * OPTION C IS IMPOSSIBLE, NOT MERELY COSTLY. It proposed backfilling the 39 existing records from
- * the originals' EXIF, and there is none to read (see above). So the split is permanent: the 39
- * committed records mean *the day it was published* and every new record will mean *the day it was
- * taken*. Phase 5 sorts and displays `date` and must decide which it presents; this is recorded
- * here rather than left to be discovered by whoever writes the caption.
- *
- * A KNOWN LIMIT, LEFT AS ONE DELIBERATELY: a camera with a wrong clock writes a wrong capture
- * date, and this module does not second-guess it. Clamping "the future" and not "1980" would be
- * arbitrary policy invented at the wrong layer.
- *
- * ---------------------------------------------------------------------------------------------
- * SECURITY: THE BYTES ARE UNTRUSTED (T-04-28, T-04-29)
- *
- * They are whatever a dispatcher put in a staging bucket, and they are handed to a native decoder
- * on a runner that holds write credentials. Two controls, both asserted in the unit suite:
- *
- *   1. `MAX_SOURCE_BYTES` is checked BEFORE `sharp()` sees the buffer. The legacy `/api/upload`
- *      had a 25 MiB cap and an extension allowlist; the dispatch path this phase implements had
- *      NEITHER. The test feeds an oversized buffer that is not a valid image, so a failure naming
- *      the format instead of the limit would prove the order had been swapped.
- *   2. The format is allowlisted from what the DECODER reports, never from a filename. An
- *      extension is a claim; `metadata().format` is a magic-byte reading.
- *
- * `limitInputPixels` is left at sharp's default ON. DO NOT DISABLE IT. It is the only thing
- * standing between a 100-byte crafted header and an allocation of hundreds of megapixels, and a
- * large-image failure is a reason to ask why the image is that large, not a reason to remove the
- * guard.
- */
-
 import exifReader from 'exif-reader';
 import sharp from 'sharp';
 import {
@@ -168,37 +24,13 @@ import {
  *   failure: string|null }} ExifProbe
  */
 
-/* ==============================================================================================
- * 0. Refusals.
- * ============================================================================================ */
-
 /** @param {string} message @returns {never} */
 const fail = (message) => {
   throw new Error(`photo-derive: ${message}`);
 };
 
-/**
- * The byte cap, checked before the decoder is reached.
- *
- * 25 MiB, chosen because it is the SAME cap the legacy `/api/upload` route enforced
- * (`MAX_BYTES = 25 * 1024 * 1024`). Matching it means a file that could be staged through the
- * admin can also be processed by the pipeline — two different caps on the two halves of one
- * journey is a photograph that uploads and then silently never appears. The dispatch path had no
- * cap at all, which is the gap this closes.
- *
- * Raising it is a one-line change and needs a stated reason: the number is a policy about what a
- * runner is willing to decode, not a property of any camera.
- */
 export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 
-/**
- * What the DECODER must report for the bytes to be processed — never what a filename claims.
- *
- * Raster stills only. `svg` is deliberately absent: it is a document format with a script and an
- * external-entity surface, and nothing about a photograph needs it. `gif` is absent because an
- * animated source would be silently flattened to its first frame, which is a surprise rather than
- * a photograph.
- */
 export const ALLOWED_SOURCE_FORMATS = Object.freeze([
   'jpeg',
   'png',
@@ -208,7 +40,6 @@ export const ALLOWED_SOURCE_FORMATS = Object.freeze([
   'heif',
 ]);
 
-/** `image/webp` for every emitted object — `publishedKey` can only end in `.webp`. */
 const PUBLISHED_CONTENT_TYPE = 'image/webp';
 
 /** @param {Uint8Array} bytes @returns {Buffer} */

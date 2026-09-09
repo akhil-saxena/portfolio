@@ -1,19 +1,3 @@
-/**
- * `gate:photo-order` — the one assumption client-side filtering rests on.
- *
- * Until 2026-09-02 the eight gallery routes each rendered their OWN subset: `/photography` sorted
- * the corpus by `order`, and each `/photography/<category>` sorted its members by `categoryOrder`.
- * Filtering is now an attribute rather than a request, so all eight documents render ONE list and
- * hide what does not match — and one list cannot hold two orders.
- *
- * `order` is the one they all use. That is only invisible while, for every category, sorting its
- * members by `order` and by `categoryOrder` produces the SAME sequence. MEASURED at the time of the
- * change: all seven agreed. Nothing in the manifest enforces it, and the admin writes both fields,
- * so the day somebody reorders one category the site would quietly show that category's
- * photographs in a different order than curated — with a green build and no visible error.
- *
- * This is that error.
- */
 import { readFileSync } from 'node:fs';
 
 const MANIFEST = 'data/portfolio_images.json';

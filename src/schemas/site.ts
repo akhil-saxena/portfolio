@@ -1,32 +1,7 @@
-/**
- * The shape of `data/site_config.json` — the seven category records D-25 created and ADR-002 §4
- * made load-bearing.
- *
- * WHY `all` IS REFUSED HERE RATHER THAN EXCLUDED IN THE RULE (OD-2)
- * ----------------------------------------------------------------
- * `categoryColumns` used to have eight keys; the eighth, `"All": 3`, was the column count for the
- * unfiltered gallery, not a category. If it were admitted as a record with `id: "all"`, then the
- * referential-integrity rule in `content-set.ts` — the rule ADR-002 traded `/admin/site` for —
- * would accept `photo.category === "all"` as valid, and a photograph filed under it would appear
- * in no filter tab while passing every check.
- *
- * The fix could have been an exclusion inside that rule. It is not, because an exclusion list
- * inside a referential-integrity check is a second source of truth about what a category is, and
- * a special case inside the rule that exists to prevent silent orphaning is where the next silent
- * orphan comes from. So `all` is refused at the point of definition, the unfiltered count lives in
- * the sibling scalar `defaultColumns`, and RI-1 has exactly seven legal values and carries no
- * exception at all.
- *
- * The array order is alphabetical and deliberate (OD-2b): self-maintaining when a category is
- * added, and scannable by name. It is not asserted here — an order rule would freeze the filter
- * row against a future decision to sort by photo count — but it is why the file looks sorted.
- */
-
 import { z } from 'astro/zod';
 
 const SLUG = /^[a-z0-9-]+$/;
 
-/** The one value that is a rendered affordance rather than a data record. See the header. */
 const NOT_A_CATEGORY = 'all';
 
 export const CategorySchema = z.strictObject({
@@ -50,7 +25,6 @@ export const SiteConfigSchema = z
       error:
         'site_config.categories is empty. Every referential-integrity rule over categories passes trivially against an empty id set, so an empty list is refused rather than passed.',
     }),
-    /** The column count for the unfiltered gallery — OD-2's home for the former `"All"` key. */
     defaultColumns: z.number().int().positive(),
   })
   .superRefine((site, ctx) => {

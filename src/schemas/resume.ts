@@ -1,52 +1,9 @@
-/**
- * The shape of `data/resume.json`.
- *
- * THE ONE THING THIS FILE MUST NOT DO
- * -----------------------------------
- * Restate the bullet grammar. `containsHtmlTag` and `parseBullet` are IMPORTED from
- * `src/lib/bullets.ts`, which 03-02 established as the single definition of what a stored bullet
- * is. A regex written here that happened to agree with the parser today would be precisely the
- * second definition this plan exists to prevent — authored by the plan that forbids it — and it
- * would drift the first time the grammar gained an escape the schema had not heard of.
- *
- * The agreement is not merely stylistic. `containsHtmlTag` is deliberately narrower than
- * "contains an angle bracket": it fires on a bracket followed immediately by an ASCII letter, a
- * bang or a question mark, because real prose in this résumé contains comparison operators —
- * "p95 under 50ms" written with the operator, "a less-than b greater-than c", "2 under 3". A
- * lookalike character-class rule would reject that prose while agreeing on every malicious input,
- * which is why the unit suite tests those three strings as ACCEPTED rather than testing the
- * import with a grep.
- *
- * The second refinement is the one `containsHtmlTag` cannot make: an unbalanced emphasis
- * delimiter is not markup and is not visible to a tag predicate, but it is a bullet the renderer
- * cannot parse. `parseBullet` throwing IS the check, so the accepted language here is exactly the
- * language `serializeBullet` emits.
- *
- * WHAT IS ABSENT, AND IS ABSENT ON PURPOSE
- * ----------------------------------------
- * - `projects` (D-24, plan 03-05). The five records live in `data/projects.json` now. The object
- *   is strict, so putting the key back is a build failure rather than a quietly-ignored duplicate.
- * - `period` (OD-4, plan 03-05). Deleted from disk for all four dated records — three roles and
- *   education — and derived by `src/lib/period.ts`. Storing both the structured fields and the
- *   rendered string is the exact drift the legacy `src/types.ts` header documented. Strictness
- *   refuses the resurrection; the refinement below refuses the halfway states the structured
- *   fields alone can still express.
- *
- * That refinement calls `formatPeriod` and treats a throw as the failure, rather than restating
- * "isPresent implies no end date" as a boolean here. Same reasoning as the bullets: the invariant
- * has one implementation, and the schema asks it rather than repeating it.
- */
-
 import { z } from 'astro/zod';
 import { containsHtmlTag, parseBullet } from '../lib/bullets';
 import { formatPeriod } from '../lib/period';
 
 const SLUG = /^[a-z0-9-]+$/;
 
-/**
- * A line of authored résumé prose: a role bullet, or a line of education leadership. Both are
- * rendered through the same path in 03-07, so both are held to the same grammar.
- */
 const proseLine = z
   .string()
   .min(1)
@@ -69,7 +26,6 @@ const proseLine = z
     }
   );
 
-/** The structured date fields OD-4 put on disk in place of the rendered `period` string. */
 const dateFields = {
   startMonth: z.number().int().min(1).max(12),
   startYear: z.number().int().min(1000).max(9999),
@@ -78,10 +34,6 @@ const dateFields = {
   isPresent: z.boolean(),
 };
 
-/**
- * Ask `src/lib/period.ts` whether the range is coherent, rather than restating its invariant.
- * A range that is both open and closed, or closed with no end, throws there and fails here.
- */
 function checkPeriod(
   entry: {
     startMonth: number;
@@ -110,39 +62,9 @@ export const ExperienceEntrySchema = z
     role: z.string().min(1),
     ...dateFields,
     location: z.string().min(1),
-    // Nullable, NOT optional: all three records carry an explicit null, and "absent" would be a
-    // second way of saying the same thing.
     logo: z.string().min(1).nullable(),
     url: z.url().nullable(),
     bullets: z.array(proseLine).min(1),
-    // OQ-1b, plan 05-03. The right-aligned figure on each employment row — on BOTH routes that
-    // render these records: `/development`'s employment band (§10) and `/resume`'s entry header (§11.1).
-    //
-    // 🔴 THIS COMMENT SAID "on /development" AND THAT WAS STALE FROM THE DAY /resume SHIPPED. 05-10
-    // rendered the band on `/resume` too, on Akhil's instruction; 05-15 measured it clean at all
-    // six device classes (116 × 17, never wrapping, never colliding, right-aligned at classes 3–6
-    // and stacked under the identity below the 673px rung) and Akhil confirmed it stays. A field
-    // whose docstring names one of its two consumers is how the next person deletes the other one.
-    // §11.1 of the UI-SPEC was amended in the same commit, in the same direction.
-    //
-    // REQUIRED, not optional: all three records carry one and the reviewed design has no
-    // employment row without it on either route. An optional field would make "absent" a second
-    // way of saying something the design cannot render.
-    //
-    // TWO FIELDS, not one string, for two independent reasons. §10 gives the value
-    // `--ochre-d-strong` and the label the ink ramp at the same size, so a renderer needs them
-    // apart; and a single "+15% CONVERSION" string forces every consumer to parse it back into
-    // the two things it already was.
-    //
-    // DELIBERATELY NOT HERE: a refusal on the `{{…}}` placeholder form. It is tempting, and it
-    // is the wrong layer. The question OQ-1b actually asks is whether a placeholder can reach a
-    // reader, and that is a fact about RENDERED OUTPUT, not about stored text — a stored token
-    // is a legitimate intermediate state (it is what option `defer` would have committed) while
-    // a rendered one is always a defect. `scripts/assert-no-unresolved-placeholders.mjs` asks
-    // that question of `dist/`, where it is a fact rather than an inference.
-    //
-    // NOT ON `EducationEntrySchema`, for the same reason `period` is derived rather than stored:
-    // the education record is not in the employment band and has no figure to right-align.
     metric: z.strictObject({
       value: z.string().min(1),
       label: z.string().min(1),

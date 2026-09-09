@@ -1,96 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * SEO-01 — the social card image that ships must actually resolve.
- *
- * Usage: node scripts/assert-og-images-live.mjs [distDir]
- *        node scripts/assert-og-images-live.mjs [distDir] --concurrency 8
- *        (distDir defaults to ./dist; the served root is resolved from dist/server/wrangler.json)
- *
- * ---------------------------------------------------------------------------------------------
- * THE GAP THIS CLOSES, STATED AS THE THING THAT COULD SHIP
- *
- * `test/public/seo.node.test.ts` audits every public document and proves each `og:image` is
- * ABSOLUTE and on the IMAGE ORIGIN. Both clauses are about the string. **Nothing in this
- * repository has ever fetched one.** So a card pointing at
- * `https://images.akhilsaxena.com/photos/architecture/singapore-lg.webp` after that object was
- * renamed, re-keyed by a content hash, or lost in a partial upload is a green build, a green test
- * run, eleven green gates — and a blank preview on every share of the home page, `/development`, `/photography`
- * and `/resume`, which today all carry that one default image.
- *
- * `gate:liveness` (`scripts/verify-photo-urls.mjs`) fetches the MANIFEST's 160 remote URLs and
- * would catch that today, because every `og:image` currently emitted happens to be a manifest
- * `large` URL. **Nothing asserts that it will stay true.** A hand-written default card, a
- * `/og-default.png` on the site origin, or a `twitter:image` added later are all outside the
- * manifest and outside that gate's reach by construction. A gate that answers the right question
- * only by coincidence is the failure this phase found nineteen times, so this one takes its
- * targets from THE ARTEFACT — the tags that actually ship — and not from the data behind them.
- *
- * ---------------------------------------------------------------------------------------------
- * GET, NOT HEAD — AND THIS IS THE OPPOSITE CHOICE FROM `verify-photo-urls.mjs`, DELIBERATELY
- *
- * That script's header carries a long measured argument for HEAD, and it is right THERE: its
- * question is *"does the bucket hold this object?"*, it runs immediately after an upload writes to
- * a mutable key, and a GET satisfied from the edge cache could report a previous upload's bytes as
- * proof that this one succeeded. HEAD is `cf-cache-status: DYNAMIC` on this origin — it bypasses
- * the cache and reaches R2 — which is exactly why it is the correct probe for that question.
- *
- * THIS gate asks a DIFFERENT question: *"if a crawler fetches the URL in this tag, does it get an
- * image?"* A crawler issues a GET. If the edge answers that GET with a cached image, the card
- * works — that is not a false pass, it is the observation the requirement is about. And the two
- * methods genuinely disagree on this zone: `verify-photo-urls.mjs` measured
- * `images.akhilsaxena.com/robots.txt` answering **404 to HEAD on two runs and 200 to GET on a
- * third**, from different Cloudflare colos. Probing a social card with the method no social
- * crawler uses would import that disagreement as a false red.
- *
- * So the method follows the question, in both scripts. Neither substitutes for the other:
- *
- *     verify-photo-urls.mjs   HEAD   "the BUCKET holds the object"      (PIPE-04, pipeline step 8)
- *     this file               GET    "a CRAWLER gets an image"          (SEO-01, ship path + CI)
- *
- * WHAT GET CANNOT SEE, said plainly rather than left implied: a 200 served from the edge for an
- * object that has since been deleted from R2. This gate does not claim the object exists; it
- * claims the URL resolves to image bytes today. That is the whole of what a social card needs,
- * and `gate:liveness` is what makes the stronger claim.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY IT IS NOT IN `gate:content`, AND WHERE IT LIVES INSTEAD
- *
- * `gate:content` is eleven OFFLINE gates chained into `npm run build`. Every one of them runs on a
- * laptop on a train and in a sandbox with no egress. Putting a network call in that chain means a
- * CDN blip, a DNS hiccup or an aeroplane reds a build whose code is fine — which teaches a
- * developer to re-run rather than to read, and a gate people re-run past is worse than no gate.
- * The blip is not hypothetical: `verify-photo-urls.mjs` caught a one-off `HTTP 502` during its own
- * failure proof that ten immediate re-probes could not reproduce.
- *
- * Its two homes are both places where the network is ALREADY a precondition, so it adds no new
- * class of failure:
- *
- *   1. **The ship path.** `npm run deploy` ends in `wrangler deploy`, which cannot work offline.
- *      A dead card is refused before it is published rather than after.
- *   2. **Its own CI step**, after the build and named for what it does, so a network failure is
- *      attributable at a glance instead of arriving as "the build broke".
- *
- * `ATTEMPTS` retries below exist for the same reason: a transient 502/503/504 is not a defect, and
- * this gate must red for dead URLs and for nothing else.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IT CANNOT SEE
- *
- *  R1. That the bytes are the RIGHT photograph, or the right aspect ratio for a card. A 200 with
- *      an `image/*` content-type and a non-empty body is the claim.
- *  R2. An `og:image` injected at runtime by a script. Every public route here is prerendered and
- *      the metadata is static, so there is nothing to see; if that ever changes this gate keeps
- *      answering about the served HTML and would need a browser to answer about the DOM.
- *  R3. `dist/` IS ONLY AS GOOD AS THE LAST BUILD — the standing blind spot of every dist-scoped
- *      gate in this repository. `npm test` rebuilds the artefact, which is why the ship path and
- *      CI both run the dist-scoped chain again afterwards.
- *
- * Reporting is `process.stdout.write` / `process.stderr.write`, NEVER `console.log`: under this
- * repository's vitest setup console output prints nothing, and a gate reporting through a
- * swallowed channel is indistinguishable from a gate that found nothing.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -103,34 +12,10 @@ const DEFAULT_DIST = './dist';
 const DEFAULT_CONCURRENCY = 6;
 const ATTEMPTS = 3;
 
-/**
- * Statuses worth a second look. A dead URL answers 404/403 and stays dead; these three are the
- * edge saying "not now". Retrying a 404 would only slow the failure down.
- */
 const RETRYABLE_STATUSES = new Set([408, 425, 429, 500, 502, 503, 504]);
 
-/**
- * The metadata properties that name an IMAGE a crawler will fetch. Matched by EQUALITY, never by
- * prefix, and that is the one trap in this file: `og:image:alt` CONTAINS `og:image` and its value
- * is a sentence of prose. A `startsWith` matcher would try to fetch
- * `"The Esplanade's spiked aluminium shading shells over…"` as a URL, and the anti-canary below
- * exists to keep that from ever being true again.
- *
- * `twitter:image` is listed although the artefact emits none today: `Seo.astro` relies on
- * `twitter:card: summary_large_image` falling back to `og:image`. Listing it now means the day
- * somebody adds one it is covered BY CONSTRUCTION rather than by remembering this file exists.
- */
 const IMAGE_META_PROPERTIES = Object.freeze(['og:image', 'og:image:secure_url', 'twitter:image']);
 
-/* ---------------------------------------------------------------------------------------------
- * Extraction
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * Decode the five entities an HTML serialiser can put in an attribute value. Astro emits `&amp;`
- * for a bare ampersand, so a URL with a query string comes back wrong without this — and a URL
- * that is wrong in exactly one character fetches a 404 and reads as a real finding.
- */
 function decodeEntities(value) {
   return value
     .replace(/&lt;/g, '<')
@@ -140,15 +25,6 @@ function decodeEntities(value) {
     .replace(/&amp;/g, '&');
 }
 
-/**
- * Read one attribute off a `<meta …>` tag.
- *
- * 🔴 THE NAIVE FORM OF THIS IS `attr=["']([^"']*)["']`, AND IT IS WRONG IN THIS REPOSITORY. That
- * pattern lets a double-quoted value terminate at an APOSTROPHE, and 8 of the 40 photographs carry
- * one in their alt text (`The Esplanade's …`). The value would be silently truncated. So the
- * closing delimiter is captured from the opening one — a double-quoted value ends only at a double
- * quote — and an unquoted value is read to the next whitespace or `>`.
- */
 function readAttribute(tag, name) {
   const quoted = new RegExp(`\\b${name}\\s*=\\s*(["'])([\\s\\S]*?)\\1`, 'i').exec(tag);
   if (quoted !== null) return decodeEntities(quoted[2]);
@@ -156,13 +32,6 @@ function readAttribute(tag, name) {
   return bare === null ? null : decodeEntities(bare[1]);
 }
 
-/**
- * Every image URL a `<meta>` tag in this document points a crawler at.
- *
- * `property` and `name` are both read: the OpenGraph spec says `property`, Twitter's says `name`,
- * and every real-world serialiser emits one or the other. Reading only the one this build happens
- * to use today would make the gate blind to a correct tag written the other way.
- */
 export function extractImageMeta(html) {
   const found = [];
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
@@ -175,13 +44,8 @@ export function extractImageMeta(html) {
   return found;
 }
 
-/* ---------------------------------------------------------------------------------------------
- * Self-test. A rule that cannot fire is not a rule.
- * ------------------------------------------------------------------------------------------- */
-
 const IMG = `${IMAGE_ORIGIN}/photos/architecture/singapore-lg.webp`;
 
-/** Each canary MUST be extracted; each anti-canary MUST NOT be. */
 const CANARIES = [
   ['double-quoted, spec order', `<meta property="og:image" content="${IMG}">`, [IMG]],
   ['single-quoted', `<meta property='og:image' content='${IMG}'>`, [IMG]],

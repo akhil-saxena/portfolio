@@ -1,154 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * QUAL-03 — application CSS beyond the design system is confined to layout.
- *
- * Usage: node scripts/assert-app-css-confined-to-layout.mjs [scanRoot ...]
- *        (with no argument, scans src/)
- *
- * =============================================================================================
- * THE ROW THIS ANSWERS, AND THE EVIDENCE IT REPLACES
- * =============================================================================================
- *
- * QUAL-03 is the project's Core Value made checkable: *"if a tradeoff arises between shipping
- * something bespoke and shipping it out of the design system, the design system wins."* Until this
- * file existed the row was carried by three facts, all true and none of them about the question:
- *
- *     "zero `!important` in src/styles/"       — about OVERRIDES
- *     "no component re-implemented or forked"  — about COMPONENTS
- *     "gate:ds PASS across 111 files"          — about IMPORTS
- *
- * A stylesheet can satisfy all three and still hand-paint a hex colour, a font stack and a type
- * scale onto every element on the page. The audit flagged QUAL-03 as *"the row most likely to get
- * ticked at Phase 8 on evidence that answers a different question"*. This gate is the measurement
- * that answers it.
- *
- * =============================================================================================
- * THE OPERATIONAL DEFINITION — WHAT "CONFINED TO LAYOUT" IS TAKEN TO MEAN
- * =============================================================================================
- *
- *     Application CSS is confined to layout when every declaration it makes either
- *
- *       (L) names a property that POSITIONS, SIZES, FLOWS, FRAGMENTS OR SCROLLS A BOX, or
- *       (T) HANDS A DESIGN-SYSTEM TOKEN THROUGH to an element the design system does not own,
- *
- *     and it NEVER ORIGINATES a value in a dimension the design system already names.
- *
- * The short form: **the application arranges; it never invents.**
- *
- * ---------------------------------------------------------------------------------------------
- * WHY (T) IS PART OF THE DEFINITION AND NOT A LOOPHOLE IN IT
- *
- * The literal reading — "only layout properties may appear" — was written first and rejected on
- * evidence, because it refuses the declarations that are the Core Value WORKING:
- *
- *   - `photos.css:354` — `.ph-lb-caption .ds-atom-text { color: inherit }`. The design system's own
- *     comment says *"passing `tone` means the component owns the colour; omitting it hands the
- *     colour to the cascade"*, and the variant default sits at specificity (0,0,0) precisely so a
- *     consumer class can win. This declaration is the DOCUMENTED handover path. A rule that refused
- *     it would push the same decision into `!important` or into a fork — the two things QUAL-03
- *     exists to prevent.
- *   - `work.css` paints `border-color: var(--wire)` on a card the design system draws too faintly
- *     on dark. The value is the system's. The decision "this element, that token" is the
- *     application's job and cannot be anywhere else.
- *
- * So the refusal is aimed at ORIGINATION, not at appearance: a `var(--ink-3)` is the design system
- * speaking through the application, and a `#6b6560` is the application speaking over it — even
- * though the two compute to the same pixels today. The first survives a theme change; the second is
- * the fork QUAL-03 forbids, spelled as a colour instead of as a component.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT COUNTS AS "A DIMENSION THE DESIGN SYSTEM ALREADY NAMES"
- *
- * Read off the installed package's own token sheet and ASSERTED TO EXIST on every run
- * (`TOKEN_FAMILIES` below), so the map cannot quietly go stale against a new major:
- *
- *     colour   --ink*  --cream*  --rule  --wire  --ochre-d*  --amber*  --page-bg  --surf*  --scrim*
- *     type     --font  --font-body  --font-display  --font-mono  --display  --mono
- *              --text-*  --weight-*  --lh-*  --ls-*
- *     radius   --radius-*
- *     motion   --dur-*  --ease-*
- *
- * ---------------------------------------------------------------------------------------------
- * 🔴 SPACING IS DELIBERATELY EXCLUDED, AND THIS IS THE EXCLUSION MOST WORTH ARGUING WITH
- *
- * `--space-1…16` exists, so by the rule above a literal `margin-top: 72px` would be an origination.
- * It is not treated as one, for a reason that is written down in this repository rather than
- * invented here:
- *
- *   - **DS-11.** *"Brand themes own colour, type and geometry but NOT spacing"* — a `data-density`
- *     axis "has no legitimate mechanism until DS-10 lands", and Phase 06.1 has not run. Spacing is
- *     not yet a design-system contract a consumer can hand through.
- *   - The layout numbers here are ARITHMETIC, not taste: `--hm-above` is a measured height budget
- *     (`calc(var(--space-11) + var(--hm-bar-allowance))`), `aspect-ratio` comes from a
- *     photograph's stored dimensions, `min-height: 60svh` is a viewport fraction. Refusing literals
- *     there would red correct, measured work.
- *   - The gutter and the page maxima — the spacing values that ARE a contract — already have their
- *     own gate (`gate:ladder`), which reads the ladder from `src/lib/layout-ladder.ts` and would
- *     catch a restated one.
- *
- * A definition tuned until everything passes is the vacuous gate this phase found nineteen times.
- * This exclusion is the opposite of that in one respect that can be checked: it does **not** save
- * anything currently in the tree. Every custom property `src/styles/` declares is already composed
- * from `var(--space-*)`, so tightening spacing tomorrow would cost this repository nothing today.
- *
- * =============================================================================================
- * THE PARTITION IS AN ALLOW-LIST, END TO END
- * =============================================================================================
- *
- * Every property must be in LAYOUT, in TOKENISED or in FREE. **A property in none of the three is
- * REFUSED by name.** This is the standing lesson of the project, paid for once already: a git-argv
- * DENY-list was defeated three ways. A deny-list enumerates what its author thought of; an
- * allow-list enumerates what is known to be safe, so the failure mode of an imagination gap is a
- * FALSE ALARM (loud, one line to fix) instead of a MISS (silent, shipped).
- *
- *   LAYOUT     positions, sizes, flows, fragments, scrolls. Values unrestricted — except that a
- *              literal COLOUR is refused in every property, everywhere, including these.
- *   TOKENISED  carries colour, type or radius. Each such value must be a `var(--…)` or a handover
- *              keyword; a literal in that dimension is refused.
- *   FREE       an appearance decision the design system gives NO name to — casing, underline,
- *              font-style, font-smoothing, generated content. Each entry carries its reason. The
- *              application cannot hand through a token that does not exist, and refusing these
- *              would only push the same decision into an inline style where nothing can see it.
- *              Where such a decision arguably SHOULD have been the design system's, that is a
- *              finding to file — not a reason to fail a build over a vocabulary gap.
- *
- * =============================================================================================
- * THE DEBT REGISTER IS A DEBT REGISTER, NOT A PERMISSION LIST
- * =============================================================================================
- *
- * `DEBTS` holds declarations that VIOLATE the definition above and still ship. It is closed, every
- * entry names a disposition, **every entry is printed on every PASS**, and an entry that stops
- * matching is a FAILURE (a stale exemption is a hole waiting for a name collision — the same rule
- * `gate:ds` applies to its permitted deep specifiers). Adding a new declaration does not get you an
- * entry: the entries here are the ones this gate FOUND, reported, and could not fix without taking
- * a design decision that is not an executor's to take.
- *
- * =============================================================================================
- * WHAT THIS GATE CANNOT SEE — each found by trying to walk through it
- * =============================================================================================
- *
- *  R1. A VALUE ASSEMBLED AT RUNTIME. `style={`background-image: url("${photo.urls.thumb}")`}` is
- *      read as far as its static text goes; an interpolated segment is invisible. The static text
- *      IS scanned, so a `#fff` typed into a template is still caught. Closing this needs the
- *      evaluator, not the parser.
- *  R2. A DESIGN-SYSTEM COMPONENT'S OWN `style` PROP passed as an identifier. `[CSS-OPAQUE]` refuses
- *      that shape unless the identifier is on `OPAQUE_STYLE_SOURCES`, in which case the object
- *      literal it names is READ AND CHECKED — so the one that exists is covered, and a second one
- *      cannot be added silently.
- *  R3. THE COMPUTED CASCADE. This reads declarations, not what wins. A perfectly token-valued rule
- *      that never applies is invisible here; `05-AUDIT.md` §5 is where computed styles get read.
- *  R4. `node_modules`. The design system's own sheet is not application CSS and is not scanned;
- *      `gate:ds` governs the boundary between them.
- *  R5. A `<style>` BLOCK IN A `.tsx` ISLAND, or a CSS-in-JS call. None exists — asserted, since a
- *      `.tsx` with a `<style>` element would be scanned as a file with zero declarations and the
- *      zero-declaration floor does not fire per-file. Recorded rather than closed.
- *
- * Reporting is `process.stdout.write` / `process.stderr.write`, NEVER `console.log`: under this
- * repository's vitest setup console output prints nothing, and a gate reporting findings through a
- * swallowed channel is indistinguishable from a gate that found nothing.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -159,21 +10,11 @@ const err = (s) => process.stderr.write(`${s}\n`);
 const DEFAULT_SCAN_TARGETS = ['src'];
 const SCAN_EXTENSIONS = ['.css', '.astro', '.tsx'];
 
-/** Where the token vocabulary is read from, so this file never restates a token's value. */
 const DS_TOKEN_SHEETS = [
   'node_modules/@akhil-saxena/design-system/dist/tokens.css',
   'node_modules/@akhil-saxena/design-system/dist/themes/monochrome.css',
 ];
 
-/* ---------------------------------------------------------------------------------------------
- * 1. The vocabulary the design system already has a name for
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * One representative token per family. Each is ASSERTED to be declared by the installed package
- * before the scan runs: if a family disappears in a new major, this gate stops claiming that the
- * dimension is tokenised instead of silently refusing values that now have nowhere to point.
- */
 const TOKEN_FAMILIES = Object.freeze({
   colour: [
     '--ink',
@@ -194,11 +35,6 @@ const TOKEN_FAMILIES = Object.freeze({
   motion: ['--dur-1', '--dur-2', '--ease-out'],
 });
 
-/**
- * The 148 CSS named colours. Enumerated because `color: red` originates a colour exactly as much as
- * `color: #ff0000` does, and a hex-and-function-only detector would miss it. `transparent` and
- * `currentcolor` are deliberately absent: neither names a colour, they defer to one.
- */
 const NAMED_COLOURS = new Set(
   (
     'aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue ' +
@@ -225,7 +61,6 @@ const COLOUR_FUNCTIONS =
   /\b(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color|color-mix|device-cmyk)\s*\(/i;
 const HEX_COLOUR = /#[0-9a-f]{3,8}\b/i;
 
-/** Values that DEFER a decision rather than making one. Allowed wherever a token is allowed. */
 const HANDOVER_KEYWORDS = new Set([
   'inherit',
   'initial',
@@ -238,50 +73,6 @@ const HANDOVER_KEYWORDS = new Set([
   '0',
 ]);
 
-/* ---------------------------------------------------------------------------------------------
- * 2. The partition
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * (L) — positions, sizes, flows, fragments, scrolls a box.
- *
- * `transform` AND ITS INDIVIDUAL LONGHANDS ARE HERE, AND THE PLACEMENT IS ARGUED RATHER THAN
- * CONVENIENT. A `transform` translates, rotates or scales a box: it is the same class of statement
- * as `margin` or `width`, made in paint space instead of in layout space, and its values are
- * geometric — lengths, angles and ratios. The design system names no `--scale-*`, `--translate-*`
- * or `--rotate-*`, so there is nothing to hand through and nothing to originate IN A DIMENSION IT
- * ALREADY NAMES, which is the definition's actual test. A literal colour inside one is still
- * refused, because [CSS-COLOUR] refuses colour in every property everywhere.
- *
- * This entry was added by 05-16, which needed the peek tile's `scale(1.05)` hover — a value
- * carried by BOTH design sources — and found the gate refusing it by name. That is the allow-list
- * behaving as designed: an imagination gap produced a LOUD false alarm and one line of thought,
- * rather than a silent miss.
- *
- * 🔴 THE SCROLL-TIMELINE AND CONTAINER FAMILIES ARE HERE, AND THE PLACEMENT IS THE ARGUABLE ONE.
- *
- * 05-17 docks Home's `<h1>` into the corner with `animation-timeline: scroll(root block)` and
- * measures the travel with `50cqw`. That needs six property families the allow-list had never
- * seen, and every one of them came back `CSS-UNKNOWN` — the gate working, twice in one plan.
- *
- * They are LAYOUT and not TOKENISED, and the test is the definition's own: does the value
- * ORIGINATE something in a dimension the design system already names?
- *
- *   `animation-timeline`  names WHICH scroll container and WHICH axis drives an animation's
- *                         progress. `scroll(root block)` is a statement about how a box scrolls,
- *                         of exactly the same kind as `scroll-snap-type` and `overscroll-behavior`
- *                         three lines above. There is no clock in it to point a `--dur-*` at.
- *   `animation-range`     delimits the scroll DISTANCE the timeline maps across. Its values are
- *                         lengths and viewport fractions — `0 34svh` is the same arithmetic as
- *                         `min-height: 60svh`, which this file's own ANTI_CANARIES already permit.
- *   `container-type`      establishes a containment context so a descendant can size against this
- *                         box. Choosing which box is the reference frame for a measurement is
- *                         layout by definition.
- *
- * `animation-duration`, `animation-timing-function` and `animation-delay` stay TOKENISED, because
- * those three ARE clocks and curves and the design system names both. That split is what makes
- * DEBT-AMBIENT-DURATION below a real finding rather than a rule this file quietly relaxed.
- */
 const LAYOUT = new Set(
   (
     'display position inset inset-block inset-inline top right bottom left z-index box-sizing ' +
@@ -315,11 +106,6 @@ const LAYOUT = new Set(
   ).split(' ')
 );
 
-/**
- * (T) — carries a dimension the design system names. `dimension` selects which literal is refused;
- * `colour` is additionally refused in EVERY property by [CSS-COLOUR], so a property listed here as
- * `type` or `radius` is still colour-checked.
- */
 const TOKENISED = new Map(
   Object.entries({
     color: 'colour',
@@ -340,15 +126,6 @@ const TOKENISED = new Map(
     'border-left': 'colour',
     'border-block': 'colour',
     'border-inline': 'colour',
-    /*
-     * The LOGICAL longhands. `border-block` and `border-inline` were mapped and their four
-     * -start/-end siblings were not, so `border-block-start: 1px solid var(--rule)` came back
-     * CSS-UNKNOWN the first time a stylesheet in this repository wrote one (05-17, the hairline
-     * above Home's Brevo strip). An imagination gap in an allow-list, surfacing as a loud false
-     * alarm rather than as a hole — which is the failure mode this file was designed to have.
-     * Mapped as `colour` so the colour rule reaches inside the shorthand, exactly as it does for
-     * the physical `border-top` above.
-     */
     'border-block-start': 'colour',
     'border-block-end': 'colour',
     'border-inline-start': 'colour',
@@ -395,11 +172,6 @@ const TOKENISED = new Map(
   })
 );
 
-/**
- * FREE — an appearance decision the design system gives no name to. Each carries its reason, and a
- * reason shorter than a sentence fails the self-test: an unexplained entry is how this list would
- * become the place violations go to be forgiven.
- */
 const FREE = new Map(
   Object.entries({
     'text-transform':
@@ -498,15 +270,6 @@ const FREE = new Map(
   })
 );
 
-/* ---------------------------------------------------------------------------------------------
- * 3. The debt register — violations that ship, each with a disposition
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * Every entry MUST still match at least one declaration or the gate fails. Every entry is printed
- * on every PASS. `where` is a file suffix, `property` and `value` are matched exactly after
- * whitespace collapse.
- */
 const DEBTS = [
   {
     id: 'DEBT-PRINT-PAPER',
@@ -585,40 +348,8 @@ const DEBTS = [
   },
 ];
 
-/**
- * The one identifier permitted as an inline `style={…}` value, and the module it must come from.
- * The object literal is READ AND CHECKED by the same rules, so this is a pointer, not a pardon.
- */
-/*
- * EMPTY, AND THAT IS THE CORRECT STATE TODAY — not an oversight to fill in.
- *
- * Its one entry was `CROSSLINK_TYPE`, the italic-serif type role shared by §13.2's two cross-link
- * rows. Both rows are retired and `src/lib/crosslink.ts` is deleted, so the entry pointed at a file
- * that no longer exists for an identifier no file uses. A register entry that resolves to nothing is
- * an exemption nobody is checking — this gate says so itself, forty lines down, about exactly this
- * failure mode.
- *
- * The MECHANISM stays wired: `style={IDENT}` is still refused unless registered, and a registered
- * identifier is still READ and every value in it judged. An empty map means every opaque inline
- * style is currently refused, which is the strictest position and the right default.
- */
 const OPAQUE_STYLE_SOURCES = new Map([]);
 
-/* ---------------------------------------------------------------------------------------------
- * 4. Value inspection
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * Remove the TOKEN REFERENCE from a value and keep everything else, so what remains is what the
- * value ORIGINATES.
- *
- * 🔴 THE FALLBACK IS KEPT, AND ITS OWN CANARY IS WHAT FOUND THAT. Written first as "delete the
- * whole `var(...)`", this function swallowed `var(--nope, #fff)` entirely and the colour rule
- * reported nothing — a hex colour, in a `color` declaration, invisible to a gate whose entire
- * first rule is "no literal colour anywhere". A `var()` fallback is a value the author WROTE, and
- * it paints whenever the token is undefined, which is exactly the case a theme change produces.
- * So the reference is stripped and the fallback is left standing to be judged.
- */
 function stripVars(value) {
   let previous;
   let current = value;
@@ -631,7 +362,6 @@ function stripVars(value) {
   return current;
 }
 
-/** Does what remains after the tokens are removed name a colour? */
 export function originatesColour(value) {
   const rest = stripVars(value);
   if (HEX_COLOUR.test(rest)) return true;
@@ -642,11 +372,6 @@ export function originatesColour(value) {
   return false;
 }
 
-/**
- * A value is a pure handover when, once every `var()` and handover keyword is removed, nothing that
- * could carry a decision is left. Used for the `type`, `radius` and `motion` dimensions, where a
- * literal ANYWHERE in the value is an origination.
- */
 export function originatesInDimension(value) {
   const rest = stripVars(value);
   const words = rest.match(/[^\s,/]+/g) ?? [];
@@ -659,23 +384,10 @@ export function originatesInDimension(value) {
   return false;
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 5. Parsing — CSS files, <style> blocks, inline style literals
- * ------------------------------------------------------------------------------------------- */
-
-/** Blank out comments while preserving every byte offset, so line numbers stay true. */
 function blankComments(text) {
   return text.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
 }
 
-/**
- * Declarations from a CSS body, with the selector/at-rule stack each sits in.
- *
- * Hand-written rather than pulled from a parser dependency: this repository ships no CSS parser and
- * adding one for a gate would put the gate's correctness inside a package nobody reviews. The
- * tokeniser tracks quotes and parentheses so a `;` inside `url(...)` or `content: "a;b"` does not
- * end a declaration — the two ways a naive split gets this wrong.
- */
 export function parseDeclarations(css, origin) {
   const text = blankComments(css);
   const found = [];
@@ -746,12 +458,10 @@ export function parseDeclarations(css, origin) {
     }
     buffer += ch;
   }
-  // A final declaration with no trailing `;` — legal CSS, and the shape a `<style>` block ends in.
   flush(';');
   return found;
 }
 
-/** camelCase -> kebab-case, for a JSX style object. `WebkitFontSmoothing` -> `-webkit-font-smoothing`. */
 const kebab = (name) =>
   name
     .replace(/^Webkit/, '-webkit-')
@@ -759,7 +469,6 @@ const kebab = (name) =>
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .toLowerCase();
 
-/** The `<style>` blocks of an `.astro` file, with their line offsets preserved. */
 function styleBlocks(text) {
   const blocks = [];
   for (const m of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) {
@@ -769,15 +478,6 @@ function styleBlocks(text) {
   return blocks;
 }
 
-/**
- * Inline styles. Three shapes, and the fourth — a bare identifier — is a finding unless registered.
- *
- *   style="a: b"            an Astro/HTML attribute
- *   style={`a: ${x}`}       a template literal; interpolations are invisible (R1) but the static
- *                           text is still read, so a typed-in colour is still caught
- *   style={{ fontSize: 'var(--text-lg)' }}   a JSX object literal
- *   style={IDENT}           refused unless IDENT is in OPAQUE_STYLE_SOURCES
- */
 export function parseInlineStyles(text, origin) {
   const found = [];
   const opaque = [];
@@ -790,8 +490,6 @@ export function parseInlineStyles(text, origin) {
   }
 
   for (const m of text.matchAll(/\bstyle\s*=\s*\{`([\s\S]*?)`\}/g)) {
-    // The interpolations are replaced by a placeholder that cannot be mistaken for a colour or a
-    // length, so the surrounding static text still parses into declarations.
     const staticText = m[1].replace(/\$\{[^}]*\}/g, 'var(--interpolated)');
     for (const d of parseDeclarations(staticText, origin)) {
       found.push({
@@ -823,7 +521,6 @@ export function parseInlineStyles(text, origin) {
   return { found, opaque };
 }
 
-/** Read the object literal an opaque `style={IDENT}` names, so its values are checked too. */
 function readOpaqueSource(identifier, file) {
   const absolute = path.resolve(process.cwd(), file);
   if (!fs.existsSync(absolute)) return { declarations: [], problem: `${file} does not exist` };
@@ -848,17 +545,10 @@ function readOpaqueSource(identifier, file) {
   return { declarations, problem: declarations.length === 0 ? `${identifier} is empty` : null };
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 6. The rule
- * ------------------------------------------------------------------------------------------- */
-
 /** @returns {null | { rule: string, why: string }} */
 export function judge(declaration) {
   const { property, value } = declaration;
 
-  // A custom property has no dimension until something uses it, so only the colour rule applies.
-  // `--hm-above: calc(var(--space-11) + …)` is layout arithmetic; `--x: #111` is an origination
-  // wearing a variable's clothes, and this is the only place that catches it.
   if (property.startsWith('--')) {
     if (originatesColour(value)) {
       return {
@@ -869,8 +559,6 @@ export function judge(declaration) {
     return null;
   }
 
-  // [CSS-COLOUR] first, and in EVERY property: `background: #111` and
-  // `box-shadow: 0 0 0 1px #000` are colour originations inside properties that are not "colour".
   if (originatesColour(value)) {
     return {
       rule: 'CSS-COLOUR',
@@ -908,10 +596,6 @@ export function judge(declaration) {
       'system names its dimension, FREE with a written reason if it names none.',
   };
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 7. Self-test. A rule that cannot fire is not a rule.
- * ------------------------------------------------------------------------------------------- */
 
 const CANARIES = [
   ['a hex colour', 'color', '#6b6560', 'CSS-COLOUR'],
@@ -1009,7 +693,6 @@ for (const [label, property, value] of ANTI_CANARIES) {
   }
 }
 
-// A parser canary, because every rule above is worthless if the declarations never reach it.
 {
   canariesChecked++;
   const parsed = parseDeclarations(
@@ -1062,7 +745,6 @@ for (const debt of DEBTS) {
   }
 }
 
-/* The token map must describe the package that is actually installed. */
 let tokenSheetBytes = 0;
 {
   const declared = new Set();

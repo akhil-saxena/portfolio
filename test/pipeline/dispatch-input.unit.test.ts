@@ -1,48 +1,3 @@
-/**
- * The dispatch-input validator (plan 04-08, Task 2).
- *
- * WHAT IS BEING ASSERTED, AND WHY IT IS ASSERTED BEFORE ANYTHING ELSE RUNS
- * -----------------------------------------------------------------------
- * `workflow_dispatch` inputs are the pipeline's whole attack surface: anyone who can write to
- * this repository can dispatch it, their `temp_key` becomes a path in a bucket the job holds
- * write credentials for (T-04-34), and their `title`/`alt` become committed content on `main`.
- * So every input is refused or accepted BEFORE a single R2 byte is read — a bad dispatch then
- * costs one workflow start and nothing else.
- *
- * THE SUITE'S RE-IMPLEMENTATION CONVENTION APPLIES
- * -----------------------------------------------
- * `test/content/photo-enrichment.unit.test.ts`: *"Importing the merge's own parser would make
- * this file assert that the merge agrees with itself."* So every expected key name, every legal
- * category id and every fixture string below is TYPED OUT here rather than read from the module
- * under test. Two imports are deliberately the opposite of circular, because they are the OTHER
- * side of an agreement this file exists to check:
- *
- *   - `DISPATCH_INPUTS` from `src/lib/photo-pipeline.ts` — the contract the validator must not be
- *     allowed to drift from. It is fed to `assertRuleCoverage` MUTATED, which is what turns
- *     "the required set is derived" from a claim into a demonstration.
- *   - `PhotoSchema` from `src/schemas/photo.ts` — the authority on the committed record. The
- *     validator's job on `alt` is to refuse EARLIER and MORE OFTEN than the schema, never less
- *     often, and that relationship is asserted directly rather than by re-typing the schema's
- *     rules.
- *
- * THE OD-2b GAP IS MEASURED HERE, NOT ASSUMED
- * -------------------------------------------
- * Plan 04-08 as written said `alt: "TODO"` is accepted "and that is the measured, intended
- * behaviour". That was true of `PhotoSchema`'s four rules and it is still true — this file
- * proves it, by parsing a real record with `alt: "TODO"` and watching the schema accept it. What
- * changed afterwards is OD-2b, decided in the same review: the DISPATCH validator refuses it.
- * Both facts are asserted, side by side, because the gap is the entire justification for OD-2b.
- *
- * AND THE ACCEPTED RESIDUALS ARE ASSERTED TOO
- * -------------------------------------------
- * `"TODO add real alt text here"`, `"XXX marks the spot…"` and `"??? what even is this shot"`
- * pass. That is recorded in `photo-pipeline.ts`'s own comment and accepted by Akhil: closing the
- * first means refusing `"Todo el mundo crowds the square…"`, a legitimate Spanish caption. A
- * test that only listed the catches would let a later "improvement" tighten the rule and redden
- * real alt text with nothing to stop it, so the ACCEPTED cases are pinned as hard as the refused
- * ones — together with all 39 reviewed values from the committed manifest.
- */
-
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -69,54 +24,26 @@ const read = (relative: string): string => readFileSync(`${REPO_ROOT}${relative}
 const MODULE_RELATIVE = 'scripts/lib/dispatch-input.mjs';
 const MODULE_PATH = `${REPO_ROOT}${MODULE_RELATIVE}`;
 
-/* ============================================================================================
- * Fixtures. Every one of these is typed out, not derived from the module under test.
- * ========================================================================================== */
-
-/**
- * The five ids in `data/site_config.json` today, RE-TYPED. A drift here is a real failure, and one
- * has already happened — which is the argument for re-typing rather than importing.
- *
- * It read seven: `abstract, architecture, nature, portraits, product, street, wildlife`. Akhil, on
- * the taxonomy: *"I don't think the categories are good enough… can you check each photo and
- * suggest category. also seems we have lot of categories"*, and after the pass: *"5 is better."*
- * The five below are subject-based and each one is a section a reader would actually browse; the
- * retired seven mixed subject (`nature`, `street`) with treatment (`abstract`) and with a genre the
- * corpus had two photographs of (`product`).
- *
- * The list stays TYPED OUT on purpose. Importing `site_config.json` here would make this file
- * agree with the config by construction, and the whole job of these assertions is to notice when
- * the config moves under the pipeline that validates against it.
- */
 const LEGAL_CATEGORY_IDS = ['architecture', 'landscape', 'portraits', 'still-life', 'wildlife'];
 
-/** The five dispatch input names, in declaration order. Re-typed for the same reason. */
 const EXPECTED_INPUT_NAMES = ['temp_key', 'category', 'title', 'alt', 'place'];
 const EXPECTED_REQUIRED_NAMES = ['temp_key', 'category', 'title', 'alt'];
 
 const VALID = {
   temp_key: 'temp/2026-08-26-riverbend.jpg',
-  // `landscape` is the surviving home for what `nature` used to hold; a riverbend at first light is
-  // exactly the photograph that moved.
   category: 'landscape',
   title: 'Riverbend at first light',
   alt: 'A slow river bends around a gravel bar with mist lifting off the water before sunrise.',
 };
 
-/** A record the committed manifest already contains, used as a carrier for `alt` experiments. */
 const manifest = JSON.parse(read('data/portfolio_images.json')) as Array<
   Record<string, unknown> & { alt: string; title: string }
 >;
 const CARRIER = manifest[0];
 
-/** Parse a real record with a substituted `alt`, so the schema's verdict is the schema's own. */
 const schemaAccepts = (alt: string): boolean =>
   PhotoSchema.safeParse({ ...CARRIER, alt, title: 'A title that is nothing like the alt' }).success;
 
-/**
- * The findings a refusal carried. Throws if the value was ACCEPTED, so a test that expected a
- * refusal can never pass by the validator having no opinion.
- */
 const findingsFor = (raw: unknown, options?: { siteConfigPath?: string }): string[] => {
   let accepted: unknown;
   try {
@@ -132,7 +59,6 @@ const findingsFor = (raw: unknown, options?: { siteConfigPath?: string }): strin
   );
 };
 
-/** The finding that names one input, or a failure that says which findings were there instead. */
 const findingFor = (raw: unknown, input: string, options?: { siteConfigPath?: string }): string => {
   const findings = findingsFor(raw, options);
   const match = findings.find((f) => f.startsWith(`${input}:`));
@@ -157,17 +83,12 @@ afterAll(() => {
   for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true });
 });
 
-/* ============================================================================================
- * 1. Anti-vacuity: the empty dispatch, and where the required set comes from.
- * ========================================================================================== */
-
 describe('the required set is derived from DISPATCH_INPUTS, not typed into the validator', () => {
   it('names every required input when given nothing at all', () => {
     const findings = findingsFor({});
     for (const name of EXPECTED_REQUIRED_NAMES) {
       expect(findings.some((f) => f.startsWith(`${name}:`))).toBe(true);
     }
-    // Exactly the required ones: `place` is optional, so an empty dispatch is not a place error.
     expect(findings).toHaveLength(EXPECTED_REQUIRED_NAMES.length);
     expect(findings.some((f) => f.startsWith('place:'))).toBe(false);
   });
@@ -208,10 +129,6 @@ describe('the required set is derived from DISPATCH_INPUTS, not typed into the v
   });
 });
 
-/* ============================================================================================
- * 2. temp_key — the input that becomes a bucket path.  (T-04-34)
- * ========================================================================================== */
-
 describe('temp_key', () => {
   it.each([['temp/2026-08-26-riverbend.jpg'], ['temp/a/b/c.jpg']])('accepts %s', (key) => {
     expect(validateDispatchInputs({ ...VALID, temp_key: key }).temp_key).toBe(key);
@@ -242,18 +159,12 @@ describe('temp_key', () => {
   });
 
   it('does not echo a hostile key back at full length', () => {
-    // Long, invalid (the backslash), and under the byte ceiling — so it reaches the branch that
-    // quotes the offending value. A public workflow log must not be floodable from an input.
     const hostile = `temp/${'x/'.repeat(400)}\\y.jpg`;
     const finding = findingFor({ ...VALID, temp_key: hostile }, 'temp_key');
     expect(finding).not.toContain(hostile);
     expect(finding.length).toBeLessThan(hostile.length);
   });
 });
-
-/* ============================================================================================
- * 3. category — RI-1's comparison, with no case transform on either side.
- * ========================================================================================== */
 
 describe('category', () => {
   it.each(LEGAL_CATEGORY_IDS.map((id) => [id]))('accepts the real id %s', (id) => {
@@ -274,7 +185,6 @@ describe('category', () => {
       ...VALID,
       category: 'aurora',
     });
-    // The proof that nothing is hardcoded: a real id becomes illegal against a config without it.
     expect(
       findingFor({ ...VALID, category: 'landscape' }, 'category', { siteConfigPath })
     ).toContain('aurora');
@@ -297,10 +207,6 @@ describe('category', () => {
   });
 });
 
-/* ============================================================================================
- * 4. title.
- * ========================================================================================== */
-
 describe('title', () => {
   it.each([[''], ['   '], ['\t\n']])('rejects %j', (title) => {
     expect(findingFor({ ...VALID, title }, 'title')).toMatch(/empty|whitespace/i);
@@ -311,10 +217,6 @@ describe('title', () => {
     expect(validateDispatchInputs({ ...VALID, title }).title).toBe(title);
   });
 });
-
-/* ============================================================================================
- * 5. alt — PhotoSchema's four rules, applied here so a bad value costs nothing (OD-2).
- * ========================================================================================== */
 
 describe("alt — PhotoSchema's four content rules, enforced before any R2 read", () => {
   it.each([[''], ['    '], ['\n\t ']])('rule 1, empty or whitespace only: rejects %j', (alt) => {
@@ -338,7 +240,6 @@ describe("alt — PhotoSchema's four content rules, enforced before any R2 read"
     ['IMAGE OF a river bending around a gravel bar before sunrise.'],
   ])('rule 3, role prefix: rejects %j', (alt) => {
     expect(findingFor({ ...VALID, alt }, 'alt')).toMatch(/role prefix/i);
-    // The schema refuses it too — this validator is the earlier, cheaper copy of that rule.
     expect(schemaAccepts(alt)).toBe(false);
   });
 
@@ -398,12 +299,6 @@ describe('alt — OD-2b, the placeholder refusal the four rules do not make', ()
 });
 
 describe('alt — the ACCEPTED residuals, pinned so nobody tightens the rule by accident', () => {
-  /**
-   * These three are holes, they are known, they are recorded in `photo-pipeline.ts` and they were
-   * accepted in review. Tightening the first was tried and rejected because it reddens
-   * "Todo el mundo crowds the square…". If a later change makes any of these fail, that change
-   * has widened the refusal and must prove the legitimate captions below still pass.
-   */
   it.each([
     ['TODO add real alt text here'],
     ['XXX marks the spot where the tide turned over the flats'],
@@ -434,17 +329,12 @@ describe('alt — the ACCEPTED residuals, pinned so nobody tightens the rule by 
         refused.push(`${record.alt} — ${(error as Error).message}`);
       }
     }
-    // console.log is swallowed by this setup; process.stdout.write is not.
     process.stdout.write(
       `[dispatch-input] alt corpus: ${manifest.length} reviewed value(s), ${refused.length} refused\n`
     );
     expect(refused).toEqual([]);
   });
 });
-
-/* ============================================================================================
- * 6. place — optional means absent, not empty.
- * ========================================================================================== */
 
 describe('place', () => {
   it('is fine when absent, and stays absent in the result', () => {
@@ -464,10 +354,6 @@ describe('place', () => {
     expect(validateDispatchInputs({ ...VALID, place: undefined })).toEqual(VALID);
   });
 });
-
-/* ============================================================================================
- * 7. Accumulation — every finding in one pass.
- * ========================================================================================== */
 
 describe('accumulation', () => {
   it('reports all four mistakes at once rather than one dispatch at a time', () => {
@@ -498,10 +384,6 @@ describe('accumulation', () => {
   });
 });
 
-/* ============================================================================================
- * 8. The environment mapping the workflow uses.
- * ========================================================================================== */
-
 describe('inputsFromEnv', () => {
   it('derives INPUT_<NAME> from the declared name', () => {
     expect(envVarNameFor('temp_key')).toBe('INPUT_TEMP_KEY');
@@ -527,9 +409,6 @@ describe('inputsFromEnv', () => {
   });
 
   it('treats an EMPTY optional variable as absent, because Actions cannot express absence', () => {
-    // `${{ inputs.place }}` renders as the empty string when the caller omitted it, and renders
-    // as the empty string when the caller passed "". The two are indistinguishable at this
-    // boundary; the workflow can only ever mean the first. Recorded, not glossed.
     expect(inputsFromEnv({ ...envFor(VALID), INPUT_PLACE: '' })).toEqual(VALID);
     expect('place' in inputsFromEnv({ ...envFor(VALID), INPUT_PLACE: '  ' })).toBe(true);
   });
@@ -556,17 +435,7 @@ function envFor(inputs: typeof VALID): Record<string, string> {
   };
 }
 
-/* ============================================================================================
- * 9. The CLI the workflow step runs.
- * ========================================================================================== */
-
 describe('the CLI entry point', () => {
-  /**
-   * Every declared INPUT_* is explicitly cleared before `env` is layered on. Inheriting the
-   * parent environment is this suite's convention (`build-fails-loudly.node.test.ts`), and it is
-   * the right one here too — but a leaked INPUT_ALT would make the "empty environment" case pass
-   * for a reason the test did not intend.
-   */
   const CLEARED = Object.fromEntries(
     EXPECTED_INPUT_NAMES.map((name) => [`INPUT_${name.toUpperCase()}`, undefined])
   );
@@ -612,16 +481,10 @@ describe('the CLI entry point', () => {
   });
 });
 
-/* ============================================================================================
- * 10. The module has exactly one source for each shared constant.
- * ========================================================================================== */
-
 describe('no second definition lives in this module', () => {
   const source = read(MODULE_RELATIVE);
 
   it('spells no staging prefix, in code or in a comment', () => {
-    // Plan 04-08's `done` said "outside comments", which nothing can check. So the module simply
-    // does not contain the string ANYWHERE — a stricter rule, and a machine-checkable one.
     expect(source).not.toContain('temp/');
   });
 

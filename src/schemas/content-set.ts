@@ -1,44 +1,3 @@
-/**
- * The cross-file assertions no per-file schema can express.
- *
- * WHY THIS FILE IS THE SHARP END OF ADR-002
- * -----------------------------------------
- * ADR-002 deleted `/admin/site` on the argument that "a guard does not need a screen". The guard
- * is RI-1 below: every `photo.category` must exist in `site_config`'s ids. There is now no UI
- * between a hand-edit of `data/site_config.json` and fourteen orphaned photographs, so this
- * function is the only thing standing there. Two further rules — RI-3 and RI-4 — were found by
- * probing `home_config.json` rather than by reading a specification; both hold today, neither was
- * written down anywhere, and `/admin/home` edits both fields in Phase 7.
- *
- * EVERY VIOLATION IS ACCUMULATED. NOTHING THROWS ON THE FIRST BAD RECORD.
- * ----------------------------------------------------------------------
- * A validator that stops at the first failure makes fixing 39 records a 39-run loop, and the
- * person doing the fixing has no idea after run 1 whether they are looking at one problem or
- * thirty. Same convention as `scripts/check` gates in this repository: all findings first, one
- * exit at the end.
- *
- * THE VACUITY CONTRACT — READ THIS BEFORE TRUSTING A GREEN RESULT
- * --------------------------------------------------------------
- * Phase 3 has shipped eight gates that could not fail, several of them by iterating an empty
- * collection and reporting success. So:
- *
- *   1. Every per-file schema carries `.min(1)` on its top-level arrays. An empty manifest, an
- *      empty category list and an empty peek list are FAILURES, not clean runs.
- *   2. `report.checked` states how many things each rule looked at. A run that examined zero
- *      photographs cannot be mistaken for a run that examined thirty-nine, by a human or by a
- *      test.
- *   3. A rule whose inputs did not survive their own schema is NOT run and is NOT counted as
- *      passing — it is listed by name in `checked.rulesSkipped` with the reason. Silence about a
- *      rule that could not run is the specific failure this contract exists to prevent.
- *
- * WHAT THIS FUNCTION CANNOT SEE
- * -----------------------------
- * It validates the content SET it is handed. It has no opinion on whether the caller handed it
- * the committed files or something else, and it does not read from disk — these modules run
- * inside `workerd` during prerender, where there is no filesystem. The build gate (03-07) is what
- * binds it to `data/*.json`.
- */
-
 import { describeIssue } from '../lib/content-errors';
 import { HomeConfigSchema } from './home';
 import { PhotoManifestSchema } from './photo';
@@ -55,13 +14,9 @@ export interface ContentSetInput {
 }
 
 export interface ContentSetViolation {
-  /** `RI-1`…`RI-6`, or `SCHEMA-<file>` for a per-file failure. */
   rule: string;
-  /** The file, and the path within it, so the reader can go straight there. */
   where: string;
-  /** What is wrong, naming the offending value. */
   detail: string;
-  /** Why it matters — the consequence, not a restatement of the rule. */
   why: string;
 }
 
@@ -95,14 +50,6 @@ const FILE = {
   resume: 'data/resume.json',
 } as const;
 
-/**
- * The name of the top-level array in the two files that ARE arrays.
- *
- * A zod issue path for `photos[12].order` begins at the index, so it carries no name for the thing
- * being indexed. The formatter needs one to render `landscape-hillsandgreens [photos[12] of 39]`, and
- * it comes from here rather than from a string literal at the call site so the two array files and
- * the three object files are described by one table.
- */
 const ROOT_NAME = {
   photos: 'photos',
   site: 'site',
@@ -111,7 +58,6 @@ const ROOT_NAME = {
   resume: 'resume',
 } as const;
 
-/** Every value that appears more than once, with the indices it appeared at. */
 function duplicates<T>(values: T[]): Map<T, number[]> {
   const seen = new Map<T, number[]>();
   values.forEach((value, index) => {
@@ -134,10 +80,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   const rulesRun: string[] = [];
   const rulesSkipped: SkippedRule[] = [];
 
-  /* ------------------------------------------------------------------------------------------
-   * 1. The per-file schemas. Every issue from every file, not the first file that fails.
-   * ---------------------------------------------------------------------------------------- */
-
   const runSchema = <T>(
     key: keyof typeof FILE,
     schema: { safeParse: (value: unknown) => { success: boolean; data?: T; error?: unknown } }
@@ -147,10 +89,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     const issues = (result.error as { issues?: { path: PropertyKey[]; message: string }[] })
       .issues ?? [{ path: [], message: String(result.error) }];
     for (const issue of issues) {
-      // NAMED, not merely located. `data/resume.json experience[0].bullets[2]` tells the reader
-      // where to click and not which company's bullet it is; `describeIssue` walks the same path
-      // through the DATA and reports `Brevo … [experience[0] of 3] → bullets[2]`. That difference
-      // is criterion 2's "readable", and it is why this function has the raw input in scope.
       const framed = describeIssue(FILE[key], ROOT_NAME[key], input[key], issue);
       violations.push({
         rule: `SCHEMA-${key}`,
@@ -167,11 +105,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   const home = runSchema<ParsedHome>('home', HomeConfigSchema);
   const projects = runSchema<ParsedProjects>('projects', ProjectsSchema);
   runSchema('resume', ResumeSchema);
-
-  /* ------------------------------------------------------------------------------------------
-   * 2. The census. Counted from the RAW input, so a file that failed its schema still reports
-   *    how much of it there was — including zero, which is the number that matters.
-   * ---------------------------------------------------------------------------------------- */
 
   const rawPhotos = Array.isArray(input.photos) ? (input.photos as unknown[]) : [];
   const rawCategories =
@@ -198,17 +131,12 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     rulesSkipped,
   };
 
-  /** Record a rule that could not run. It did not pass; it was not attempted. */
   const skip = (rule: string, missing: string[]): void => {
     rulesSkipped.push({
       rule,
       why: `not run — ${missing.map((m) => FILE[m as keyof typeof FILE]).join(' and ')} did not satisfy its own schema, so the values this rule compares are not trustworthy. It did NOT pass.`,
     });
   };
-
-  /* ------------------------------------------------------------------------------------------
-   * RI-1 — every photo.category resolves in site_config. THE ADR-002 RULE.
-   * ---------------------------------------------------------------------------------------- */
 
   if (photos && site) {
     rulesRun.push('RI-1');
@@ -227,10 +155,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     skip('RI-1', photos ? ['site'] : site ? ['photos'] : ['photos', 'site']);
   }
 
-  /* ------------------------------------------------------------------------------------------
-   * RI-2 — the other direction: a declared id no photograph uses.
-   * ---------------------------------------------------------------------------------------- */
-
   if (photos && site) {
     rulesRun.push('RI-2');
     const used = new Set(photos.map((photo) => photo.category));
@@ -246,10 +170,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   } else {
     skip('RI-2', photos ? ['site'] : site ? ['photos'] : ['photos', 'site']);
   }
-
-  /* ------------------------------------------------------------------------------------------
-   * RI-3 — every home_config.peekIds entry is a real photo id.
-   * ---------------------------------------------------------------------------------------- */
 
   if (photos && home) {
     rulesRun.push('RI-3');
@@ -267,10 +187,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
     skip('RI-3', photos ? ['home'] : home ? ['photos'] : ['photos', 'home']);
   }
 
-  /* ------------------------------------------------------------------------------------------
-   * RI-4 — every peekPositions key is one of the peeked photographs.
-   * ---------------------------------------------------------------------------------------- */
-
   if (home) {
     rulesRun.push('RI-4');
     const peeked = new Set(home.peekIds);
@@ -286,10 +202,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   } else {
     skip('RI-4', ['home']);
   }
-
-  /* ------------------------------------------------------------------------------------------
-   * RI-5 — photo ids, photo order values and project ids are each unique.
-   * ---------------------------------------------------------------------------------------- */
 
   if (photos && projects) {
     rulesRun.push('RI-5');
@@ -323,15 +235,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   } else {
     skip('RI-5', photos ? ['projects'] : projects ? ['photos'] : ['photos', 'projects']);
   }
-
-  /* ------------------------------------------------------------------------------------------
-   * RI-6 — categoryOrder is unique WITHIN its category.
-   *
-   * Per group, deliberately. Every category restarts at 1, so a global uniqueness check would
-   * reject the data as it stands — and one written that way would look identical in a diff.
-   * `categoryOrderGroups` counts the groups actually iterated, which is what makes a run over
-   * zero groups distinguishable from a run over seven.
-   * ---------------------------------------------------------------------------------------- */
 
   if (photos) {
     rulesRun.push('RI-6');
@@ -369,7 +272,6 @@ export function validateContentSet(input: ContentSetInput): ContentSetReport {
   return { ok: violations.length === 0, violations, checked };
 }
 
-/** One human-readable block, in the shape the repository's other gates report in. */
 export function formatContentSetReport(report: ContentSetReport): string {
   const lines: string[] = [];
   if (report.ok) {
@@ -394,7 +296,6 @@ export function formatContentSetReport(report: ContentSetReport): string {
   return lines.join('\n');
 }
 
-/** Throwing wrapper, for callers whose correct response to a bad content set is to stop. */
 export function assertContentSet(input: ContentSetInput): void {
   const report = validateContentSet(input);
   if (!report.ok) throw new Error(formatContentSetReport(report));

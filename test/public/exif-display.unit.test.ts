@@ -1,31 +1,3 @@
-/**
- * `src/lib/exif-display.ts` — PUB-07 (omit an absent field entirely) and PUB-08 (a camera or
- * lens reads as a human name, or the build refuses).
- *
- * THREE RULES GOVERN THIS FILE.
- *
- * 1. THE CORPUS IS THE ORACLE, NOT A FIXTURE. Every claim about the two degenerate records,
- *    about coverage, and about the ugly focal length is asserted against
- *    `data/portfolio_images.json` READ FROM DISK AT CHECK TIME. A hand-typed fixture proves
- *    only that the fixture agrees with itself; the whole reason PUB-07 exists is that
- *    `still-life-peppers` really has six nulls and `lens` really is null on a quarter of the
- *    corpus, and a fixture cannot go stale in a way that tells you.
- *
- * 2. NO COUNT IS LITERALLED. The record count, the distinct camera count and the distinct lens
- *    count are all derived from the file. 04-09 wrote a hardcoded count and the first real
- *    photograph turned `main` red. The manifest was 39, then 40; it will be 41.
- *
- * 3. THE DISPLAY NAMES ARE WRITTEN OUT INDEPENDENTLY BELOW, and deliberately NOT imported from
- *    the module. That duplication is the point: it is the only thing that can catch a typo in
- *    the module's table. A test that imported the table and asserted the table would agree with
- *    itself by construction — which is what `THUMB.dataUriPrefix` in `src/lib/photo-pipeline.ts`
- *    records about an earlier attempt in this repository.
- *
- * Reported failures use `process.stdout.write`, never `console.log` — STATE.md records that
- * `console.log` and `console.info` print NOTHING under this repo's vitest setup, which makes a
- * diagnostic indistinguishable from silence.
- */
-
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -39,16 +11,6 @@ import {
 } from '../../src/lib/exif-display.ts';
 import type { PhotoExif } from '../../src/schemas/photo.ts';
 
-/* ---------------------------------------------------------------------------------------------
- * The corpus, read from disk at check time.
- * ------------------------------------------------------------------------------------------ */
-
-/**
- * The corpus this suite reads. It defaults to the committed manifest and is overridable ONLY so
- * that the suite's own anti-vacuity guards can be PROVEN to fire — running against an empty
- * array and against a missing file, without moving `data/portfolio_images.json` aside in a wave
- * where three executors share one git index. CI sets nothing, so CI reads the real file.
- */
 const MANIFEST_URL = process.env.EXIF_DISPLAY_CORPUS
   ? new URL(`file://${process.env.EXIF_DISPLAY_CORPUS}`)
   : new URL('../../data/portfolio_images.json', import.meta.url);
@@ -66,8 +28,6 @@ function readCorpus(): ManifestRecord[] {
     throw new Error(`${MANIFEST_PATH} is not an array — this suite has nothing to assert against`);
   }
   if (parsed.length === 0) {
-    // Anti-vacuity. Every per-record assertion below iterates the corpus; an empty corpus
-    // satisfies all of them without reading a single record.
     throw new Error(`${MANIFEST_PATH} holds zero records — every per-record claim here is vacuous`);
   }
   return parsed as ManifestRecord[];

@@ -1,74 +1,4 @@
 #!/usr/bin/env node
-/**
- * Move every photo object in R2 onto the pipeline's own key shape, and repoint the manifest at it.
- *
- * Usage:
- *   node scripts/migrate-photo-keys.mjs                 # PLAN — local only, touches nothing
- *   node scripts/migrate-photo-keys.mjs --copy           # write the new objects, verify each
- *   node scripts/migrate-photo-keys.mjs --repoint        # rewrite the manifest from the journal
- *   node scripts/migrate-photo-keys.mjs --sweep          # delete the old objects
- *   node scripts/migrate-photo-keys.mjs [manifestPath] [--journal <path>]
- *
- * ================================================================================================
- * WHAT IS WRONG TODAY, MEASURED RATHER THAN ASSERTED
- * ================================================================================================
- *
- * Two separate drifts, discovered together:
- *
- *   1. THE KEY SHAPE. `publishedKey()` produces `photos/<category>/<slug>-<hash8><suffix>.webp` and
- *      `parsePublishedKey()` is the guard `putVariant` runs. MEASURED across the committed
- *      manifest's 160 remote URLs: **4 match that shape and 156 do not**. The corpus predates the
- *      content-hashed scheme — one photograph has been through the current pipeline — so the bucket
- *      is almost entirely `photos/abstract/intothemist.webp`-shaped.
- *
- *   2. THE DIRECTORY. An `id` is `category + "-" + slug`, so re-authoring the taxonomy from seven
- *      categories to five renamed every record. The R2 keys did not move with them: **18 of 40
- *      records** now live in a directory that is not their category, and the seven directories in
- *      use are the RETIRED names — `abstract, architecture, nature, portraits, product, street,
- *      wildlife`.
- *
- * Akhil chose to migrate to the pipeline's own shape rather than merely rename, which fixes both at
- * once and leaves exactly one key shape in the bucket.
- *
- * ================================================================================================
- * WHY IT IS FOUR PHASES AND NOT ONE COMMAND
- * ================================================================================================
- *
- * The live site reads these URLs. A single pass that moved an object and rewrote the manifest in
- * the same breath would put the site's addresses and the bucket's contents out of step for as long
- * as it takes to commit and deploy — every photograph a 404 in between.
- *
- * So the phases are ordered so that AT NO POINT is a URL the deployed manifest carries missing from
- * the bucket:
- *
- *   PLAN     read-only, no credentials, prints the census and the plan.
- *   --copy   WRITES the new objects. Old keys untouched, so the live site is unaffected. Each copy
- *            is read back and its hash recomputed before it counts as done.
- *   --repoint REWRITES the manifest from the journal. Committing and deploying this is the cutover.
- *   --sweep  DELETES the old objects. Only legal once the new manifest is deployed — the script
- *            cannot verify that, so it refuses unless the manifest on disk already points at the
- *            new keys and the journal says every copy verified.
- *
- * THE JOURNAL IS WHAT MAKES THE PHASES ONE OPERATION. `--copy` writes every source→target pair and
- * its verified hash to `.migration/photo-keys.json`; `--repoint` and `--sweep` read it and refuse to
- * act on anything they did not find there. A re-derived plan could disagree with what was actually
- * copied — a hash is a property of the bytes, and the bytes are in the bucket, not in this file.
- *
- * ================================================================================================
- * WHAT THIS SCRIPT WILL NOT DO
- * ================================================================================================
- *
- *   - It will not delete anything in `--copy` or `--repoint`. Only `--sweep` deletes.
- *   - It will not put a key `publishedKey()` could not have produced: every target is composed by
- *     that function, never by string concatenation.
- *   - It will not touch `thumb`. It is a `data:` URI, and — the trap `migrate-photo-origin.mjs`
- *     records — `data:image/webp;base64,...` DOES parse as a URL, so an "iterate everything and
- *     skip what isn't a URL" filter would quietly rewrite the LQIP previews. The four remote keys
- *     are iterated BY NAME from `REMOTE_URL_KEYS`.
- *   - It will not proceed on a partial copy. If any variant of any record fails to verify, `--copy`
- *     reports and exits non-zero with the journal holding only what did verify, and `--repoint`
- *     refuses while the journal is short of the manifest's own count.
- */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -80,10 +10,6 @@ const REPO_ROOT = resolve(HERE, '..');
 
 const out = (line) => process.stdout.write(`${line}\n`);
 const err = (line) => process.stderr.write(`${line}\n`);
-
-/* ---------------------------------------------------------------------------------------------
- * Arguments. Exactly one phase flag, so `--copy --sweep` is a refusal rather than a surprise.
- * ------------------------------------------------------------------------------------------- */
 
 const argv = process.argv.slice(2);
 const PHASES = ['--copy', '--repoint', '--sweep'];
@@ -113,17 +39,12 @@ const JOURNAL_PATH =
     ? resolve(REPO_ROOT, '.migration/photo-keys.json')
     : resolve(REPO_ROOT, argv[journalFlag + 1] ?? '');
 
-/* ---------------------------------------------------------------------------------------------
- * The plan. Pure: no network, no credentials, no writes.
- * ------------------------------------------------------------------------------------------- */
-
 const { REMOTE_URL_KEYS, IMAGE_ORIGIN } = await import('../src/lib/image-origin.ts');
 const { VARIANTS } = await import('../src/lib/photo-variants.ts');
 const { publishedKey, PUBLISHED_KEY_RE, CONTENT_HASH_HEX_LENGTH } = await import(
   '../src/lib/photo-pipeline.ts'
 );
 
-/** `contentHash` re-implemented? No — imported, so a change to the pipeline's hash reaches here. */
 const { contentHash } = await import('../src/lib/photo-pipeline.ts');
 
 const manifest = JSON.parse(readFileSync(MANIFEST_PATH, 'utf8'));
@@ -132,7 +53,6 @@ if (!Array.isArray(manifest) || manifest.length === 0) {
   process.exit(1);
 }
 
-/** urlKey → suffix, from the variant table rather than a second list here. */
 const SUFFIX_BY_URL_KEY = new Map(VARIANTS.map((v) => [v.urlKey, v.suffix]));
 for (const key of REMOTE_URL_KEYS) {
   if (!SUFFIX_BY_URL_KEY.has(key)) {
@@ -142,7 +62,6 @@ for (const key of REMOTE_URL_KEYS) {
   }
 }
 
-/** The slug is the id with its own category prefix removed — the invariant `photoIdFor` maintains. */
 function slugOf(record) {
   const prefix = `${record.category}-`;
   if (!String(record.id).startsWith(prefix)) {
@@ -155,7 +74,6 @@ function slugOf(record) {
   return String(record.id).slice(prefix.length);
 }
 
-/** `photos/<dir>/<name>.webp` — the object key a manifest URL names. */
 function sourceKeyOf(url) {
   const parsed = new URL(url);
   if (`${parsed.protocol}//${parsed.host}` !== IMAGE_ORIGIN) {

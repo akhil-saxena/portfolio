@@ -1,111 +1,17 @@
 #!/usr/bin/env node
 
-/**
- * CONT-01 structural gate — there is exactly ONE definition of every content shape, and it lives
- * in `src/schemas`.
- *
- * Usage: node scripts/assert-single-schema-source.mjs [repoRoot]
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS FILE EXISTS AT ALL  (open decision OD-7)
- *
- * Success criterion 1 is not "validation exists". It is that the same module is what the build,
- * the write path and the admin's form errors all consume — "validation cannot drift between
- * them". Three copies that agree today is a failure, not a pass.
- *
- * Phase 3 has TWO of those three consumers: 03-07's build gate, and the migration scripts that
- * wrote `data/*.json`. The third — the admin's form errors — is Phase 7 and cannot be
- * demonstrated now. OD-7 resolved that the criterion is met STRUCTURALLY instead: no second
- * definition of a content shape may exist anywhere under `src/`, proven by planting one. Phase 7
- * then has no way to add a parallel validator without going red.
- *
- * That is a WEAKER CLAIM than a third caller and this file says so rather than letting the phase
- * count three consumers it does not have. Nothing here proves a future writer will IMPORT the
- * schema. It proves only that it cannot successfully write a rival one in the vocabulary below.
- *
- * The alternative considered and rejected was a `validateContent` Astro Action shipped purely so
- * a third importer literally exists. It would have been the only `prerender = false` surface in
- * the repository that nothing calls — a route written to satisfy a checklist.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS GATE CANNOT SEE
- *
- * Written down here, in the gate's own source, because a boundary that lives in a plan file is a
- * boundary nobody can evaluate in two years. Each is a real hole, found by trying to walk through
- * this gate rather than by imagining how it might fail.
- *
- *  1. IT CANNOT SEE ANYTHING OUTSIDE `src/`. `scripts/`, `test/` and a future `functions/` are
- *     not scanned. This is not hypothetical: `test/content/photo-enrichment.unit.test.ts`
- *     declares its own `interface Photo` TODAY and passes this gate. That is deliberate — a test
- *     asserting about a migration has to be free to describe the shape it migrated, and a
- *     migration script has to be able to run on a Node runner with no `src/` import. But it means
- *     a private schema inside a migration script would drift undetected, which is exactly how the
- *     legacy repository's `src/types.ts` drifted from the admin's local copies.
- *
- *  2. IT KNOWS A FIXED VOCABULARY OF NAMES, AND ONLY THAT VOCABULARY. `interface Photo` is
- *     caught; `interface Picture`, `type GalleryItem =` and `type Thing =` are not. A rival that
- *     avoids every name in CONTENT_TYPE_NAMES below is invisible. Widening the list is cheap and
- *     should happen the moment a new content shape is named.
- *
- *  3. IT IS A TEXT SCANNER, NOT A TYPESCRIPT PARSER. Consequences in both directions:
- *       - an anonymous inline object type on a function parameter, `(p: { id: string; category:
- *         string })`, declares a rival shape and is not matched;
- *       - a `satisfies` expression over an object literal is not matched;
- *       - a rival produced by a code generator at build time does not exist on disk to be read;
- *       - conversely, a rival written inside a STRING or a COMMENT is a false positive. That is
- *         accepted: the fix is to not write it, never to add an exclusion list.
- *
- *  4. IT CANNOT SEE SEMANTIC DRIFT THAT GOES THROUGH THE REAL SCHEMA. Rule 4 below catches the
- *     direct textual forms — `PhotoSchema.partial()`, `.passthrough()`, `.catchall()` — but a
- *     loosening reached indirectly (assign the schema to a variable first, or build it in a
- *     helper that returns it) is invisible. `.extend()` and `.omit()` are deliberately NOT
- *     matched at all: they are how 03-07 legitimately derives a content-collection schema, so
- *     banning them would ban the intended use.
- *
- *  5. IT DOES NOT MATCH A BARE EARLY `return` IN RULE 3, only a `throw` or a 4xx `Response`. An
- *     `if (photo.urls.thumb) return …` inside a component is ordinary render control flow, and a
- *     rule that fires on it would be noisy enough to be deleted inside a week — at which point it
- *     protects nothing at all. The narrowing is the price of the rule surviving.
- *
- *  IN ONE SENTENCE, and deliberately in lower case so a case-sensitive search for the phrase
- *  finds it: this gate cannot see a rival that lives outside `src/`, a rival named outside its
- *  fixed vocabulary, a rival its text scanner cannot parse, an indirect loosening of the real
- *  schema, or a bare early `return`. Five holes, enumerated above with the reason each is open.
- *
- * ---------------------------------------------------------------------------------------------
- * THE SELF-TEST, WHICH RUNS ON EVERY INVOCATION
- *
- * Phase 3 has shipped EIGHT gates that could not fail — a grep matching prose, a loop iterating
- * zero groups that still printed "OK 7 categories", a mutual-exclusivity check reading no config.
- * Every one was found by an executor detonating it rather than reading it.
- *
- * So every rule below carries two fixtures: a CANARY it must flag, and an ANTI-CANARY it must
- * leave alone. Both are checked before the real scan on every run, and a rule that fails either
- * one aborts the gate. A silently-broken regex therefore cannot present as a clean tree. The scan
- * also refuses to pass if it visited zero files, or if `src/schemas` is missing or does not export
- * the five named schemas — because deleting the thing under test must never be what makes a gate
- * green.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
 const repoRoot = path.resolve(process.cwd(), process.argv[2] ?? '.');
 
-/** The one directory allowed to define a content shape. Excluded from the scan, asserted present. */
 const SCHEMA_DIR = 'src/schemas';
 
-/** The scanned root. Everything under it except SCHEMA_DIR. */
 const SCAN_ROOT = 'src';
 
-/**
- * Wider than the plan's `.ts/.tsx/.astro`. A rival written in plain JS under `src/` would
- * otherwise be invisible for no reason other than its extension.
- */
 const SCAN_EXTENSIONS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.astro'];
 
-/** The five `src/schemas/index.ts` must expose. Fewer than five is a failure, not a smaller scope. */
 const REQUIRED_EXPORTS = [
   'PhotoSchema',
   'ResumeSchema',
@@ -114,13 +20,6 @@ const REQUIRED_EXPORTS = [
   'SiteConfigSchema',
 ];
 
-/**
- * Field names that identify an object as being ABOUT this project's content.
- *
- * The threshold is TWO, not one. `z.object({ category: … })` in an unrelated context is entirely
- * possible — a form control, a analytics event — and a gate that fires on it is a gate somebody
- * disables within a week. Requiring two co-occurring content fields is what keeps it credible.
- */
 const CONTENT_FIELDS = [
   'category',
   'categoryOrder',
@@ -136,7 +35,6 @@ const CONTENT_FIELDS = [
   'urls',
 ];
 
-/** Type/interface names that are content shapes. See blind spot 2: this list is the vocabulary. */
 const CONTENT_TYPE_NAMES = [
   'Photo',
   'PhotoExif',
@@ -159,30 +57,21 @@ const CONTENT_TYPE_NAMES = [
 
 const alternation = (names) => names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 
-/** `z.object(`, `z.strictObject(`, `z.looseObject(` — all three build a shape. */
 const ZOD_OBJECT = /\bz\s*\.\s*(?:strictObject|looseObject|object)\s*\(/;
 
-/** A content field used as an object KEY: `category:` at a plausible key position. */
 const contentFieldKey = new RegExp(`(?:^|[\\s{,(])(${alternation(CONTENT_FIELDS)})\\s*:`, 'gm');
 
-/** `interface Photo {`, `type Project = `, `export interface HomeConfig extends …`. */
 const rivalTypeDeclaration = new RegExp(
   `\\b(?:export\\s+)?(?:declare\\s+)?(interface|type)\\s+(${alternation(CONTENT_TYPE_NAMES)})\\b\\s*(?:<[^>\\n]*>)?\\s*(?:=|\\{|extends)`,
   'g'
 );
 
-/** A guard whose condition reaches into a content field. Paired with a throw / 4xx below. */
 const contentGuard = new RegExp(
   `if\\s*\\([^)\\n]*\\b(?:${alternation(CONTENT_FIELDS)})\\b[^)\\n]*\\)`
 );
 
-/** Loosening a schema after importing it. See blind spot 4 for what is deliberately not here. */
 const schemaLoosening =
   /\b\w*Schema\s*\.\s*(partial|deepPartial|passthrough|catchall|nonstrict)\s*\(/g;
-
-/* --------------------------------------------------------------------------------------------
- * The rules. Each carries a canary it MUST flag and an anti-canary it MUST leave alone.
- * -------------------------------------------------------------------------------------------- */
 
 const RULES = [
   {
@@ -236,8 +125,6 @@ const RULES = [
       for (let i = 0; i < lines.length; i++) {
         if (!contentGuard.test(lines[i])) continue;
         const window = lines.slice(i, i + 3).join('\n');
-        // Narrowed on purpose — a bare early `return` is ordinary render control flow.
-        // See blind spot 5.
         if (!/\bthrow\b/.test(window) && !/new Response\([^)]*\b4\d\d\b/.test(window)) continue;
         out.push({
           line: i + 1,
@@ -276,13 +163,8 @@ function lineOf(text, index) {
   return text.slice(0, index).split('\n').length;
 }
 
-/* --------------------------------------------------------------------------------------------
- * 0. SELF-TEST. Runs before the scan, on every invocation. A rule that cannot fire is not a rule.
- * -------------------------------------------------------------------------------------------- */
-
 const selfTestFailures = [];
 for (const rule of RULES) {
-  // Regexes with the `g` flag carry lastIndex; reset defensively before every use below too.
   const fired = rule.find(rule.canary);
   if (fired.length === 0) {
     selfTestFailures.push(
@@ -304,10 +186,6 @@ if (selfTestFailures.length > 0) {
   for (const failure of selfTestFailures) console.error(`  ✖ ${failure}`);
   process.exit(1);
 }
-
-/* --------------------------------------------------------------------------------------------
- * 1. The positive half. The module under test must exist and must export the five schemas.
- * -------------------------------------------------------------------------------------------- */
 
 const failures = [];
 const schemaDirAbsolute = path.join(repoRoot, SCHEMA_DIR);
@@ -356,10 +234,6 @@ if (!fs.existsSync(schemaDirAbsolute) || !fs.statSync(schemaDirAbsolute).isDirec
   }
 }
 
-/* --------------------------------------------------------------------------------------------
- * 2. The scan. Every scannable file under src/ except src/schemas/.
- * -------------------------------------------------------------------------------------------- */
-
 const scanRootAbsolute = path.join(repoRoot, SCAN_ROOT);
 const scanned = [];
 
@@ -389,7 +263,6 @@ if (!fs.existsSync(scanRootAbsolute)) {
   walk(scanRootAbsolute);
 }
 
-// GUARD AGAINST NOTHING: a scan that visited no files must never read as a clean tree.
 if (scanned.length === 0 && !failures.some((f) => f.where === SCAN_ROOT)) {
   failures.push({
     where: SCAN_ROOT,
@@ -424,10 +297,6 @@ for (const file of scanned) {
     }
   }
 }
-
-/* --------------------------------------------------------------------------------------------
- * 3. Report. One named failure per line, or a pass that says how much it looked at.
- * -------------------------------------------------------------------------------------------- */
 
 if (failures.length > 0) {
   console.error('');

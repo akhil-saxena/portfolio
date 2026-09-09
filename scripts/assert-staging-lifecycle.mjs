@@ -1,110 +1,10 @@
 #!/usr/bin/env node
 
-/**
- * PIPE-04, criterion 3's second clause: staged objects EXPIRE ON THEIR OWN rather than
- * accumulating. (Phase 4, plan 04-10, Task 3.)
- *
- * Usage: node scripts/assert-staging-lifecycle.mjs [bucket]
- *        (defaults to STAGING_BUCKET from src/lib/photo-pipeline.ts)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS IS A PREFIX COMPARISON AND NOT AN OBSERVATION
- *
- * R2 lifecycle granularity is DAYS, and removal lags up to ~24 h behind the deadline. A test that
- * asserted "the staged object disappeared" would be a test that sleeps for a day, so there is no
- * honest observational gate here and this file does not pretend to be one. What CAN be checked,
- * in a second, is that the rule which will do the deleting is pointed at the prefix the pipeline
- * actually writes — and that it is switched on, and that it deletes something.
- *
- * ---------------------------------------------------------------------------------------------
- * THE THREE ASSERTIONS, AND WHY EACH ONE EXISTS
- *
- *   1. PREFIX BYTE-EQUALITY with `STAGING_PREFIX`. Not `startsWith`, in either direction.
- *      `''.startsWith(x)` is false but `x.startsWith('')` is TRUE, so a `startsWith` written the
- *      wrong way round would accept a rule scoped to the EMPTY prefix — which matches every key
- *      in the bucket and would expire all 156 published photograph objects on its deadline
- *      (T-04-43). The bucket carries a rule on the empty prefix TODAY (see the placeholder note
- *      below), so this is a live input, not a hypothetical.
- *
- *   2. `enabled` IS TRUE. A disabled rule satisfies every other check perfectly and expires
- *      nothing. `wrangler r2 bucket lifecycle` can disable a rule without deleting it, so a rule
- *      that exists is not a rule that runs.
- *
- *   3. THE RULE CARRIES A REAL EXPIRY ACTION, with days > 0. THIS IS THE ONE THAT MAKES THE GATE
- *      REAL, and an earlier draft of this gate did not have it. `wrangler r2 bucket lifecycle
- *      add` offers three INDEPENDENT actions — `--expire-days`, `--ia-transition-days` and
- *      `--abort-multipart-days`. A rule created with only `--abort-multipart-days 7` scoped to
- *      the staging prefix would satisfy assertions 1 and 2 exactly, look correct in every
- *      listing, and DELETE NOTHING: aborting an incomplete multipart upload discards a partial
- *      upload that was never completed, and has no effect whatsoever on a finished object.
- *
- *      That is not a hypothetical either. `portfolio-photos` already carries a rule of precisely
- *      that shape — `Default Multipart Abort Rule`, enabled, `(all prefixes)`, "Abort incomplete
- *      multipart uploads after 7 days" — so ONE mistyped flag in the `lifecycle add` command
- *      produces that same shape scoped to the staging prefix, and a prefix-only gate goes green
- *      over it while `temp/` fills up forever.
- *
- *   4. …and, separately named so a failure says which, the expiry matches `STAGING_EXPIRE_DAYS`.
- *      That constant is declared in `photo-pipeline.ts` as THE staging TTL. If the rule and the
- *      constant drift, one of them is a lie, and this is the only place that could notice.
- *
- * ---------------------------------------------------------------------------------------------
- * THE COMMAND SURFACE, MEASURED — THERE IS NO JSON MODE
- *
- * Measured on the installed wrangler 4.123.0, from this repository, 2026-08-28:
- *
- *     $ npx wrangler r2 bucket lifecycle list portfolio-photos --json
- *     ✘ [ERROR] Unknown argument: json                                    # exit non-zero
- *
- * The only option the subcommand takes is `-J, --jurisdiction`. So this parses the rendered text,
- * which is blank-line-separated blocks of `key:<spaces>value`:
- *
- *     name:     Default Multipart Abort Rule
- *     enabled:  Yes
- *     prefix:   (all prefixes)
- *     action:   Abort incomplete multipart uploads after 7 days
- *
- *     name:     expire-staging
- *     enabled:  Yes
- *     prefix:   temp/
- *     action:   Expire objects after 7 days
- *
- * WHY THE CLI AND NOT THE REST API. `GET /accounts/{id}/r2/buckets/{name}/lifecycle` does return
- * JSON and would need no parser, and that is a real advantage. It is not used because it needs an
- * account id and a bearer token assembled by hand in this script, whereas the CLI reuses whatever
- * credential the operator is already authenticated with — and because the CLI's text is the
- * surface Akhil actually looks at when he checks this by eye. A gate that reads a different
- * surface from the human can disagree with him and be right in a way he cannot see. Recorded as
- * a decision, per the plan's instruction to state which surface was used and why.
- *
- * `prefix:   (all prefixes)` IS A RENDERED PLACEHOLDER FOR THE EMPTY STRING, not a literal
- * prefix. It is normalised to `''` here, and `''` can never equal `STAGING_PREFIX` because a
- * module-load invariant below refuses an empty `STAGING_PREFIX`. Without that invariant, a future
- * edit setting the prefix to `''` would make the bucket-wide rule MATCH and this gate would
- * green-light a configuration that expires every published photograph.
- *
- * ---------------------------------------------------------------------------------------------
- * PRINTING IS NOT ASSERTING
- *
- * An earlier draft "printed the matched rule's prefix, its expiry in days, and the constant it
- * was compared against". A rule with no expiry action has no expiry-in-days to print — and
- * nothing failed on that. Every value below is printed for legibility AND asserted, and each
- * assertion is reported by name so a failure says which one broke.
- *
- * ANTI-VACUITY. Zero parsed rules is a FAILURE, never a pass: an empty list, an unreadable
- * bucket, or a wrangler that changed its output format would all otherwise look like "no rule
- * violated anything". Nine vacuous passes have shipped in this project.
- */
-
 import { spawn } from 'node:child_process';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { STAGING_BUCKET, STAGING_EXPIRE_DAYS, STAGING_PREFIX } from '../src/lib/photo-pipeline.ts';
-
-/* ==============================================================================================
- * 0. Invariants that must hold before any rule is read.
- * ============================================================================================ */
 
 if (typeof STAGING_PREFIX !== 'string' || STAGING_PREFIX.length === 0) {
   throw new Error(
@@ -122,13 +22,11 @@ if (!Number.isInteger(STAGING_EXPIRE_DAYS) || STAGING_EXPIRE_DAYS <= 0) {
   );
 }
 
-/** The rendered stand-in wrangler prints when a rule's prefix is the empty string. */
 export const ALL_PREFIXES_PLACEHOLDER = '(all prefixes)';
 
 /** @param {string} line */
 const say = (line) => process.stdout.write(`${line}\n`);
 
-/** A failed assertion, as opposed to a crash. */
 export class LifecycleAssertionError extends Error {
   /** @param {string} message @param {string} [which] */
   constructor(message, which) {
@@ -137,10 +35,6 @@ export class LifecycleAssertionError extends Error {
     this.which = which ?? 'unknown';
   }
 }
-
-/* ==============================================================================================
- * 1. The parser. Pure, so the unit test can feed it text no bucket would produce.
- * ============================================================================================ */
 
 /**
  * @typedef {{ name: string, enabled: boolean, prefix: string, actions: string[] }} LifecycleRule
@@ -212,8 +106,6 @@ export function parseLifecycleList(text) {
       }
       current.enabled = normalised === 'yes';
     } else if (field === 'prefix') {
-      // The placeholder is the EMPTY STRING rendered for a human. Never treat it as a prefix
-      // named "(all prefixes)", and never let it match anything.
       current.prefix = value === ALL_PREFIXES_PLACEHOLDER ? '' : value;
     } else {
       current.actions.push(value);
@@ -223,17 +115,6 @@ export function parseLifecycleList(text) {
   return rules;
 }
 
-/* ==============================================================================================
- * 2. What counts as an expiry, and what emphatically does not.
- * ============================================================================================ */
-
-/**
- * `Expire objects after N days` — the ONLY action form that deletes a completed object.
- *
- * Anchored at the start so it cannot be satisfied by a longer sentence that merely contains the
- * word: "Abort incomplete multipart uploads after 7 days" does not begin with "Expire objects",
- * and neither does "Transition to Infrequent Access storage after 30 days".
- */
 const EXPIRY_ACTION_RE = /^Expire objects after (\d+) days?$/i;
 
 /**
@@ -255,10 +136,6 @@ export function expiryDaysFrom(actions) {
   return null;
 }
 
-/* ==============================================================================================
- * 3. The assertions.
- * ============================================================================================ */
-
 /**
  * @param {readonly LifecycleRule[]} rules
  * @param {{ prefix?: string, expireDays?: number }} [expected]
@@ -268,8 +145,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
   const prefix = expected.prefix ?? STAGING_PREFIX;
   const expireDays = expected.expireDays ?? STAGING_EXPIRE_DAYS;
 
-  // ANTI-VACUITY. An empty list is not "nothing violated the rules"; it is "there is no rule",
-  // which is the exact condition this gate exists to detect.
   if (!Array.isArray(rules) || rules.length === 0) {
     throw new LifecycleAssertionError(
       `assert-staging-lifecycle: ZERO lifecycle rules were parsed for this bucket. That is a ` +
@@ -282,7 +157,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
     );
   }
 
-  /* -- 1. Prefix byte-equality. ------------------------------------------------------------- */
   const matches = rules.filter((rule) => rule.prefix === prefix);
   if (matches.length === 0) {
     const seen = rules
@@ -314,7 +188,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
   }
   const rule = matches[0];
 
-  /* -- 2. enabled. -------------------------------------------------------------------------- */
   if (rule.enabled !== true) {
     throw new LifecycleAssertionError(
       `assert-staging-lifecycle: FAILED assertion 2 (enabled). Rule ` +
@@ -324,7 +197,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
     );
   }
 
-  /* -- 3. a real expiry action. ------------------------------------------------------------- */
   const expiryDays = expiryDaysFrom(rule.actions);
   if (expiryDays === null) {
     throw new LifecycleAssertionError(
@@ -350,7 +222,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
     );
   }
 
-  /* -- 4. the TTL agrees with the constant. ------------------------------------------------- */
   if (expiryDays !== expireDays) {
     throw new LifecycleAssertionError(
       `assert-staging-lifecycle: FAILED assertion 4 (TTL). The rule expires after ` +
@@ -368,10 +239,6 @@ export function assertStagingLifecycle(rules, expected = {}) {
     passed: ['prefix', 'enabled', 'expiry-action', 'ttl'],
   };
 }
-
-/* ==============================================================================================
- * 4. The bucket.
- * ============================================================================================ */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..');
@@ -426,10 +293,6 @@ export function readLifecycleText(bucket) {
     });
   });
 }
-
-/* ==============================================================================================
- * 5. Entry point. Prints every asserted value, and says that each was asserted.
- * ============================================================================================ */
 
 /**
  * @param {readonly string[]} argv

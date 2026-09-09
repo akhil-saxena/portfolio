@@ -1,69 +1,4 @@
 #!/usr/bin/env node
-/**
- * Add `metric` — the right-aligned figure on each employment row — to every entry in
- * `data/resume.json`'s `experience` array (OQ-1b, plan 05-03).
- *
- * It renders on BOTH routes that show these records: `/development`'s employment band (§10) and
- * `/resume`'s entry header (§11.1). This line said "on `/development`" until 2026-08-29; it was stale
- * from the day `/resume` shipped the same band, and `src/schemas/resume.ts` carried the same
- * error at the field itself. Corrected together.
- *
- * WHY THIS EXISTS
- * ---------------
- * `05-UI-SPEC.md` §0.3 measured that `ExperienceEntrySchema` has no `metric` and §10 renders one
- * on every employment row. The figure existed only in a Phase 0 sketch. §14.5 traced all three
- * sketch values back to specific reviewed bullets already on disk, and the checkpoint in task 1 of
- * plan 05-03 approved them as final.
- *
- * WHY THE VALUES ARE NOT DERIVED FROM THE BULLETS
- * -----------------------------------------------
- * §15 OQ-1 measured that option, and it is the reason this table is a table. Taking each entry's
- * FIRST bold span yielded `conversion by 15%`, `4K+ franchises` and `7+ data sources`. Two of three
- * were close; the third was wrong, because MAQ's real figure is in its FOURTH bullet. A derivation
- * that is right two times in three does not have a bug — it encodes a false relationship ("the
- * headline figure is the first one") into a renderer, where it is invisible and permanent. So the
- * mapping is authored, and the provenance is checked instead (see EVIDENCE below).
- *
- * THE PAST TENSE ABOVE IS DELIBERATE, AND IT IS THE BEST ARGUMENT IN THIS FILE. Brevo's bullet was
- * reworded on 2026-08-29 — it repeated the band's own `+15%` — so its first bold span is now
- * `conversion`. The derivation would today produce a metric with no figure in it, on a page whose
- * whole point is the figure. The relationship broke the first time reviewed copy was edited for a
- * reason unrelated to the metric, which is exactly the failure mode the authored table avoids.
- *
- * THE PROVENANCE IS A CONTROL, NOT A COMMENT
- * -------------------------------------------
- * Each row carries the substring of the reviewed bullet it came from, and the migration REFUSES if
- * that substring is not present in that entry's bullets. This is the part that would otherwise rot:
- * a quoted bullet in a header is prose nobody re-reads, and the claim "every metric traces to
- * reviewed copy" stops being true the first time a bullet is rewritten, silently. Here the claim is
- * re-checked on every run and the matching bullet's 1-based index is printed — which is also how
- * "MAQ's is bullet 4" is a measurement rather than an assertion.
- *
- * It deliberately does NOT check that the metric's own text appears in the bullet. It does not:
- * `FASTER PIPELINES` compresses "Improved pipeline execution time", and a rule demanding textual
- * containment would refuse the reviewed wording. What is checked is that the supporting sentence is
- * still there.
- *
- * WHAT IT REFUSES ON
- * ------------------
- * The table and the file disagreeing on the id set IN EITHER DIRECTION (a table row with no record
- * would be a typo that silently does nothing; a record with no table row would leave a
- * schema-REQUIRED field absent, which then reads as a schema bug rather than as a skipped
- * migration); an entry whose bullets no longer contain its evidence sentence; an unknown key on a
- * record; an empty value or label; and a non-idempotent transform.
- *
- * IDEMPOTENCE — MEASURED IN PROCESS, NOT WITH `git diff`
- * ------------------------------------------------------
- * `git diff --quiet` answers a different question: plan 03-04 shipped exactly that and it read the
- * changes the first run had just made, reporting "not idempotent" on correct code — and after a
- * commit it would have reported OK for a script that never ran. So the transform is run over its
- * own output and the two serialisations are compared. See `runMigration`'s `transform` seam for why
- * that comparison is provably able to fire.
- *
- * Usage:
- *   node scripts/migrate-experience-metric.mjs            write
- *   node scripts/migrate-experience-metric.mjs --check    report only, exit 1 if it would change
- */
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -72,28 +7,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 export const RESUME_PATH = fileURLToPath(new URL('../data/resume.json', import.meta.url));
 export const RESUME_LABEL = 'data/resume.json';
 
-/**
- * The three approved metrics, keyed by experience `id`, each with the reviewed bullet it comes
- * from. `evidence` is matched against that entry's bullets on every run; see the header.
- *
- * Approved at the plan 05-03 task 1 checkpoint (option `approve-sketch`).
- */
 export const METRICS = /** @type {const} */ ({
   brevo: {
     value: '+15%',
     label: 'CONVERSION',
-    // 🔴 RE-DERIVED 2026-08-29, AND THE PROVENANCE CHECK IS WHAT ASKED FOR IT.
-    //
-    // The bullet used to read "Improved **conversion by 15%** by transforming a one-page
-    // checkout …", which made the SAME claim as the band four lines above it — `+15%` /
-    // `CONVERSION` — twice on one page. 05-15's audit found the repetition; Akhil approved
-    // removing it from the prose and letting the band carry the number. The bullet is now
-    // "Improved **conversion** by transforming a one-page checkout …".
-    //
-    // This row was updated IN THE SAME COMMIT as the bullet, which is exactly what the refusal
-    // below prescribes — it fired first, naming the record, the sentence and the six bullets it
-    // searched. The claim "every metric traces to reviewed copy" is still true and still checked:
-    // the supporting sentence is the same sentence, minus the figure the band already carries.
     evidence: 'Improved **conversion** by transforming a one-page checkout',
   },
   pharmeasy: {
@@ -104,21 +21,10 @@ export const METRICS = /** @type {const} */ ({
   maq: {
     value: '6×',
     label: 'FASTER PIPELINES',
-    // Bullet FOUR. This is the row that made the derive-from-the-first-bullet option wrong: MAQ's
-    // first bullet is "**7+ data sources**", which is a true fact about the job and not its
-    // headline result. The printed bullet index is the proof.
     evidence: 'Improved pipeline execution time by **6×** by replacing Power Automate workflows',
   },
 });
 
-/**
- * Every key an experience record may hold, in the order it is written back.
- *
- * An ALLOW-LIST: an unknown key throws rather than being dropped or appended. `ExperienceEntry` is
- * a `z.strictObject`, so a key silently appended "to be safe" would fail the build — which is a
- * worse place to hear about it than here. `metric` is last, matching its declaration order in
- * `src/schemas/resume.ts`.
- */
 export const EXPERIENCE_KEY_ORDER = [
   'id',
   'company',
@@ -135,7 +41,6 @@ export const EXPERIENCE_KEY_ORDER = [
   'metric',
 ];
 
-/** The only key this migration writes. Everything else must survive byte-identically. */
 export const MIGRATED_KEYS = ['metric'];
 
 class MigrationError extends Error {}
@@ -144,7 +49,6 @@ function fail(message) {
   throw new MigrationError(message);
 }
 
-/** Serialise exactly as `data/resume.json` is stored: 2-space JSON, one trailing newline. */
 export function serialise(resume) {
   return `${JSON.stringify(resume, null, 2)}\n`;
 }
@@ -172,9 +76,6 @@ export function migrateResume(resume, table = METRICS) {
     fail('the metric table is empty — this run would write nothing and report success.');
   }
 
-  // THE ID SET, CHECKED IN BOTH DIRECTIONS. Named separately because the two failures are
-  // different: a record with no row leaves a required field absent, and a row with no record is a
-  // typo that does nothing at all and looks like it worked.
   const fileIds = entries.map((entry, index) => {
     const id = entry?.id;
     if (typeof id !== 'string' || id === '') {

@@ -1,40 +1,3 @@
-/**
- * `ExperienceEntry.metric` — the three approved employment figures, and the refusal that stops a
- * placeholder from reaching a reader (OQ-1b, plan 05-03).
- *
- * WHAT THIS FILE PROVES, AND THE ONE THING IT REFUSES TO DO
- * --------------------------------------------------------
- * It never asserts the number 3. The count of employment records is data, and 04-09 turned `main`
- * red by literalling a figure (39 photographs) that a real photograph then changed. Every claim
- * below derives its id set from `data/resume.json` itself and compares SETS, so a fourth job is a
- * correct event that adds a required assertion rather than breaking one.
- *
- * The values themselves ARE literalled, and that is the opposite case: they are not derived from
- * anything, they were approved at a checkpoint, and a test that recomputed them from the same
- * table the migration uses would prove only that the table equals itself. They are written out
- * here as the reviewed answer, so an edit to the table without a decision fails here.
- *
- * WHY THE PROVENANCE IS ASSERTED AS AN ASYMMETRY
- * ----------------------------------------------
- * §15 OQ-1 rejected deriving each metric from its entry's first bold span, because MAQ's headline
- * figure is in its FOURTH bullet — the derivation yields "7+ data sources", which is a true fact
- * about the job and not its result. That rejection is only as durable as the measurement behind
- * it, so the measurement is here: the supporting bullet index is computed from the file, and at
- * least one entry's is proven NOT to be the first. Whoever proposes "we could just derive this"
- * gets a red test with the reason in its name rather than a paragraph in a plan nobody opens.
- *
- * THE GATE'S DETECTOR IS TESTED HERE TOO, INCLUDING WHAT IT CANNOT SEE
- * --------------------------------------------------------------------
- * `findPlaceholders` is IMPORTED from the gate rather than restated. A second regex would prove
- * that two regexes written by the same author on the same afternoon agree. The known residual — a
- * token split between its two braces — is asserted as a PASSING (undetected) case, so the hole is
- * pinned as a measured fact. If someone later closes it, this test goes red and they update it
- * deliberately; a residual recorded only in prose is a residual nobody re-measures.
- *
- * `process.stdout.write`, never `console.log`: console output is swallowed by this repository's
- * vitest setup, which makes evidence indistinguishable from silence.
- */
-
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
@@ -60,17 +23,12 @@ const RESUME = JSON.parse(
   education: Record<string, unknown>[];
 };
 
-/**
- * The reviewed answer from the plan 05-03 task 1 checkpoint, option `approve-sketch`. Written out
- * rather than imported from the migration table: see the header.
- */
 const APPROVED: Record<string, MetricRecord> = {
   brevo: { value: '+15%', label: 'CONVERSION' },
   pharmeasy: { value: '4K+', label: 'FRANCHISES' },
   maq: { value: '6×', label: 'FASTER PIPELINES' },
 };
 
-/** Derived from the file on every run. Never a literal count. */
 const experienceIds = RESUME.experience.map((entry) => entry.id);
 
 describe('data/resume.json carries an employment metric on every experience record', () => {
@@ -88,9 +46,6 @@ describe('data/resume.json carries an employment metric on every experience reco
   });
 
   it('carries exactly the value/label pairs approved at the checkpoint', () => {
-    // The approved set and the file's id set must be the same set, in both directions — an
-    // approved pair for a record that no longer exists is as much a defect as a record with no
-    // approved pair, and only one of the two is visible in a per-record loop.
     expect(new Set(Object.keys(APPROVED))).toEqual(new Set(experienceIds));
 
     for (const entry of RESUME.experience) {
@@ -100,10 +55,6 @@ describe('data/resume.json carries an employment metric on every experience reco
   });
 
   it('stores no {{…}} placeholder in any metric string', () => {
-    // `approve-sketch` was chosen, so no token was ever stored. This asserts the outcome of that
-    // decision at the STORED layer; the gate asserts it at the rendered layer, which is the one
-    // that decides whether a reader sees it. Both are needed: this one cannot see a token
-    // introduced by a renderer, and that one cannot see a token that never reaches a page.
     const strings = RESUME.experience.flatMap((entry) => [
       entry.metric?.value ?? '',
       entry.metric?.label ?? '',
@@ -180,9 +131,6 @@ describe('every metric traces to a reviewed bullet — the reason it is not deri
   });
 
   it('proves the FIRST-BULLET DERIVATION would be wrong — at least one is not bullet 1', () => {
-    // This is the measurement §15 OQ-1's rejection rests on. If it ever becomes false, the
-    // derivation option is worth revisiting; while it is true, "just derive it from the first
-    // bold span" silently mislabels a record.
     const notFirst = located.filter((row) => row.bullet !== 1);
     expect(notFirst.length).toBeGreaterThan(0);
 
@@ -234,11 +182,6 @@ describe('the placeholder detector the build gate uses', () => {
   });
 
   it('RESIDUAL, pinned: a token split between its two braces is NOT detected', () => {
-    // Measured, not assumed, and asserted as the current behaviour so it cannot rot silently.
-    // The whitespace-tolerant rule that would close it is a false-positive risk against inline
-    // <style> and minified inline <script>, and a gate that fires on correct output gets switched
-    // off rather than obeyed. Reasoning in the gate's own header, blind spot 1. If this test goes
-    // red, someone closed the hole — update it deliberately rather than deleting it.
     const split = '<p>{\n{metric.value}}</p>';
     expect(findPlaceholders(split)).toEqual([]);
     expect(findPlaceholders(decodeBraceEntities(split))).toEqual([]);

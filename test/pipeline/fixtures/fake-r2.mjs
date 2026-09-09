@@ -1,30 +1,3 @@
-/**
- * A FAKE R2, substituted for `scripts/lib/r2.mjs` inside a sandbox clone.
- * (Phase 4, plan 04-09, used by `test/pipeline/partial-failure.node.test.ts`.)
- *
- * THIS FILE IS COPIED TO `scripts/lib/r2.mjs` IN A THROWAWAY `git clone` AND RUN FROM THERE.
- * Its import paths and its position in the module graph are written for THAT location, not for
- * `test/pipeline/fixtures/`. It is never imported from where it lives.
- *
- * It is a drop-in for the real module's three operations, plus:
- *
- *   - a persistent LOG of every operation, so a test can assert what the job actually did rather
- *     than infer it from the state it left behind. "The manifest did not change" is a claim about
- *     convergence; "zero puts were recorded" is a claim about work.
- *   - INJECTION points, so a failure can be placed at a chosen boundary. Every injected throw
- *     writes an `inject` entry to the log BEFORE throwing, which is what lets each negative case
- *     assert that its defect actually fired rather than passing because the job failed early for
- *     an unrelated reason.
- *
- * It fails closed on its own single required variable, for the same reason the real module does:
- * a fake that silently ran against an unset directory would write its log nowhere and every
- * assertion built on that log would be vacuous.
- *
- * WHAT IT DELIBERATELY DOES NOT FAKE: the key grammar. `assertStagingKey` and `parsePublishedKey`
- * are the real ones, imported from the real contract module, so a test cannot accidentally prove
- * the job works with keys the real module would refuse.
- */
-
 import { readFileSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 import { assertStagingKey, parsePublishedKey } from '../../src/lib/photo-pipeline.ts';
@@ -49,7 +22,6 @@ const append = (entry) => {
   return state;
 };
 
-/** Mirrors the real module's error shape closely enough that the entrypoint cannot tell. */
 export class R2Error extends Error {
   constructor(message, detail = {}) {
     super(message);
@@ -81,7 +53,6 @@ export async function getStagedObject(key) {
 
 export async function putVariant(descriptor) {
   const { key, bytes, contentType, cacheControl } = descriptor ?? {};
-  // The REAL guard, not a fake one: only a key `publishedKey()` could have produced is writable.
   parsePublishedKey(key);
 
   const state = read();
@@ -94,9 +65,6 @@ export async function putVariant(descriptor) {
   }
 
   state.log.push({ op: 'put', key, size: bytes.length, contentType, cacheControl });
-  // `putsDoNotPersist` is the step-8 injection: the write is ACCEPTED and does not land. That is
-  // the real-world shape of the failure step 8 exists to catch — an upload that reports success
-  // over an object the bucket does not hold — rather than a forced verdict in the verifier.
   if (state.injection.putsDoNotPersist !== true) {
     state.objects[key] = { size: bytes.length, contentType, cacheControl };
   }

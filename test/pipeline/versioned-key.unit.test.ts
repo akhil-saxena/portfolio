@@ -1,42 +1,3 @@
-/**
- * CONT-05 — two different byte sequences for the same photograph cannot share a URL.
- * (Plan 04-05, Task 2. OD-1 option A: content-hashed keys.)
- *
- * WHAT THIS IS A PROOF OF, AND WHAT IT IS NOT
- * -------------------------------------------
- * `04-RESEARCH.md` §4 measured the problem: a GET of an existing photograph returns
- * `cache-control: max-age=14400` — a FOUR-HOUR BROWSER cache injected by the zone, which no
- * server-side purge can reach. So re-uploading a photograph at the same path serves stale bytes to
- * a returning visitor for up to four hours and there is no operational fix. The only mechanism that
- * works is a URL that changes when the bytes change.
- *
- * This file proves the MECHANISM: the URL a record carries is a function of the bytes that were
- * derived for it, so new bytes get a new URL and identical bytes get the identical URL. It does NOT
- * prove that the CDN then serves the new bytes — that needs a real write and real edge propagation,
- * and `04-VALIDATION.md` lists it as manual (`curl` GET twice, never HEAD: HEAD returns `DYNAMIC`
- * with no `cache-control` at all and will mislead).
- *
- * THE FAILURE THIS FILE IS WRITTEN AGAINST
- * ----------------------------------------
- * Hashing the SOURCE once and stamping that one hash onto all four variant keys. It looks correct,
- * it satisfies "the URL changes when the photograph changes", and it defeats the point for three
- * of the four variants: re-encoding at a new quality changes `-lg` and `-sm` while leaving the
- * source byte-identical, so those two would keep their old URLs and keep serving old bytes. Every
- * variant is hashed from ITS OWN emitted buffer, and section 3 below is the assertion that says so.
- *
- * IT DOES NOT CALL THE PRODUCER'S COMPOSERS. Per the suite convention stated in
- * `photo-enrichment.unit.test.ts`, the expected key, URL and hash are written out here — origin
- * from `src/lib/image-origin.ts` (the one place the hostname is written; a local copy could assert
- * an origin the data does not use and still pass), everything else from string literals and a
- * locally written sha256. `contentHash`, `publishedKey` and `publishedUrl` are deliberately NOT
- * imported.
- *
- * The derived-assets builder is local rather than in `test/pipeline/fixtures/` because plan 04-04
- * owns that directory in the same wave.
- *
- * FILENAME CONTRACT: `*.unit.test.ts` — the three Vitest project globs are mutually exclusive.
- */
-
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -57,11 +18,9 @@ const DATE = '2026-08-27';
 const TEMP_KEY = 'temp/versionproof.jpg';
 const THUMB_URI = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
 
-/** Restated, never imported: sha256 truncated to four bytes = eight hex characters. */
 const sha8 = (bytes: Uint8Array | string): string =>
   createHash('sha256').update(bytes).digest('hex').slice(0, 8);
 
-/** The four remote variants and the suffix each key carries. Written out. */
 const VARIANTS: ReadonlyArray<readonly [string, string]> = [
   ['original', ''],
   ['large', '-lg'],
@@ -91,7 +50,6 @@ interface Bufs {
   small: string;
 }
 
-/** Build the assets object with an explicit payload per variant, so each can be varied alone. */
 const assetsFor = (bufs: Bufs, dimensions = { width: 4608, height: 3072 }): DerivedAssets => ({
   slug: SLUG,
   variants: {
@@ -136,13 +94,8 @@ const build = (bufs: Bufs, dimensions?: { width: number; height: number }): Phot
 const urlOf = (record: Photo, urlKey: string): string =>
   (record.urls as unknown as Record<string, string>)[urlKey];
 
-/** Independently composed expectation: origin + literal path + locally computed hash. */
 const expectUrl = (payload: string, suffix: string): string =>
   `${IMAGE_ORIGIN}/photos/${CATEGORY}/${SLUG}-${sha8(encode(payload))}${suffix}.webp`;
-
-/* ==============================================================================================
- * 1. The URL is a function of the bytes.
- * ========================================================================================== */
 
 describe('a URL is content-addressed', () => {
   it('the composed URL is exactly origin + /photos/<cat>/<slug>-<hash8><suffix>.webp', () => {
@@ -173,17 +126,10 @@ describe('a URL is content-addressed', () => {
   });
 
   it('THE SAME BYTES PRODUCE THE SAME URL — content-addressed, not random', () => {
-    // If this failed, "different bytes give different URLs" would be satisfied by a random
-    // suffix, and idempotence (PIPE-03) would be impossible: every re-run would produce four new
-    // objects and an ever-growing bucket.
     expect(urlOf(build(V1), 'original')).toBe(urlOf(build(V1), 'original'));
     expect(JSON.stringify(build(V1).urls)).toBe(JSON.stringify(build(V1).urls));
   });
 });
-
-/* ==============================================================================================
- * 2. The previous version's bytes are never overwritten.
- * ========================================================================================== */
 
 describe('a re-run cannot overwrite the bytes a live page is reading', () => {
   it('no URL of the new record equals any URL of the old one', () => {
@@ -197,10 +143,6 @@ describe('a re-run cannot overwrite the bytes a live page is reading', () => {
   });
 
   it('the old URLs stay recoverable — they are values, and git history holds them', () => {
-    // The record is committed JSON, so the previous version's four addresses are in the previous
-    // commit of `data/portfolio_images.json`. This asserts the property the recovery depends on:
-    // the old URL is still a well-formed address of the OLD bytes, distinct from the new one, so
-    // nothing was mutated in place.
     const first = build(V1);
     const second = build(V2);
     expect(urlOf(first, 'original')).toBe(expectUrl(V1.original, ''));
@@ -209,18 +151,12 @@ describe('a re-run cannot overwrite the bytes a live page is reading', () => {
   });
 
   it('a change confined to metadata does not move the URLs', () => {
-    // Only the bytes address the object. Re-running with the same buffers and different source
-    // dimensions must not orphan four live objects.
     const same = build(V1, { width: 3000, height: 2000 });
     const first = build(V1);
     expect(JSON.stringify(same.urls)).toBe(JSON.stringify(first.urls));
     expect(same.dimensions).not.toEqual(first.dimensions);
   });
 });
-
-/* ==============================================================================================
- * 3. EVERY VARIANT IS HASHED FROM ITS OWN BUFFER.  The failure this file exists for.
- * ========================================================================================== */
 
 describe('each of the four variants carries its own version', () => {
   it('four different buffers produce four different hashes', () => {
@@ -236,9 +172,6 @@ describe('each of the four variants carries its own version', () => {
   });
 
   it('changing ONLY the small buffer changes ONLY urls.small', () => {
-    // The single-source-hash bug passes every assertion above this one and fails this one. It is
-    // the whole reason the assertion exists: re-encoding at a new quality changes `-sm` while the
-    // source stays byte-identical, and a source-derived hash would keep serving the old thumbnail.
     const first = build(V1);
     const tweaked = build({ ...V1, small: 'SMALL-v2' });
 
@@ -249,9 +182,6 @@ describe('each of the four variants carries its own version', () => {
   });
 
   it('identical buffers across all four variants produce four identical hashes', () => {
-    // The converse control. It proves the hash comes from the BUFFER and not from the suffix or
-    // the url key — if it were salted per variant this would be four different hashes and the
-    // previous test would pass for the wrong reason.
     const flat = build({ original: 'SAME', large: 'SAME', medium: 'SAME', small: 'SAME' });
     const hashes = VARIANTS.map(([urlKey]) => {
       const basename = urlOf(flat, urlKey).split('/').pop() ?? '';
@@ -264,10 +194,6 @@ describe('each of the four variants carries its own version', () => {
     expect(hashes[0]).toBe(sha8(encode('SAME')));
   });
 });
-
-/* ==============================================================================================
- * 4. A hash the caller supplies is CHECKED, not trusted.
- * ========================================================================================== */
 
 describe('a precomputed hash cannot drift from the bytes it claims to describe', () => {
   it('a matching hash is accepted', () => {
@@ -285,10 +211,6 @@ describe('a precomputed hash cannot drift from the bytes it claims to describe',
   });
 
   it('A HASH THAT DOES NOT MATCH ITS BYTES IS REFUSED', () => {
-    // The uploader (04-09) addresses an object by a key it composed from a hash. If that hash and
-    // the hash in the record ever disagreed, the manifest would point at objects that were never
-    // written — the exact failure `scripts/verify-photo-urls.mjs` exists to catch, caught here
-    // instead, before anything is uploaded.
     const assets = assetsFor(V1);
     assets.variants.large.hash = 'deadbeef';
     expect(() =>
@@ -303,8 +225,6 @@ describe('a precomputed hash cannot drift from the bytes it claims to describe',
 
   it('a missing variant is refused rather than producing a record with three URLs', () => {
     const complete = assetsFor(V1);
-    // Rebuilt without `medium` rather than `delete`d: an index-signature delete is a type error
-    // under this tsconfig, and rebuilding says the same thing without one.
     const { medium: _dropped, ...withoutMedium } = complete.variants;
     const assets = { ...complete, variants: withoutMedium };
     expect(() =>

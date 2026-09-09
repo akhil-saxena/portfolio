@@ -1,75 +1,13 @@
-/**
- * The gallery island, over HTTP, against the built site served by real `workerd`.
- *
- * ================================================================================================
- * 🔴 THIS FILE USED TO BE `lightbox.node.test.ts`, AND THE RENAME IS THE POINT
- * ================================================================================================
- *
- * The overlay it was written for no longer exists. Akhil replaced it with a real document —
- * *"build this in place of lightbox, allow nav, scroll etc"* — so `/photography/<category>/<slug>`
- * IS the photo view now, and every tile is a plain link to it rather than a click the island
- * intercepts. `PhotoLightbox.tsx` and `src/lib/photo-lightbox.ts` were deleted with it.
- *
- * The island did not go, it CHANGED OWNER. `gate:public-js` permits one `<astro-island>` per
- * document, and the filter controller had been living inside the lightbox only because of that
- * budget; with the lightbox gone the filter is the island. Same budget, one fewer component.
- *
- * WHAT SURVIVED FROM THE OLD FILE, and why each is still worth asserting:
- *
- *   - which route families hydrate and which ship nothing (PUB-14) — unchanged in substance
- *   - the grid is static HTML and every tile is a working link (§9.2) — MORE important now, since
- *     the link IS the navigation rather than a fallback behind a click handler
- *   - what the page hands the island — the props changed shape completely
- *
- * WHAT DID NOT SURVIVE: the caption assertions. `captionFor` was a lightbox export; the caption is
- * rendered by the photo document now and is asserted in `photo-detail.node.test.ts`, where the
- * markup it describes actually lives.
- *
- * ================================================================================================
- * 🔴 "EXACTLY ONE MODULE SCRIPT" IS THE WRONG PREDICATE. MEASURED.
- * ================================================================================================
- *
- * **Astro 7 emits ZERO `<script type="module">` for an island.** A hydrated gallery document
- * carries `<astro-island component-url=… component-export=… renderer-url=…>` plus classic
- * `<script>` blocks, one of which `import()`s the chunk dynamically. So `<script type="module">`
- * is 0 on a page that ships React, and a suite asserting 1 would be red against a correct build
- * while a suite asserting 0 would be green on a page that hydrates. Both are useless. The predicate
- * used here is the `<astro-island>` ELEMENT and the chunk it names.
- *
- * ================================================================================================
- * EVERY EXPECTATION IS DERIVED AT CHECK TIME
- * ================================================================================================
- *
- * Tile counts, item counts and route lists all come from `data/` and `src/lib/` when the assertion
- * runs. §13.3 applies to tests as much as to copy: 03-01's `--verify` hardcoded 39 and stopped
- * being true the day the 40th landed. There is no literal count in this file.
- *
- * Reporting is `process.stdout.write`. Under this repository's vitest setup `console.log` prints
- * NOTHING (04-01 measured it with a probe), and a check reporting through a swallowed channel is
- * indistinguishable from one that found nothing.
- */
-
 import { describe, expect, inject, it } from 'vitest';
 
 import manifest from '../../data/portfolio_images.json';
 import siteConfig from '../../data/site_config.json';
-/*
- * The two element ids the island reaches through, imported rather than typed as strings: the
- * heading assertion below is that `TITLE_ID` appears in the SERVED HTML and never in the island
- * BUNDLE, and a re-typed literal would keep passing after a rename while the real hook moved.
- */
 import { COUNT_ID, TITLE_ID } from '../../src/lib/photo-filter';
 import { photoHref } from '../../src/lib/photo-srcset';
 
 const previewBaseUrl = inject('previewBaseUrl');
 const report = (line: string) => process.stdout.write(`${line}\n`);
 
-/*
- * ANTI-VACUITY, BEFORE ANY ROUTE IS DERIVED. An empty manifest or an empty category list would make
- * every loop below iterate zero times and every assertion pass; `it()` blocks that never run are
- * reported as a green file. 05-08 measured the right failure shape for this: the FILE fails and
- * vitest prints "no tests", which is unmistakable.
- */
 if (!Array.isArray(manifest) || manifest.length === 0) {
   throw new Error('gallery-island: data/portfolio_images.json holds no records; nothing to check.');
 }
@@ -79,7 +17,6 @@ if (!Array.isArray(siteConfig.categories) || siteConfig.categories.length === 0)
   );
 }
 
-/** The eight documents permitted to hydrate, and the photographs each must hand the island. */
 const GALLERY_ROUTES = [
   {
     name: '/photography',
@@ -95,20 +32,9 @@ const GALLERY_ROUTES = [
   })),
 ];
 
-/**
- * Four route families that must ship NO island. `/photography/<category>/<slug>` is represented by every
- * one of its pages, derived from the manifest rather than sampled: PUB-14's claim is about all of
- * them, and one spot check would pass on a build that hydrated the other thirty-nine.
- */
 const ZERO_JS_ROUTES = [
   { name: '/', url: '/' },
   { name: '/development', url: '/development/' },
-  /*
-   * `/resume` was here. The route was removed on 2026-09-05 — Akhil: *"delete page or hide page
-   * /resume for now"* — and `/resume.pdf` is now the only résumé the site serves. A zero-JS
-   * assertion against a 404 would still pass (a 404 ships no island either), which is the kind of
-   * green that means nothing, so the entry is dropped rather than left pointing at a missing page.
-   */
   ...manifest.map((record) => ({ name: photoHref(record), url: `${photoHref(record)}/` })),
 ];
 
@@ -128,7 +54,6 @@ async function body(name: string, url: string): Promise<string> {
   return text;
 }
 
-/** The five entities Astro emits in an attribute value. */
 const decode = (value: string) =>
   value
     .replace(/&#39;/g, "'")
@@ -139,12 +64,6 @@ const decode = (value: string) =>
 
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
-/**
- * Astro serialises island props as `[tag, value]` pairs — MEASURED against this build: `0` is a
- * plain value and `1` is an array, and every property of a plain object is itself tagged. Decoding
- * rather than regexing the attribute is what lets the assertions below talk about the ITEMS the
- * island receives instead of about a string that happens to contain a URL.
- */
 type Tagged = [number, unknown];
 
 function untag(node: unknown): unknown {
@@ -159,7 +78,6 @@ function untag(node: unknown): unknown {
   return value;
 }
 
-/** The `<astro-island>` on a page, with its attributes and its decoded props. */
 function island(html: string) {
   const tag = /<astro-island\b[^>]*>/.exec(html);
   if (!tag) {
@@ -294,11 +212,8 @@ describe('the grid is static HTML and every tile is a working link (§9.2)', () 
       expect(route.expected.length).toBeGreaterThan(0);
       expect(anchors.length).toBe(SHIPPED.length);
 
-      // DENSE 0..n-1, derived: equality against a constructed sequence catches a gap, a duplicate,
-      // a wrong order and an off-by-one, where `length === n` catches only the first.
       expect(anchors.map((a) => a.index)).toEqual(SHIPPED.map((_, i) => String(i)));
 
-      // The href is the imported one, never re-derived here — 05-08's join, in the third place.
       expect(anchors.map((a) => a.href)).toEqual(SHIPPED.map((r) => photoHref(r)));
       for (const a of anchors) expect(a.href.startsWith('/photography/')).toBe(true);
     }
@@ -316,10 +231,6 @@ describe('the grid is static HTML and every tile is a working link (§9.2)', () 
       expect(visible).toBe(route.expected.length);
       expect(hidden.length).toBe(SHIPPED.length - route.expected.length);
 
-      /*
-       * THE HIDDEN SET IS THE COMPLEMENT, not merely the right SIZE. A page that hid the wrong
-       * thirty-eight would satisfy the counts above and show a reader someone else's category.
-       */
       const own = new Set(route.expected.map((r) => photoHref(r)));
       for (const tag of tags) {
         const href = decode(/href="([^"]*)"/.exec(tag)?.[1] ?? '');
@@ -342,23 +253,12 @@ describe('the grid is static HTML and every tile is a working link (§9.2)', () 
     for (const route of GALLERY_ROUTES) {
       const html = await body(route.name, route.url);
       expect(html).not.toMatch(/<a class="ph-tile"[^>]*client:/);
-      /*
-       * 🔴 THE FIRST VERSION COUNTED THE BARE STRING `astro-island` AND EXPECTED 2 — the open and
-       * close tag. It measured SEVEN. Astro's bootstrap block contains
-       * `customElements.define('astro-island', ...)` and several other mentions, so a bare
-       * substring count reads the runtime that DEFINES the element as further instances of it.
-       * Anchored to markup instead.
-       */
       expect(occurrences(html, '<astro-island')).toBe(1);
       expect(occurrences(html, '</astro-island>')).toBe(1);
     }
     report(`no client: directive on any tile anchor across ${GALLERY_ROUTES.length} routes`);
   });
 });
-
-/* ============================================================================================
- * The island's props — what the page actually hands it
- * ========================================================================================== */
 
 describe('the island is handed the whole manifest, and the route it is standing on', () => {
   const SHIPPED = [...manifest].sort((a, b) => a.order - b.order);
@@ -374,11 +274,6 @@ describe('the island is handed the whole manifest, and the route it is standing 
           `total ${props.total}, pathname ${JSON.stringify(props.pathname)}`
       );
 
-      /*
-       * THE ISLAND SEES ALL FORTY ON EVERY ROUTE. It must: it recomputes the count line and the
-       * pill states for whichever category the reader picks, without another request. A category
-       * page that handed it only its own photographs could not filter to anything else.
-       */
       expect(props.photos).toHaveLength(SHIPPED.length);
       expect(props.total).toBe(manifest.length);
       expect(props.photos.map((p) => p.id)).toEqual(SHIPPED.map((r) => r.id));
@@ -390,13 +285,6 @@ describe('the island is handed the whole manifest, and the route it is standing 
     async (_name, route) => {
       const html = await body(route.name, route.url);
       const { props } = island(html);
-      /*
-       * THE TRAILING SLASH IS DELIBERATE AND IS THE SEAM. `PhotoFilters` normalises the pathname
-       * itself; the page passes `Astro.url.pathname` raw. If normalising moved into the page, a
-       * pathname with a trailing slash would match no pill and NOTHING would be marked current —
-       * silently, on every route. Asserting the raw value here is what keeps the seam where the
-       * component's own header says it is.
-       */
       expect(props.pathname).toBe(route.url);
     }
   );
@@ -414,36 +302,12 @@ describe('the island is handed the whole manifest, and the route it is standing 
   });
 });
 
-/* ============================================================================================
- * The heading is the PAGE's name, not the view's
- * ========================================================================================== */
-
 describe('the heading does not move with the filter (Akhil, 2026-09-04)', () => {
-  /** Tags out, entities decoded, whitespace collapsed — the words a reader sees. */
   const words = (fragment: string) =>
     decode(fragment.replace(/<[^>]+>/g, ''))
       .replace(/\s+/g, ' ')
       .trim();
 
-  /*
-   * Akhil: *"Photographs page should not have title changing on filters. keep it stuck at
-   * Photographs."*
-   *
-   * The island used to write `headingFor(category, categories)` into the `<h1>` on every pill
-   * click, so choosing Wildlife retitled the page "Wildlife". The page had not changed — same
-   * route, same document, same set with some of it hidden — and it left the `<h1>` disagreeing
-   * with `document.title`, which was never rewritten.
-   *
-   * 🔴 WHY THIS IS ASSERTED ON THE ISLAND'S SOURCE AND NOT BY CLICKING. The behaviour was verified
-   * in a real browser (heading held at "Photographs" across All → Wildlife → Portraits → All while
-   * the count went 40 → 7 → 2 → 40), but this suite runs over SERVED BYTES with no DOM. What it can
-   * check, and what actually prevents the regression, is that the shipped island contains no write
-   * to the heading element at all — the id it would have to reach through is `TITLE_ID`, and it is
-   * the id the markup gives the `<h1>`.
-   *
-   * The two halves together are the claim: the SERVER renders the fixed heading, and the CLIENT
-   * bundle carries nothing that could change it.
-   */
   it('serves the fixed heading on /photography, and the category routes keep their own name', async () => {
     const all = await body('/photography', '/photography/');
     const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(all)?.[1] ?? '';
@@ -452,11 +316,6 @@ describe('the heading does not move with the filter (Akhil, 2026-09-04)', () => 
     );
     expect(all, `the heading has lost its ${TITLE_ID} hook`).toContain(`id="${TITLE_ID}"`);
 
-    /*
-     * A category ROUTE is a different document reached by a real navigation, so its own name is
-     * correct there — asserted so "the heading never changes" is not over-read into flattening the
-     * pre-rendered routes too.
-     */
     const category = siteConfig.categories[0] as { id: string; label: string };
     const one = await body(`/photography/${category.id}`, `/photography/${category.id}/`);
     const catH1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(one)?.[1] ?? '';
@@ -473,10 +332,6 @@ describe('the heading does not move with the filter (Akhil, 2026-09-04)', () => 
     const { componentUrl } = island(html);
     const bundle = await (await fetch(`${previewBaseUrl}${componentUrl}`)).text();
 
-    /*
-     * ANTI-VACUITY FIRST. If the bundle were empty or the wrong file, every "does not contain"
-     * below would pass. It must contain the ids it DOES legitimately write — the grid and the count.
-     */
     expect(
       bundle.length,
       'the island bundle is empty — the assertions below would read nothing'

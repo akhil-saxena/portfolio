@@ -1,33 +1,3 @@
-/**
- * The spec for the one grammar that defines a stored résumé bullet.
- *
- * ## Why this file is shaped the way it is
- *
- * The load-bearing claim here is the round trip: `serializeBullet(parseBullet(s)) === s`.
- * Stated on its own that claim is worthless, because the identity pair
- *
- *     parseBullet     = (s) => [{ text: s, bold: false }]
- *     serializeBullet = (runs) => runs.map((r) => r.text).join('')
- *
- * satisfies every string round trip there is, for every input, while parsing nothing at
- * all. A suite built only out of string round trips is the "34 tests all focused on the
- * first item" defect in another costume: green, plentiful, and carrying no information.
- *
- * So every fixture below is asserted twice — once on the round-tripped STRING and once on
- * the RUN ARRAY — and the fixture table carries an explicit `identityAgrees` column
- * naming the handful of inputs an identity parse would get right by accident. A meta-test
- * (`the fixture set cannot be satisfied by an identity parse`) asserts that column is
- * exactly correct, so the suite's own resistance to a degenerate implementation is itself
- * a checked property rather than a claim in a comment.
- *
- * ## What this file deliberately does not test
- *
- * Rendering. `parseBullet` returns data; turning runs into elements is plan 03-07's job,
- * proven against `renderToStaticMarkup` — the real server path. There is no jsdom here
- * and no `environment` override in `vitest.unit.config.ts`, because this project's
- * register already records that a rendered claim verified in a browser simulation is not
- * verified.
- */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -37,16 +7,6 @@ import { containsHtmlTag, parseBullet, serializeBullet } from '../../src/lib/bul
 const p = (text: string): BulletRun => ({ text, bold: false });
 const b = (text: string): BulletRun => ({ text, bold: true });
 
-/**
- * Every stored bullet, read off disk at test time rather than pasted in.
- *
- * Reading the live file is what makes this suite cover the real corpus in both of its
- * lives: before the task-2 migration these strings carry `<strong>` (inert text under
- * this grammar, since `<` is not a production), and after it they carry `**`. The
- * conversion-specific proof — that the migration moved the encoding and nothing else —
- * lives in `bullets-migration.unit.test.ts`, which compares against the previous git
- * revision. This file only asserts that whatever is on disk survives a round trip.
- */
 function readStoredBullets(): { id: string; text: string }[] {
   const resumePath = fileURLToPath(new URL('../../data/resume.json', import.meta.url));
   const resume = JSON.parse(readFileSync(resumePath, 'utf8')) as {
@@ -59,12 +19,6 @@ function readStoredBullets(): { id: string; text: string }[] {
 
 const STORED_BULLETS = readStoredBullets();
 
-/**
- * `identityAgrees` is true only where `[{ text: source, bold: false }]` happens to BE the
- * correct parse — a bullet with no emphasis and no escape sequence. Everywhere else the
- * identity implementation produces the wrong run array, which is the property that gives
- * the round-trip assertions their teeth.
- */
 type Fixture = { name: string; source: string; runs: BulletRun[]; identityAgrees: boolean };
 
 const FIXTURES: Fixture[] = [
@@ -226,11 +180,6 @@ describe('serializeBullet — the inverse, on the normal form parseBullet produc
 });
 
 describe('the round trip — the property the Phase 7 editor depends on', () => {
-  /**
-   * Asserted on the run array as well as the string. The string half alone is satisfied
-   * by `s => s`; see the header note. `identityAgrees` is the fixture-level record of
-   * which inputs that degenerate pair would get right anyway.
-   */
   it.each(FIXTURES)('round-trips $name as both a string and a run array', ({ source, runs }) => {
     const parsed = parseBullet(source);
     expect(parsed).toEqual(runs);
@@ -252,13 +201,8 @@ describe('the round trip — the property the Phase 7 editor depends on', () => 
     ).map((f) => f.name);
     const declared = FIXTURES.filter((f) => f.identityAgrees).map((f) => f.name);
 
-    // The set an identity parse gets right is exactly the set the table says it does.
-    // If a fixture is added that quietly agrees with identity without being declared,
-    // this fails — so the suite's resistance to a degenerate implementation is checked,
-    // not asserted in prose.
     expect(agreed.sort()).toEqual(declared.sort());
 
-    // And that set has to be a small minority, or the table above is decorative.
     expect(agreed.length).toBeLessThanOrEqual(2);
     expect(FIXTURES.length - agreed.length).toBeGreaterThanOrEqual(15);
   });
@@ -272,9 +216,6 @@ describe('the stored corpus round-trips, every bullet of it', () => {
   it.each(STORED_BULLETS)('round-trips $id', ({ text }) => {
     const parsed = parseBullet(text);
     expect(serializeBullet(parsed)).toBe(text);
-    // A parse that returned [] for a non-empty bullet would still round-trip to '' !==
-    // text and fail above, but assert the projection explicitly: the concatenated run
-    // text is the bullet's plain-text projection and must lose nothing but delimiters.
     expect(parsed.map((r) => r.text).join('')).toBe(
       text.replace(/\\([\\*])/g, '$1').replace(/\*\*/g, '')
     );
@@ -342,11 +283,6 @@ describe('unbalanced and malformed emphasis is a named throw, never a silent lit
 });
 
 describe('the grammar has no production that emits an angle bracket', () => {
-  /**
-   * The structural claim behind criterion 3's storage half. It is not "we escape angle
-   * brackets" — it is that no input to `serializeBullet` can cause one to appear that was
-   * not already a character of some run's text.
-   */
   it.each(FIXTURES)('emits the same angle brackets its run text carried, for $name', ({ runs }) => {
     const fromText = runs
       .map((r) => r.text)
@@ -373,8 +309,6 @@ describe('the grammar has no production that emits an angle bracket', () => {
 
   it('cannot be made to emit a tag by putting one in a run, because it stays text', () => {
     const runs = parseBullet('<img src=x onerror=alert(1)> and **<b>bold</b>**');
-    // The payload survives byte for byte as run TEXT — which is the point. It is data at
-    // this layer; making it inert at the render boundary is plan 03-07's assertion.
     expect(runs.map((r) => r.text).join('')).toContain('<img src=x onerror=alert(1)>');
     expect(serializeBullet(runs)).toBe('<img src=x onerror=alert(1)> and **<b>bold</b>**');
   });
@@ -415,10 +349,6 @@ describe('containsHtmlTag — the predicate that recognises markup in a string',
   });
 
   it('is false for every bullet on disk, whatever encoding they are currently in', () => {
-    // Before the task-2 migration this is expected to be FALSE only after conversion, so
-    // the assertion is deliberately conditional on what is on disk: it asserts the
-    // predicate agrees with the raw text, not that the migration has happened. The
-    // unconditional "zero tags remain" claim is task 2's gate.
     for (const { id, text } of STORED_BULLETS) {
       expect(containsHtmlTag(text), id).toBe(/<\/?[a-zA-Z]/.test(text));
     }

@@ -46,9 +46,7 @@ const siteTitle = homeConfig.title;
     <Heading level={1} id={TITLE_ID} size="4xl" weight="regular">Photographs</Heading>
   </header>
 
-  {}
   <div class="ph-rail">
-    {}
     <PhotoFilters
       client:load
       categories={siteConfig.categories}
@@ -58,14 +56,8 @@ const siteTitle = homeConfig.title;
       defaultColumns={siteConfig.defaultColumns}
     />
 
-    {}
-    {}
     <Text size="xs" tone="muted" id={COUNT_ID}>{countLineFor(ALL, total, total)}</Text>
   </div>
 
   <PhotoGrid photos={photos} columns={siteConfig.defaultColumns} activeCategory={ALL} />
-
-  {}
-
-  {}
 </PublicLayout>

@@ -1,38 +1,3 @@
-/**
- * `/development`, asserted over HTTP against the built artefact served by real `workerd`. Plan 05-09,
- * task 3.
- *
- * ================================================================================================
- * WHY THIS IS AN HTTP SUITE AND NOT A RENDER TEST
- * ================================================================================================
- *
- * Every claim below is about SHIPPED BYTES. "No framework JavaScript reaches this route", "the
- * component figure is resolved rather than tokenised", "every outbound anchor announces itself" are
- * facts about `dist/` and about what the origin answers; asked of a component in jsdom they become
- * inferences. The prerender that produces those bytes runs inside `workerd`, not Node — no
- * filesystem, `process.cwd()` is `/bundle`, `import.meta.url` is undefined — so a green unit run
- * proves nothing about this page. The `integration` project's `globalSetup` runs a real
- * `astro build` and serves it through `@cloudflare/vite-plugin`.
- *
- * ================================================================================================
- * NOT ONE COUNT IN THIS FILE IS A LITERAL
- * ================================================================================================
- *
- * There is no `3`, no `5`, no `13`, no `81` and no `1080` below. `data/resume.json` and
- * `data/projects.json` are reviewed content Akhil edits, the component figure is the design
- * system's own published answer, and the band's cap is `PAGE_MAX.band`. Every expected value is
- * read from its one source at test time, and every derived expectation is preceded by an
- * ANTI-VACUITY assertion — a suite that derives `0` from an emptied fixture and then passes zero
- * comparisons is the failure this phase's register is full of.
- *
- * Nothing here asserts the WORDING of an employment metric. The three values on disk are
- * placeholders Akhil intends to revise (OQ-1b); they are compared to the file, never to a string.
- *
- * Evidence is written with `process.stdout.write`. MEASURED by plan 04-01 with a probe: under this
- * repository's vitest setup `console.log` and `console.info` print NOTHING, so a check reporting
- * through them is indistinguishable from a check that found nothing.
- */
-
 import { readFileSync } from 'node:fs';
 import { describe, expect, inject, it } from 'vitest';
 import { resolveDsCounts, resolveDsTokens } from '../../src/lib/ds-component-count';
@@ -51,25 +16,13 @@ function readJson<T>(relative: string): T {
 const resume = readJson<Resume>('../../data/resume.json');
 const projects = readJson<Project[]>('../../data/projects.json');
 
-/** The route under test and the one it points at, in one place each. */
 const WORK_PATH = '/development';
 const PHOTOS_PATH = '/photography';
 
-/** §10 item 7 / §13.2 — the cross-link's reviewed copy, character for character. */
-/*
- * The copy that USED to be here, kept so the search is for the STRING rather than the wrapper —
- * the same reason `photography-routes.node.test.ts` keeps `RETIRED_COPY` after retiring its row.
- */
 const CROSSLINK_COPY = 'see the photographs →';
 
-/** The announcement every outbound anchor must carry (§10.1). */
 const NEW_TAB = '(opens in a new tab)';
 
-/**
- * ONE pass of entity decoding, which is what an HTML parser does. A second pass would turn a
- * double-encoded `&amp;amp;` back into `&` and hide exactly the defect a text comparison exists to
- * catch.
- */
 function decodeEntitiesOnce(value: string): string {
   return value.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (whole, body: string) => {
     if (body.startsWith('#x') || body.startsWith('#X'))
@@ -99,13 +52,6 @@ async function loadPage(): Promise<void> {
   page = await response.text();
 }
 
-/**
- * Every project card, sliced out by matching its own `<div>` depth.
- *
- * SCOPED, and that is the point: 05-10 measured a page-wide `/<li/g` count that also matched
- * `<link`, and a page-wide `li < nb` predicate that could not fire until nine bullets were gone.
- * A claim about a card is asserted inside that card.
- */
 function sliceCards(source: string): string[] {
   const CARD_OPEN = '<div class="ds-atom-card wk-card"';
   const out: string[] = [];
@@ -215,12 +161,6 @@ describe('/development — the experience timeline renders every stored record',
       expect(item, `${entry.id}'s role is not in its own item`).toContain(
         `<p class="wk-role-title">${entry.role}</p>`
       );
-      /*
-       * The YEARS, not `formatPeriod`. The rail spells a year-only range (`2023 – now`) where the
-       * band spelled the month too, and both derive from the same record — see `period.ts`, whose
-       * `EN_DASH` this and the rail share so the separator cannot become two decisions. Compared
-       * against the stored years rather than a re-typed string.
-       */
       const from = String(entry.startYear);
       expect(item, `${entry.id}'s start year is missing`).toContain(from);
     });
@@ -275,14 +215,6 @@ describe('/development — the experience timeline renders every stored record',
   });
 
   it('is capped by PAGE_MAX.work, and the retired band cap is gone', async () => {
-    /*
-     * `--wk-band-max` was the employment band's own cap and shipped as an inline custom property.
-     * The band is deleted, so the variable must be gone too — a stale custom property is the kind of
-     * dead weight that survives a component by years because nothing fails when it lingers.
-     *
-     * `PAGE_MAX.band` ITSELF IS STILL LIVE and is deliberately not asserted absent: `/resume` caps
-     * on `.pub-max-band`. This is a claim about THIS page only.
-     */
     await loadPage();
     expect(page, '--wk-band-max still ships; the band it capped is deleted').not.toContain(
       '--wk-band-max'
@@ -306,11 +238,6 @@ describe('/development — the project cards', () => {
     const cards = sliceCards(page);
     expect(cards.length, 'the card renderer is missing, not the data').toBe(projects.length);
 
-    /*
-     * ORDER IS ASSERTED, and it is not decoration. MEASURED during this plan: `getCollection`
-     * returns the records sorted by `id`, not in file order, so the first build put the
-     * design-system card second. `work.astro` re-imposes the file's order; this is what holds it.
-     */
     projects.forEach((project, index) => {
       expect(text(cards[index] as string), `card ${index} is not ${project.id}`).toContain(
         project.title
@@ -330,11 +257,6 @@ describe('/development — the project cards', () => {
     const cards = sliceCards(page);
     expect(cards.length).toBe(projects.length);
 
-    /*
-     * Every description, compared to the RESOLVED string the resolver produces from the stored one.
-     * The figure is read from `src/lib/ds-component-count.ts` at test time and never written as 81;
-     * §13.3 says no hand-maintained copy of that number may exist, and a test is a copy.
-     */
     let tokenised = 0;
     projects.forEach((project, index) => {
       const card = cards[index] as string;
@@ -424,8 +346,6 @@ describe('/development — the project cards', () => {
         ).toBe(true);
       }
 
-      // T-05-09-01 — asserted per anchor, not as two page totals that can balance while an
-      // individual anchor is unpaired.
       for (const a of cardAnchors) {
         if (attr(a.attrs, 'target') !== '_blank') continue;
         external += 1;
@@ -556,8 +476,6 @@ describe('/development — the project cards', () => {
         text(m[1] as string)
       );
       expect(chips, `${project.id}'s chips are not its stored tech list`).toEqual(project.tech);
-      // §4.6c warns that a consumer `className` clobbers the atom hook. MEASURED: it concatenates in
-      // 2.0.0-beta.1 — but this component wraps rather than passes one, so the hook must be intact.
       rendered += chips.length;
     });
 
@@ -566,25 +484,6 @@ describe('/development — the project cards', () => {
   });
 
   it('prints no count line, and never types the number anywhere', async () => {
-    /*
-     * ==============================================================================================
-     * INVERTED. Akhil: *"remove text - five, shipped on my own."*
-     * ==============================================================================================
-     *
-     * It asserted one `.wk-count` line reading "five — shipped on my own", with the number SPELLED
-     * from `projects.length` so a sixth project could not leave a stale "five" on the page. That was
-     * the right shape for a line that existed. It does not any more.
-     *
-     * WHAT SURVIVES IS THE HALF THAT STILL MATTERS: the count must not be typed. The original risk
-     * was a hand-written number going stale; deleting the line removes the line, not the risk — the
-     * next person to describe the collection in prose ("five projects", "a handful of five") brings
-     * it straight back. So this checks the element is gone AND that neither the digit nor the spelled
-     * word appears in the page's own copy.
-     *
-     * SCOPED TO THE PAGE'S PROSE, not the whole document: the digit `5` legitimately appears in
-     * hashed asset URLs, in `81` inside the design-system description, and in years. The check reads
-     * the count line's own former home and the section heads, which is where a restatement would go.
-     */
     await loadPage();
 
     const lines = [...page.matchAll(/<p class="wk-count">([\s\S]*?)<\/p>/g)];
@@ -610,7 +509,6 @@ describe('/development — the project cards', () => {
       `this suite spells 1-${SPELLED.length}; the fixture holds ${projects.length}`
     ).toBeDefined();
 
-    // The eyebrow that used to sit beside the count, and the phrase it used to carry.
     const heads = [...page.matchAll(/<h2 class="wk-eyebrow">([\s\S]*?)<\/h2>/g)].map((m) =>
       text(m[1] as string)
     );
@@ -624,17 +522,6 @@ describe('/development — the project cards', () => {
       );
       expect(head, `an eyebrow types a digit: ${head}`).not.toMatch(/\d/);
     }
-    /*
-     * SCOPED TO THE BODY, because the phrase legitimately survives in the `<head>`.
-     *
-     * MEASURED: `shipped on my own` still ships, inside the meta description — "Products shipped on
-     * my own, alongside frontend engineering at Brevo." That sentence was the page's visible
-     * sub-paragraph until it was removed as a restatement of the timeline beneath it, and it was
-     * MOVED to the description rather than deleted, because a search result has no timeline under it
-     * to read instead. So the phrase is retired from the page, not from the site, and a document-wide
-     * check fails on the one place it is still doing work. My first version of this assertion did
-     * exactly that.
-     */
     const body = page.slice(page.indexOf('<body'));
     expect(body, 'the retired count phrasing is back in the page copy').not.toContain(
       'shipped on my own'
@@ -646,32 +533,12 @@ describe('/development — the project cards', () => {
 
 describe('/development — the cross-link, the metadata and the JavaScript budget', () => {
   it('carries no cross-link row, and not the retired copy under any wrapper', async () => {
-    /*
-     * ==============================================================================================
-     * §13.2's PAIR IS FULLY RETIRED, AND THIS IS THE OUTGOING HALF'S RECORD
-     * ==============================================================================================
-     *
-     * This asserted the row character for character: one `<p class="wk-crosslink-row">`, the copy
-     * `see the photographs →`, and an inline style carrying `--font-display`, `italic`, `--text-lg`
-     * and `--ochre-d` but not `--ochre-d-strong`. Akhil: *"remove see the photograhs from development
-     * page"* — after the returning half went from `/photography` for the same reason.
-     *
-     * INVERTED, NOT DELETED, and the precedent is on the other side: `photography-routes.node.test.ts`
-     * inverted the returning half's assertion rather than dropping it, because 05-15's audit had
-     * MEASURED that row silently missing once before and nothing caught it. §13.2 is prose and no
-     * gate reads it, so a deleted test leaves exactly that silence. An inverted one says the absence
-     * is intended and goes red the day the row returns by accident.
-     *
-     * TWO CLAIMS, because the wrapper is not the claim. A row re-added inside a different element
-     * would satisfy a check for `.wk-crosslink-row` alone and still put the sentence back.
-     */
     await loadPage();
 
     const rows = [...page.matchAll(/<p class="wk-crosslink-row">([\s\S]*?)<\/p>/g)];
     expect(rows.length, `the cross-link row is back: ${rows.length} found`).toBe(0);
 
     expect(page, `the page still ships ${CROSSLINK_COPY}`).not.toContain(CROSSLINK_COPY);
-    // and not the bare words either, in case the arrow is dropped or re-encoded
     expect(page, 'the page still ships the retired cross-link copy').not.toContain(
       'see the photographs'
     );
@@ -684,8 +551,6 @@ describe('/development — the cross-link, the metadata and the JavaScript budge
 
     const canonical = /<link rel="canonical" href="([^"]+)"/.exec(page)?.[1] ?? '';
     expect(canonical, 'the canonical is not absolute').toMatch(/^https?:\/\//);
-    // The origin serves `/development/` and 307s `/development` (measured against real `workerd`), so the
-    // canonical names the SLASHED form and agrees with the sitemap. See `canonicalPath`.
     expect(canonical.endsWith(`${WORK_PATH}/`), `the canonical is ${canonical}`).toBe(true);
 
     for (const property of [
@@ -752,37 +617,12 @@ describe('/development — the cross-link, the metadata and the JavaScript budge
     expect(css.length, 'no CSS was served with the page at all').toBeGreaterThan(0);
     expect(css, 'the grid rule did not ship').toContain('.wk-grid');
 
-    /*
-     * THE TWO NUMBERS IN `work.css` ARE A SECOND COPY OF `BREAKPOINTS`, and a media query cannot
-     * read a TypeScript constant. This is the same situation `public-shell.css` is in and it is
-     * resolved the same way: compare the SERVED stylesheet against the ladder here, so a divergence
-     * is a red test rather than a page and a shell that disagree about which device class they are
-     * in. The minifier rewrites `(min-width: 673px)` as `(width>=673px)`, so both spellings count.
-     */
     expect(BREAKPOINTS.length, 'the ladder declares no breakpoints').toBeGreaterThan(2);
     const gridSteps = [BREAKPOINTS[1], BREAKPOINTS[2]] as number[];
     for (const px of gridSteps) {
       const query = new RegExp(`@media\\s*\\((?:min-width:\\s*${px}px|width>=${px}px)\\)`);
       expect(css, `the grid does not step at ${px}px, which the ladder declares`).toMatch(query);
     }
-    /*
-     * And it must not step anywhere the ladder does not — WITH TWO NAMED EXCEPTIONS, and naming
-     * them is the point rather than a way around the rule.
-     *
-     * 🔴 This swept the WHOLE served bundle and required every `min-width` in it to be a ladder
-     * rung. That was true until the bar grew a rung of its own, and then it failed here — on
-     * `/development`, over a stylesheet this page does not own, for a change to the header.
-     *
-     * `--pub-bar-h` and the nav's visibility ladder are NOT page-layout breakpoints. They are
-     * derived from a measured constraint Akhil set on the bar itself: *"ensure minimum of 60px gap
-     * remains between text on header from right & left side, if lesser, remove the button, keep
-     * brand."* Sweeping the bar 300→1100px in 2px steps put one nav word over that floor at 344 and
-     * both words over it at 458, so the rungs are 344 and 460. Adding them to `BREAKPOINTS` would
-     * be worse than listing them here: the ladder is what the page GRID steps at, and a card grid
-     * that started stepping at 344 because the wordmark is 112px wide would be nonsense.
-     *
-     * The sweep is kept because it is the valuable half — a third unexplained rung still fails.
-     */
     const SHELL_NAV_RUNGS = ['344', '460'];
     const declared = new Set([...BREAKPOINTS.map(String), ...SHELL_NAV_RUNGS]);
     const found = [...css.matchAll(/@media\s*\((?:min-width:\s*(\d+)px|width>=(\d+)px)\)/g)].map(
@@ -865,12 +705,6 @@ describe('a pending badge renders as text and is reachable by nobody', () => {
         'wk-mark-pending'
       );
 
-      /*
-       * 🔴 THE HREF MUST NOT APPEAR ANYWHERE IN THE CARD, not merely off the badge. `project.href`
-       * for momentum WAS the same 404 — so the card's own stretched TITLE link pointed at it too,
-       * and checking only the badge would have declared the card fixed while its largest click
-       * target still went to the error page.
-       */
       expect(card, `${project.id} still links to its pending destination`).not.toContain(
         badge.href
       );
@@ -895,7 +729,6 @@ describe('a pending badge renders as text and is reachable by nobody', () => {
       }
     });
 
-    // The contrast is the claim: pending badges vanish from the hrefs, live ones do not.
     expect(live, 'no live badge remains — the assertion above compared nothing').toBeGreaterThan(0);
     say(`live: ${live} badge href(s) still present as links`);
   });

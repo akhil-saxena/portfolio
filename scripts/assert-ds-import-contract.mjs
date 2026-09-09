@@ -1,102 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * PUB-14 / DS-09 structural gate — the design system is imported from its own subpaths, and
- * never given a `class` attribute.
- *
- * Usage: node scripts/assert-ds-import-contract.mjs [scanRoot ...]
- *        (with no argument, scans the DEFAULT_SCAN_TARGETS below)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS FILE EXISTS AT ALL
- *
- * Two failure modes, both silent, both measured, both cheap to make loud.
- *
- * 1. THE BARREL. MEASURED, 05-UI-SPEC.md §1.1, transitive module graphs resolved from `dist/`:
- *
- *        components/Lightbox      9 files    15,351 B   react, react-dom, lucide-react   no tiptap, no dnd-kit
- *        the barrel  "."        101 files   416,590 B   tiptap x6, dnd-kit x3            PRESENT
- *
- *    One `import { Chip } from '@akhil-saxena/design-system'` reintroduces ~400 KB of rich-text
- *    editor and drag-and-drop into a public route whose budget is zero framework JavaScript.
- *    The page still renders. Nothing errors. PUB-14 is simply gone.
- *
- *    STATE.md records that the barrel now tree-shakes (an `import { Chip }` island fell from
- *    570,555 B to 1,620 B). That is a Rolldown behaviour measured in a DIFFERENT REPOSITORY, and
- *    G-15/DS-09 is satisfied BY CONSTRUCTION on the subpath path rather than by trusting a
- *    bundler to keep behaving. This gate does not depend on tree-shaking and must not be
- *    weakened on the grounds that tree-shaking exists.
- *
- * 2. `class` IS NOT `className`. Phase 0 lost this twice. `<Card class="wk-card">` renders
- *    `class="ds-atom-card"` — the consumer's class is dropped, with no error, no warning and a
- *    plausible-looking page. `querySelectorAll('.wk-card').length` was 0. Every layout rule
- *    written against that class silently applies to nothing.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY [DS-BARREL] ENUMERATES THE PERMITTED SHAPE INSTEAD OF DENY-LISTING THE BARREL
- *
- * This is the standing lesson of this project, and it was paid for. A git-argv deny-list was
- * defeated THREE WAYS — `push -f`, a `+refspec`, and `git add .` — with the guard silent and the
- * case green. A deny-list enumerates what its author thought of. A permitted-shape allow-list
- * enumerates what is known to be safe and refuses everything else, so the failure mode of an
- * imagination gap is a FALSE ALARM (loud, fixable) rather than a MISS (silent, shipped).
- *
- * The permitted set here is small and closed, so the allow-list is cheap:
- *
- *        @akhil-saxena/design-system/icons
- *        @akhil-saxena/design-system/components/<Name>
- *        @akhil-saxena/design-system/<anything>.css
- *        @akhil-saxena/design-system/css/<name>
- *
- * Everything else under that package name fails, INCLUDING subpaths that do not exist yet.
- * `/hooks` is a real export and is deliberately NOT permitted: it is a barrel of its own.
- *
- * The scan is over STRING LITERALS, not over `import` statements, and that is the second half of
- * the same idea. A specifier is a string, whatever syntax carries it — so `import x from`,
- * `import '...'` side-effect form, `export ... from`, `require(...)`, and dynamic
- * `await import(...)` are all covered by construction rather than by five separate patterns,
- * four of which someone would forget. Single, double and backtick quotes are all read: 03-06
- * shipped four predicates that could not fire because they matched only double quotes in a
- * repository whose formatter enforces single ones.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS GATE CANNOT SEE. Each was found by trying to WALK THROUGH it, not by imagining.
- *
- *  R1. A SPECIFIER SPLIT ACROSS LITERALS. `'@akhil-saxena/design-' + 'system'` is invisible,
- *      because no single literal carries the package name. This is the same class as
- *      assert-no-raw-html-sinks.mjs's blind spot 1 (`el["inner" + "HTML"]`) and closing it needs
- *      an AST pass. A specifier assembled from a template literal WITH the package name still
- *      inside it IS caught, because the literal is still there. RECORDED, NOT CLOSED.
- *
- *  R2. `scripts/` IS NOT SCANNED BY DEFAULT, and this file is the reason: it names the barrel
- *      specifier in its own canaries and prose, so it would flag itself. `src/`, `test/` and
- *      `astro.config.mjs` ARE scanned by default — the plan asked only for `src`, but a barrel
- *      import from `astro.config.mjs` reaches the build graph and a plan-check named exactly
- *      that escape. If a script ever imports the design system, add it explicitly.
- *
- *  R3. IT SAYS NOTHING ABOUT THE BUILT OUTPUT. A dependency of a permitted subpath could pull
- *      the forbidden families in without any source file naming the barrel. Plan 05-14 checks
- *      the emitted chunks independently, which is a different claim and needs a different gate.
- *
- *  R4. [DS-CLASS] READS `.astro` ONLY. A `class=` on a design-system component inside a `.tsx`
- *      island is not checked here — in TSX `class` is a plain unknown prop, and React would warn
- *      at runtime. The measured, silent loss is the Astro one.
- *
- * ---------------------------------------------------------------------------------------------
- * THE SELF-TEST, WHICH RUNS ON EVERY INVOCATION
- *
- * This project has shipped nineteen gates that could not fail. So every rule carries a CANARY it
- * must flag and an ANTI-CANARY it must leave alone, both checked before the real scan on every
- * run; a rule failing either aborts the gate rather than reporting a clean tree. The scan also
- * refuses to pass when the root is missing, when it matched no files, or when every file it read
- * was empty — three separate ways a run can check nothing and still look green.
- *
- * Reporting is `process.stdout.write` / `process.stderr.write`, NEVER `console.log`. Under this
- * repository's vitest setup console output prints nothing (measured by 04-01 with a probe: both
- * console markers appeared 0 times, the stdout marker once), and a gate reporting findings
- * through a swallowed channel is indistinguishable from a gate that found nothing.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
@@ -104,7 +7,6 @@ import process from 'node:process';
 const out = (s) => process.stdout.write(`${s}\n`);
 const err = (s) => process.stderr.write(`${s}\n`);
 
-/** See R2. `scripts/` is excluded because this file would flag itself. */
 const DEFAULT_SCAN_TARGETS = ['src', 'test', 'astro.config.mjs'];
 
 const SCAN_EXTENSIONS = [
@@ -122,24 +24,11 @@ const SCAN_EXTENSIONS = [
 
 const DS_PACKAGE = '@akhil-saxena/design-system';
 
-/** Which PERMITTED_DEEP_SPECIFIERS were actually used, so a stale one can be reported. */
 const deepSpecifiersSeen = new Set();
 
-/**
- * THE PERMITTED SHAPE. Anything under the package name that does not match this is refused.
- * `/hooks` is intentionally absent — it is a barrel of its own. The bare package name is
- * intentionally absent — it is THE barrel.
- */
 const PERMITTED_SUBPATH =
   /^@akhil-saxena\/design-system\/(icons|components\/[A-Za-z][A-Za-z0-9]*|[a-z0-9./-]+\.css|css\/[a-z0-9-]+)$/;
 
-/**
- * Deep paths that reach into `node_modules/@akhil-saxena/design-system/...` bypass the package's
- * exports map entirely, so PERMITTED_SUBPATH never sees them —
- * `'../../node_modules/@akhil-saxena/design-system/dist/index.js'` IS the barrel, spelled so that
- * a subpath rule cannot notice. Enumerated permitted set, pinned to the one file allowed to do
- * it, rather than an allowlist that forgives a category.
- */
 const PERMITTED_DEEP_SPECIFIERS = new Map([
   [
     '../../node_modules/@akhil-saxena/design-system/README.md?raw',
@@ -154,37 +43,14 @@ const PERMITTED_DEEP_SPECIFIERS = new Map([
   ],
 ]);
 
-/**
- * SPECIFIER POSITION. A string is only a specifier when something imports it, so these patterns
- * capture the string OUT OF an import construct rather than scanning every literal in the file.
- *
- * This is what keeps the gate usable. An earlier revision matched every string literal and
- * produced SEVEN findings against correct code — all of them prose in this repository's own
- * comments explaining the contract. A gate that fires on every push is a gate that gets turned
- * off within a day, which is the failure mode where a gate is worse than no gate.
- *
- * It does NOT skip comments. A commented-out `// import { Chip } from '@akhil-saxena/design-system'`
- * still matches, because the comment still contains the import construct — and a scanner that
- * skips comments is defeated the day someone uncomments a line. What no longer matches is prose
- * that merely NAMES a specifier without importing it. That distinction is the whole point.
- *
- * `require.resolve(...)` is deliberately excluded: it returns a path and creates no edge in the
- * module graph, so it cannot carry tiptap into a chunk. The rule is about graph edges.
- */
 const SPECIFIER_PATTERNS = [
-  // import ... from '<s>'   /   export ... from '<s>'   (clause may span lines)
   /\b(?:import|export)\b[\s\S]{0,400}?\bfrom\s*(['"`])([^'"`\n]+)\1/g,
-  // side-effect: import '<s>'
   /\bimport\s*(['"`])([^'"`\n]+)\1/g,
-  // dynamic: import('<s>')
   /\bimport\s*\(\s*(['"`])([^'"`\n]+)\1\s*\)/g,
-  // require('<s>') but NOT require.resolve('<s>')
   /\brequire\s*\(\s*(['"`])([^'"`\n]+)\1\s*\)/g,
-  // css: @import '<s>'  /  @import url('<s>')
   /@import\s+(?:url\(\s*)?(['"`])([^'"`\n]+)\1/g,
 ];
 
-/** Every specifier in the file, deduped by (line, specifier). */
 function specifiers(text) {
   const seen = new Map();
   const lines = text.split('\n');
@@ -193,7 +59,6 @@ function specifiers(text) {
     for (const m of text.matchAll(re)) {
       const value = m[2];
       if (value === undefined) continue;
-      // Report the line the SPECIFIER sits on, not the line the construct started on.
       const idx = m.index + m[0].lastIndexOf(value);
       const line = text.slice(0, idx).split('\n').length;
       const key = `${line}\u0000${value}`;
@@ -204,26 +69,9 @@ function specifiers(text) {
   return [...seen.values()];
 }
 
-/**
- * The indirection walk-through, scoped so it cannot be noisy. Assembling a specifier in a
- * variable and dynamically importing it defeats any textual specifier rule:
- *
- *     const B = '@akhil-saxena/design-system';
- *     const ds = await import(B);
- *
- * The second line alone is legitimate almost everywhere, so this fires ONLY when the same file
- * also names the package in a string. That pairing is the evasion; either half alone is not.
- */
 const DYNAMIC_CALL = /\b(?:import|require)\s*\(\s*([^)]*)\)/g;
 const NAMES_PACKAGE = /['"`][^'"`\n]*@akhil-saxena\/design-system/;
 
-/**
- * A specifier is "static" only if the whole argument is ONE plain literal with no interpolation.
- * A backtick string carrying `${...}` is NOT static — that hole was found by this gate's own
- * self-test, against its own canary, after an earlier revision excluded every backtick string
- * indiscriminately. Recorded because it is the argument for canaries: the rule was wrong for
- * about four minutes and the canary is what said so.
- */
 function isStaticSpecifier(arg) {
   const a = arg.trim();
   if (/^'[^'\n]*'$/.test(a) || /^"[^"\n]*"$/.test(a)) return true;

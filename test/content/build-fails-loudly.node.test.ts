@@ -1,49 +1,3 @@
-/**
- * Criterion 2's evidence: a malformed `data/*.json` stops a REAL `astro build`, and the output
- * names the file, the record and the field.
- *
- * WHY THIS IS NOT A UNIT TEST OF THE FORMATTER
- * -------------------------------------------
- * A test that calls `formatSchemaFailure` and asserts on the string it returns proves that a string
- * function returns a string. It would stay green if nothing in the build ever called it — which was
- * the actual state of this repository before plan 03-08 measured it: `research/ARCHITECTURE.md`
- * asserts that a module-scope `Schema.parse()` in `src/lib/content.ts` aborts the build, and with a
- * corrupt `data/resume.json` in place `astro build` exited **0** and emitted `dist/`, because nothing
- * imports that module until Phase 5 writes a page. So every case below spawns a real build and reads
- * its real exit code.
- *
- * WHY IT BUILDS A SANDBOX INSTEAD OF MUTATING `data/`
- * --------------------------------------------------
- * The plan asked for a byte-copy restore in an unconditional `finally`, and that is here. But a
- * restore only narrows the window in which the repository is corrupt; it does not close it. Vitest
- * runs the four projects concurrently, and `test/content/schemas.unit.test.ts` reads all five
- * `data/*.json` files at import time — so a mutation in this file could be observed by a test in
- * another project and fail it for a reason that has nothing to do with that test. That is a flaky
- * suite, and a flaky gate is a gate people learn to re-run.
- *
- * So each case mutates a disposable copy of the project, and this file additionally asserts that the
- * repository's own `data/` is byte-identical before and after. The isolation is the primary claim;
- * the restore is the belt.
- *
- * The sandbox COPIES `src`, `public`, `data` and `astro.config.mjs` and SYMLINKS only
- * `node_modules`. Symlinking `src` was tried first and broke — Astro resolves module paths through
- * the symlink's real path and then cannot match them against its own compile metadata
- * ("No cached compile metadata found for …/404.astro"). It is written down because the failure looked
- * like a content problem and was not, and because it is the reason the positive case below matters:
- * with a broken sandbox every negative case passes for the wrong reason.
- *
- * THE TWO TRAPS THIS FILE IS WRITTEN AGAINST, BOTH FROM THIS PROJECT'S REGISTER
- * ----------------------------------------------------------------------------
- * 1. A NON-ZERO EXIT IS NOT A REJECTION. While prototyping this harness the astro binary path was
- *    wrong; the spawn exited 1 with `Cannot find module …/astro.js` and no build ever ran. A test
- *    asserting only `exitCode !== 0` is green in exactly that state. So every case asserts the
- *    output is non-empty AND contains the file, the record's own identifier and the field — three
- *    strings a broken spawn cannot produce.
- * 2. AN EMPTY CAPTURED STRING SATISFIES A CARELESS ASSERTION. `expect('').toContain('')` passes, and
- *    a `grep -c`-shaped check on an empty variable is the shape 03-07 shipped. `expectRejection`
- *    below asserts the length first, then the content.
- */
-
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
@@ -67,7 +21,6 @@ const execFileAsync = promisify(execFile);
 const REPO_ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const ASTRO_BIN = path.join(REPO_ROOT, 'node_modules', 'astro', 'bin', 'astro.mjs');
 
-/** Everything the build reads. Copied, not linked — see the header on why `src` cannot be linked. */
 const COPIED = [
   'src',
   'public',
@@ -81,7 +34,6 @@ const COPIED = [
   '.nvmrc',
 ];
 
-/** The five committed content files. FIVE — `projects.json` is the one the plan's text forgets. */
 const CONTENT_FILES = [
   'portfolio_images.json',
   'site_config.json',
@@ -98,16 +50,8 @@ interface BuildResult {
 
 let sandbox = '';
 
-/** Byte copies taken before any mutation. The restore reads from here and from nowhere else. */
 const pristine = new Map<string, Buffer>();
 
-/**
- * SHA-256 of the repository's own content files, so this suite can prove it did not touch them.
- *
- * A digest rather than a `Buffer.equals` comparison: `equals` is not on the `NonSharedBuffer` type
- * `readFileSync` returns under this tsconfig, and `astro check` said so. A hex digest compares the
- * same bytes and reads as the byte claim it is making.
- */
 const repoContent = new Map<string, string>();
 
 const digestOf = (bytes: Uint8Array): string => createHash('sha256').update(bytes).digest('hex');
@@ -124,19 +68,12 @@ function writeJson(name: string, value: unknown): void {
   writeFileSync(sandboxDataPath(name), `${JSON.stringify(value, null, 2)}\n`);
 }
 
-/** Put every sandbox file back to the bytes captured in `beforeAll`. Never re-derives anything. */
 function restoreSandbox(): void {
   for (const [relative, bytes] of pristine) {
     writeFileSync(path.join(sandbox, relative), bytes);
   }
 }
 
-/**
- * Run a real `astro build` in the sandbox and return its exit code and combined output.
- *
- * `execFile` on the astro entrypoint rather than `npx`: `npx` would resolve a binary and could
- * silently fetch one, and its own non-zero exits are indistinguishable from the build's.
- */
 async function runBuild(): Promise<BuildResult> {
   rmSync(path.join(sandbox, 'dist'), { recursive: true, force: true });
   let exitCode = 0;
@@ -149,9 +86,6 @@ async function runBuild(): Promise<BuildResult> {
         ...process.env,
         FORCE_COLOR: '0',
         NO_COLOR: '1',
-        // Each sandbox gets its OWN Vite cache. It symlinks the real `node_modules`, so
-        // without this every sandbox pre-bundles into the SAME `node_modules/.vite` and
-        // they race on `renameSync(deps_ssr_temp_<hash> -> deps_ssr)`. See astro.config.mjs.
         PORTFOLIO_VITE_CACHE_DIR: path.join(sandbox, '.vite'),
       },
     });
@@ -161,15 +95,6 @@ async function runBuild(): Promise<BuildResult> {
     exitCode = typeof failure.code === 'number' ? failure.code : 1;
     output = `${failure.stdout ?? ''}${failure.stderr ?? ''}`;
   }
-  /*
-   * `dist/client/index.html`, NOT `dist/server/wrangler.json`.
-   *
-   * The old probe read the ADAPTER's server bundle, which the Cloudflare adapter only emits when a
-   * route opts out of prerendering. With `/admin` and `/api/health` removed the site is fully
-   * static, `dist/server/` is empty, and the probe reported "the build emitted nothing" on a build
-   * that had emitted 135 files. Home's HTML is the thing whose absence actually means the build
-   * produced nothing.
-   */
   let distEmitted = true;
   try {
     readFileSync(path.join(sandbox, 'dist', 'client', 'index.html'));
@@ -179,7 +104,6 @@ async function runBuild(): Promise<BuildResult> {
   return { exitCode, output, distEmitted };
 }
 
-/** Mutate, build, and put the sandbox back whatever the assertion does. */
 async function buildAfter(mutate: () => void): Promise<BuildResult> {
   try {
     mutate();
@@ -189,12 +113,6 @@ async function buildAfter(mutate: () => void): Promise<BuildResult> {
   }
 }
 
-/**
- * A rejection is a non-zero exit whose output NAMES the thing that was wrong.
- *
- * The order of the assertions is deliberate: length before content, so an empty capture fails on
- * the first line rather than passing a substring check that has nothing to search.
- */
 function expectRejection(result: BuildResult, mustName: string[]): void {
   expect(result.output.length).toBeGreaterThan(0);
   expect(result.exitCode).not.toBe(0);
@@ -212,30 +130,6 @@ beforeAll(() => {
   for (const entry of COPIED) {
     cpSync(path.join(REPO_ROOT, entry), path.join(sandbox, entry), { recursive: true });
   }
-  /*
-   * 🔴 `node_modules` IS SYMLINKED PER PACKAGE, WITH `astro` COPIED, AND THAT IS NOT TIDINESS.
-   *
-   * A single symlink for the whole directory used to be enough. It stopped being enough the moment
-   * a route imported a `.astro` component OUT of `node_modules` — `ClientRouter`, added to the photo
-   * documents so the header and footer survive a step between photographs (Akhil: *"keep those
-   * elements fixed"*). MEASURED, the sandbox build then died with:
-   *
-   *   No cached compile metadata found for "…/node_modules/astro/components/ClientRouter.astro
-   *   ?astro&type=style&index=0&lang.css". The main Astro module
-   *   "<sandbox>/Users/akhilsaxena/…/node_modules/astro/components/ClientRouter.astro" should have
-   *   compiled and filled the metadata first…
-   *
-   * Read the second path: the SANDBOX prefix followed by the REPOSITORY's absolute path. Vite
-   * resolves the import through the symlink to its real location, while `vite-plugin-astro` looks
-   * the module up under the sandbox root — two keys for one file, so the compile-metadata map is
-   * written under one and read under the other. Nothing about the content gate was wrong; the
-   * harness could not build a route that imports a component from a symlinked package.
-   *
-   * Copying `astro` alone costs 6.9MB and leaves every other package a symlink, so the sandbox is
-   * still cheap. The alternative was `resolve.preserveSymlinks` in `astro.config.mjs`, which would
-   * change module resolution for the REAL build to fix a test — and this repository's duplicate-React
-   * hazard is exactly the kind of thing that setting moves around.
-   */
   const modules = path.join(sandbox, 'node_modules');
   mkdirSync(modules);
   for (const entry of readdirSync(path.join(REPO_ROOT, 'node_modules'))) {
@@ -254,17 +148,11 @@ beforeAll(() => {
 }, 120_000);
 
 afterAll(() => {
-  // The claim this suite rests on: the repository's own content was never a participant.
   for (const [name, sha256] of repoContent) {
     expect(digestOf(readFileSync(path.join(REPO_ROOT, 'data', name)))).toBe(sha256);
   }
   if (sandbox) rmSync(sandbox, { recursive: true, force: true });
 });
-
-/* ==============================================================================================
- * The positive case FIRST, because it is what makes the negative ones mean anything: a sandbox
- * that fails every build would satisfy every assertion below it.
- * ============================================================================================ */
 
 describe('a clean tree builds, and the gate says how much it looked at', () => {
   it(
@@ -275,30 +163,12 @@ describe('a clean tree builds, and the gate says how much it looked at', () => {
       expect(result.exitCode).toBe(0);
       expect(result.distEmitted).toBe(true);
 
-      // Anti-vacuity: "content set: PASS" is the same sentence over zero photographs and over
-      // thirty-nine, and only one of them is a pass.
       expect(result.output).toContain('content set: PASS');
 
-      // DERIVED (plan 04-01), from THE SANDBOX'S OWN COPY of the manifest — the file this build
-      // actually read — not from a literal and not from the repository. `39 photo(s)` was one of
-      // the 15 assertions that redded at 40 records on 2026-08-27, and bumping it to 40 would have
-      // put the same trap back one photograph further along.
-      //
-      // The claim being kept is the one the block exists for: the gate reports A CENSUS rather than
-      // a bare PASS, and the census is the size of what it was given. `n > 0` comes FIRST because
-      // `toContain('0 photo(s)')` over an empty sandbox manifest would otherwise satisfy this
-      // trivially — and an empty manifest is refused by `PhotoManifestSchema.min(1)`, so a build
-      // that got that far would already be failing for a different reason.
       const sandboxPhotos = readJson('portfolio_images.json') as unknown[];
       expect(Array.isArray(sandboxPhotos)).toBe(true);
       expect(sandboxPhotos.length).toBeGreaterThan(0);
       expect(result.output).toContain(`${sandboxPhotos.length} photo(s)`);
-      /*
-       * DERIVED FROM THE SANDBOX'S OWN COPY, not typed. This read `7 category record(s)` and the
-       * taxonomy is five now — but the fix is not `5`, because the number this assertion is about
-       * is "however many the gate was HANDED", which is the whole anti-vacuity point: a gate that
-       * reports a count lower than the file it read has skipped records.
-       */
       const categoryCount = (readJson('site_config.json') as { categories: unknown[] }).categories
         .length;
       expect(categoryCount).toBeGreaterThan(0);
@@ -309,12 +179,6 @@ describe('a clean tree builds, and the gate says how much it looked at', () => {
     BUILD_TIMEOUT
   );
 });
-
-/* ==============================================================================================
- * One planted defect per committed content file. FIVE files, not four: the plan's `must_haves`
- * and `<verification>` both say "the four content files", and 03-CONTEXT.md §2 is the one that is
- * right — `projects.json` was created by 03-05 under decision D-24 and RI-5 reads it.
- * ============================================================================================ */
 
 describe('a malformed data file stops the build and names file, record and field', () => {
   it(
@@ -340,9 +204,6 @@ describe('a malformed data file stops the build and names file, record and field
   it(
     'portfolio_images.json + site_config.json — a typo’d category is caught by nothing else',
     async () => {
-      // THE CASE THE WHOLE PHASE EXISTS FOR. "archtecture" is a perfectly valid lowercase slug, so
-      // no per-file schema can see it; ADR-002 §4 deleted /admin/site on the strength of the rule
-      // that can. Measured green before this plan wired the gate (experiment 2).
       const result = await buildAfter(() => {
         const photos = readJson('portfolio_images.json') as { id: string; category: string }[];
         const index = photos.findIndex((photo) => photo.id === 'architecture-singapore');
@@ -380,9 +241,6 @@ describe('a malformed data file stops the build and names file, record and field
   it(
     'resume.json — an HTML tag in a bullet names Brevo, not experience[0]',
     async () => {
-      // The one mutation in the phase that exercises criteria 1, 2 and 3 at once: the stored shape
-      // cannot express a tag (03-02), the schema refuses one (03-06), and the build says so
-      // legibly (this plan).
       const result = await buildAfter(() => {
         const resume = readJson('resume.json') as {
           experience: { company: string; bullets: string[] }[];
@@ -405,13 +263,8 @@ describe('a malformed data file stops the build and names file, record and field
         const site = readJson('site_config.json') as {
           categories: { id: string; columns: unknown }[];
         };
-        // DERIVED. This was `7` and the taxonomy is 5 now; the literal made the harness fail
-        // before the mutation it was setting up had a chance to be judged.
         expect(site.categories.length).toBeGreaterThan(2);
         site.categories[2].columns = 'three';
-        // The record's own id, read back rather than typed: index 2 was `nature` under the retired
-        // seven and is `portraits` under the five, and a hand-typed name made the assertion below
-        // fail on a message that was perfectly correct.
         mutatedCategoryId = site.categories[2].id;
         writeJson('site_config.json', site);
       });
@@ -451,8 +304,6 @@ describe('a malformed data file stops the build and names file, record and field
   it(
     'a file that is not JSON at all is a finding, not a crash and not a skip',
     async () => {
-      // A syntactically broken file never reaches a schema, so it produces no zod issue. Without
-      // the read-failure branch in the gate it would produce no finding either.
       const result = await buildAfter(() => {
         writeFileSync(sandboxDataPath('portfolio_images.json'), '[{ "id": "oops", ]\n');
       });
@@ -478,32 +329,14 @@ describe('a malformed data file stops the build and names file, record and field
   );
 });
 
-/* ==============================================================================================
- * The two enforcement points are independent. Both halves are asserted, because "there are two"
- * is worth nothing if one of them is the other one wearing a hat.
- * ============================================================================================ */
-
 describe('the content collections enforce on their own, and cannot do the gate’s job', () => {
-  /** Take the `content-gate` integration out of the sandbox config, and prove the edit landed. */
   function disableContentGate(): void {
     const config = readFileSync(path.join(sandbox, 'astro.config.mjs'), 'utf8');
 
-    // MATCHED BY POSITION IN THE ARRAY, NOT BY THE WHOLE LINE — and that is a repair, made by
-    // plan 05-13, which is also what broke it. This used to replace the literal
-    // `'integrations: [react(), contentGate],'`. 05-13 added `@astrojs/sitemap` to that array, the
-    // literal stopped existing, the replacement became a no-op, and BOTH assertions below went red
-    // — exactly as the comment they replace predicted. The control did its job: it refused to run
-    // against the wired config rather than silently proving the wrong thing.
-    //
-    // Removing `contentGate` with its leading comma survives the next integration added at either
-    // end of the array, which is the same edit arriving again.
     const without = config.replace(/,\s*contentGate\b/, '');
 
     expect(without, 'the contentGate removal did not change the config').not.toBe(config);
 
-    // Asserted against the INTEGRATIONS LINE rather than the whole file. A global
-    // `not.toContain('contentGate,')` would also be satisfied by a file that never had the
-    // integration wired, and it says nothing about the array actually losing it.
     const integrations = without.match(/^\s*integrations:.*$/m)?.[0] ?? '';
     expect(integrations, 'no integrations line found in the sandbox config').not.toBe('');
     expect(integrations, 'contentGate is still in the integrations array').not.toContain(
@@ -528,7 +361,6 @@ describe('the content collections enforce on their own, and cannot do the gate�
         'landscape-hillsandgreens',
         'order',
       ]);
-      // And it is genuinely the collection speaking, not the gate.
       expect(result.output).not.toContain('BUILD REFUSED');
     },
     BUILD_TIMEOUT
@@ -537,26 +369,6 @@ describe('the content collections enforce on their own, and cannot do the gate�
   it(
     'with the gate removed, the typo’d category is caught by a THIRD instrument — not the collection',
     async () => {
-      /*
-       * UPDATED BY PLAN 05-07, ON THIS TEST'S OWN INSTRUCTION. It used to assert that the build
-       * went GREEN here, and it said why: "This pins a MEASURED BLIND SPOT rather than a desirable
-       * behaviour. `PhotoSchema.category` is `z.string()` by design (03-06: an enum here would be
-       * the second source of truth about what a category is), so the collection cannot see this and
-       * the build goes green. If a future change makes this case red, that is an improvement and
-       * this test is what will say so — update it, do not delete it."
-       *
-       * THE FUTURE CHANGE ARRIVED. 05-07 built `/photography` and `/photography/[category]`, the first routes
-       * to read `getCollection('photos')`, and every tile's href comes from `photoHref` →
-       * `photoSlug`, which REFUSES an id that does not begin with `category + "-"` rather than
-       * slicing blindly (BL-8, `src/lib/photo-srcset.ts`). `architecture-singapore` filed under
-       * `archtecture` is exactly that shape, so the prerender throws and no `dist/` is emitted.
-       *
-       * THE ORIGINAL POINT OF THIS DESCRIBE BLOCK IS UNCHANGED AND IS STILL ASSERTED: the
-       * COLLECTION cannot do the gate's job. It is neither the gate speaking (no `BUILD REFUSED`)
-       * nor the collection (no `InvalidContentEntryDataError`) — it is a third, narrower instrument
-       * that happens to exist because a route now renders these records, and it would go quiet
-       * again the moment the typo is in a category with no id prefix to disagree with.
-       */
       const result = await buildAfter(() => {
         disableContentGate();
         const photos = readJson('portfolio_images.json') as { id: string; category: string }[];
@@ -565,15 +377,6 @@ describe('the content collections enforce on their own, and cannot do the gate�
         writeJson('portfolio_images.json', photos);
       });
 
-      /*
-       * NOT `expectRejection`, AND THE DIFFERENCE IS THE FINDING. That helper also requires
-       * `distEmitted === false`, which is true of the gate (it throws in `astro:config:done`,
-       * before anything is written) and of the collection (content sync precedes the build).
-       * MEASURED here: `dist/` IS partially emitted, because the client bundle completes and the
-       * throw happens later, during the prerender. So this third instrument refuses LATER and
-       * leaves an artefact behind — which is precisely the stale-`dist/` hazard 05-06 lost an hour
-       * to, and the reason it is a poorer net than the gate rather than a replacement for it.
-       */
       expect(result.output.length).toBeGreaterThan(0);
       expect(result.exitCode).not.toBe(0);
       expect(result.output).toContain('photoSlug');

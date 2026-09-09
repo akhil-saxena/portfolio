@@ -1,36 +1,3 @@
-/**
- * The contract test for `src/lib/photo-pipeline.ts` (plan 04-02).
- *
- * WHAT THIS FILE IS FOR
- * ---------------------
- * Eight other plans in Phase 4 import that module and none of them re-derives any of it. So the
- * module is the phase's interface, and this file is what stops the interface changing silently.
- *
- * WHY IT RE-IMPLEMENTS RATHER THAN IMPORTS
- * ----------------------------------------
- * The suite's stated convention, from `test/content/photo-enrichment.unit.test.ts`: *"Importing
- * the merge's own parser would make this file assert that the merge agrees with itself."* So
- * every expected key, URL, id and regex below is COMPOSED FROM LITERALS here and compared to what
- * the producer returns. `publishedKey` is never checked with `parsePublishedKey`, and the variant
- * numbers are typed out again rather than read from `VARIANTS`.
- *
- * The two exceptions are deliberate and are the opposite of circular:
- *   - `REMOTE_URL_KEYS` and `IMAGE_ORIGIN` are imported from `src/lib/image-origin.ts`, which is
- *     the OTHER side of the agreement being asserted. A literal here would let both sides drift
- *     together.
- *   - `THUMB_PREFIX` is imported from `src/schemas/photo.ts` for the same reason — that is the
- *     schema that enforces the prefix, and comparing the pipeline's copy against a literal
- *     re-typed here would be the self-agreement this file exists to avoid. That import is why
- *     plan 04-02 added the one-word `export` in `photo.ts`.
- *
- * THE 39-RECORD CORPUS IS USED AS A **FLOOR**, NEVER AS A COUNT
- * ------------------------------------------------------------
- * Phase 4 appends records, so `manifest.length` is asserted with `toBeGreaterThanOrEqual` — the
- * shape `scripts/assert-no-r2dev-urls.mjs` already uses at its `EXPECTED_RECORDS` guard, and the
- * classification plan 04-01 introduced. The `alt` corpus below is iterated over the WHOLE
- * manifest, so a 40th record strengthens the proof instead of falsifying it.
- */
-
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -72,30 +39,11 @@ import { THUMB_PREFIX } from '../../src/schemas/photo';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const read = (relative: string): string => readFileSync(`${REPO_ROOT}${relative}`, 'utf8');
 
-/** The floor from `scripts/assert-no-r2dev-urls.mjs`. A FLOOR, not a count — see the header. */
 const RECORD_FLOOR = 39;
 
 type ManifestRecord = { id: string; title: string; alt: string; category: string };
 const manifest = JSON.parse(read('data/portfolio_images.json')) as ManifestRecord[];
 
-/**
- * Source with comments removed, so a textual rule cannot fire on the prose that EXPLAINS it.
- *
- * This is the project's recurring defect class — a `/three/i` grep that passed by matching a
- * comment was the seventh instance — and it bit inside this very file: the first revision of the
- * separator-copy assertion below counted `'-'` occurrences raw, and `photo-variants.ts`'s own
- * header spells `'-'` while explaining why the constant lives there. Two matches, one constant.
- *
- * A character scanner, not a regex, because `/\/\*[\s\S]*?\*\//` deletes anything between a
- * `/*` inside a STRING and the next `*` + `/`, which is how a stripper silently eats real code.
- * String and template bodies are preserved verbatim; only comment bodies become spaces, so byte
- * offsets and line counts are unchanged.
- *
- * KNOWN LIMIT, recorded rather than claimed absent: a regex LITERAL containing a quote or a
- * comment opener (`/['"]/`, `/\/\//`) would be misread as entering a string. Both files this is
- * applied to were checked for that shape and neither has one; if one is ever added, this helper
- * needs an AST pass rather than a patch.
- */
 function stripComments(source: string): string {
   let out = '';
   let i = 0;
@@ -140,11 +88,6 @@ function stripComments(source: string): string {
   return out;
 }
 
-/* ============================================================================================
- * 1. The constants. Typed out again here; if one changes, this file has to change with it, which
- *    is the point — eight plans read them.
- * ========================================================================================== */
-
 describe('the constants eight plans import', () => {
   it('STAGING_PREFIX is temp/ (OD-6) and PUBLISHED_PREFIX is photos/ (OD-1)', () => {
     expect(STAGING_PREFIX).toBe('temp/');
@@ -152,16 +95,12 @@ describe('the constants eight plans import', () => {
   });
 
   it('STAGING_BUCKET is byte-equal to wrangler.jsonc r2_buckets[].bucket_name', () => {
-    // Read independently, by regex, so this does not depend on a JSONC parser. Exactly one
-    // bucket must be declared: with two, "the bucket name" is not a well-defined value and
-    // picking the first would be a guess.
     const matches = [...read('wrangler.jsonc').matchAll(/"bucket_name"\s*:\s*"([^"]+)"/g)];
     expect(matches).toHaveLength(1);
     expect(STAGING_BUCKET).toBe(matches[0][1]);
   });
 
   it('STAGING_EXPIRE_DAYS is a positive whole number of days', () => {
-    // 04-10 compares a live lifecycle rule against this. R2 granularity is days.
     expect(Number.isInteger(STAGING_EXPIRE_DAYS)).toBe(true);
     expect(STAGING_EXPIRE_DAYS).toBeGreaterThan(0);
     expect(STAGING_EXPIRE_DAYS).toBe(7);
@@ -178,17 +117,11 @@ describe('the constants eight plans import', () => {
   });
 
   it('CONTENT_HASH_BYTES is a BYTE count and the hex length is twice it', () => {
-    // The naming hazard, asserted rather than only commented: a downstream
-    // `hash.slice(0, CONTENT_HASH_BYTES)` would produce four characters, not eight.
     expect(CONTENT_HASH_BYTES).toBe(4);
     expect(CONTENT_HASH_HEX_LENGTH).toBe(8);
     expect(CONTENT_HASH_HEX_LENGTH).toBe(CONTENT_HASH_BYTES * 2);
   });
 });
-
-/* ============================================================================================
- * 2. CONT-05's mechanism: two byte sequences cannot share a URL.
- * ========================================================================================== */
 
 describe('contentHash — the CONT-05 mechanism', () => {
   const alpha = new TextEncoder().encode('the first photograph, as bytes');
@@ -221,19 +154,11 @@ describe('contentHash — the CONT-05 mechanism', () => {
   });
 
   it('is the real sha256 prefix, not a hand-rolled digest (ASVS V6)', () => {
-    // A hand-rolled hash would be self-consistent and would pass every assertion above, so the
-    // digest is pinned against two PUBLISHED constants rather than against itself:
-    //   sha256("hello") = 2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
-    //   md5("hello")    = 5d41402abc4b2a76b9719d911017c592
-    // The pipeline must agree with the first eight characters of the former, and differ from the
-    // latter — which is what catches a silent swap to a cheaper algorithm.
     expect(contentHash('hello')).toBe('2cf24dba');
     expect(contentHash('hello')).not.toBe('5d41402a');
   });
 
   it('publishedKey REFUSES a hash that is not eight hex characters', () => {
-    // The CONTENT_HASH_BYTES misuse guard: a four-character slice fails loudly at the first
-    // key composition rather than silently shortening every URL in the manifest.
     expect(() =>
       publishedKey({ category: 'landscape', slug: 'riverbend', hash: '2cf2', suffix: '' })
     ).toThrow(/hex/i);
@@ -243,13 +168,8 @@ describe('contentHash — the CONT-05 mechanism', () => {
   });
 });
 
-/* ============================================================================================
- * 3. The published key and its URL.
- * ========================================================================================== */
-
 describe('publishedKey / publishedUrl', () => {
   it('composes photos/<category>/<slug>-<hash8><suffix>.webp', () => {
-    // Composed from literals, NOT from PUBLISHED_PREFIX or VARIANTS.
     expect(
       publishedKey({ category: 'landscape', slug: 'riverbend', hash: 'a1b2c3d4', suffix: '-lg' })
     ).toBe('photos/landscape/riverbend-a1b2c3d4-lg.webp');
@@ -278,8 +198,6 @@ describe('publishedKey / publishedUrl', () => {
 
   it('publishedUrl parses to an origin EXACTLY equal to IMAGE_ORIGIN', () => {
     const url = publishedUrl('photos/landscape/riverbend-a1b2c3d4-lg.webp');
-    // Origin equality — the same comparison PhotoSchema's remoteUrl refinement makes. A
-    // startsWith is defeated by https://HOST.evil.test/ and https://HOST@evil.test/.
     expect(new URL(url).origin).toBe(IMAGE_ORIGIN);
     expect(new URL(url).pathname).toBe('/photos/landscape/riverbend-a1b2c3d4-lg.webp');
   });
@@ -290,12 +208,8 @@ describe('publishedKey / publishedUrl', () => {
   });
 
   it('the module contains no hostname literal (OD-3)', () => {
-    // The hostname is derived from IMAGE_ORIGIN so this assertion contains no literal either.
     const source = read('src/lib/photo-pipeline.ts');
     expect(source).not.toContain(new URL(IMAGE_ORIGIN).hostname);
-    // ... and it never READS the retired secret. The module NAMES it, in the OD-3 paragraph of
-    // its header, which is the point of that paragraph — so the assertion is on a read, not on
-    // a mention. Three read shapes: process.env.X, an `env.X` binding, and an astro:env import.
     expect(source).not.toMatch(/process\.env\s*[.[]\s*['"]?R2_PUBLIC_URL/);
     expect(source).not.toMatch(/\benv\s*[.[]\s*['"]?R2_PUBLIC_URL/);
     expect(source).not.toMatch(/import\s*\{[^}]*R2_PUBLIC_URL[^}]*\}/);
@@ -303,11 +217,6 @@ describe('publishedKey / publishedUrl', () => {
   });
 
   it('every relative import in the module carries a .ts extension', () => {
-    // Not cosmetic. `scripts/**` imports this module with plain `node` on the Actions runner,
-    // and Node's ESM resolver will not resolve an extensionless relative TypeScript path —
-    // measured as ERR_MODULE_NOT_FOUND against src/schemas/photo.ts, which is why this module
-    // does not import that file. An extensionless import added here would break every wave-5
-    // script at load time, and `npm run check` (biome + prettier) cannot see it.
     const source = read('src/lib/photo-pipeline.ts');
     const relativeImports = [...source.matchAll(/from\s*'(\.[^']*)'/g)].map((m) => m[1]);
     expect(relativeImports.length).toBeGreaterThan(0);
@@ -316,10 +225,6 @@ describe('publishedKey / publishedUrl', () => {
     }
   });
 });
-
-/* ============================================================================================
- * 4. The round trip.
- * ========================================================================================== */
 
 describe('slugFromPublishedKey is the inverse of publishedKey', () => {
   const suffixes = ['', '-lg', '-md', '-sm'] as const;
@@ -348,18 +253,12 @@ describe('slugFromPublishedKey is the inverse of publishedKey', () => {
   });
 });
 
-/* ============================================================================================
- * 5. The variant table cannot drift from the manifest's remote key list.
- * ========================================================================================== */
-
 describe('VARIANTS', () => {
   it('urlKeys deep-equal REMOTE_URL_KEYS, in order', () => {
     expect(VARIANTS.map((variant) => variant.urlKey)).toEqual([...REMOTE_URL_KEYS]);
   });
 
   it('carries the widths and qualities measured from the legacy pipeline', () => {
-    // Typed out again from `git show legacy/nextjs-portfolio:scripts/process-images.js`, and
-    // confirmed against served bytes (a 400px -sm.webp decodes to 400x267).
     expect(VARIANTS).toEqual([
       { urlKey: 'original', suffix: '', maxWidth: 2000, quality: 85 },
       { urlKey: 'large', suffix: '-lg', maxWidth: 1200, quality: 85 },
@@ -377,8 +276,6 @@ describe('VARIANTS', () => {
   it('THUMB is 40px q60 and its prefix IS the one PhotoUrlsSchema enforces', () => {
     expect(THUMB.width).toBe(40);
     expect(THUMB.quality).toBe(60);
-    // Imported from src/schemas/photo.ts — the enforcing side. Comparing against a literal
-    // re-typed here would be the self-agreement this file exists to avoid.
     expect(THUMB.dataUriPrefix).toBe(THUMB_PREFIX);
   });
 
@@ -386,18 +283,6 @@ describe('VARIANTS', () => {
     expect([...REMOTE_URL_KEYS]).not.toContain('thumb');
   });
 });
-
-/* ============================================================================================
- * 5b. THE MOVE IS A MOVE, NOT A COPY.  (plan 05-05 Task 1)
- *
- * `VARIANTS`, `THUMB` and `PHOTO_ID_SEPARATOR` are DECLARED in `src/lib/photo-variants.ts` — a
- * module with zero `node:` imports, so a prerendered page can reach the numbers without pulling
- * `node:crypto` into its graph — and RE-EXPORTED from `photo-pipeline.ts`.
- *
- * `toEqual` would pass against a second copy of the numbers, which is the ONE outcome §7.4
- * explicitly forbade ("never a second copy of the numbers"). So the two object exports are
- * compared with `toBe`: referential identity is only possible if there is one declaration.
- * ========================================================================================== */
 
 describe('the variant table moved down, and there is still exactly one of it', () => {
   it('the re-exported VARIANTS is the SAME OBJECT as the declared one (toBe, not toEqual)', () => {
@@ -409,87 +294,41 @@ describe('the variant table moved down, and there is still exactly one of it', (
   });
 
   it('PHOTO_ID_SEPARATOR agrees — and identity is asserted STRUCTURALLY, not by toBe', () => {
-    // A string is a primitive: `toBe` on it is value equality, so it could not tell a re-export
-    // from a second `const PHOTO_ID_SEPARATOR = '-'`. Saying so here rather than writing an
-    // assertion that looks like the two above and proves strictly less.
     expect(PHOTO_ID_SEPARATOR).toBe(DECLARED_PHOTO_ID_SEPARATOR);
   });
 
   it('photo-pipeline.ts DECLARES none of the three and re-exports all three', () => {
-    // This is the assertion that carries the claim for the primitive, and it is the one that
-    // catches a "helpful" re-inlining of any of the three.
-    //
-    // `let` and `var` are in the alternation deliberately. WALK-THROUGH, and it found a hole in
-    // the first revision of this very assertion: with `const` alone, `export let
-    // PHOTO_ID_SEPARATOR = '-'` evaded BOTH halves of this block — the regex, because the
-    // keyword did not match, and the `toBe` above, because a string is a primitive and `toBe`
-    // on it is value equality. The two object exports were never exposed (a fresh array or
-    // object fails `toBe` whatever keyword declares it); the primitive was.
     const source = read('src/lib/photo-pipeline.ts');
     for (const name of ['VARIANTS', 'THUMB', 'PHOTO_ID_SEPARATOR']) {
       expect(source).not.toMatch(new RegExp(`^\\s*export\\s+(?:const|let|var)\\s+${name}\\b`, 'm'));
       expect(source).not.toMatch(new RegExp(`^\\s*(?:const|let|var)\\s+${name}\\b`, 'm'));
     }
-    // ANTI-VACUITY: the two patterns above must be able to match something in this file, or a
-    // typo in either regex would make all six assertions pass against any source at all —
-    // including an empty one.
     expect(source).toMatch(/^\s*export\s+(?:const|let|var)\s+STAGING_PREFIX\b/m);
     expect(source).toMatch(/^\s*(?:const|let|var)\s+SUFFIX_ALTERNATION\b/m);
-    // ...and the re-export is present, with the explicit `.ts` the Actions scripts need.
     expect(source).toMatch(/export\s*\{[^}]*\bVARIANTS\b[^}]*\}\s*from\s*'\.\/photo-variants\.ts'/);
   });
 
   it('photo-pipeline.ts cannot hold a RENAMED copy of the separator either', () => {
-    // The residual the name-based regexes above cannot see: `const SEP = '-'; export { SEP as
-    // PHOTO_ID_SEPARATOR };` declares a second definition under a name this file never checks.
-    // Closed textually rather than left open, because it can be: the separator's VALUE is a
-    // one-character string, and `photo-pipeline.ts`'s CODE contains that literal ZERO times now
-    // that the four variant suffixes live one file down. So the absence of the literal is the
-    // absence of any copy, under any name.
-    //
-    // Counted over comment-stripped source. Counting raw is what a first revision of this did,
-    // and it reported TWO separators in a file with one, because `photo-variants.ts`'s header
-    // spells `'-'` while explaining the constant. A rule that fires on its own rationale is a
-    // rule that gets deleted.
     const pipelineCode = stripComments(read('src/lib/photo-pipeline.ts'));
     expect([...pipelineCode.matchAll(/'-'/g)]).toHaveLength(0);
-    // ANTI-VACUITY: the matcher must be able to find that literal where it really does live,
-    // or "zero occurrences" is a statement about a broken regex rather than about the file.
     const variantsCode = stripComments(read('src/lib/photo-variants.ts'));
     expect([...variantsCode.matchAll(/'-'/g)]).toHaveLength(1);
-    // ANTI-VACUITY on the STRIPPER, which is the new thing being trusted: it must remove a
-    // comment and must NOT remove a string. Both halves, because a stripper that returned ''
-    // would satisfy the zero-count above and every rule built on it, forever.
     expect(stripComments("const a = 1; // '-' in a line comment")).not.toContain("'-'");
     expect(stripComments("const a = 1; /* '-' in a block comment */")).not.toContain("'-'");
     expect(stripComments("const sep = '-';")).toContain("'-'");
     expect(stripComments("const s = '// not a comment';")).toContain('// not a comment');
     expect(stripComments("const s = '/* not a comment */';")).toContain('/* not a comment */');
-    // RESIDUAL, measured not claimed closed: a copy assembled without the literal —
-    // `String.fromCharCode(45)`, or `'a-b'.slice(1, 2)` — is invisible to every textual rule
-    // here and needs an AST pass. Same class as 05-01's R1 and assert-no-raw-html-sinks's
-    // blind spot 1. The `toBe` assertions above cover the two OBJECT exports regardless of how
-    // a copy is assembled; only the primitive has this residual.
   });
 
   it('photo-variants.ts imports nothing from node: — that is the whole point of the move', () => {
     const source = read('src/lib/photo-variants.ts');
-    // Specifier position, not any mention: the header NAMES `node:crypto` when it explains why
-    // the file exists, and a rule that fires on its own rationale gets deleted within a week.
     const specifiers = [...source.matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)].map((m) => m[1]);
     expect(specifiers.length).toBeGreaterThan(0);
     expect(specifiers.filter((spec) => spec.startsWith('node:'))).toEqual([]);
-    // ANTI-VACUITY: the extractor must actually be finding the one import this file has.
     expect(specifiers).toContain('./image-origin.ts');
-    // The header does name node:crypto, so a naive `toContain` check would have been satisfied
-    // by prose. Asserted, so the distinction is not merely commented.
     expect(source).toContain('node:crypto');
   });
 });
-
-/* ============================================================================================
- * 6. T-04-04 — the staging key validator.
- * ========================================================================================== */
 
 describe('assertStagingKey (threat T-04-04: attacker-influenced R2 object path)', () => {
   it('accepts a real staged upload key', () => {
@@ -517,7 +356,6 @@ describe('assertStagingKey (threat T-04-04: attacker-influenced R2 object path)'
   for (const [label, value] of rejected) {
     it(`REFUSES ${label}: ${JSON.stringify(value)}`, () => {
       expect(() => assertStagingKey(value)).toThrow();
-      // The message must name the prefix, or the operator cannot tell what was expected.
       let message = '';
       try {
         assertStagingKey(value);
@@ -531,36 +369,24 @@ describe('assertStagingKey (threat T-04-04: attacker-influenced R2 object path)'
   it('STAGING_KEY_RE is anchored at both ends', () => {
     expect(STAGING_KEY_RE.source.startsWith('^')).toBe(true);
     expect(STAGING_KEY_RE.source.endsWith('$')).toBe(true);
-    // An unanchored pattern would accept a key with the staging prefix buried in the middle.
     expect(STAGING_KEY_RE.test('x/temp/y.jpg')).toBe(false);
   });
 
   it('is stricter than the legacy /api/dispatch validator it replaces', () => {
-    // The legacy pattern was /^temp\/[a-zA-Z0-9._\/-]+$/, which ACCEPTS a traversal because
-    // "." and "/" are both in its class. Asserted here so a future "simplification" back to it
-    // fails rather than passing quietly.
     const legacy = /^temp\/[a-zA-Z0-9._/-]+$/;
     expect(legacy.test('temp/../secrets')).toBe(true);
     expect(STAGING_KEY_RE.test('temp/../secrets')).toBe(false);
   });
 });
 
-/* ============================================================================================
- * 7. The record id — the NEW invariant, since OD-1 A broke the old one.
- * ========================================================================================== */
-
 describe('photoIdFor', () => {
   it('is category + "-" + slug and satisfies the schema slug grammar', () => {
     expect(photoIdFor({ category: 'landscape', slug: 'riverbend' })).toBe('landscape-riverbend');
     expect(PHOTO_ID_SEPARATOR).toBe('-');
-    // Re-implemented from src/schemas/photo.ts's SLUG, not imported.
     expect(photoIdFor({ category: 'landscape', slug: 'river-bend-2' })).toMatch(/^[a-z0-9-]+$/);
   });
 
   it('agrees with every existing record id, which is the OLD era read forwards', () => {
-    // The 39 committed ids were `category + "-" + basename(urls.original)`. For every one of
-    // them the basename WAS the slug, so recomposing from category + slug must reproduce the id
-    // exactly. A floor, not a count — Phase 4 appends.
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     for (const record of manifest) {
       const slug = record.id.slice(`${record.category}-`.length);
@@ -574,10 +400,6 @@ describe('photoIdFor', () => {
     expect(() => photoIdFor({ category: 'landscape', slug: 'river bend' })).toThrow(/a-z0-9/);
   });
 });
-
-/* ============================================================================================
- * 8. The dispatch interface (OD-2). 04-08 generates the workflow's inputs: block from this.
- * ========================================================================================== */
 
 describe('DISPATCH_INPUTS', () => {
   it('names, in order, are the five OD-2 A inputs', () => {
@@ -609,10 +431,6 @@ describe('DISPATCH_INPUTS', () => {
     expect(DISPATCH_INPUTS.length).toBeLessThanOrEqual(10);
   });
 });
-
-/* ============================================================================================
- * 9. OD-2b — the placeholder refusal, and the proof it cannot fire on real alt text.
- * ========================================================================================== */
 
 describe('altRefusalReason — OD-2b REFUSES a placeholder', () => {
   const TITLE = 'Into The Mist';
@@ -666,8 +484,6 @@ describe('altRefusalReason — OD-2b REFUSES a placeholder', () => {
     for (const token of ALT_PLACEHOLDER_LEADING) {
       expect(ALT_PLACEHOLDER_EXACT).toContain(token);
     }
-    // The four ordinary English words are exact-match ONLY. If one is ever added to the leading
-    // list, the legitimate captions below start failing — this assertion says so up front.
     for (const word of ['alt', 'photo', 'image', 'picture']) {
       expect(ALT_PLACEHOLDER_LEADING).not.toContain(word);
     }
@@ -675,9 +491,6 @@ describe('altRefusalReason — OD-2b REFUSES a placeholder', () => {
 });
 
 describe('altRefusalReason — OD-2b ACCEPTS legitimate alt text', () => {
-  // THE FALSE-POSITIVE PROOF. A refusal that rejects real alt text is worse than none, so every
-  // caption here contains a placeholder token as a WORD or a SUBSTRING and must PASS. If anyone
-  // "tightens" the rule into a substring test, these fail first.
   const accepted = [
     'Photo taken from the fort wall at dusk',
     'Image reflected in the still water below the ghat',
@@ -705,7 +518,6 @@ describe('altRefusalReason — OD-2b ACCEPTS legitimate alt text', () => {
   });
 
   it('ACCEPTS every reviewed alt value in the manifest — the real corpus', () => {
-    // Iterated over the WHOLE manifest with a floor, so a 40th record strengthens this.
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     const rejections: string[] = [];
     for (const record of manifest) {
@@ -716,23 +528,10 @@ describe('altRefusalReason — OD-2b ACCEPTS legitimate alt text', () => {
   });
 });
 
-/* ============================================================================================
- * 10. The module must not reach the Worker.
- * ========================================================================================== */
-
 describe('module boundary', () => {
   it('nothing else under src/ imports the pipeline contract', () => {
-    // node:crypto lives in that module. wrangler.jsonc sets nodejs_compat, so an accidental
-    // import into a Worker-side module would NOT fail loudly — it would quietly ship the
-    // pipeline into the bundle. That is exactly why the boundary needs an assertion rather
-    // than a runtime error.
     const files = listSourceFiles(`${REPO_ROOT}src`);
-    // GUARD AGAINST NOTHING: a walk that visited no file would pass this trivially.
     expect(files.length).toBeGreaterThan(10);
-    // An IMPORT, not a mention. `src/schemas/photo.ts` legitimately NAMES this module in a
-    // comment explaining why the thumb prefix is declared in both places, and a bare
-    // `includes('photo-pipeline')` flagged it — a rule that fires on prose is a rule that gets
-    // deleted within a week, at which point it protects nothing.
     const importsPipeline = /(?:from\s*|import\s*\(\s*)['"][^'"]*photo-pipeline/;
     const offenders = files.filter((file) => {
       if (file.endsWith('/photo-pipeline.ts')) return false;

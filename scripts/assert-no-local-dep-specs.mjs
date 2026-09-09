@@ -1,54 +1,4 @@
 #!/usr/bin/env node
-/**
- * FND-05 ship gate — refuse to ship a build whose dependencies were not resolved from a registry.
- *
- * Usage: node scripts/assert-no-local-dep-specs.mjs [manifestPath] [--advisory]
- *        (manifest defaults to ./package.json)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS GATE IS SCOPED TO THE SHIP PATH, AND WHY THAT IS NOT A WEAKENING
- *
- * CLAUDE.md says two things that only look contradictory:
- *
- *   "During development the portfolio consumes it as a packed tarball (npm pack -> file:*.tgz),
- *    never file:../design-system or npm link — both are symlinks and carry the duplicate-React
- *    'invalid hook call' hazard. A CI gate fails the build if the dependency spec still starts
- *    with file: at ship time."
- *
- * So during Phase 5 the design-system spec legitimately IS file:./local-packages/*.tgz. That is
- * the sanctioned workflow, and it is safe for the specific reason that npm COPIES a tarball into
- * node_modules rather than symlinking it — one React, one module instance. A gate that fired on
- * every push would make the sanctioned workflow impossible and would be turned off within a day,
- * which is the failure mode where a gate is worse than no gate.
- *
- * Hence the scoping, which is enforced in package.json and asserted by plan 02-06's Task 1 verify:
- *
- *   - `gate:deps`          — enforcing. Wired into `deploy`, and into the deploy CI job only.
- *   - `gate:deps:advisory` — same report, exit 0. Wired into everyday CI by plan 02-08.
- *   - NEITHER form appears in `build` or `check`.
- *
- * Over-scope it and development stops. Under-scope it and a symlinked React reaches production.
- * Both directions are real failures; this is the shape that is neither.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY A MANIFEST-ONLY CHECK WOULD MISS THE EXACT HAZARD CLAUDE.md NAMES
- *
- * `file:../design-system` leaves a trace in package.json. `npm link` does not — it leaves a
- * perfectly ordinary-looking version range in the manifest and a symlink on disk. A gate that
- * only read the manifest would pass, cleanly and confidently, on precisely the setup that
- * produces two copies of React: the linked package resolves React through its own node_modules,
- * hooks are read from a different module instance than the one the app rendered with, and you
- * get "Invalid hook call" errors that are intermittent and can vanish on refresh. That class of
- * bug costs days. So this gate reads the filesystem too.
- *
- * ---------------------------------------------------------------------------------------------
- * NOTE ON TIMING: as of Phase 2 there is NO design-system dependency, and no local spec anywhere
- * — so this gate currently has nothing to catch. That is deliberate. FND-05 exists so that the
- * moment Phase 5 adds the tarball, the machinery that stops it shipping is already in place and
- * has already been observed to refuse (02-NEGATIVE-CONTROLS.md, Control 3). A gate written the
- * same week as the thing it guards has never been tested against a tree where it should stay
- * quiet.
- */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -61,14 +11,8 @@ const manifestPath = path.resolve(process.cwd(), manifestArg);
 const projectDir = path.dirname(manifestPath);
 const modulesDir = path.join(projectDir, 'node_modules');
 
-/** Spec prefixes that mean "npm did not resolve this from a registry". */
 const LOCAL_SPEC_PREFIXES = ['file:', 'link:', 'portal:'];
 
-/**
- * Every map a dependency can be declared in. `overrides` and `resolutions` are included beyond
- * the four dependency maps because an override can pin a TRANSITIVE package to a local path,
- * which reaches the bundle by exactly the same route while leaving the four maps clean.
- */
 const DEPENDENCY_MAPS = [
   'dependencies',
   'devDependencies',
@@ -111,7 +55,6 @@ for (const map of DEPENDENCY_MAPS) {
   }
 }
 
-/** Overrides nest arbitrarily deep; walk them rather than assuming one level. */
 function walkOverrides(node, map, trail) {
   if (typeof node === 'string') {
     const prefix = LOCAL_SPEC_PREFIXES.find((p) => node.startsWith(p));
@@ -131,14 +74,6 @@ function walkOverrides(node, map, trail) {
 }
 for (const map of OVERRIDE_MAPS) walkOverrides(manifest[map], map, []);
 
-/**
- * The filesystem half. Two passes:
- *   1. every DECLARED dependency whose node_modules entry is a symlink;
- *   2. every top-level node_modules entry that is a symlink, declared or not — because
- *      `npm link <pkg>` in the consumer creates the symlink without touching the manifest,
- *      so pass 1 alone could not see it.
- * Scoped packages live one level deeper, so @scope directories are descended into.
- */
 function symlinkFindings() {
   if (!fs.existsSync(modulesDir)) return;
 
@@ -168,9 +103,7 @@ function symlinkFindings() {
       let target = '(unreadable)';
       try {
         target = fs.readlinkSync(entryPath);
-      } catch {
-        /* keep the placeholder */
-      }
+      } catch {}
       record(name, target);
     }
   };

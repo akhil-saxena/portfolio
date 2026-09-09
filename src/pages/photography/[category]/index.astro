@@ -83,9 +83,7 @@ const countLine = countLineFor(category.id, count, total);
     <Heading level={1} id={TITLE_ID} size="4xl" weight="regular">{category.label}</Heading>
   </header>
 
-  {}
   <div class="ph-rail">
-    {}
     <PhotoFilters
       client:load
       categories={siteConfig.categories}
@@ -95,11 +93,9 @@ const countLine = countLineFor(category.id, count, total);
       defaultColumns={siteConfig.defaultColumns}
     />
 
-    {}
     <Text size="xs" tone="muted" id={COUNT_ID}>{countLine}</Text>
   </div>
 
-  {}
   {
     count === 0 ? (
       <PhotoEmpty label={category.label} total={total} />

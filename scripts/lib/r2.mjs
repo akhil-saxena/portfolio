@@ -1,113 +1,3 @@
-/**
- * R2 I/O for the photo pipeline — get the staged object, put a published variant, delete the
- * staged object.  (Phase 4, plan 04-09 — PIPE-01, PIPE-03, PIPE-04.)
- *
- * ---------------------------------------------------------------------------------------------
- * WHERE THIS RUNS — DEPENDENCY TIER
- *
- * ACTIONS RUNNER ONLY, NEVER IN `workerd`. It spawns the `wrangler` CLI as a child process, which
- * no Workers runtime can do at any version. Nothing under `src/` may import this file.
- *
- * The Worker's `PORTFOLIO_BUCKET` binding is a READ/SERVE path and is not this. The pipeline does
- * not run in the Worker and does not use that binding; the two reach the same bucket by two
- * different mechanisms for two different reasons, and conflating them is how a "guard the binding"
- * habit from the legacy Worker routes ends up in a job where an absent credential is a real
- * failure (see FAIL CLOSED below).
- *
- * ---------------------------------------------------------------------------------------------
- * OD-5 = B · `wrangler r2 object`, NOT the S3 SDK.  (Decided by Akhil in review on 2026-08-26;
- * the resolutions block at the head of `04-RESEARCH.md` § Open decisions is the record.)
- *
- * The research recommended A (`@aws-sdk/client-s3` with the five existing `R2_*` secrets) but
- * conditioned it on OD-6: *"unless OD-6 forces a Cloudflare API token anyway (it does, for
- * lifecycle) — in which case B becomes the tidier answer."* OD-6 resolved to A, the condition is
- * met, and the recommendation flips. One credential system instead of two, ~27 fewer packages,
- * and the same token that creates the staging lifecycle rule does the object I/O.
- *
- * The credential surface is therefore `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`, which is
- * what `REQUIRED_ENV` below says — and `REQUIRED_ENV` is exported precisely because a probe
- * cannot know it: it differs between OD-5's two branches, and hardcoding a guess is how a probe
- * ends up asserting nothing.
- *
- * CONTINGENCY, recorded rather than assumed: B needs `CLOUDFLARE_API_TOKEN` to carry
- * **R2 Storage → Edit**, which is unverified from here. 04-10 Task 2's blocking checkpoint tests
- * it. If it fails, Akhil adds the scope; falling back to A is the last resort and is a deviation
- * to record, not an executor's call.
- *
- * ---------------------------------------------------------------------------------------------
- * `--remote` IS ON EVERY INVOCATION, AND ITS ABSENCE IS THE WORST BUG THIS FILE COULD HAVE
- *
- * MEASURED in the installed wrangler 4.123.0 bundle (`node_modules/wrangler/wrangler-dist/cli.js`,
- * `src/utils/is-local.ts`), not inferred from the docs:
- *
- *     function isLocal(args, defaultValue = true) {
- *       if (args.local === void 0 && args.remote === void 0) return defaultValue;   // ← TRUE
- *       return args.local === true || args.remote === false;
- *     }
- *
- * With neither `--local` nor `--remote`, `wrangler r2 object get|put|delete` operates on LOCAL
- * miniflare storage under `.wrangler/`. A pipeline that omitted the flag would:
- *
- *   - "get" the staged object from an empty local directory, find nothing, and — because an
- *     absent staged object is deliberately EXIT 0 (the once-only token, criterion 2) — report a
- *     clean no-op for every dispatch, forever;
- *   - "put" four variants into a directory that is deleted with the runner;
- *   - "delete" nothing.
- *
- * That is a silent fail-open, so the flag is not passed by call sites at all: `wranglerArgv()` is
- * the only argv composer here and it appends `REMOTE_FLAG` itself, and `assertRemote()` re-checks
- * the composed argv immediately before every spawn. Two checks for one flag is deliberate — the
- * failure it prevents is invisible from the run log.
- *
- * ---------------------------------------------------------------------------------------------
- * FAIL CLOSED · `CLAUDE.md`: "auth fails closed … a missing configuration denies rather than
- * degrades."  (Threat T-04-47.)
- *
- * Every name in `REQUIRED_ENV` is asserted present AND non-empty AT MODULE INIT, and the throw
- * names which one is missing. Importing this module without credentials is an error, not a
- * degraded mode.
- *
- * It is explicitly NOT the legacy Worker guard pattern (`try { getRequestContext().env } catch`).
- * That pattern exists because Cloudflare bindings are genuinely unavailable under `next dev`, and
- * copying it here would let the job skip the upload and commit a record anyway — a manifest entry
- * with no bytes behind it, which is the single worst outcome available to this phase and the one
- * §6 measured that no existing gate can see.
- *
- * `scripts/lib/r2-fail-closed.probe.mjs` is the executable enforcement of this paragraph.
- *
- * ---------------------------------------------------------------------------------------------
- * IT COMPOSES NO KEYS
- *
- * There is no `temp/` here, no `photos/`, no `-lg`, no hostname. The module takes a key and does
- * I/O with it. `STAGING_PREFIX` and `publishedKey()` live in `src/lib/photo-pipeline.ts`, which
- * that file's header states is the only place the scheme is written — a second opinion here is
- * exactly how the delete step ends up pointed at a different object from the get step.
- *
- * What it does compose is `<bucket>/<key>`, which is `wrangler r2 object`'s own positional
- * argument grammar (`objectPath`), not a key scheme. The bucket comes from `STAGING_BUCKET`,
- * whose own comment says it is "the R2 bucket both halves of the pipeline use" and which the
- * contract test holds byte-equal to `wrangler.jsonc`'s `bucket_name`.
- *
- * Both directions are additionally CHECKED rather than trusted: a staging op runs
- * `assertStagingKey` (T-04-04 — `temp_key` is caller-supplied text naming an object in a bucket
- * this job can write to), and `putVariant` runs `parsePublishedKey`, so the only keys this module
- * can ever WRITE are ones `publishedKey()` could have produced. That second check is also where
- * OD-9 lands at the I/O boundary: a `private/…` key is unwritable here, not merely unproduced.
- *
- * ---------------------------------------------------------------------------------------------
- * NEVER ECHO A CREDENTIAL  (T-04-46)
- *
- * Workflow logs are readable by anyone with repository access. Three things follow:
- *
- *   1. The child gets a MINIMAL environment — the two credentials plus `PATH`/`HOME`/`TMPDIR`/
- *      `CI` — never `process.env` wholesale. The App installation token that authorises the git
- *      push is in the job's environment and has no business inside a `wrangler` process.
- *   2. Failures are reported as status + message + KEY. The endpoint, the account id and the
- *      token never appear in a thrown message.
- *   3. `redactCredentials()` scrubs any literal credential value out of captured child output
- *      before it is logged — belt and braces behind (1), never instead of it.
- */
-
 import { spawn } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -124,53 +14,23 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(HERE, '..', '..');
 
-/**
- * The environment variables this module requires, under OD-5 option B.
- *
- * EXPORTED because `scripts/lib/r2-fail-closed.probe.mjs` cannot know them: option A's surface is
- * five `R2_*` secrets and option B's is these two, so a probe with a hardcoded list would assert
- * something about a module that is not this one. The probe reads this array, REFUSES if it is
- * empty, and then empties exactly one name at a time.
- */
 export const REQUIRED_ENV = Object.freeze(['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID']);
 
-/** The one bucket. See "IT COMPOSES NO KEYS" above. */
 const BUCKET = STAGING_BUCKET;
 
-/** Never omitted, never optional. See the `--remote` block in the header. */
 const REMOTE_FLAG = '--remote';
 
-/** `node <path>` rather than a `.bin` shim: an argv array with no shell and no PATH lookup. */
 const WRANGLER_ENTRY = join(REPO_ROOT, 'node_modules', 'wrangler', 'bin', 'wrangler.js');
 
-/** Bounded, and only for reasons that mean "ask again". A 4xx is never retried. */
 const MAX_ATTEMPTS = 3;
 const RETRY_BACKOFF_MS = 500;
 
-/**
- * R2 documents ONE write per second to the SAME key. Writes are therefore serialised per key and
- * spaced by this much; five objects per photograph is far below the 1,200-per-5-minutes REST
- * budget, so nothing else needs throttling (T-04-49).
- */
 const SAME_KEY_WRITE_INTERVAL_MS = 1000;
 
-/**
- * wrangler's own words for "the object is not there", from the installed bundle — BOTH the local
- * and the remote handler throw this exact `UserError`. Matched narrowly on purpose.
- *
- * `The specified bucket does not exist.` is deliberately NOT in here. A wrong bucket is a
- * configuration failure and must fail the job; treating it as "nothing staged" would make every
- * dispatch a silent exit-0 no-op, which is the same fail-open shape as a missing `--remote`.
- */
 const NOT_FOUND_PATTERN = /the specified key does not exist/i;
 
-/** Reasons to ask again. Everything else — auth, 4xx, not-found — is reported on sight. */
 const TRANSIENT_PATTERN =
   /\b5\d\d\b|internal server error|service unavailable|bad gateway|gateway time-?out|econnreset|etimedout|enotfound|eai_again|socket hang up|fetch failed|network error/i;
-
-/* ==============================================================================================
- * 1. FAIL CLOSED, AT MODULE INIT.
- * ============================================================================================ */
 
 /**
  * Throws naming the FIRST missing or empty variable. Runs at import time (call below), so there
@@ -284,8 +144,6 @@ function childEnv() {
     PATH: process.env.PATH ?? '',
     HOME: process.env.HOME ?? '',
     TMPDIR: process.env.TMPDIR ?? tmpdir(),
-    // Non-interactive. wrangler's data-catalog conflict prompt falls back rather than blocking a
-    // runner that can never answer it.
     CI: 'true',
     WRANGLER_SEND_METRICS: 'false',
   };
@@ -331,7 +189,6 @@ function runWrangler(argv) {
   });
 }
 
-/** An R2 failure carrying the key and the child's exit code — and never a credential. */
 export class R2Error extends Error {
   /** @param {string} message @param {{ key: string, code: number, notFound?: boolean }} detail */
   constructor(message, detail) {
@@ -394,10 +251,6 @@ function summarise(result) {
   return (line ?? 'wrangler reported no message').slice(0, 300);
 }
 
-/* ==============================================================================================
- * 4. Per-key write serialisation.  (T-04-49)
- * ============================================================================================ */
-
 /** @type {Map<string, Promise<unknown>>} */
 const writeChains = new Map();
 /** @type {Map<string, number>} */
@@ -426,17 +279,12 @@ function serialisePerKey(key, task) {
       lastWriteAt.set(key, Date.now());
     }
   });
-  // Keep the chain alive on failure so a rejected write does not poison the next one.
   writeChains.set(
     key,
     next.catch(() => undefined)
   );
   return next;
 }
-
-/* ==============================================================================================
- * 5. THE THREE OPERATIONS.
- * ============================================================================================ */
 
 /**
  * Read the staged upload out of R2.
@@ -550,29 +398,6 @@ export function putVariant(descriptor) {
  *
  * @param {string} key
  * @returns {Promise<{ key: string, deleted: boolean }>}
- */
-/**
- * Any object under the published prefix — `photos/<dir>/<name>.webp` — with NO claim about the
- * name's shape.
- *
- * ================================================================================================
- * WHY THE READ AND DELETE GUARDS ARE WIDER THAN THE WRITE GUARD, DELIBERATELY
- * ================================================================================================
- *
- * `putVariant` runs `parsePublishedKey`, which requires
- * `photos/<category>/<slug>-<hash8><suffix>.webp`. That is right for a WRITE: the only keys this
- * repository should ever create are ones `publishedKey()` could have produced.
- *
- * It is wrong for a read, because MEASURED against the committed manifest, 156 OF THE 160 LIVE
- * OBJECTS DO NOT MATCH IT. The corpus predates the content-hashed scheme — only one photograph has
- * ever been through the current pipeline — so the live bucket is almost entirely
- * `photos/abstract/intothemist.webp`-shaped. A migration that could not READ those keys could not
- * migrate them, and guarding the read with `parsePublishedKey` would have failed on 97.5% of the
- * corpus while looking like the careful choice.
- *
- * So: reads and deletes accept anything under the prefix; writes stay canonical. The asymmetry is
- * the migration's whole direction of travel — legacy in, canonical out — and it closes on its own
- * the day the last legacy key is swept.
  */
 const UNDER_PUBLISHED_PREFIX_RE = /^photos\/[a-z][a-z0-9-]*\/[A-Za-z0-9][A-Za-z0-9._-]*\.webp$/;
 

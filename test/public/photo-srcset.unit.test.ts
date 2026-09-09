@@ -1,37 +1,3 @@
-/**
- * `src/lib/photo-srcset.ts` — `srcsetFor`, `sizesFor`, `photoSlug`, `photoHref`.
- * (Phase 5, plan 05-05, Task 3.)
- *
- * FOUR FUNCTIONS, FOUR DIFFERENT WAYS OF BEING WRONG SILENTLY
- * ----------------------------------------------------------
- * Every one of these has a failure mode with NO visible symptom, which is why they are derived in
- * one module and asserted here rather than typed into a page.
- *
- *   - `photoSlug` / `photoHref`. `PhotoSchema` has no `slug` field, so `/photography/<category>/<slug>`
- *     is RECOVERED from the id. 05-07's gallery tile and 05-08's detail route both import these;
- *     they are both wave 4 and cannot read each other, so two independent derivations would
- *     disagree and every tile would 404 against a page that exists under a different slug — with a
- *     green build, a green suite and a green gate. First detection would be a human clicking a
- *     tile. So the round trip is asserted against EVERY record in the real manifest, and the
- *     absence of a collision is asserted as a count of distinct pairs rather than as a spot check.
- *   - `srcsetFor`. A wrong width descriptor makes the browser pick the wrong candidate. Nothing
- *     renders incorrectly; the page is just heavier or blurrier than it should be.
- *   - `sizesFor`. A `sizes` that disagrees with the layout is a silently wrong DOWNLOAD size. No
- *     error, no visual difference, no way to notice without measuring bytes.
- *
- * WHAT THIS SUITE REFUSES TO DO
- * -----------------------------
- *   - It does not hand-type photo records. The three `srcsetFor` cases are looked up BY ID in the
- *     real `data/portfolio_images.json`, so the test tracks the data. A fixture would keep passing
- *     after a re-process changed a record's dimensions.
- *   - It does not assert the number of records anywhere. The manifest is at 40 and will grow; a
- *     count would make a correct publish look like a regression. Floors only, and the per-record
- *     loops get STRONGER as records are added.
- *   - It does not compute the `sizes` string the way the module does. §7.4's string is typed out
- *     verbatim below AND re-read from `05-UI-SPEC.md` on disk, so the chain runs
- *     spec file → this file's literal → the module's output, with no step agreeing with itself.
- */
-
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -42,7 +8,6 @@ import { VARIANTS } from '../../src/lib/photo-variants';
 const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 const read = (relative: string): string => readFileSync(`${REPO_ROOT}${relative}`, 'utf8');
 
-/** See the twin in `test/public/layout-ladder.unit.test.ts` for why this is duplicated. */
 function stripComments(source: string): string {
   let out = '';
   let i = 0;
@@ -87,15 +52,6 @@ function stripComments(source: string): string {
   return out;
 }
 
-/**
- * Split a `sizes` list into its clauses — on commas at PAREN DEPTH ZERO only.
- *
- * A naive `split(', ')` also splits inside `min(100vw, 1280px)`, which is a comma the CSS
- * `min()` function owns. The first revision of this suite did exactly that and reported five
- * clauses where there are four, failing on CORRECT output. Recorded rather than quietly fixed:
- * the same mistake in 05-06's gate would make it fire on a correct stylesheet, and a gate that
- * fires on correct code gets turned off.
- */
 function splitClauses(sizes: string): string[] {
   const clauses: string[] = [];
   let depth = 0;
@@ -123,14 +79,11 @@ type ManifestRecord = {
 
 const manifest = JSON.parse(read('data/portfolio_images.json')) as ManifestRecord[];
 
-/** A FLOOR, never a count. The manifest grows; §16 forbids literalling its size. */
 const RECORD_FLOOR = 39;
 
 function record(id: string): ManifestRecord {
   const found = manifest.find((entry) => entry.id === id);
   if (!found) {
-    // A missing reference record must fail LOUDLY here. `find` returning undefined and the test
-    // then asserting against `undefined?.urls` is how a suite quietly stops checking anything.
     throw new Error(
       `test fixture: no record with id "${id}" in data/portfolio_images.json. This suite is ` +
         'pinned to real records by id; if one was renamed, repoint the test rather than ' +
@@ -142,17 +95,10 @@ function record(id: string): ManifestRecord {
 
 describe('the corpus this suite reads is real and non-trivial', () => {
   it('the manifest is present and above the floor', () => {
-    // ANTI-VACUITY, FIRST: every per-record loop below iterates `manifest`. An empty array makes
-    // all of them pass without checking a single photograph, which is the exact shape of the nine
-    // vacuous gates this project has paid for.
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     expect(Array.isArray(manifest)).toBe(true);
   });
 });
-
-/* ==============================================================================================
- * 1. photoSlug / photoHref — BL-8. The definition two wave-4 plans import.
- * ============================================================================================ */
 
 describe('photoSlug — the id with its category prefix removed', () => {
   it('strips the prefix on the documented example', () => {
@@ -162,22 +108,16 @@ describe('photoSlug — the id with its category prefix removed', () => {
   });
 
   it('keeps every later hyphen — only the FIRST category prefix is removed', () => {
-    // The failure this catches is a `split('-')[1]` or a `replace(/-.*$/, '')` implementation,
-    // both of which look right against `architecture-intothemist` and truncate a real slug.
     expect(photoSlug({ id: 'landscape-river-bend-2024', category: 'landscape' })).toBe(
       'river-bend-2024'
     );
   });
 
   it('does not strip a prefix that merely LOOKS like the category', () => {
-    // `naturewatch-x` starts with "landscape" but not with "landscape-". A `startsWith(category)` plus a
-    // fixed-length slice would return "watch-x" here and be wrong by one character forever.
     expect(photoSlug({ id: 'landscape-naturewatch', category: 'landscape' })).toBe('naturewatch');
   });
 
   it('ROUND-TRIPS for every record in the real manifest', () => {
-    // The whole point of BL-8. Asserted over all of them, not a sample, and the assertion
-    // strengthens as records are added.
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     const failures: string[] = [];
     for (const entry of manifest) {
@@ -195,16 +135,11 @@ describe('photoSlug — the id with its category prefix removed', () => {
   });
 
   it('NO TWO photographs in one category produce the same slug', () => {
-    // A collision is a 404 with no build error and no failing test anywhere else in the phase.
-    // Counted as distinct `category/slug` pairs against the record count, so a future collision
-    // fails HERE rather than in a browser in wave 7.
     const pairs = new Set(manifest.map((entry) => `${entry.category}/${photoSlug(entry)}`));
     expect(pairs.size).toBe(manifest.length);
   });
 
   it('REFUSES an id that does not carry its category prefix', () => {
-    // Silently slicing would produce a wrong slug from a malformed id and route to a page that
-    // does not exist. A throw is the only outcome a prerender can act on.
     expect(() => photoSlug({ id: 'intothemist', category: 'architecture' })).toThrow(
       /architecture/
     );
@@ -231,8 +166,6 @@ describe('photoHref — the ONE definition 05-07 and 05-08 both import', () => {
   });
 
   it('every href is root-relative, single-segment-per-part, and has no trailing slash', () => {
-    // 05-08 builds `getStaticPaths` from `category` and `slug`. A leading `//`, a trailing slash
-    // or an embedded `..` would each route somewhere else while looking correct in a template.
     for (const entry of manifest) {
       const href = photoHref(entry);
       expect(href.startsWith('/photography/')).toBe(true);
@@ -248,10 +181,6 @@ describe('photoHref — the ONE definition 05-07 and 05-08 both import', () => {
     expect(hrefs.size).toBe(manifest.length);
   });
 });
-
-/* ==============================================================================================
- * 2. srcsetFor — §7.4's expression, and nothing else.
- * ============================================================================================ */
 
 describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', () => {
   const expected = (entry: ManifestRecord, widths: readonly number[]): string =>
@@ -276,16 +205,12 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 
   it('architecture-officegreens (source 2000, exactly at the cap) → 2000w, …', () => {
-    // §7.4's fourth measured record. `min(2000, 2000)` is the boundary case of the cap and the one
-    // an off-by-one in a `<` vs `<=` would move.
     const entry = record('architecture-officegreens');
     expect(entry.dimensions.width).toBe(2000);
     expect(srcsetFor(entry)).toBe(expected(entry, [2000, 1200, 800, 400]));
   });
 
   it('holds for EVERY record in the manifest, computed independently', () => {
-    // The three named cases are the measured ones; this is the same claim over the whole corpus,
-    // with the expectation computed here from VARIANTS rather than read from the module.
     expect(manifest.length).toBeGreaterThanOrEqual(RECORD_FLOOR);
     for (const entry of manifest) {
       const widths = VARIANTS.map((variant) => Math.min(variant.maxWidth, entry.dimensions.width));
@@ -304,9 +229,6 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 
   it('every URL is the record OWN url — the function never builds one', () => {
-    // §7.2 / OD-3: the module must not compose a URL from an origin. Asserted against the data
-    // AND structurally against the source, because "it happens to return the right string" and
-    // "it cannot return a wrong one" are different claims.
     for (const entry of manifest) {
       for (const candidate of srcsetFor(entry).split(', ')) {
         const url = candidate.slice(0, candidate.lastIndexOf(' '));
@@ -337,9 +259,6 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 
   it('THROWS on a missing or nonsensical source width', () => {
-    // `dimensions` supplies the ratio and the descriptor arithmetic. A record with width 0 would
-    // make every descriptor `0w`, which a browser treats as "no information" and silently falls
-    // back to the last candidate.
     const base = record('architecture-intothemist');
     for (const width of [0, -1, Number.NaN]) {
       expect(() => srcsetFor({ ...base, dimensions: { ...base.dimensions, width } })).toThrow(
@@ -352,17 +271,6 @@ describe('srcsetFor — descriptors are min(variant.maxWidth, source width)', ()
   });
 });
 
-/* ==============================================================================================
- * 3. sizesFor — the string that must agree with a stylesheet nobody has written yet.
- * ============================================================================================ */
-
-/**
- * §7.4's target string for a 3-column category, typed out here from the spec.
- *
- * The odd colon spacing is NOT a typo and is reproduced deliberately: `(min-width:1024px)` has no
- * space and `(min-width: 673px)` has one, because the widths are right-aligned to four characters.
- * The module derives that padding from the breakpoint list rather than hardcoding it.
- */
 const SPEC_SIZES_LINES_3 = [
   '(min-width:1024px) calc((min(100vw, 1280px) - 96px - 32px) / 3),',
   '(min-width: 673px) calc((100vw - 64px - 32px) / 3),',
@@ -375,12 +283,6 @@ const joinClauses = (lines: readonly string[]): string =>
 
 const SPEC_SIZES_3 = joinClauses(SPEC_SIZES_LINES_3);
 
-/**
- * The 2-column form, derived from §7.4's stated rule — "emit the `/2` form for `columns: 2`
- * categories" — by changing ONLY the divisor and the gap term, which is `(cols − 1) × 16`.
- * Everything else, including the third and fourth clauses, is identical: at ≥375 the ladder is two
- * columns for every category (§7.1), so those clauses cannot differ.
- */
 const SPEC_SIZES_2 = joinClauses([
   '(min-width:1024px) calc((min(100vw, 1280px) - 96px - 16px) / 2),',
   '(min-width: 673px) calc((100vw - 64px - 16px) / 2),',
@@ -390,9 +292,6 @@ const SPEC_SIZES_2 = joinClauses([
 
 describe('the expectation above is the SPEC document, not my memory of it', () => {
   it('matches the sizes="…" block in 05-UI-SPEC.md §7.4, character for character', () => {
-    // Without this the chain is: I read the spec, typed it here, and the module agrees with what
-    // I typed. With it the chain starts at the committed document. If the spec is ever edited or
-    // moved, this goes red LOUDLY rather than silently ratifying a stale literal.
     const spec = read('.planning/phases/05-public-site/05-UI-SPEC.md');
     const start = spec.indexOf('sizes="(min-width:1024px)');
     expect(start, '§7.4 sizes block not found in 05-UI-SPEC.md').toBeGreaterThan(-1);
@@ -413,8 +312,6 @@ describe('sizesFor', () => {
   });
 
   it('the two differ ONLY in the first two clauses', () => {
-    // ANTI-VACUITY on the splitter, because it is now load-bearing for two assertions: it must
-    // split at depth zero and NOT inside a function call.
     expect(splitClauses('a, b')).toEqual(['a', 'b']);
     expect(splitClauses('min(1, 2), b')).toEqual(['min(1, 2)', 'b']);
     const three = splitClauses(sizesFor(3));
@@ -428,10 +325,6 @@ describe('sizesFor', () => {
   });
 
   it('READS the ladder constants — every term traces to GUTTER_RUNGS, MASONRY_GAP, PAGE_MAX', () => {
-    // The anti-vacuity control the plan asks for, expressed as an assertion rather than only as a
-    // one-off manual experiment: each number in the emitted string is recomputed here from the
-    // constants. If `sizesFor` held literals of its own, changing a constant would move this
-    // expectation and not the output.
     const descending = [...GUTTER_RUNGS].reverse();
     const conditioned = descending.filter((rung) => rung.minWidth !== null);
     const clauses = splitClauses(sizesFor(3));
@@ -444,26 +337,19 @@ describe('sizesFor', () => {
       expect(clauses[index]).toContain(`/ ${columns}`);
       expect(clauses[index]).toContain(`${rung.minWidth}px)`);
     }
-    // The top rung is the only one that caps at the page maximum.
     expect(clauses[0]).toContain(`min(100vw, ${PAGE_MAX.photos}px)`);
     expect(clauses[1]).not.toContain('min(100vw');
-    // The unconditioned clause: no media condition, no divisor, gutter only.
     const base = GUTTER_RUNGS[0];
     expect(clauses[3]).toBe(`calc(100vw - ${2 * base.px}px)`);
   });
 
   it('REFUSES 1 and 4 — site_config only ever holds 2 or 3', () => {
-    // An unexpected column count must be HEARD about rather than rendered. A 1-column `sizes` is
-    // not obviously wrong to look at; it just downloads a file that is twice the size it needs.
     for (const columns of [0, 1, 4, 5, -1, 2.5, Number.NaN]) {
       expect(() => sizesFor(columns), String(columns)).toThrow(/column/i);
     }
   });
 
   it('accepts EVERY column count that really occurs in site_config.json', () => {
-    // The other half of the refusal, and the half that keeps it honest: the throw is only correct
-    // if the real config never carries a value it rejects. Read from the data, not asserted from
-    // the spec's summary of it.
     const config = JSON.parse(read('data/site_config.json')) as {
       categories: { id: string; columns: number }[];
       defaultColumns: number;
@@ -487,15 +373,8 @@ describe('sizesFor', () => {
   });
 });
 
-/* ==============================================================================================
- * 4. No ladder number may be typed into this module.
- * ============================================================================================ */
-
 describe('the module holds no ladder literal of its own', () => {
   it('none of the gutter, gap, breakpoint or page-max numbers appears in the CODE', () => {
-    // The plan's own shell grep is fragile in both directions and says so: `grep -v "//"` drops
-    // any line containing a URL, and a single "16px" inside a block comment makes it unpassable.
-    // Both failure modes are removed by stripping comments properly and then searching only code.
     const code = stripComments(read('src/lib/photo-srcset.ts'));
     const forbidden = [
       ...GUTTER_RUNGS.map((rung) => rung.px),
@@ -504,8 +383,6 @@ describe('the module holds no ladder literal of its own', () => {
       MASONRY_GAP.px,
       ...Object.values(PAGE_MAX),
     ];
-    // DERIVED from the constants, not a hand-typed deny-list, so a new rung is covered
-    // automatically. That is the difference between a rule and a list of things I thought of.
     expect(forbidden.length).toBeGreaterThan(8);
     const found: string[] = [];
     for (const value of new Set(forbidden)) {
@@ -514,8 +391,6 @@ describe('the module holds no ladder literal of its own', () => {
       }
     }
     expect(found).toEqual([]);
-    // ANTI-VACUITY on the stripper and the matcher together — otherwise "found nothing" is a
-    // statement about a broken regex or an emptied string rather than about the module.
     expect(code.length).toBeGreaterThan(200);
     expect(code).toContain('GUTTER_RUNGS');
     expect(stripComments('const a = 1; // 96px').match(/\b96\b/)).toBeNull();

@@ -1,56 +1,3 @@
-/**
- * PIPE-01 and PIPE-03 — the record producer's shape, its ranking, and what a RE-RUN does.
- * (Plan 04-05, Task 2. OD-4 resolved to option A: upsert keyed on `id`, exit 0.)
- *
- * WHAT OD-4 OPTION A ACTUALLY COMMITS TO, AND WHY THE CAVEAT IS THE HARD PART
- * --------------------------------------------------------------------------
- * "A re-run adds no duplicate manifest entry" is satisfied by three different implementations —
- * upsert, no-op, and the legacy `process.exit(1)`. Option A is the upsert: a re-dispatch after a
- * partial failure RECOMPUTES the record and replaces it in place, so repairing a job that died
- * between the R2 upload and the commit is the ordinary path rather than a manual cleanup.
- *
- * The caveat is what this file spends most of its assertions on. An upsert must NOT renumber
- * `order` or `categoryOrder`. Those two fields ARE the gallery sequence; renumbering them on a
- * retry would reorder Akhil's reviewed gallery as a side effect of an operational repair, and
- * nothing downstream would report it as anything other than a content change. So the preservation
- * is asserted directly — insert, change the bytes, upsert again, and compare the two rank fields
- * BYTE-FOR-BYTE — and it is asserted over the WHOLE manifest rather than on a sample, because a
- * renumbering bug that moved every other record while leaving the upserted one alone would pass a
- * sampled check.
- *
- * THE ANTI-VACUITY ORDER IS LOAD-BEARING, NOT STYLISTIC
- * ----------------------------------------------------
- * `expect(second.length).toBe(first.length)` is TRUE of an implementation that adds nothing at
- * all. An upsert that silently dropped its record on the floor would satisfy criterion 2's
- * sentence while proving the exact opposite of what criterion 2 is for. So every "the re-run added
- * no duplicate" assertion in this file is preceded by an assertion that THE FIRST RUN CHANGED THE
- * MANIFEST — length + 1, the id present, and the serialised bytes different. Phase 3 shipped ten
- * gates that could not fail; this is the shape of the eleventh.
- *
- * IT DOES NOT IMPORT THE PRODUCER'S OWN COMPOSERS, PER THE SUITE'S CONVENTION
- * --------------------------------------------------------------------------
- * `photo-enrichment.unit.test.ts` states the rule: *"Importing the merge's own parser would make
- * this file assert that the merge agrees with itself."* So the expected id, key, URL and hash below
- * are composed from string literals and a locally written sha256, never by calling `photoIdFor`,
- * `publishedKey`, `publishedUrl` or `contentHash`. The only shared imports are the SCHEMA (the
- * authority being tested against, not a helper) and `IMAGE_ORIGIN` — shared deliberately, because a
- * test holding its own copy of the hostname could assert an origin the data does not use and still
- * pass, which is the failure `src/lib/image-origin.ts` exists to prevent.
- *
- * NOTHING HERE WRITES TO DISK. `data/portfolio_images.json` is reviewed content and is read once,
- * read-only. The producer is pure by construction — see the header of
- * `scripts/lib/photo-record.mjs` — so there is nothing to isolate.
- *
- * WHY THE DERIVED-ASSETS FIXTURE IS LOCAL TO THIS FILE
- * ---------------------------------------------------
- * `test/pipeline/fixtures/` is owned by plan 04-04, which is in flight in the same wave. Adding a
- * file there would collide with another plan's tree. The builder below is twenty lines and is
- * restated in the two sibling suites for the same reason.
- *
- * FILENAME CONTRACT: `*.unit.test.ts` under `test/` — the three Vitest project globs are MUTUALLY
- * EXCLUSIVE and a file matching none is silently never run.
- */
-
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -64,10 +11,6 @@ import {
 import { IMAGE_ORIGIN } from '../../src/lib/image-origin';
 import { type Photo, PhotoSchema, validateContentSet } from '../../src/schemas';
 
-/* ==============================================================================================
- * The committed content set, read once, read-only.
- * ========================================================================================== */
-
 const readText = (relative: string): string =>
   readFileSync(new URL(`../../${relative}`, import.meta.url), 'utf8');
 const readJson = (relative: string): unknown => JSON.parse(readText(relative));
@@ -79,10 +22,8 @@ const HOME = readJson('data/home_config.json');
 const PROJECTS = readJson('data/projects.json');
 const RESUME = readJson('data/resume.json');
 
-/** A FLOOR, not a count. The corpus reviewed on 2026-08-23 can only grow. */
 const MIN_PHOTOS = 39;
 
-/** Captured before anything runs: the purity claims cannot be made after the fact. */
 const COMMITTED_SNAPSHOT = JSON.stringify(COMMITTED);
 
 const contentSet = (photos: unknown) => ({
@@ -93,10 +34,6 @@ const contentSet = (photos: unknown) => ({
   resume: RESUME,
 });
 
-/* ==============================================================================================
- * The inputs and the derived assets — written out, never imported from the producer.
- * ========================================================================================== */
-
 const CATEGORY = 'landscape';
 const SLUG = 'pipelineproof';
 const ID = 'landscape-pipelineproof';
@@ -106,14 +43,11 @@ const ALT =
 const DATE = '2026-08-27';
 const TEMP_KEY = 'temp/pipelineproof.jpg';
 
-/** A genuine 1x1 lossless WebP, the same bytes `fortieth-photo.ts` verified decodable. */
 const THUMB_URI = 'data:image/webp;base64,UklGRhoAAABXRUJQVlA4TA0AAAAvAAAAEAcQERGIiP4HAA==';
 
-/** The producer's own hash, restated here rather than imported. Four bytes, eight hex chars. */
 const sha8 = (bytes: Uint8Array | string): string =>
   createHash('sha256').update(bytes).digest('hex').slice(0, 8);
 
-/** The four remote variants, in `REMOTE_URL_KEYS` order, with the suffix each one carries. */
 const VARIANT_SUFFIX: ReadonlyArray<readonly [string, string]> = [
   ['original', ''],
   ['large', '-lg'],
@@ -132,7 +66,6 @@ interface DerivedAssets {
   exif: Record<string, string | number | null>;
 }
 
-/** What 04-07's deriver hands the producer. `version` only varies the bytes. */
 function assetsFor(version: string): DerivedAssets {
   return {
     slug: SLUG,
@@ -159,7 +92,6 @@ const INPUTS = {
   alt: ALT,
 };
 
-/** Independently composed: origin + literal path + the locally computed hash. */
 const expectedUrl = (version: string, urlKey: string, suffix: string): string =>
   `${IMAGE_ORIGIN}/photos/${CATEGORY}/${SLUG}-${sha8(bytesFor(version, urlKey))}${suffix}.webp`;
 
@@ -177,11 +109,6 @@ const find = (manifest: readonly Photo[], id: string): Photo => {
   return found;
 };
 
-/* ==============================================================================================
- * 0. The corpus loaded. Everything below iterates it; a manifest that failed to load would make
- *    every loop in this file iterate nothing.
- * ========================================================================================== */
-
 describe('the committed manifest is what this file reasons about', () => {
   it('loaded, and is at or above the reviewed floor', () => {
     expect(Array.isArray(COMMITTED)).toBe(true);
@@ -189,10 +116,6 @@ describe('the committed manifest is what this file reasons about', () => {
     expect(COMMITTED.some((photo) => photo.id === ID)).toBe(false);
   });
 });
-
-/* ==============================================================================================
- * 1. RANKING.  Derived from the manifest in hand, never from a cached read (pitfall P-5).
- * ========================================================================================== */
 
 describe('nextOrder and nextCategoryOrder', () => {
   it('nextOrder returns max(order) + 1 over the committed manifest', () => {
@@ -223,8 +146,6 @@ describe('nextOrder and nextCategoryOrder', () => {
   });
 
   it('is derived from the argument, so a grown manifest gives a grown rank', () => {
-    // P-5, the live version of this mistake: two runs that both read `maxOrder = 39` and both
-    // wrote `order: 40`. The only defence is that the rank is a function of the array in hand.
     const first = nextOrder(COMMITTED);
     const grown = [...COMMITTED, { ...COMMITTED[0], id: 'x', order: first }] as Photo[];
     expect(nextOrder(grown)).toBe(first + 1);
@@ -237,17 +158,11 @@ describe('nextOrder and nextCategoryOrder', () => {
   });
 });
 
-/* ==============================================================================================
- * 2. RECORD SHAPE.  The four-class porting delta the research measured, closed field by field.
- * ========================================================================================== */
-
 describe('buildRecord produces a record the Phase 3 schema accepts', () => {
   const record = build('v1', COMMITTED);
 
   it('passes PhotoSchema.safeParse, and names the field if it ever stops', () => {
     const result = PhotoSchema.safeParse(record);
-    // The issues, not a bare boolean: a regression must say which field, or the next person
-    // spends the afternoon bisecting a `false`.
     expect(result.success ? null : JSON.stringify(result.error?.issues)).toBeNull();
     expect(result.success).toBe(true);
   });
@@ -270,8 +185,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
       'categoryOrder',
       'dimensions',
     ]);
-    // And the same order the reviewed corpus already uses, so a pipeline write is a one-record
-    // diff rather than a reshuffle of an existing one.
     expect(Object.keys(record)).toEqual(Object.keys(COMMITTED[0]));
   });
 
@@ -285,8 +198,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
     ]);
     for (const [urlKey, suffix] of VARIANT_SUFFIX) {
       const value = (record.urls as unknown as Record<string, string>)[urlKey];
-      // Origin EQUALITY, not startsWith: `https://HOST.evil.test/` and `https://HOST@evil.test/`
-      // both defeat a prefix comparison.
       expect(new URL(value).origin).toBe(IMAGE_ORIGIN);
       expect(value).toBe(expectedUrl('v1', urlKey, suffix));
     }
@@ -332,7 +243,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
 
   it('tags is ABSENT, not empty — OD-3', () => {
     expect('tags' in record).toBe(false);
-    // And the producer refuses to be handed one, rather than dropping it silently.
     expect(() => build('v1', COMMITTED, { tags: [] })).toThrow(/OD-3|tags/);
   });
 
@@ -346,7 +256,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
     expect('place' in record).toBe(false);
     const withPlace = build('v1', COMMITTED, { place: 'Coorg, Karnataka' }) as Photo;
     expect(withPlace.place).toBe('Coorg, Karnataka');
-    // Placed where the committed records place it: immediately after `alt`.
     expect(Object.keys(withPlace).slice(0, 4)).toEqual(['id', 'title', 'alt', 'place']);
     expect(PhotoSchema.safeParse(withPlace).success).toBe(true);
   });
@@ -366,9 +275,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
         manifest: COMMITTED,
       })
     ).toThrow(/date/);
-    // Cast rather than omitted: `date` is a REQUIRED argument at the type level too, and the
-    // point of this assertion is that the runtime refuses it rather than defaulting — which is
-    // what would silently settle OD-10.
     const withoutDate = {
       inputs: INPUTS,
       assets: assetsFor('v1'),
@@ -397,10 +303,6 @@ describe('buildRecord produces a record the Phase 3 schema accepts', () => {
   });
 });
 
-/* ==============================================================================================
- * 3. THE UPSERT.  OD-4 option A, and its caveat.
- * ========================================================================================== */
-
 describe('upsertRecord — a re-run repairs in place and never renumbers', () => {
   it('INSERTING A NEW ID CHANGES THE MANIFEST — asserted first, so nothing below is vacuous', () => {
     const record = build('v1', COMMITTED);
@@ -408,8 +310,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
 
     expect(after.length).toBe(COMMITTED.length + 1);
     expect(after.some((photo) => photo.id === ID)).toBe(true);
-    // Bytes, not just a length: an implementation that appended `undefined` would satisfy the
-    // length check.
     expect(serialiseManifest(after)).not.toBe(serialiseManifest(COMMITTED));
     expect(find(after, ID).urls.original).toBe(expectedUrl('v1', 'original', ''));
   });
@@ -444,9 +344,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
   });
 
   it('preserves them even when the maxima HAVE moved — the renumbering trap', () => {
-    // Between the two runs a different photograph lands. A naive "recompute the rank" upsert
-    // would move the record to the end of the gallery on a retry; the gallery would silently
-    // reorder as a side effect of an operational repair.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const inserted = find(first, ID);
 
@@ -467,8 +364,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
   });
 
   it('the second run DOES update the urls, the hash, the dimensions and the exif', () => {
-    // Otherwise the upsert is a no-op wearing a hat, and a retry after a partial failure cannot
-    // repair the record it exists to repair.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const before = find(first, ID);
     const second = upsertRecord(first, build('v2', first)) as Photo[];
@@ -487,12 +382,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
   });
 
   it('replaces IN PLACE — the record keeps its index, so a retry is a one-record diff', () => {
-    // FOUND BY A WALK-THROUGH ATTEMPT, 2026-08-27. An implementation that preserved both ranks
-    // and then returned `[...manifest.filter(notThisId), preserved]` passed all 51 assertions:
-    // the rank VALUES were right and the record happened to be last anyway. It is not always
-    // last, and a repair that moved a record through a 39-record file would produce a diff on
-    // reviewed content out of all proportion to what changed. So the position is asserted, with
-    // a record that is deliberately NOT at the end.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const inserted = find(first, ID);
     const interloper = {
@@ -507,20 +396,12 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
 
     const after = upsertRecord(between, build('v2', between)) as Photo[];
     expect(after.findIndex((photo) => photo.id === ID)).toBe(indexBefore);
-    // And nothing else moved either.
     expect(after.map((photo) => photo.id).join('|')).toBe(
       between.map((photo) => photo.id).join('|')
     );
   });
 
   it('carries EVERY non-rank field from the rebuilt record — including place', () => {
-    // ALSO FOUND BY A WALK-THROUGH ATTEMPT. An upsert that silently dropped `place` on the repair
-    // path passed all 51 assertions, because no test built a record with a place and then
-    // repaired it. `place` is reviewed content; a retry losing it would be a silent edit.
-    //
-    // Asserted as a class rather than field by field: everything except the two ranks must be
-    // byte-identical to what buildRecord produced, so a field added later is covered without this
-    // test being touched.
     const first = upsertRecord(
       COMMITTED,
       build('v1', COMMITTED, { place: 'Coorg, Karnataka' })
@@ -537,7 +418,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
       return JSON.stringify(rest);
     };
     expect(withoutRanks(after)).toBe(withoutRanks(rebuilt));
-    // ...and the ranks themselves are the FIRST run's, not the rebuild's.
     expect(after.order).toBe(find(first, ID).order);
     expect(after.order).not.toBe(rebuilt.order);
   });
@@ -550,7 +430,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
 
     expect(JSON.stringify(first)).toBe(firstSnapshot);
     expect(first.length).toBe(COMMITTED.length + 1);
-    // And the committed array this whole file reads is still what it was at import time.
     expect(JSON.stringify(COMMITTED)).toBe(COMMITTED_SNAPSHOT);
     expect(COMMITTED.length).toBeGreaterThanOrEqual(MIN_PHOTOS);
   });
@@ -565,18 +444,12 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
         .map((photo) => `${photo.id}:${photo.order}:${photo.categoryOrder}`)
         .join('|');
 
-    // A single string comparison over all 39, so a partial renumbering cannot hide in an
-    // averaged or sampled check.
     expect(ranksOf(second)).toBe(ranksOf(first));
     expect(ranksOf(first)).toBe(ranksOf(COMMITTED));
     expect(ranksOf(first).split('|').length).toBe(COMMITTED.length);
   });
 
   it('a re-dispatch under a DIFFERENT category is an insert, not a repair', () => {
-    // A consequence of OD-4's key, recorded rather than glossed. `id` is `category + "-" + slug`,
-    // so changing the category changes the id, and the upsert has nothing to match. The original
-    // record survives untouched — including its ranks — and the wrongly-filed one stays until
-    // somebody deletes it. Deleting records is not this pipeline's job.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const inserted = find(first, ID);
 
@@ -596,9 +469,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
   });
 
   it('refuses a manifest that disagrees with itself about a shared id’s category', () => {
-    // Impossible under the id invariant, and worth refusing rather than resolving: a preserved
-    // categoryOrder ranks WITHIN a group, so carrying one across a group change would put a rank
-    // in the wrong gallery. RI-6 would eventually report the collision; this names the cause.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const corrupted = first.map((photo) =>
       photo.id === ID ? { ...photo, category: 'architecture' } : photo
@@ -621,12 +491,6 @@ describe('upsertRecord — a re-run repairs in place and never renumbers', () =>
   });
 });
 
-/* ==============================================================================================
- * 4. THE RESULT IS A VALID CONTENT SET.  The six RI rules, run for real on the grown array.
- *    `astro sync` runs the same rules end-to-end in `record-valid.node.test.ts`; this is the
- *    cheap in-process half.
- * ========================================================================================== */
-
 describe('the grown manifest satisfies all six referential-integrity rules', () => {
   it('one run and two runs both produce a clean content set', () => {
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
@@ -638,7 +502,6 @@ describe('the grown manifest satisfies all six referential-integrity rules', () 
     ] as const) {
       const report = validateContentSet(contentSet(manifest));
       expect(report.ok ? null : `${label}: ${JSON.stringify(report.violations)}`).toBeNull();
-      // Anti-vacuity on the report itself: a rule that did not run did not pass.
       expect(report.checked.photos).toBe(manifest.length);
       expect(report.checked.rulesRun).toEqual(['RI-1', 'RI-2', 'RI-3', 'RI-4', 'RI-5', 'RI-6']);
       expect(report.checked.rulesSkipped).toEqual([]);
@@ -646,8 +509,6 @@ describe('the grown manifest satisfies all six referential-integrity rules', () 
   });
 
   it('a duplicate append — the thing the upsert prevents — is caught by RI-5 and RI-6', () => {
-    // The safety net, measured. It fires AFTER the file would have been written, which is why
-    // idempotence is decided in the producer and not left to the gate.
     const first = upsertRecord(COMMITTED, build('v1', COMMITTED)) as Photo[];
     const duplicated = [...first, find(first, ID)];
     const report = validateContentSet(contentSet(duplicated));
@@ -660,10 +521,6 @@ describe('the grown manifest satisfies all six referential-integrity rules', () 
   });
 });
 
-/* ==============================================================================================
- * 5. SERIALISATION.  The trailing-newline contract 03-01 established and the legacy writer broke.
- * ========================================================================================== */
-
 describe('serialiseManifest', () => {
   it('ends with exactly one newline', () => {
     const text = serialiseManifest(COMMITTED);
@@ -673,9 +530,6 @@ describe('serialiseManifest', () => {
   });
 
   it('round-trips the COMMITTED manifest byte-for-byte', () => {
-    // The regression guard against the legacy writer's `JSON.stringify(merged, null, 2)` with no
-    // trailing newline, which would revert 03-01's fix and produce a spurious one-line diff on the
-    // closing `]` every time the pipeline ran.
     expect(serialiseManifest(JSON.parse(MANIFEST_BYTES))).toBe(MANIFEST_BYTES);
     expect(MANIFEST_BYTES.length).toBeGreaterThan(0);
   });

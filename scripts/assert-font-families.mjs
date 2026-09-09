@@ -1,100 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * assert-font-families — §1.2's font contract, over the BUILT artefact.
- *
- * Usage: node scripts/assert-font-families.mjs [distRoot]      (default ./dist/client)
- *
- * ---------------------------------------------------------------------------------------------
- * THE STATIC HALF ONLY. THE BROWSER HALF IS PLAN 05-15's.
- *
- * §1.2 records an UNVERIFIED: whether Vite resolves the bare `@fontsource-variable/...` specifiers
- * inside a transitive dependency's stylesheet. This gate answers the half a static check can
- * answer — which families the artefact DECLARES, and whether the files those declarations point at
- * were emitted. It does NOT and cannot answer the other half: how many families a browser actually
- * DOWNLOADS. That is `DevTools -> Network -> Font` on a built page, it belongs to **plan 05-15's
- * audit**, and the two must not be mistaken for one another. A green run here is consistent with a
- * page that downloads four families.
- *
- * A silent failure renders Playfair as **Georgia** and looks almost right. That is why this is a
- * gate and not a note.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT IT ASSERTS
- *
- *   F1  the set of DISTINCT `@font-face` families is exactly the three in §1.2. The SET, never the
- *       rule count: `@fontsource` emits one rule per unicode-range subset, so a count assertion
- *       would be brittle and would say nothing. (Measured today: 12 rules — 8 + 2 + 2.)
- *   F2  each of the three has at least one EMITTED asset file, resolved from the `src: url(...)`
- *       of its own rules and checked on disk. A `@font-face` pointing at a URL that does not exist
- *       is precisely §1.2's failure: the CSS looks correct and the browser silently falls back.
- *   F3  none of Inter, Archivo, JetBrains Mono or Newsreader appears as an `@font-face` family, or
- *       as an emitted font-asset filename.
- *   F4  the font TOKENS the page actually resolves through name a family that is `@font-face`d.
- *       Not in the plan; added because the measurement below makes it the load-bearing one.
- *
- * ---------------------------------------------------------------------------------------------
- * F3 IS NARROW ON PURPOSE, AND THE PLAN SAYS SO: "NOT AS RAW BYTES ANYWHERE"
- *
- * A raw-byte sweep for those four names is UNPASSABLE on every correct build, and this was
- * re-measured here rather than taken on trust. In `dist/client/_astro/PublicLayout.*.css`:
- *
- *     :root { --font-body:   "Inter", -apple-system, …          }   <- tokens.css defaults
- *     :root { --font-mono:   "JetBrains Mono", "SF Mono", …     }
- *     :root { --font-display:"Archivo", system-ui, sans-serif   }
- *     :root { --font-serif:  "Newsreader Variable", Georgia, …  }
- *     .ds-atom-…{ font-family: var(--serif,"Newsreader", Georgia, serif) }   <- primitives.css:2821
- *
- * All five are FALLBACK STACK entries in the design system's own token defaults, in stylesheets
- * 05-01 mandates importing whole. None of them is `@font-face`d, so none of them can be
- * downloaded. The load-bearing question is not "does the string appear" but "does a browser fetch
- * a fourth family", and F1 + F2 + F3 + F4 answer that as far as static analysis can.
- *
- * ---------------------------------------------------------------------------------------------
- * F4, AND THE MEASUREMENT THAT PUT IT HERE
- *
- * Those `:root` defaults are LIVE in the artefact. What overrides them is not import order — it is
- * SPECIFICITY, and it is conditional on an attribute:
- *
- *     :root                            --font-serif: "Newsreader Variable", Georgia, serif  (0,1,0)
- *     :root[data-brand=monochrome]     --font-serif: "Playfair Display Variable", …         (0,2,0)
- *
- * So the three real families are reached ONLY while `<html>` carries `data-brand="monochrome"`.
- * Drop that attribute and every token falls back to a family with no `@font-face` — Playfair
- * becomes Georgia, DM Sans becomes system-ui, IBM Plex Mono becomes Menlo — with a green build, a
- * correct-looking stylesheet, and all twelve face rules still shipped. F1, F2 and F3 all pass on
- * that page. F4 is the one that does not.
- *
- * ---------------------------------------------------------------------------------------------
- * IT READS INLINE `<style>` BLOCKS AS WELL AS LINKED SHEETS, AND THAT IS NOT OPTIONAL
- *
- * Three plans in this phase have now been bitten by the same thing: a gate scoped to
- * `dist/client/**\/*.css` is blind to every declaration Astro inlines into a document's own
- * `<style>`. 05-07 (`assert-gutter-ladder.mjs` vs. an inlined `photos.css`), 05-08 (`grep -c
- * 'pd-exif'` returning 5 on a page rendering none) and 05-12 (`.ph-lb-caption` invisible to any
- * `dist/client/**\/*.css` reader). MEASURED here: `dist/client` emits exactly ONE linked
- * stylesheet and SEVEN distinct inline `<style>` texts. A `@font-face` in a page-scoped block
- * would be invisible to a linked-sheet-only reader. 05-10's résumé suite is the model — collect
- * both, then assert.
- *
- * ---------------------------------------------------------------------------------------------
- * WHAT THIS GATE CANNOT SEE
- *
- *  1. IT CANNOT SEE A DOWNLOAD. See the header. 05-15 owns that.
- *  2. IT PARSES CSS WITH A REGEX over `@font-face { … }`. A nested at-rule inside a `@font-face`
- *     block, or a `}` inside a quoted string in one, would end the block early. Neither is legal
- *     in a `@font-face` body; recorded because the parser is not a real one.
- *  3. F4 RESOLVES ONE LEVEL OF `var()` INDIRECTION (`--font-display: var(--font-serif)` is real
- *     and is in the artefact today). A two-level chain would be reported as unresolved rather than
- *     followed, and that is a refusal, not a pass.
- *  4. IT NEVER SHELLS OUT TO `grep`; everything is read as text in JavaScript.
- *
- * Reported with `process.stdout.write` — `console.log` prints NOTHING under this repository's
- * vitest setup.
- *
- * Requirements PUB-14 (adjacent), QUAL-01; section 1.2. Browser half: plan 05-15.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -109,27 +14,12 @@ const rel = (p) => {
   return !r || r.startsWith('..') ? p : r;
 };
 
-/**
- * The three families, each as a NAME and a MATCHER.
- *
- * §1.2 and the plan both spell them "Playfair Display", "DM Sans", "IBM Plex Mono". The artefact
- * declares "Playfair Display Variable", "DM Sans Variable" and "IBM Plex Mono" — MEASURED — because
- * `@fontsource-variable` names its variable cuts with that suffix. A set equality against the
- * spec's literals is RED ON A CORRECT BUILD, which is why each entry carries a pattern that
- * accepts the optional suffix and nothing else. The census prints the names as DECLARED, so the
- * discrepancy stays visible rather than being smoothed over.
- */
 const REQUIRED_FAMILIES = [
   { name: 'Libre Baskerville', match: /^Libre Baskerville$/ },
   { name: 'DM Sans', match: /^DM Sans( Variable)?$/ },
   { name: 'IBM Plex Mono', match: /^IBM Plex Mono( Variable)?$/ },
 ];
 
-/**
- * The four that must not appear. All four are TRANSITIVE DEPENDENCIES of
- * `@akhil-saxena/design-system` — they are in its `dependencies` — so their absence from the
- * artefact is a real property of the build and not a tautology about packages nobody installed.
- */
 const FORBIDDEN_FAMILIES = [
   { name: 'Inter', match: /^Inter( Variable)?$/i, asset: /(^|[/\\])inter[-.]/i },
   { name: 'Archivo', match: /^Archivo( Variable)?$/i, asset: /(^|[/\\])archivo[-.]/i },
@@ -141,14 +31,9 @@ const FORBIDDEN_FAMILIES = [
   { name: 'Newsreader', match: /^Newsreader( Variable)?$/i, asset: /(^|[/\\])newsreader[-.]/i },
 ];
 
-/** The tokens F4 follows, and the role each plays. */
 const FONT_TOKENS = ['--font-serif', '--font-body', '--font-mono', '--font-display'];
 
 const FONT_ASSET_EXT = /\.(woff2?|ttf|otf|eot)$/i;
-
-/* ---------------------------------------------------------------------------------------------
- * 1. Readers.
- * ------------------------------------------------------------------------------------------- */
 
 const unquote = (s) =>
   s
@@ -156,7 +41,6 @@ const unquote = (s) =>
     .replace(/^["']|["']$/g, '')
     .trim();
 
-/** Every `@font-face` block in a stylesheet, as `{ family, urls, raw }`. */
 function fontFaces(css) {
   const faces = [];
   for (const m of css.matchAll(/@font-face\s*\{([^}]*)\}/g)) {
@@ -171,7 +55,6 @@ function fontFaces(css) {
   return faces;
 }
 
-/** Every declaration of `prop`, with the selector it sits under and its specificity-ish rank. */
 function declarationsOf(css, prop) {
   const found = [];
   const re = new RegExp(`(?<![-\\w])${prop.replace(/[-]/g, '\\-')}\\s*:\\s*([^;}]*)`, 'g');
@@ -185,17 +68,12 @@ function declarationsOf(css, prop) {
   return found;
 }
 
-/** The first quoted or bare family name in a font stack. */
 function headOfStack(value) {
   const v = value.trim();
   const q = /^\s*["']([^"']+)["']/.exec(v);
   if (q) return q[1].trim();
   return v.split(',')[0].trim();
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 2. Self-test, before anything is read from disk.
- * ------------------------------------------------------------------------------------------- */
 
 const CANARIES = [
   {
@@ -211,26 +89,12 @@ const CANARIES = [
     antiCanary: '@font-face{font-family:"DM Sans Variable"}',
   },
   {
-    /*
-     * The suffix canary MUST point at a family that actually has a variable build.
-     *
-     * It used to read REQUIRED_FAMILIES[0], which was Playfair Display — variable, so the artefact
-     * declared "Playfair Display Variable" while §1.2 spells it "Playfair Display", and this proved
-     * the matcher tolerated the suffix. Slot 0 is Libre Baskerville now, which has NO variable
-     * build: the artefact declares a bare "Libre Baskerville", so the canary could not fire and the
-     * gate refused to run at all rather than passing quietly. That refusal is the gate working.
-     *
-     * Repointed at DM Sans, which is variable and where the suffix question is still live. Indexed
-     * BY NAME rather than by position, so re-ordering the list cannot silently re-aim the canary at
-     * a family the suffix does not apply to — which is exactly what just happened.
-     */
     id: 'F-REQUIRED-VARIABLE-SUFFIX',
     run: (s) => REQUIRED_FAMILIES.find((f) => f.name === 'DM Sans').match.test(s),
     canary: 'DM Sans Variable',
     antiCanary: 'DM Sans Variable Extra',
   },
   {
-    /* The non-variable half of the same claim: a bare family name must match exactly. */
     id: 'F-REQUIRED-BARE-FAMILY',
     run: (s) => REQUIRED_FAMILIES.find((f) => f.name === 'Libre Baskerville').match.test(s),
     canary: 'Libre Baskerville',
@@ -274,10 +138,6 @@ if (selfTestFailures.length > 0) {
   process.exit(1);
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 3. Refuse to pass on nothing.
- * ------------------------------------------------------------------------------------------- */
-
 if (process.argv.length > 2 && process.argv[2] === '') {
   err('assert-font-families: the dist root argument is present but empty.');
   err("  path.resolve(cwd, '') is cwd, so this would have walked the entire repository.");
@@ -299,7 +159,6 @@ const allFiles = [];
   }
 })(distRoot);
 
-/* BOTH sources, always: linked sheets AND inline <style> blocks. See the header. */
 const sheets = [];
 for (const f of allFiles.filter((x) => x.endsWith('.css'))) {
   sheets.push({ label: rel(f), css: fs.readFileSync(f, 'utf8'), inline: false });
@@ -343,10 +202,6 @@ if (faces.length === 0) {
 const findings = [];
 const add = (id, where, message) => findings.push({ id, where, message });
 
-/* ---------------------------------------------------------------------------------------------
- * 4. F1 — the SET of declared families is exactly the three.
- * ------------------------------------------------------------------------------------------- */
-
 const declared = new Map(); // declared name -> face count
 for (const f of faces) {
   if (f.family === null) {
@@ -388,10 +243,6 @@ for (const r of REQUIRED_FAMILIES) {
   }
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 5. F2 — every required family has at least one asset that EXISTS on disk.
- * ------------------------------------------------------------------------------------------- */
-
 const assetsPerFamily = new Map(REQUIRED_FAMILIES.map((r) => [r.name, new Set()]));
 const missingAssets = [];
 for (const f of faces) {
@@ -423,10 +274,6 @@ for (const r of REQUIRED_FAMILIES) {
   }
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 6. F3 — the four forbidden families, as a face family or as an emitted asset filename.
- * ------------------------------------------------------------------------------------------- */
-
 const fontAssets = allFiles.filter((f) => FONT_ASSET_EXT.test(f));
 for (const bad of FORBIDDEN_FAMILIES) {
   for (const name of declared.keys()) {
@@ -445,10 +292,6 @@ for (const bad of FORBIDDEN_FAMILIES) {
     }
   }
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 7. F4 — the tokens the page resolves through name a family that is actually @font-face'd.
- * ------------------------------------------------------------------------------------------- */
 
 const brands = new Set();
 for (const f of allFiles.filter((x) => x.endsWith('.html'))) {
@@ -477,8 +320,6 @@ for (const token of FONT_TOKENS) {
     add('F4-UNDECLARED', rel(distRoot), `${token} is declared nowhere in the artefact.`);
     continue;
   }
-  /* The winner is the last declaration whose selector the shipped <html> actually matches, and
-     `:root[data-brand=…]` outranks a bare `:root` by specificity regardless of order. */
   const applicable = all.filter(
     (d) =>
       !/\[data-brand/.test(d.selector) ||
@@ -528,10 +369,6 @@ for (const token of FONT_TOKENS) {
     );
   }
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 8. Verdict.
- * ------------------------------------------------------------------------------------------- */
 
 if (findings.length > 0) {
   err('assert-font-families: FAIL');

@@ -1,73 +1,4 @@
 #!/usr/bin/env node
-/**
- * Does `scripts/lib/r2.mjs` FAIL CLOSED when a credential is missing?  (Phase 4, plan 04-09.)
- *
- * Usage:  node scripts/lib/r2-fail-closed.probe.mjs
- *         node scripts/lib/r2-fail-closed.probe.mjs --self-test    (proves this probe can fail)
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS IS A FILE AND NOT A `node -e` ONE-LINER
- *
- * This is the ONLY executable enforcement of threat T-04-47 and of `CLAUDE.md`'s "auth fails
- * closed … a missing configuration denies rather than degrades". The previous version of it was a
- * `node -e` one-liner in a plan's verify block, and a repair note written ABOUT that command was
- * pasted INSIDE its command string — the explanation silently became part of the code. A
- * one-liner is what invited that; a file does not.
- *
- * ---------------------------------------------------------------------------------------------
- * THE TWO WAYS THIS PROBE COULD PASS FOR THE WRONG REASON, AND WHAT CLOSES EACH
- *
- * 1. VACUITY. If `REQUIRED_ENV` were empty, every per-variable check below would loop over
- *    nothing and the probe would report a clean fail-closed module having tested no variable at
- *    all. So an empty (or non-array, or non-string-bearing) `REQUIRED_ENV` is a REFUSAL, before
- *    any check runs. This is the anti-vacuity clause.
- *
- * 2. THE ABSENT-VARIABLE TRAP, MEASURED. This machine's shell has NO `R2_*` and NO `CLOUDFLARE_*`
- *    variables set at all — `.env` and `.dev.vars` hold only `CF_ACCESS_TEAM_DOMAIN` and
- *    `CF_ACCESS_AUD`. So a probe that empties ONE variable and then accepts any error message
- *    matching `/R2_|CLOUDFLARE_/` passes because some OTHER variable is absent, and never
- *    exercises the empty-string branch it claims to test. The fix is per-variable and is the
- *    shape of every check below: RE-SEED ALL of them, EMPTY EXACTLY ONE, and require the throw to
- *    NAME THAT ONE.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY IT DISCOVERS THE VARIABLE NAMES INSTEAD OF CARRYING THEM
- *
- * The required set differs between OD-5's two branches — option A is five `R2_*` secrets, option
- * B (which shipped) is `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` — so a list typed here
- * would assert something about a module that is not the one under test. `r2.mjs` exports
- * `REQUIRED_ENV` for exactly this reason.
- *
- * But reading an export means importing the module, and the module refuses to import without
- * credentials — which is the property under test. So phase 0 BOOTSTRAPS: it imports, reads the
- * variable named in the refusal, seeds that one, and retries, until the import succeeds. That
- * loop yields a DISCOVERED set, which is then compared to the DECLARED `REQUIRED_ENV`. The two
- * disagreeing is itself a finding: a variable the module enforces but does not declare is one no
- * probe and no workflow author can know about, and a variable it declares but does not enforce is
- * a promise it does not keep.
- *
- * ---------------------------------------------------------------------------------------------
- * `--self-test` — THIS PROBE PROVEN ABLE TO FAIL
- *
- * A gate nobody has watched fail is a gate nobody has tested. `--self-test` runs the same checker
- * against four synthetic modules written to a temp directory:
- *
- *   honest         — throws naming the empty variable                  -> expected PASS
- *   fail-open      — declares two variables and asserts nothing         -> expected FAIL, both named
- *   vague          — throws, naming no variable, on every branch        -> expected REFUSAL
- *   vague-on-empty — names it when ABSENT, generic when EMPTY           -> expected FAIL, both named
- *   empty-list     — `REQUIRED_ENV = []`                                -> expected REFUSAL
- *
- * If any of those five does not behave as stated, the probe exits non-zero. The `honest` case is
- * not decoration: without it, a checker that reported FAIL unconditionally would satisfy the
- * other four. `vague-on-empty` was added after `vague` turned out to be caught in phase 0 — which
- * left phase 2's "the message must name the emptied variable" check unexercised by the self-test,
- * i.e. a check with no proof it could fire.
- *
- * Output goes through `process.stdout.write`. `console.log` and `console.info` are SWALLOWED by
- * this repository's vitest setup (measured: 0 occurrences against 1), and a probe that reports
- * through a swallowed channel is indistinguishable from a probe that found nothing.
- */
 
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -78,37 +9,25 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 const MODULE_UNDER_TEST = join(HERE, 'r2.mjs');
 
-/** Long enough to look like a credential, and distinct per variable so a mix-up is visible. */
 const dummyFor = (name) => `probe-dummy-${name.toLowerCase()}-0123456789`;
 
-/** Bounded, so a module that throws a message naming nothing cannot spin here forever. */
 const MAX_BOOTSTRAP_ROUNDS = 12;
 
 const out = (line) => process.stdout.write(`${line}\n`);
 
-/** A refusal means the probe cannot produce a meaningful result at all. Distinct from a finding. */
 class ProbeRefusal extends Error {}
 
-/**
- * The first ALL-CAPS identifier in a message — the module's own convention is to name the
- * offending variable first (`r2: CLOUDFLARE_API_TOKEN is not set. …`).
- */
 function namedVariable(message) {
   const match = /\b([A-Z][A-Z0-9_]{2,})\b/.exec(String(message ?? ''));
   return match === null ? null : match[1];
 }
 
-/** Every import is cache-busted, or the second one would be served from the module registry. */
 let importCounter = 0;
 async function freshImport(specifier) {
   importCounter += 1;
   return import(`${pathToFileURL(specifier).href}?probe=${importCounter}`);
 }
 
-/**
- * Set exactly the given variables and remove every other name the probe has ever seeded, so no
- * check inherits a value from the one before it.
- */
 function seedEnv(values, allNames) {
   for (const name of allNames) delete process.env[name];
   for (const [name, value] of Object.entries(values)) process.env[name] = value;
@@ -180,13 +99,6 @@ async function bootstrap(specifier) {
  * @returns {Promise<{ findings: string[], declared: string[], discovered: string[], checked: number }>}
  */
 async function probeModule(specifier) {
-  // SNAPSHOT AND RESTORE, and it is load-bearing rather than tidy. Phase 2 leaves the LAST
-  // variable it checked set to the empty string; without this, the next call to `probeModule` in
-  // the same process starts its bootstrap against that leftover and sees the module's
-  // empty-branch message instead of its absent-branch one. Measured while writing `--self-test`:
-  // `vague-on-empty` refused in phase 0 for a reason belonging to the fixture before it. That is
-  // the same class of error this probe exists to catch — a check reading state it did not set —
-  // so it is fixed here rather than worked around in the caller.
   const snapshot = { ...process.env };
   try {
     return await probeModuleInner(specifier);
@@ -203,7 +115,6 @@ async function probeModuleInner(specifier) {
   const { declared, discovered } = await bootstrap(specifier);
   const findings = [];
 
-  // Phase 1 — the declared set and the enforced set must be the same set.
   for (const name of discovered) {
     if (!declared.includes(name)) {
       findings.push(
@@ -213,7 +124,6 @@ async function probeModuleInner(specifier) {
     }
   }
 
-  // Phase 2 — one variable at a time. Every other declared variable stays seeded.
   const allNames = [...new Set([...declared, ...discovered])];
   let checked = 0;
 
@@ -259,10 +169,6 @@ async function probeModuleInner(specifier) {
   return { findings, declared, discovered, checked };
 }
 
-/* ============================================================================================ *
- * --self-test — the four-step proof, executable.
- * ============================================================================================ */
-
 const FIXTURES = {
   honest: `
 export const REQUIRED_ENV = Object.freeze(['PROBE_ALPHA', 'PROBE_BETA']);
@@ -286,9 +192,6 @@ for (const name of REQUIRED_ENV) {
   }
 }
 `,
-  // Bootstraps CLEANLY — it names the variable when the variable is ABSENT — and goes vague only
-  // on the EMPTY branch. That asymmetry is the whole reason phase 2 empties rather than deletes,
-  // and without this fixture phase 2's message check is never exercised by the self-test.
   'vague-on-empty': `
 export const REQUIRED_ENV = Object.freeze(['PROBE_ALPHA', 'PROBE_BETA']);
 for (const name of REQUIRED_ENV) {
@@ -319,9 +222,6 @@ async function selfTest() {
         refusal = error;
       }
 
-      // `vague` never reaches phase 2: a module whose refusal names no variable cannot be
-      // bootstrapped at all, so the correct verdict is a REFUSAL. It is still unable to pass,
-      // which is the property that matters; only the exit path differs.
       if (name === 'empty-list' || name === 'vague') {
         if (refusal === null) {
           failures.push(`${name}: expected a REFUSAL, got ${JSON.stringify(result?.findings)}`);
@@ -359,10 +259,6 @@ async function selfTest() {
   }
   return failures;
 }
-
-/* ============================================================================================ *
- * main
- * ============================================================================================ */
 
 async function main() {
   const wantSelfTest = process.argv.slice(2).includes('--self-test');

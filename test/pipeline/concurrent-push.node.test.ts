@@ -1,42 +1,3 @@
-/**
- * PIPE-05 / criterion 4 — a pipeline commit and a concurrent manual edit to the same file cannot
- * clobber each other.
- *
- * NO MOCKS. This file builds a real git topology in a temp directory — one **bare** repository as
- * `origin`, a `pipelineClone` and a `humanClone` — and runs `publishManifest` against it. The
- * rejection under test is the real remote's real fast-forward refusal, not a simulated one, and
- * the "concurrent manual edit" is a real `git push` from the human's clone. That is the whole
- * argument for the file living in the `integration` project: 04-09 will prove the composed
- * pipeline against fakes, so THIS is where the real git behaviour gets established.
- *
- * ---------------------------------------------------------------------------------------------
- * TWO HAZARDS FROM THIS PROJECT'S REGISTER, WRITTEN HERE SO NOBODY REINTRODUCES THEM
- *
- *  1. **Never `git show HEAD~1:<file>` as an evidence revision.** Two Phase 3 plans specified it
- *     and both were broken: `HEAD~1` is the previous COMMIT, which is only the previous revision
- *     OF THAT FILE when nothing else was committed in between. Phase 4 adds a THIRD commit writer
- *     to `main` (the pipeline), so it is strictly worse here. Where this file needs a before-state
- *     it calls `previousRevisionOf()`, which searches the file's own log
- *     (`git log --format=%H <tip> -- <file>`) and THROWS when it finds no predecessor, naming how
- *     many revisions it searched.
- *
- *  2. **A worktree copied without `.git` fabricates failures.** Four tests in this repository walk
- *     `git log`; a `cp -r` sandbox makes them fail for a reason that has nothing to do with the
- *     code. This file is NOT exposed, because it creates its repositories with `git init` and
- *     populates them with `git clone --no-hardlinks` — there is no copied worktree anywhere in it.
- *     Do not "simplify" any of this into a `cp -r`.
- *
- * A third, local one: `console.log` and `console.info` are SWALLOWED by this repository's vitest
- * setup (measured: 0 occurrences against 1 for `process.stdout.write`). Every diagnostic below —
- * and case 0's naming of an offending argv in particular — uses `process.stdout.write`, because a
- * gate that reports its findings through a swallowed channel is indistinguishable from a gate that
- * found nothing.
- *
- * Every temp repository gets an explicit `user.name`/`user.email`, `commit.gpgsign=false` and an
- * empty `core.hooksPath`: a developer machine with a global identity, a signing key or a hook
- * template would otherwise fail `git commit` for a reason unrelated to anything under test.
- */
-
 import { execFileSync } from 'node:child_process';
 import {
   existsSync,
@@ -77,22 +38,12 @@ type Record_ = {
 };
 type ManifestWriter = (manifest: unknown) => string;
 
-/* ============================================================================================ *
- * git helpers — argv arrays only, never a shell string
- * ============================================================================================ */
-
 const GIT_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', LANG: 'C' };
 
 function git(cwd: string, argv: readonly string[]): string {
   return execFileSync('git', [...argv], { cwd, encoding: 'utf8', env: GIT_ENV }).trim();
 }
 
-/**
- * Raw bytes, as a `Uint8Array` rather than a `Buffer`. Deliberate: this repository's ambient type
- * environment (workers types alongside @types/node) resolves the global `Buffer` to a shape
- * without `.equals()` or a one-argument `.toString(encoding)`, so `astro check` rejects both.
- * `Uint8Array` + `TextDecoder` is the portable spelling and costs nothing here.
- */
 function gitBytes(cwd: string, argv: readonly string[]): Uint8Array {
   return Uint8Array.from(
     execFileSync('git', [...argv], { cwd, env: GIT_ENV, maxBuffer: 32 * 1024 * 1024 })
@@ -117,10 +68,6 @@ function gitExit(cwd: string, argv: readonly string[]): number {
   }
 }
 
-/**
- * The before-state helper. Searches the FILE's own log, never `HEAD~1`, and throws — naming how
- * many revisions it searched — rather than returning something that only looks like a predecessor.
- */
 function previousRevisionOf(repoDir: string, tip: string, filePath: string): string {
   const revisions = git(repoDir, ['log', '--format=%H', tip, '--', filePath])
     .split('\n')
@@ -237,15 +184,12 @@ function violationsIn(call: GitCall): string[] {
     findings.push(`subcommand "${subcommand}" is outside this module's vocabulary`);
   }
 
-  // The classic force-push with no flag at all: a `+` prefix on the refspec.
   if (subcommand === 'push') {
     for (const token of rest) {
       if (token.startsWith('+')) findings.push(`force refspec "${token}"`);
     }
   }
 
-  // T-04-23. `git add .` and `git add :/` stage a whole runner working tree without ever writing
-  // `-A`, so the SHAPE is checked and not just the flags: exactly `add -- <one path>`.
   if (subcommand === 'add') {
     const path = rest[1] ?? '';
     const shapeIsExact = rest.length === 2 && rest[0] === '--';
@@ -257,17 +201,6 @@ function violationsIn(call: GitCall): string[] {
   return findings;
 }
 
-/**
- * The control. It runs on EVERY git invocation the module makes, in every case in this file,
- * because it is installed as the observer for the whole file and the per-case hooks below are
- * layered on top of it rather than replacing it.
- *
- * Why argv and not a source grep: this module is required to call git through `execFile` with an
- * argv ARRAY, so its source reads `['reset', '--hard', ref]` and never the string `reset --hard` —
- * the grep the plan originally specified could not fire, verified by running it. And the module is
- * *instructed* to reset to the fetched tip, so only an argv-level check can tell that sanctioned
- * reset from an unsanctioned force. T-04-22 and T-04-23 rest on this function.
- */
 function assertPermittedArgv(call: GitCall): void {
   const findings = violationsIn(call);
   if (findings.length > 0) {
@@ -278,10 +211,6 @@ function assertPermittedArgv(call: GitCall): void {
 }
 
 let disposeObserver: (() => void) | null = null;
-
-/* ============================================================================================ *
- * Topology
- * ============================================================================================ */
 
 const roots: string[] = [];
 
@@ -313,10 +242,6 @@ function readManifest(repoDir: string): Record_[] {
   return JSON.parse(readFileSync(join(repoDir, MANIFEST), 'utf8')) as Record_[];
 }
 
-/**
- * A fresh topology per case. `git init` + `git clone --no-hardlinks` — never `cp -r`, see hazard 2
- * in the header.
- */
 function makeTopology(options: { withOrigin?: boolean; withManifest?: boolean } = {}): Topology {
   const { withOrigin = true, withManifest = true } = options;
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'gsd-04-06-')));
@@ -357,7 +282,6 @@ function makeTopology(options: { withOrigin?: boolean; withManifest?: boolean } 
   return { root, origin, pipelineClone, humanClone, seed };
 }
 
-/** The concurrent manual edit: a human commits to the same file and pushes. Returns its SHA. */
 function humanEdits(topology: Topology, id: string): { sha: string; manifest: Record_[] } {
   git(topology.humanClone, ['fetch', 'origin', PUBLISH_BRANCH]);
   git(topology.humanClone, ['reset', '--hard', 'FETCH_HEAD']);
@@ -376,7 +300,6 @@ function humanEdits(topology: Topology, id: string): { sha: string; manifest: Re
   return { sha: git(topology.humanClone, ['rev-parse', 'HEAD']), manifest };
 }
 
-/** The local write 04-09 step 5 performs before it calls publishManifest. */
 function stagePipelineRecord(
   topology: Topology,
   id: string
@@ -405,8 +328,6 @@ function publishOptions(topology: Topology, overrides: Record<string, unknown> =
   } as Parameters<typeof publishManifest>[0];
 }
 
-/* ============================================================================================ */
-
 beforeAll(async () => {
   if (existsSync(PRODUCER)) {
     const module_ = (await import(/* @vite-ignore */ pathToFileURL(PRODUCER).href)) as {
@@ -424,9 +345,6 @@ beforeAll(async () => {
       'stand-in (scripts/lib/photo-record.mjs has not landed yet — 04-05 runs in this wave)';
   }
 
-  // Whichever writer we got is held to serialiseManifest's DEFINING property, against the real
-  // committed manifest. This is what stops the stand-in being a hole: a writer that disagrees with
-  // `serialiseManifest` cannot reproduce the file `serialiseManifest` is required to reproduce.
   const committed = readFileSync(join(REPO_ROOT, 'data', 'portfolio_images.json'), 'utf8');
   const roundTripped = serialise(JSON.parse(committed));
   if (roundTripped !== committed) {
@@ -468,11 +386,8 @@ afterAll(() => {
   );
 });
 
-/* ============================================================================================ */
-
 describe('PIPE-05 · publishManifest against a real bare repository', () => {
   it('case 0 (a): the argv guard fires on every banned token AND on every structural walk-through', () => {
-    // Every banned token, named in the failure message.
     for (const token of FORBIDDEN_GIT_ARGS) {
       const call: GitCall = { argv: ['push', 'origin', token, 'main'], cwd: '/nowhere' };
       expect(() => assertPermittedArgv(call)).toThrow(
@@ -480,8 +395,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
       );
     }
 
-    // The four walk-throughs. The first two were MEASURED to defeat a token-only guard: the module
-    // was patched to run each of them and case 1 went green while it force-pushed.
     const walkThroughs: ReadonlyArray<{ why: string; argv: string[]; expect: RegExp }> = [
       {
         why: 'force refspec — a `+` prefix forces with no flag at all',
@@ -511,10 +424,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
       ).toThrow(walkThrough.expect);
     }
 
-    // And the discrimination the deleted source grep could not make: every argv the module is
-    // SUPPOSED to issue passes. `reset --hard <sha>` in particular is what the design requires
-    // (P-5: discard our commit, re-derive against what won), so a gate that banned it would ban
-    // the design rather than the defect.
     const sanctioned: string[][] = [
       ['rev-parse', '--is-inside-work-tree'],
       ['rev-parse', 'FETCH_HEAD'],
@@ -586,7 +495,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
     const topology = makeTopology();
     const stale = stagePipelineRecord(topology, 'pipeline-contended');
 
-    // PLANT THE DEFECT: the human lands first, so the pipeline's clone is now stale.
     const human = humanEdits(topology, 'human-first');
     const humanContent = committedText(topology.origin, human.sha, MANIFEST);
     expect(humanContent).not.toBe(stale.content);
@@ -610,24 +518,14 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
       })
     );
 
-    // ANTI-VACUITY, FIRST. If the conflict never happened, every assertion below is satisfied by a
-    // clean push and this case proves nothing — that is the 03-04 idempotence failure in a new
-    // costume, where the gate measured the commit instead of the re-run.
     expect(result.attempts).toBeGreaterThan(1);
 
     const originTip = git(topology.origin, ['rev-parse', PUBLISH_BRANCH]);
     expect(originTip).toBe(result.commit);
 
-    // By SHA, not by content — content could coincide.
     expect(gitExit(topology.origin, ['merge-base', '--is-ancestor', human.sha, originTip])).toBe(0);
     expect(previousRevisionOf(topology.origin, originTip, MANIFEST)).toBe(human.sha);
 
-    // rederive: once per retry, with the FETCHED bytes. Compared against the human's committed
-    // version, never against the stale one — otherwise the whole retry is theatre. This is asserted
-    // BEFORE the merged-content checks below, so that a module handing `rederive` the stale
-    // manifest fails on the ARGUMENT rather than only on the downstream consequence: the plant
-    // (read the file before the reset instead of after) trips both, and the argument is the
-    // sharper report of the two.
     expect(seenByRederive).toHaveLength(result.attempts - 1);
     expect(seenByRederive[0]).toBe(humanContent);
     expect(seenByRederive[0]).not.toBe(stale.content);
@@ -677,9 +575,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
     );
     expect(blob.at(-1)).toBe(0x0a);
     expect(blob.at(-2)).not.toBe(0x0a);
-    // Byte fidelity: publishManifest re-serialises NOTHING, so the bytes the writer produced are
-    // the bytes that landed. That is what makes `serialiseManifest` the single writer of manifest
-    // bytes rather than one of two.
     expect(bytesEqual(blob, new TextEncoder().encode(written))).toBe(true);
     process.stdout.write(
       `[case 0b] retry blob = ${blob.length} bytes, tail ${JSON.stringify(decode(blob.subarray(-6)))}, ` +
@@ -756,7 +651,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
     );
     expect(contended.attempts).toBeGreaterThan(1);
 
-    // Not detached, not half-reset, nothing left staged.
     expect(git(topology.pipelineClone, ['symbolic-ref', '--short', 'HEAD'])).toBe(PUBLISH_BRANCH);
     expect(git(topology.pipelineClone, ['status', '--porcelain'])).toBe('');
 
@@ -806,7 +700,6 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
 
     const result = await publishManifest(
       publishOptions(topology, {
-        // The walk-through: ignore the fetched manifest entirely and re-apply the stale bytes.
         rederive: () => stale.content,
       })
     );
@@ -816,16 +709,9 @@ describe('PIPE-05 · publishManifest against a real bare repository', () => {
       committedText(topology.origin, git(topology.origin, ['rev-parse', PUBLISH_BRANCH]), MANIFEST)
     ) as Record_[];
 
-    // MEASURED, and recorded rather than wished away: publishManifest ships it. The human's record
-    // is GONE from the file (though its commit survives in history), and the pipeline's `order`
-    // was computed against maxima that no longer hold — pitfall P-5, exactly.
     expect(shipped.map((r) => r.id)).toContain('pipeline-stale');
     expect(shipped.map((r) => r.id)).not.toContain('human-stale');
 
-    // So the layer that catches this is the `rederive` callback itself — proven by walk-through (i)
-    // above, where a throwing rederive aborts the loop before anything is pushed. publishManifest
-    // validates BYTES (case 0b) and never SEMANTICS: it does not parse the JSON and has no notion
-    // of `order`. This is why 04-09 step 9 must re-run `astro sync` INSIDE the retry loop.
     expect(result.changed).toBe(true);
     process.stdout.write(
       `[case 5 ii] FINDING: publishManifest publishes a stale re-derive (attempts=${result.attempts}, ids=${shipped

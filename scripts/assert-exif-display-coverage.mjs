@@ -1,99 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * PUB-08 build refusal — every camera and lens string in the manifest has a human name.
- *
- * Usage: node scripts/assert-exif-display-coverage.mjs [manifestPath]
- *        (with no argument, reads data/portfolio_images.json)
- *
- * The optional path exists so this gate's own negative controls can run against a COPY. Three
- * executors share one git index in this wave, and 04-06's commit swept six of 04-04's files into
- * itself when a verify step staged in a shared index. Nothing here writes anywhere, and no
- * control ever mutates `data/`.
- *
- * ---------------------------------------------------------------------------------------------
- * WHY THIS FILE EXISTS AT ALL
- *
- * The manifest stores what the camera wrote. MEASURED, 05-UI-SPEC.md §9.5: three of the five
- * non-null camera strings are model codes — `SM-N970F`, `AC2001`, `ILCE-7CM2` — that no
- * prefix-stripping, title-casing prettifier can decode. So `src/lib/exif-display.ts` is a lookup
- * table, and a lookup table has exactly one failure mode: a photograph arrives carrying a string
- * nobody has added yet.
- *
- * There are three things the renderer could do about that, and two of them are worse than a red
- * build. Falling back to the raw value ships `SM-N970F` to a reader. Falling back to a heuristic
- * ships a false claim about what the photograph was made with. Refusing does neither, and the
- * repair is a two-line edit — so this gate exists to make the refusal happen at BUILD time,
- * where the person who added the photograph is still holding it, rather than at render time,
- * where nobody is watching.
- *
- * ---------------------------------------------------------------------------------------------
- * IT DOES NOT HOLD A COPY OF THE TABLES. IT ASKS THE MODULE.
- *
- * This gate imports `displayCamera` and `displayLens` from `src/lib/exif-display.ts` and calls
- * them. A miss is the module's own `throw`, not a second lookup written here. A gate carrying a
- * duplicate of the thing it checks agrees with itself and proves nothing — which is precisely
- * what the `THUMB.dataUriPrefix` note in `src/lib/photo-pipeline.ts` records about an earlier
- * attempt in this repository, where the only available agreement check compared a value against
- * a literal re-typed in a test.
- *
- * THE MECHANISM, MEASURED RATHER THAN ASSUMED. 05-04-PLAN.md offered two options and asked for
- * (a) to be measured first. It works:
- *
- *     node scripts/…  -> imports src/lib/exif-display.ts, exit 0     (Node 22.22.3, per .nvmrc)
- *     node --experimental-strip-types scripts/…  -> identical
- *
- * Node strips TypeScript types by DEFAULT from 22.18 onward, so the flag is unnecessary here and
- * is deliberately not required. It works for one specific reason, and that reason is fragile
- * enough to write down: `exif-display.ts`'s ONLY import is `import type { PhotoExif }`, which
- * type-stripping ERASES, so Node never has to resolve the extensionless `../schemas/photo`
- * specifier — which it cannot resolve. **If that module ever gains a VALUE import of an
- * extensionless relative specifier, this gate stops loading**, and the catch below says so by
- * name instead of reporting a mysterious resolution error. Option (b) — moving the check into a
- * vitest test — is then the fallback, and `test/public/exif-display.unit.test.ts` already asserts
- * the same coverage over the same corpus, so nothing would be lost but the build-time position.
- *
- * ---------------------------------------------------------------------------------------------
- * EVERY COUNT IS DERIVED FROM THE FILE IT READ
- *
- * There is no 40, no 5 and no 4 anywhere below. 03-01's `--verify` hardcoded 39, STATE.md flagged
- * it, 04-09 then wrote a fresh hardcoded count and the first real photograph turned `main` red.
- * The manifest was 39, is 40, and will be 41.
- *
- * ---------------------------------------------------------------------------------------------
- * IT REFUSES TO PASS ON NOTHING
- *
- * A missing file, a non-array, an empty array, a record with no `exif` object, and — the one a
- * plain per-record loop misses — a corpus in which every camera and every lens is null. That
- * last one iterates every record, calls neither lookup, and reports success. It is the same
- * vacuity `PhotoManifestSchema`'s `.min(1)` exists for, one level in.
- *
- * WHAT IT STILL CANNOT SEE, recorded rather than claimed closed:
- *
- *  R1. A corpus with cameras but NO non-null lens exercises the lens table zero times and still
- *      passes, because the anti-vacuity check below is on the COMBINED count. Making it
- *      per-field would red the build on a legitimate data state (a phone-only import with no
- *      lens EXIF), and a gate that fires on correct data gets turned off. The combined check
- *      catches the case that is unambiguously vacuous and no more.
- *  R2. It says nothing about whether the display name is CORRECT — only that one exists.
- *      `'OnePlus AC2001': 'Leica M11'` passes here. The correctness of each mapping rests on the
- *      manufacturer citations in the module header and on the independently-written expectation
- *      table in `test/public/exif-display.unit.test.ts`, which would disagree.
- *
- * ---------------------------------------------------------------------------------------------
- * THE SELF-TEST RUNS ON EVERY INVOCATION
- *
- * This project has shipped nineteen gates that could not fail, eight of them inside repairs to
- * other gates. So before reading a single record, this gate proves on synthetic values that it
- * flags what it must flag and ignores what it must ignore — including the case variant, so the
- * exact-match decision is ENFORCED here rather than merely written down somewhere. The canary
- * strings are DERIVED from the real table keys, so they cannot go stale.
- *
- * Reporting is `process.stdout.write`. STATE.md: `console.log` and `console.info` print nothing
- * under this repo's vitest setup, and a gate whose findings are invisible is indistinguishable
- * from a gate that found nothing.
- */
-
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -107,10 +13,6 @@ const fail = (text) => {
   out(text);
   process.exit(1);
 };
-
-/* ---------------------------------------------------------------------------------------------
- * Load the module under test. See the MECHANISM paragraph in the header.
- * ------------------------------------------------------------------------------------------ */
 
 let mod;
 try {
@@ -144,7 +46,6 @@ for (const [name, value] of [
   }
 }
 
-/** The two fields this gate covers, each with the lookup that owns it. */
 const FIELDS = [
   {
     key: 'camera',
@@ -154,10 +55,6 @@ const FIELDS = [
   },
   { key: 'lens', table: LENS_DISPLAY_NAMES, resolve: displayLens, tableName: 'LENS_DISPLAY_NAMES' },
 ];
-
-/* ---------------------------------------------------------------------------------------------
- * The self-test. Synthetic values only, derived from the real table keys.
- * ------------------------------------------------------------------------------------------ */
 
 function selfTest() {
   const problems = [];
@@ -170,7 +67,6 @@ function selfTest() {
     }
     const known = keys[0];
 
-    // ANTI-CANARY: a real key must resolve to a non-empty string.
     let resolved;
     try {
       resolved = field.resolve(known);
@@ -186,12 +82,10 @@ function selfTest() {
       );
     }
 
-    // ANTI-CANARY: null is an absent field, not a miss. PUB-07 depends on this.
     if (field.resolve(null) !== null) {
       problems.push(`${field.key}: null did not resolve to null — a null field would become a row`);
     }
 
-    // CANARY: a value derived from a real key, guaranteed absent, must throw AND name itself.
     const canary = `${known} ZZ-NOT-A-REAL-DEVICE`;
     if (Object.hasOwn(field.table, canary)) {
       problems.push(`${field.key}: the canary ${JSON.stringify(canary)} is somehow a real entry`);
@@ -201,8 +95,6 @@ function selfTest() {
       );
     }
 
-    // CANARY: the exact-match decision. A case variant of a real key is a DATA defect (the
-    // pipeline writes what the camera wrote), so it must be refused rather than folded in.
     const caseVariant = known.toLowerCase() === known ? known.toUpperCase() : known.toLowerCase();
     if (caseVariant !== known && !Object.hasOwn(field.table, caseVariant)) {
       if (!threwNaming(field.resolve, caseVariant)) {
@@ -212,7 +104,6 @@ function selfTest() {
       }
     }
 
-    // CANARY: a trailing space, same reasoning.
     const spaced = `${known} `;
     if (!Object.hasOwn(field.table, spaced) && !threwNaming(field.resolve, spaced)) {
       problems.push(
@@ -220,7 +111,6 @@ function selfTest() {
       );
     }
 
-    // CANARY: an inherited Object.prototype member must not resolve to a function.
     if (!threwNaming(field.resolve, 'toString')) {
       problems.push(
         `${field.key}: "toString" resolved — the lookup is an index, not an own-property check`
@@ -231,7 +121,6 @@ function selfTest() {
   return problems;
 }
 
-/** True when `resolve(value)` threw an Error whose message contains the value. */
 function threwNaming(resolve, value) {
   try {
     resolve(value);
@@ -250,15 +139,8 @@ if (selfTestProblems.length > 0) {
   );
 }
 
-/* ---------------------------------------------------------------------------------------------
- * Read the manifest.
- * ------------------------------------------------------------------------------------------ */
-
 const manifestArg = process.argv[2];
 const manifestPath = manifestArg ? path.resolve(manifestArg) : DEFAULT_MANIFEST;
-// Repo-relative when it IS inside the repo, absolute otherwise. `path.relative` alone renders an
-// out-of-tree fixture as `../../../../../../var/folders/...`, which is the least readable form of
-// the one string a failing gate most needs the reader to recognise.
 const relative = path.relative(REPO_ROOT, manifestPath);
 const shown = relative && !relative.startsWith('..') ? relative : manifestPath;
 

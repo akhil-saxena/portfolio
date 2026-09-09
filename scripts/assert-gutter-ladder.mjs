@@ -1,92 +1,4 @@
 #!/usr/bin/env node
-/**
- * assert-gutter-ladder — the BUILT stylesheet agrees with `src/lib/layout-ladder.ts`, rung for
- * rung and cap for cap. Plan 05-06, Task 3.
- *
- * =============================================================================================
- * WHAT THIS CLOSES
- * =============================================================================================
- *
- * CSS cannot import TypeScript. So the gutter ladder exists twice — as `GUTTER_RUNGS` in
- * `src/lib/layout-ladder.ts`, which `sizesFor` and 05-15's browser audit read, and as four
- * `--pub-gutter` declarations in `src/styles/public-shell.css`, which the browser reads. That
- * duplication cannot be removed. This closes it.
- *
- * The failure it exists to catch is not cosmetic. `sizesFor` composes the gutter terms into the
- * `sizes` attribute of every gallery image; if the stylesheet's ladder and the module's ladder
- * disagree, nothing renders wrong and nothing errors — the browser simply downloads the wrong
- * variant of every photograph, forever, with no visual symptom.
- *
- * =============================================================================================
- * IT READS THE BUILT CSS, NOT THE SOURCE, AND THAT IS THE POINT
- * =============================================================================================
- *
- * Two rewrites were MEASURED in this repository's own output and either would defeat a naive
- * source-shaped parser:
- *
- *   1. THE MINIFIER REWRITES `min-width` INTO MEDIA QUERIES LEVEL 4 RANGE SYNTAX.
- *      source :  @media (min-width: 673px) { .pub-shell { --pub-gutter: var(--space-8); } }
- *      built  :  @media (width>=673px){.pub-shell{--pub-gutter:var(--space-8)}}
- *      A gate grepping for `min-width` finds ZERO media queries in a correct build. Depending on
- *      how it then reports that, it either passes vacuously or fails on correct code. Both
- *      spellings are accepted below, plus the reversed `(673px<=width)` form.
- *
- *   2. THE MINIFIER MERGES SELECTORS WITH IDENTICAL DECLARATION BLOCKS.
- *      source :  .pub-max-work { max-width: min(1280px, 100%); ... }
- *                .pub-max-photos { max-width: min(1280px, 100%); ... }
- *      built  :  .pub-max-work,.pub-max-photos{width:100%;max-width:min(1280px,100%)}
- *      A gate matching a rule whose selector IS `.pub-max-work` finds nothing. Selector LISTS are
- *      split below.
- *
- * =============================================================================================
- * THE RULES THIS FILE WILL NOT BREAK
- * =============================================================================================
- *
- *  - IT READS THE RUNGS FROM THE MODULE. It never restates them. A gate holding its own copy of
- *    the table agrees with itself, which is the ninth vacuous gate this project has shipped.
- *    Node >= 22.18 strips types on `import()` of a `.ts` file, and `layout-ladder.ts` imports
- *    nothing at all, so a plain `node` can load it. If a future Node cannot, take 05-04's
- *    fallback and move this into a vitest test — do NOT paste the numbers here.
- *
- *  - IT REFUSES TO PASS ON NOTHING. Six separate ways a run can check nothing are each an exit 1
- *    with a named refusal: the dist root missing, no CSS file under it, every CSS file empty, no
- *    `--pub-gutter` declaration anywhere, no `.pub-max-*` rule anywhere, and an empty
- *    `GUTTER_RUNGS`. A bare `! grep` passes on a missing file and that shape has appeared three
- *    times in this project.
- *
- *  - IT CARRIES CANARIES AND CHECKS THEM ON EVERY INVOCATION. A rule that cannot fire is not a
- *    rule. Nineteen gates in this project could not fail; four of those were found by a canary
- *    rather than by reading.
- *
- *  - IT REPORTS WITH `process.stdout.write`, NEVER `console.log`. Under this repository's vitest
- *    setup console output prints nothing (04-01 measured it with a probe), and a gate reporting
- *    findings through a swallowed channel is indistinguishable from one that found nothing.
- *
- * =============================================================================================
- * RESIDUALS, MEASURED RATHER THAN CLAIMED CLOSED
- * =============================================================================================
- *
- *  R1. IT CHECKS WHAT THE LADDER DECLARES, NOT WHAT THE PAGE COMPUTES. A rung could be correct
- *      here and overridden by a later rule of higher specificity. 05-15's six-class browser audit
- *      is the check for that, and it is a different claim needing a different instrument. This
- *      plan measured the computed padding in Chromium at all six classes as a one-off; that is
- *      not a standing gate.
- *
- *  R2. IT DOES NOT RESOLVE `var(--space-N)` TO PIXELS. It compares TOKEN NAMES against the
- *      module's `token` field. The px half of each rung is checked against the design system's
- *      real `dist/tokens.css` by `test/public/layout-ladder.unit.test.ts` (05-05), so both halves
- *      are covered — by two instruments that cannot ratify each other.
- *
- *  R3. IT REFUSES A RUNG WHOSE MEDIA QUERY CARRIES ANY CONDITION BEYOND A WIDTH MINIMUM.
- *      `@media screen and (min-width:673px)` is SEEN (the width is extracted) and then REPORTED,
- *      because a rung that does not apply to `print` is not the ladder `layout-ladder.ts`
- *      describes. MEASURED: this repository's bundler emits a bare `(width>=Npx)` and adds no
- *      other feature, so there is no false-alarm surface today. If a future bundler starts adding
- *      one, this fires loudly and is fixed here in one line — which is the failure mode this
- *      project prefers to a miss.
- *
- * Usage:  node scripts/assert-gutter-ladder.mjs [distClientDir]     (default: dist/client)
- */
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -96,20 +8,6 @@ import { fileURLToPath } from 'node:url';
 const out = (s) => process.stdout.write(`${s}\n`);
 const err = (s) => process.stderr.write(`${s}\n`);
 
-/**
- * THE ONE EXPECTED RED, AND WHY IT MUST NOT BE "FIXED" BY WEAKENING THIS GATE.
- *
- * Astro emits a stylesheet only for CSS some ROUTE imports. `src/styles/public-shell.css` is
- * imported by `src/layouts/PublicLayout.astro`, and 05-06 — the plan that wrote both — creates no
- * route, by its own `<verification>` block ("no change to any src/pages/** route"). So between
- * 05-06 landing and the first wave-4 route using the layout, `dist/client` genuinely contains no
- * ladder, and this gate genuinely has nothing to check.
- *
- * That is a REFUSAL, not a pass, and it is the right answer: a gate that returned 0 here would be
- * green for the entire window in which the ladder does not exist, which is exactly when a
- * disagreement would be introduced unnoticed. Nineteen gates in this repository could not fail;
- * this one can, starting from the case where its input is absent.
- */
 const NO_CONSUMER_NOTE = [
   '  IS THIS THE EXPECTED RED? Astro emits a stylesheet only for CSS that some ROUTE imports, and',
   '  `src/styles/public-shell.css` is imported by `src/layouts/PublicLayout.astro`. Until a page',
@@ -129,18 +27,6 @@ const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
 const LADDER_MODULE = new URL('../src/lib/layout-ladder.ts', import.meta.url);
 const DEFAULT_DIST = path.join(REPO_ROOT, 'dist', 'client');
 
-/* ---------------------------------------------------------------------------------------------
- * 1. Tiny CSS reader. Enough to know which rule a declaration is in and which at-rules wrap it.
- * ------------------------------------------------------------------------------------------- */
-
-/**
- * Split a comma-separated list at PAREN DEPTH ZERO.
- *
- * `min(1080px, 100%)` owns a comma, and `.pub-max-work,.pub-max-photos` is a real two-selector
- * list. A naive `split(',')` gets one of those wrong whichever way you write it — 05-05's suite
- * reported five clauses in a four-clause `sizes` string for exactly this reason and went red
- * against a correct module. Its canary is checked below on every run.
- */
 function splitAtDepthZero(input) {
   const parts = [];
   let depth = 0;
@@ -157,7 +43,6 @@ function splitAtDepthZero(input) {
   return parts.filter((p) => p.length > 0);
 }
 
-/** Strip block comments without eating one that lives inside a string literal. */
 function stripComments(css) {
   let kept = '';
   let i = 0;
@@ -192,10 +77,6 @@ function stripComments(css) {
   return kept;
 }
 
-/**
- * Walk the stylesheet and yield every declaration with its selector and its at-rule chain.
- * Returns `[{ atRules: string[], selector: string, prop: string, value: string }]`.
- */
 function readDeclarations(rawCss) {
   const css = stripComments(rawCss);
   const decls = [];
@@ -248,22 +129,12 @@ function readDeclarations(rawCss) {
   return decls;
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 2. Media-query minimum, in all three spellings the toolchain can emit.
- * ------------------------------------------------------------------------------------------- */
-
 const MIN_WIDTH_FORMS = [
   'min-width\\s*:\\s*(\\d+(?:\\.\\d+)?)px', //   @media (min-width: 673px)   — the source spelling
   'width\\s*>=\\s*(\\d+(?:\\.\\d+)?)px', //      @media (width>=673px)       — BUILT, measured here
   '(\\d+(?:\\.\\d+)?)px\\s*<=\\s*width', //      @media (673px<=width)       — the reverse form
 ];
 
-/**
- * Returns `{ minWidth, extra }` for one `@media` prelude. `minWidth` is a number, `null` for no
- * width condition, or the string `AMBIGUOUS` when more than one distinct minimum is present.
- * `extra` is whatever survives after every width-minimum condition is removed — anything left is
- * a condition the ladder does not have (R3).
- */
 function readMediaMinimum(prelude) {
   const found = new Set();
   let stripped = prelude;
@@ -282,10 +153,6 @@ function readMediaMinimum(prelude) {
   if (found.size > 1) return { minWidth: 'AMBIGUOUS', extra };
   return { minWidth: found.size === 1 ? [...found][0] : null, extra };
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 3. Canaries. Checked before the real scan, on every invocation.
- * ------------------------------------------------------------------------------------------- */
 
 const canaryFailures = [];
 let canariesChecked = 0;
@@ -359,10 +226,6 @@ if (canaryFailures.length > 0) {
   process.exit(1);
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 4. Load the ladder. NEVER restate it.
- * ------------------------------------------------------------------------------------------- */
-
 let GUTTER_RUNGS;
 let PAGE_MAX;
 try {
@@ -385,18 +248,8 @@ if (!PAGE_MAX || Object.keys(PAGE_MAX).length === 0) {
   process.exit(1);
 }
 
-/* ---------------------------------------------------------------------------------------------
- * 5. Read the built CSS.
- * ------------------------------------------------------------------------------------------- */
-
 const distRoot = path.resolve(process.argv[2] ?? DEFAULT_DIST);
-/* Relative to the repo when it is inside it, absolute otherwise. A refusal that names a path as
-   `../../../../../../private/tmp/...` is a refusal nobody reads to the end of. */
 const rel = (p) => {
-  /* Idempotent. Declaration sources now carry a LABEL rather than a path — an inline block is
-     `dist/client/index.html <style> #1`, which is not a path at all — and several call sites pass
-     that label back through here. `path.relative` on a non-absolute label resolves it against cwd
-     and mangles it, so anything already relative is returned untouched. */
   if (!path.isAbsolute(p)) return p;
   const r = path.relative(REPO_ROOT, p);
   return !r || r.startsWith('..') ? p : r;
@@ -408,27 +261,6 @@ if (!fs.existsSync(distRoot)) {
   process.exit(1);
 }
 
-/**
- * BOTH LINKED SHEETS AND INLINE `<style>` BLOCKS, AND THE SECOND HALF IS A REPAIR.
- *
- * This gate read only `dist/client/**\/*.css` until plan 05-14. Astro emits a linked stylesheet
- * only for CSS a shared module imports; everything a single route imports is INLINED into that
- * route's own `<style>` block, and a `.css`-only reader cannot see one byte of it.
- *
- * That blindness has now bitten this phase three times in three different gates — 05-07 (this
- * gate, against an inlined `photos.css`), 05-08 (`grep -c 'pd-exif'` returning 5 on a page that
- * renders none) and 05-12 (`.ph-lb-caption` invisible to any `dist/client/**\/*.css` reader, which
- * made a negative control refuse rather than pass — the good outcome, by luck).
- *
- * MEASURED at the time of the repair: `dist/client` emits ONE linked stylesheet (126,892 B) and
- * SEVEN distinct inline `<style>` texts (142 + 819 + 1,198 + 3,112 + 3,657 + 3,669 + 59 B). None
- * of the seven declares `--pub-gutter` or a `.pub-max-*` rule today — so this widening changes no
- * verdict now, which is exactly when to make it. A page-scoped `--pub-gutter` override would
- * previously have been invisible while silently disagreeing with `GUTTER_RUNGS`, and the `sizes`
- * attribute of every gallery image is computed from that ladder.
- *
- * 05-10's résumé suite is the model: collect both, then assert.
- */
 const cssFiles = [];
 const htmlFiles = [];
 (function walk(dir) {
@@ -440,8 +272,6 @@ const htmlFiles = [];
   }
 })(distRoot);
 
-/* Distinct inline texts only — the same page-scoped block is emitted into all 40 photo detail
-   documents, and reporting a finding 40 times says no more than reporting it once. */
 const inlineSheets = [];
 const seenInline = new Set();
 for (const file of htmlFiles.sort()) {
@@ -480,10 +310,6 @@ if (totalBytes === 0) {
   );
   process.exit(1);
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 6. The rungs.
- * ------------------------------------------------------------------------------------------- */
 
 const findings = [];
 
@@ -570,10 +396,6 @@ for (let i = 0; i < Math.max(GUTTER_RUNGS.length, builtRungs.length); i++) {
     );
   }
 }
-
-/* ---------------------------------------------------------------------------------------------
- * 7. The page maxima.
- * ------------------------------------------------------------------------------------------- */
 
 const maxWidthDecls = allDecls.filter((d) => d.prop === 'max-width');
 const seenMax = new Map();
